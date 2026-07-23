@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Good &amp; Handy Portal</title>
+<style>
+:root{
+  --navy:#0f2647; --navy2:#173563; --orange:#e8791a; --orange2:#ff9436;
+  --cream:#f7f4ee; --paper:#ffffff; --ink:#182233; --muted:#5c6b82;
+  --red:rgba(200,50,50,.14); --redb:#c83232;
+  --yellow:rgba(230,170,20,.18); --yellowb:#b8860b;
+  --green:rgba(40,140,90,.16); --greenb:#1f8a55;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--cream);color:var(--ink);}
+h1,h2,h3{font-family:Georgia,'Times New Roman',serif;margin:0 0 .3em;color:var(--navy);}
+button{cursor:pointer;font-family:inherit;}
+.hidden{display:none !important;}
+
+/* ---- LOGIN ---- */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--navy),var(--navy2));}
+.loginCard{background:var(--paper);width:380px;max-width:90vw;border-radius:14px;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.loginCard h1{font-size:1.6em;text-align:center;}
+.loginCard .tag{text-align:center;color:var(--orange);font-weight:600;letter-spacing:.08em;font-size:.75em;text-transform:uppercase;margin-bottom:22px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.78em;color:var(--muted);margin-bottom:4px;font-weight:600;}
+.field input{width:100%;padding:10px 12px;border:1px solid #d8d6cd;border-radius:8px;font-size:1em;}
+.field input:focus{outline:2px solid var(--orange);border-color:var(--orange);}
+.btn{background:var(--orange);color:#fff;border:none;padding:11px 18px;border-radius:8px;font-weight:700;font-size:.95em;transition:background .15s;}
+.btn:hover{background:var(--orange2);}
+.btn.secondary{background:transparent;color:var(--navy);border:1.5px solid var(--navy);}
+.btn.secondary:hover{background:var(--navy);color:#fff;}
+.btn.danger{background:var(--redb);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btnRow{display:flex;gap:10px;margin-top:18px;}
+.switchLine{text-align:center;margin-top:16px;font-size:.85em;color:var(--muted);}
+.switchLine a{color:var(--orange);cursor:pointer;font-weight:600;text-decoration:none;}
+.errMsg{color:var(--redb);font-size:.82em;margin-top:-6px;margin-bottom:10px;min-height:1em;}
+
+/* ---- APP SHELL ---- */
+#appScreen{min-height:100vh;}
+header.top{background:var(--navy);color:#fff;padding:14px 26px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.15);position:sticky;top:0;z-index:50;}
+header.top .brand{font-family:Georgia,serif;font-size:1.35em;}
+header.top .brand span{color:var(--orange);}
+.userBadge{display:flex;align-items:center;gap:12px;font-size:.85em;}
+.adminPill{background:var(--orange);color:#fff;font-size:.7em;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:.04em;}
+.logoutBtn{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:6px 12px;border-radius:6px;font-size:.82em;}
+.logoutBtn:hover{background:rgba(255,255,255,.15);}
+
+nav.tabs{display:flex;background:var(--navy2);padding:0 20px;gap:4px;overflow-x:auto;}
+nav.tabs button{background:transparent;border:none;color:rgba(255,255,255,.7);padding:14px 20px;font-size:.92em;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;}
+nav.tabs button.active{color:#fff;border-bottom-color:var(--orange);}
+nav.tabs button .count{background:rgba(255,255,255,.18);border-radius:10px;padding:1px 7px;margin-left:6px;font-size:.85em;}
+
+main{padding:24px 30px;max-width:1300px;margin:0 auto;}
+.listHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.listHeader p{color:var(--muted);font-size:.85em;margin:0;}
+
+.woRow{background:var(--paper);border:1px solid #e4e0d4;border-radius:var(--radius);padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:transform .1s, box-shadow .1s;}
+.woRow:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
+.woRow.st-red{background:var(--red);border-color:var(--redb);}
+.woRow.st-yellow{background:var(--yellow);border-color:var(--yellowb);}
+.woRow.st-green{background:var(--green);border-color:var(--greenb);}
+.woRow .woMain{display:flex;flex-direction:column;gap:2px;}
+.woRow .woName{font-weight:700;color:var(--navy);}
+.woRow .woSub{font-size:.8em;color:var(--muted);}
+.woRow .woMeta{display:flex;align-items:center;gap:10px;font-size:.78em;color:var(--muted);}
+.tag{padding:2px 9px;border-radius:20px;font-size:.75em;font-weight:700;letter-spacing:.03em;}
+.tag.pending{background:#fde3e3;color:var(--redb);}
+.tag.sched{background:#fff1cf;color:var(--yellowb);}
+.tag.go{background:#dcf5e8;color:var(--greenb);}
+.emptyState{text-align:center;padding:60px 20px;color:var(--muted);}
+.newWoBtn{width:100%;border:2px dashed var(--orange);background:transparent;color:var(--orange);border-radius:var(--radius);padding:16px;font-weight:700;font-size:.95em;margin-bottom:16px;}
+.newWoBtn:hover{background:rgba(232,121,26,.08);}
+
+/* ---- MODAL ---- */
+.overlay{position:fixed;inset:0;background:rgba(15,38,71,.55);display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;z-index:100;}
+.modal{background:var(--paper);border-radius:14px;width:100%;max-width:1100px;box-shadow:0 30px 70px rgba(0,0,0,.4);animation:pop .12s ease-out;}
+@keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.modalHead{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid #eee;}
+.modalHead h2{margin:0;font-size:1.25em;}
+.closeX{background:transparent;border:none;font-size:1.4em;color:var(--muted);}
+.modalBody{padding:20px 24px;}
+.woGrid{display:flex;gap:20px;flex-wrap:wrap;}
+.custPanel{flex:1 1 30%;min-width:240px;background:var(--cream);border-radius:10px;padding:16px;}
+.jobPanel{flex:2 1 60%;min-width:300px;background:var(--cream);border-radius:10px;padding:16px;}
+.panelTitle{font-size:.75em;text-transform:uppercase;letter-spacing:.06em;color:var(--orange);font-weight:700;margin-bottom:10px;}
+.kv{margin-bottom:8px;font-size:.9em;}
+.kv b{color:var(--navy);display:block;font-size:.72em;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);}
+.jobList{margin:10px 0;}
+.jobList h4{font-size:.82em;margin:10px 0 4px;color:var(--navy);}
+.jobList ul{margin:0;padding-left:18px;font-size:.85em;}
+.notesSection{margin-top:22px;border-top:1px solid #eee;padding-top:16px;}
+.noteEntryRow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.noteEntryRow select{padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
+.noteEntryRow input{flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;}
+.noteItem{background:var(--cream);border-left:3px solid var(--orange);border-radius:6px;padding:10px 14px;margin-bottom:8px;}
+.noteItem .noteMeta{font-size:.72em;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
+.noteItem .noteType{font-weight:700;color:var(--navy);}
+.noteItem .noteActions{display:flex;gap:8px;}
+.noteItem .noteActions button{background:none;border:none;font-size:.75em;color:var(--redb);padding:0;}
+.adminTab{margin-top:16px;background:#fff7ea;border:1px solid #f0d9a8;border-radius:8px;padding:12px 14px;}
+.adminTab h4{margin:0 0 8px;color:#8a5a00;font-size:.85em;}
+.adminLogRow{font-size:.78em;color:#6b5320;margin-bottom:4px;}
+.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.formGrid .full{grid-column:1/-1;}
+.footerActions{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #eee;}
+
+.splitWrap{display:flex;gap:16px;height:78vh;}
+.splitLeft{flex:0 0 38%;overflow-y:auto;padding-right:6px;}
+.splitRight{flex:1;border-radius:10px;overflow:hidden;border:1px solid #ddd;display:flex;flex-direction:column;}
+.splitRight iframe{flex:1;border:none;width:100%;}
+.laborPick{background:var(--cream);border-radius:8px;padding:10px;margin-bottom:10px;}
+.laborPick label{display:flex;gap:8px;align-items:flex-start;font-size:.85em;margin-bottom:6px;}
+.copyBox{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:.78em;white-space:pre-wrap;max-height:140px;overflow-y:auto;margin-top:8px;}
+
+.aiPanel{background:var(--navy);color:#fff;border-radius:10px;padding:16px;margin-top:14px;}
+.aiPanel h4{margin:0 0 8px;color:var(--orange2);font-size:.85em;text-transform:uppercase;letter-spacing:.05em;}
+.chatLog{max-height:220px;overflow-y:auto;background:rgba(255,255,255,.06);border-radius:8px;padding:10px;margin-bottom:10px;font-size:.85em;}
+.chatMsg{margin-bottom:8px;}
+.chatMsg.user{color:var(--orange2);}
+.chatMsg.ai{color:#e6ecf5;}
+.aiInputRow{display:flex;gap:8px;}
+.aiInputRow input{flex:1;padding:9px;border-radius:6px;border:none;}
+.listEditor{background:#fff;color:var(--ink);border-radius:8px;padding:12px;margin-top:10px;}
+.listEditor h5{margin:0 0 8px;color:var(--navy);}
+.editRow{display:flex;gap:6px;margin-bottom:6px;}
+.editRow input{flex:1;padding:6px 8px;border-radius:6px;border:1px solid #ddd;}
+.editRow button{background:var(--redb);color:#fff;border:none;border-radius:6px;padding:0 10px;}
+.small{font-size:.8em;color:var(--muted);}
+.confirmBox{position:fixed;inset:0;background:rgba(15,38,71,.6);display:flex;align-items:center;justify-content:center;z-index:200;}
+.confirmCard{background:#fff;border-radius:12px;padding:26px 28px;max-width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.confirmCard .btnRow{justify-content:center;}
+.syncPill{font-size:.7em;padding:2px 9px;border-radius:20px;font-weight:700;letter-spacing:.03em;cursor:pointer;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;}
+.syncPill.on{background:var(--greenb);border-color:var(--greenb);}
+.syncPill.off{background:transparent;}
+#syncModal textarea{width:100%;min-height:110px;padding:8px;border-radius:8px;border:1px solid #d8d6cd;font-family:monospace;font-size:.82em;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- ============ LOGIN / SIGNUP ============ -->
+<div id="loginScreen">
+  <div class="loginCard">
+    <h1>Good <span style="color:var(--orange)">&amp;</span> Handy</h1>
+    <div class="tag">Job Portal</div>
+
+    <div id="signInForm">
+      <div class="field"><label>Username</label><input id="siUser" autocomplete="username"></div>
+      <div class="field"><label>4-Digit PIN</label><input id="siPin" type="password" inputmode="numeric" maxlength="4"></div>
+      <div class="errMsg" id="siErr"></div>
+      <div class="btnRow"><button class="btn" style="flex:1" onclick="doSignIn()">Sign In</button></div>
+      <div class="switchLine">New here? <a onclick="toggleForms(false)">Create a login</a></div>
+    </div>
+
+    <div id="signUpForm" class="hidden">
+      <div class="formGrid">
+        <div class="field"><label>First Name</label><input id="suFirst" placeholder="Matthew"></div>
+        <div class="field"><label>Last Initial</label><input id="suLast" maxlength="1" placeholder="C"></div>
+      </div>
+      <div class="field"><label>Create a 4-Digit PIN</label><input id="suPin" type="password" inputmode="numeric" maxlength="4"></div>
+      <div class="field"><label>Confirm PIN</label><input id="suPin2" type="password" inputmode="numeric" maxlength="4"></div>
+      <div class="small" id="suPreview" style="margin-bottom:8px;"></div>
+      <div class="errMsg" id="suErr"></div>
+      <div class="btnRow"><button class="btn" style="flex:1" onclick="doSignUp()">Create Login</button></div>
+      <div class="switchLine">Already registered? <a onclick="toggleForms(true)">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP ============ -->
+<div id="appScreen" class="hidden">
+  <header class="top">
+    <div class="brand">Good <span>&amp;</span> Handy</div>
+    <div class="userBadge">
+      <span id="whoami"></span>
+      <span id="adminPill" class="adminPill hidden">ADMIN</span>
+      <button class="syncPill off" id="syncPill" onclick="openSyncModal()">Sync: Off</button>
+      <button class="logoutBtn" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+  <nav class="tabs">
+    <button data-tab="workorders" onclick="switchTab('workorders')">Work Orders <span class="count" id="cnt-workorders">0</span></button>
+    <button data-tab="presite" onclick="switchTab('presite')">Pre-Site Inspections <span class="count" id="cnt-presite">0</span></button>
+    <button data-tab="estimates" onclick="switchTab('estimates')">Estimates <span class="count" id="cnt-estimates">0</span></button>
+    <button data-tab="invoices" onclick="switchTab('invoices')">Invoices <span class="count" id="cnt-invoices">0</span></button>
+  </nav>
+  <main id="mainArea"></main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="confirmRoot"></div>
+
+<script>
+/* =========================================================================
+   DATA LAYER
+========================================================================= */
+const DB_KEY='gh_portal_db_v1';
+function loadDB(){
+  let raw=localStorage.getItem(DB_KEY);
+  if(raw) return JSON.parse(raw);
+  const db={users:{}, workOrders:[], nextId:1};
+  saveDB(db);
+  return db;
+}
+function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); if(!applyingRemote) pushToCloud(); }
+let DB = loadDB();
+let CURRENT_USER = null; // {username, displayName, isAdmin}
+let ACTIVE_TAB='workorders';
+
+/* =========================================================================
+   MULTI-DEVICE SYNC (Firebase Firestore)
+   Enter your Firebase project's config once per device to keep every
+   device's Work Orders, users, and notes in sync in real time.
+========================================================================= */
+const SYNC_CFG_KEY='gh_portal_sync_cfg';
+let syncDb=null, syncUnsub=null, applyingRemote=false, syncSaveTimer=null;
+
+function getSyncConfig(){
+  try{ return JSON.parse(localStorage.getItem(SYNC_CFG_KEY)||'null'); }catch(e){ return null; }
+}
+function setSyncPill(state){ // 'on' | 'off' | 'connecting'
+  const p=document.getElementById('syncPill');
+  if(!p) return;
+  p.className='syncPill '+(state==='on'?'on':'off');
+  p.textContent='Sync: '+(state==='on'?'On':state==='connecting'?'Connecting…':'Off');
+}
+function initSync(){
+  const cfg=getSyncConfig();
+  if(!cfg){ setSyncPill('off'); return; }
+  try{
+    setSyncPill('connecting');
+    if(!firebase.apps.length){ firebase.initializeApp(cfg); }
+    syncDb=firebase.firestore();
+    const ref=syncDb.collection('gh_portal').doc('main');
+    if(syncUnsub) syncUnsub();
+    syncUnsub=ref.onSnapshot(snap=>{
+      if(snap.exists){
+        const remote=snap.data().db;
+        if(remote){
+          applyingRemote=true;
+          DB=JSON.parse(remote);
+          localStorage.setItem(DB_KEY, remote);
+          applyingRemote=false;
+          setSyncPill('on');
+          if(CURRENT_USER){ renderTabCounts(); renderMain(); }
+        }
+      } else {
+        // nothing in the cloud yet — seed it with whatever's on this device
+        ref.set({db:JSON.stringify(DB), updatedAt:Date.now()});
+        setSyncPill('on');
+      }
+    }, err=>{
+      console.error('Sync error', err);
+      setSyncPill('off');
+      toast('Sync connection failed — check your Firebase config.');
+    });
+  }catch(e){
+    console.error(e);
+    setSyncPill('off');
+    toast('Could not connect sync — check your Firebase config.');
+  }
+}
+function pushToCloud(){
+  if(!syncDb || applyingRemote) return;
+  clearTimeout(syncSaveTimer);
+  syncSaveTimer=setTimeout(()=>{
+    syncDb.collection('gh_portal').doc('main').set({db:JSON.stringify(DB), updatedAt:Date.now()}).catch(e=>{
+      console.error(e); toast('Could not sync latest change to the cloud.');
+    });
+  }, 250);
+}
+function openSyncModal(){
+  const cfg=getSyncConfig();
+  const modal=document.getElementById('modalRoot');
+  modal.innerHTML=`
+  <div class="overlay" id="syncModal">
+    <div class="modal" style="max-width:520px;">
+      <div class="modalHead"><h2>Multi-Device Sync</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
+      <div class="modalBody">
+        <p class="small">Paste your Firebase project's web config to keep this portal in sync across every phone, tablet, and computer in real time. Create a free Firebase project at <b>firebase.google.com</b>, enable <b>Firestore</b>, and copy the config object from Project Settings.</p>
+        <textarea id="syncCfgInput" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'>${cfg?JSON.stringify(cfg,null,2):''}</textarea>
+        <div class="errMsg" id="syncErr"></div>
+        <div class="btnRow">
+          <button class="btn" style="flex:1" onclick="saveSyncConfig()">Connect &amp; Sync</button>
+          ${cfg?'<button class="btn secondary" onclick="disconnectSync()">Disconnect</button>':''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function saveSyncConfig(){
+  const raw=document.getElementById('syncCfgInput').value.trim();
+  const err=document.getElementById('syncErr');
+  let cfg;
+  try{ cfg=JSON.parse(raw); }catch(e){ err.textContent='That doesn\'t look like valid JSON — paste the full Firebase config object.'; return; }
+  if(!cfg.apiKey || !cfg.projectId){ err.textContent='Config is missing apiKey or projectId.'; return; }
+  localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(cfg));
+  closeModal();
+  initSync();
+  toast('Connecting sync…');
+}
+function disconnectSync(){
+  localStorage.removeItem(SYNC_CFG_KEY);
+  if(syncUnsub) syncUnsub();
+  syncDb=null;
+  setSyncPill('off');
+  closeModal();
+}
+
+const ADMIN_USERNAMES=['matthewc','alyssac'];
+const NOTE_TYPES=['NOTE','L/M','WCB','SCHD','RESCHD','PRESITE','SURVEY'];
+
+function nowStamp(){
+  const d=new Date();
+  return {date:d.toLocaleDateString(), time:d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})};
+}
+function fullName(u){ return u.firstName + ' ' + u.lastInitial + '.'; }
+
+/* =========================================================================
+   AUTH
+========================================================================= */
+initSync();
+
+function toggleForms(showSignIn){
+  document.getElementById('signInForm').classList.toggle('hidden', !showSignIn);
+  document.getElementById('signUpForm').classList.toggle('hidden', showSignIn);
+  document.getElementById('siErr').textContent='';
+  document.getElementById('suErr').textContent='';
+}
+document.getElementById('suFirst').addEventListener('input', updateUserPreview);
+document.getElementById('suLast').addEventListener('input', updateUserPreview);
+function updateUserPreview(){
+  const f=document.getElementById('suFirst').value.trim().toLowerCase();
+  const l=document.getElementById('suLast').value.trim().toLowerCase();
+  const uname = f && l ? (f+l).replace(/[^a-z0-9]/g,'') : '';
+  document.getElementById('suPreview').textContent = uname ? ('Your username will be: '+uname) : '';
+}
+function doSignUp(){
+  const first=document.getElementById('suFirst').value.trim();
+  const lastInitial=document.getElementById('suLast').value.trim().toUpperCase();
+  const pin=document.getElementById('suPin').value.trim();
+  const pin2=document.getElementById('suPin2').value.trim();
+  const err=document.getElementById('suErr');
+  if(!first || !lastInitial){ err.textContent='Enter your first name and last initial.'; return; }
+  if(!/^\d{4}$/.test(pin)){ err.textContent='PIN must be exactly 4 digits.'; return; }
+  if(pin!==pin2){ err.textContent='PINs do not match.'; return; }
+  const username=(first+lastInitial).toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(DB.users[username]){ err.textContent='That username already exists. Please sign in instead.'; return; }
+  DB.users[username]={
+    username, firstName:first, lastInitial, pin,
+    isAdmin: ADMIN_USERNAMES.includes(username)
+  };
+  saveDB(DB);
+  err.textContent='';
+  loginAs(username);
+}
+function doSignIn(){
+  const username=document.getElementById('siUser').value.trim().toLowerCase();
+  const pin=document.getElementById('siPin').value.trim();
+  const err=document.getElementById('siErr');
+  const u=DB.users[username];
+  if(!u || u.pin!==pin){ err.textContent='Incorrect username or PIN.'; return; }
+  err.textContent='';
+  loginAs(username);
+}
+function loginAs(username){
+  const u=DB.users[username];
+  CURRENT_USER={username:u.username, displayName:fullName(u), isAdmin:u.isAdmin};
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  document.getElementById('whoami').textContent=CURRENT_USER.displayName+' ('+u.username+')';
+  document.getElementById('adminPill').classList.toggle('hidden', !u.isAdmin);
+  switchTab('workorders');
+}
+function logout(){
+  CURRENT_USER=null;
+  document.getElementById('appScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('siUser').value=''; document.getElementById('siPin').value='';
+}
+
+/* =========================================================================
+   WORK ORDER HELPERS
+========================================================================= */
+function hasRequiredInfo(wo){
+  return wo.customer.name && wo.customer.phone && wo.customer.address;
+}
+function schdCount(wo){ return wo.notes.filter(n=>n.type==='SCHD').length; }
+function statusClass(wo){
+  const c=schdCount(wo);
+  if(c>=2) return 'st-green';
+  if(c>=1) return 'st-yellow';
+  return 'st-red';
+}
+function statusTag(wo){
+  const c=schdCount(wo);
+  if(c>=2) return '<span class="tag go">Scheduled — Labor Set</span>';
+  if(c>=1) return '<span class="tag sched">Needs Scheduling</span>';
+  return '<span class="tag pending">Incomplete</span>';
+}
+function inPresiteList(wo){ return hasRequiredInfo(wo) && !wo.presiteDone; }
+function inEstimatesList(wo){ return wo.presiteDone && !wo.estimateDone; }
+function inInvoicesList(wo){ return wo.estimateDone && !wo.invoiceDone; }
+function inWorkOrdersList(wo){ return !wo.invoiceDone; }
+
+function addAdminLog(wo, text){
+  const ts=nowStamp();
+  wo.adminLog.unshift({text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time});
+}
+function addNote(wo, type, text){
+  const ts=nowStamp();
+  wo.notes.unshift({type, text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time});
+}
+
+/* =========================================================================
+   RENDER: TABS / LISTS
+========================================================================= */
+function switchTab(tab){
+  ACTIVE_TAB=tab;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  renderTabCounts();
+  renderMain();
+}
+function renderTabCounts(){
+  document.getElementById('cnt-workorders').textContent = DB.workOrders.filter(inWorkOrdersList).length;
+  document.getElementById('cnt-presite').textContent = DB.workOrders.filter(inPresiteList).length;
+  document.getElementById('cnt-estimates').textContent = DB.workOrders.filter(inEstimatesList).length;
+  document.getElementById('cnt-invoices').textContent = DB.workOrders.filter(inInvoicesList).length;
+}
+function renderMain(){
+  const main=document.getElementById('mainArea');
+  let list, title, blurb, emptyText, onClickMode;
+  if(ACTIVE_TAB==='workorders'){
+    list=DB.workOrders.filter(inWorkOrdersList); title='Work Orders';
+    blurb='All active jobs, oldest to newest. Highlight shows overall progress.';
+    emptyText='No work orders yet. Create the first one below.';
+  } else if(ACTIVE_TAB==='presite'){
+    list=DB.workOrders.filter(inPresiteList); title='Pre-Site Inspections';
+    blurb='Jobs with customer info on file, awaiting a completed pre-site inspection.';
+    emptyText='Nothing waiting on a pre-site inspection right now.';
+  } else if(ACTIVE_TAB==='estimates'){
+    list=DB.workOrders.filter(inEstimatesList); title='Estimates';
+    blurb='Pre-site is complete — build and send the estimate.';
+    emptyText='No jobs are ready for an estimate right now.';
+  } else {
+    list=DB.workOrders.filter(inInvoicesList); title='Invoices';
+    blurb='Estimate accepted — build and send the invoice.';
+    emptyText='No jobs are ready for an invoice right now.';
+  }
+  list=list.slice().sort((a,b)=>a.id-b.id);
+
+  let html=`<div class="listHeader"><div><h2>${title}</h2><p>${blurb}</p></div></div>`;
+  if(ACTIVE_TAB==='workorders'){
+    html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">+ Create New Work Order</button>`;
+  }
+  if(list.length===0){
+    html+=`<div class="emptyState">${emptyText}</div>`;
+  } else {
+    html+='<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>';
+  }
+  main.innerHTML=html;
+}
+function rowHTML(wo){
+  const cls=statusClass(wo);
+  const openFn = (ACTIVE_TAB==='estimates') ? `openEstimateSplit(${wo.id})`
+               : (ACTIVE_TAB==='invoices') ? `openInvoiceSplit(${wo.id})`
+               : `openWorkOrder(${wo.id})`;
+  return `<div class="woRow ${cls}" onclick="${openFn}">
+    <div class="woMain">
+      <div class="woName">${wo.customer.name || '(No name yet)'}</div>
+      <div class="woSub">${wo.jobDetails.description ? wo.jobDetails.description.slice(0,80) : 'No job description yet'}</div>
+    </div>
+    <div class="woMeta">
+      ${statusTag(wo)}
+      <span>${wo.customer.address || ''}</span>
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   NEW WORK ORDER
+========================================================================= */
+function openNewWorkOrder(){
+  const id=DB.nextId++;
+  const wo={
+    id, createdAt:Date.now(),
+    customer:{name:'',phone:'',email:'',address:''},
+    jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]},
+    notes:[], adminLog:[],
+    presiteDone:false, estimateDone:false, invoiceDone:false
+  };
+  DB.workOrders.push(wo);
+  saveDB(DB);
+  openWorkOrder(id, true);
+}
+
+/* =========================================================================
+   WORK ORDER MODAL
+========================================================================= */
+function getWO(id){ return DB.workOrders.find(w=>w.id===id); }
+
+function openWorkOrder(id){
+  const wo=getWO(id);
+  const isAdmin=CURRENT_USER.isAdmin;
+  const modal=document.getElementById('modalRoot');
+  modal.innerHTML=`
+  <div class="overlay" id="woOverlay">
+    <div class="modal">
+      <div class="modalHead">
+        <h2>${wo.customer.name || 'New Work Order'} <span class="small">#${wo.id}</span></h2>
+        <button class="closeX" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modalBody">
+        <div class="woGrid">
+          <div class="custPanel">
+            <div class="panelTitle">Customer Information</div>
+            ${custField('name','Full Name', wo.customer.name)}
+            ${custField('phone','Phone Number', wo.customer.phone)}
+            ${custField('email','Email (optional)', wo.customer.email)}
+            ${custField('address','Address', wo.customer.address)}
+            <button class="btn secondary" style="margin-top:8px;width:100%" onclick="saveCustomer(${id})">Save Customer Info</button>
+            ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);margin-top:6px">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
+          </div>
+          <div class="jobPanel">
+            <div class="panelTitle">Job Details</div>
+            <div class="field"><label>Description</label><textarea id="jobDesc" rows="2" style="width:100%;padding:8px;border-radius:8px;border:1px solid #d8d6cd;">${wo.jobDetails.description||''}</textarea></div>
+            <button class="btn secondary" style="margin-bottom:6px" onclick="saveJobDesc(${id})">Save Description</button>
+            ${jobListsHTML(wo)}
+            ${inPresiteList(wo) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
+          </div>
+        </div>
+
+        <div class="notesSection">
+          <div class="panelTitle">Notes</div>
+          <div class="noteEntryRow">
+            <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+            <input id="noteText" placeholder="Enter note...">
+            <button class="btn" onclick="submitNote(${id})">Add Note</button>
+          </div>
+          <div id="notesList">${notesHTML(wo)}</div>
+        </div>
+
+        ${isAdmin ? adminTabHTML(wo) : ''}
+      </div>
+      <div class="footerActions">
+        ${isAdmin ? `<button class="btn danger" onclick="adminDeleteWorkOrder(${id})">Delete Work Order</button>` : ''}
+        <button class="btn secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>`;
+}
+function custField(key,label,val){
+  return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${(val||'').replace(/"/g,'&quot;')}" style="width:100%;padding:7px 9px;border-radius:6px;border:1px solid #d8d6cd;margin-top:2px;"></div>`;
+}
+function saveCustomer(id){
+  const wo=getWO(id);
+  const wasEligible=inPresiteList(wo);
+  ['name','phone','email','address'].forEach(k=>{ wo.customer[k]=document.getElementById('cf_'+k).value.trim(); });
+  saveDB(DB);
+  const nowEligible=inPresiteList(wo);
+  openWorkOrder(id);
+  renderTabCounts();
+  if(!wasEligible && nowEligible){ toast('Required info complete — job added to Pre-Site Inspections.'); }
+  if(ACTIVE_TAB!=='undefined') renderMain();
+}
+function saveJobDesc(id){
+  const wo=getWO(id);
+  wo.jobDetails.description=document.getElementById('jobDesc').value.trim();
+  saveDB(DB); openWorkOrder(id); renderMain();
+}
+function jobListsHTML(wo){
+  const jd=wo.jobDetails;
+  const groups=[['Labor Line Items','labor'],['Materials','materials'],['Required Tools','tools'],['Potential Issues','issues'],['Disclaimers','disclaimers']];
+  const any=groups.some(([,k])=>jd[k] && jd[k].length);
+  if(!any) return '<div class="small">Job detail lists will appear here once the pre-site inspection is complete.</div>';
+  return '<div class="jobList">'+groups.map(([label,k])=>{
+    if(!jd[k] || !jd[k].length) return '';
+    return `<h4>${label}</h4><ul>${jd[k].map(i=>`<li>${i}</li>`).join('')}</ul>`;
+  }).join('')+'</div>';
+}
+function notesHTML(wo){
+  if(!wo.notes.length) return '<div class="small">No notes yet.</div>';
+  return wo.notes.map((n,idx)=>`
+    <div class="noteItem">
+      <div class="noteMeta">
+        <span><span class="noteType">${n.type}</span> — ${n.by} · ${n.date} ${n.time}</span>
+        ${CURRENT_USER.isAdmin ? `<span class="noteActions">
+          <button onclick="adminEditNote(${wo.id},${idx})">Edit</button>
+          <button onclick="adminDeleteNote(${wo.id},${idx})">Delete</button>
+        </span>` : ''}
+      </div>
+      <div>${n.text || ''}</div>
+    </div>`).join('');
+}
+function adminTabHTML(wo){
+  const logHTML = wo.adminLog.length
+    ? wo.adminLog.map(l=>`<div class="adminLogRow">${l.date} ${l.time} — <b>${l.by}</b>: ${l.text}</div>`).join('')
+    : '<div class="small">No admin overrides on this work order.</div>';
+  return `<div class="adminTab">
+    <h4>Admin Controls</h4>
+    <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow. The job resumes normally from wherever you place it.</div>
+    <div class="btnRow" style="flex-wrap:wrap;">
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'presite')">Send to Pre-Site</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'estimate')">Send to Estimates</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'invoice')">Send to Invoices</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'done')">Mark Fully Complete</button>
+    </div>
+    <h4 style="margin-top:14px;">Admin Log</h4>
+    ${logHTML}
+  </div>`;
+}
+function adminSetStage(id, target){
+  const wo=getWO(id);
+  if(target==='presite'){ wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false; }
+  if(target==='estimate'){ wo.presiteDone=true; wo.estimateDone=false; wo.invoiceDone=false; }
+  if(target==='invoice'){ wo.presiteDone=true; wo.estimateDone=true; wo.invoiceDone=false; }
+  if(target==='done'){ wo.presiteDone=true; wo.estimateDone=true; wo.invoiceDone=true; }
+  addAdminLog(wo, `Overrode workflow — forced job to stage: ${target}`);
+  saveDB(DB);
+  openWorkOrder(id);
+  renderTabCounts(); renderMain();
+}
+
+function submitNote(id){
+  const wo=getWO(id);
+  const type=document.getElementById('noteType').value;
+  const text=document.getElementById('noteText').value.trim();
+  if(type==='PRESITE'){
+    // Launch the pre-site inspection tool instead of logging plain text
+    openPresiteTool(id);
+    return;
+  }
+  addNote(wo, type, text);
+  saveDB(DB);
+  openWorkOrder(id);
+  renderTabCounts(); renderMain();
+}
+
+/* Admin note edit/delete */
+function adminEditNote(woId, idx){
+  const wo=getWO(woId);
+  const n=wo.notes[idx];
+  const newText=prompt('Edit note text:', n.text);
+  if(newText===null) return;
+  const oldText=n.text;
+  n.text=newText;
+  addAdminLog(wo, `Edited a ${n.type} note (was: "${oldText}")`);
+  saveDB(DB); openWorkOrder(woId);
+}
+function adminDeleteNote(woId, idx){
+  const wo=getWO(woId);
+  const n=wo.notes[idx];
+  if(!confirm('Delete this note? This cannot be undone.')) return;
+  wo.notes.splice(idx,1);
+  addAdminLog(wo, `Deleted a ${n.type} note ("${n.text}")`);
+  saveDB(DB); openWorkOrder(woId); renderTabCounts(); renderMain();
+}
+function adminDeleteWorkOrder(id){
+  if(!confirm('Delete this entire work order? This cannot be undone.')) return;
+  DB.workOrders=DB.workOrders.filter(w=>w.id!==id);
+  saveDB(DB); closeModal(); renderTabCounts(); renderMain();
+}
+
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+function toast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:8px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.88em;';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3200);
+}
+
+/* =========================================================================
+   PRE-SITE INSPECTION TOOL (Claude-powered)
+========================================================================= */
+let PRESITE_STATE=null; // {woId, chat:[], lists:{labor,materials,tools,issues,disclaimers}, stage:'chat'|'review', reviewIdx}
+
+function openPresiteTool(woId){
+  const wo=getWO(woId);
+  PRESITE_STATE={woId, chat:[], lists:null, stage:'chat', reviewIdx:0,
+    reviewOrder:['labor','materials','tools','issues','disclaimers']};
+  renderPresiteModal();
+}
+function renderPresiteModal(){
+  const wo=getWO(PRESITE_STATE.woId);
+  const modal=document.getElementById('modalRoot');
+  modal.innerHTML=`
+  <div class="overlay">
+    <div class="modal" style="max-width:760px;">
+      <div class="modalHead"><h2>Pre-Site Inspection — ${wo.customer.name}</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
+      <div class="modalBody" id="presiteBody"></div>
+    </div>
+  </div>`;
+  renderPresiteBody();
+}
+function renderPresiteBody(){
+  const body=document.getElementById('presiteBody');
+  const wo=getWO(PRESITE_STATE.woId);
+  if(PRESITE_STATE.stage==='chat'){
+    body.innerHTML=`
+      <p class="small">Describe the job below. The assistant will ask clarifying questions, then compile labor, materials, tools, potential issues, and disclaimers.</p>
+      <div class="aiPanel">
+        <h4>Pre-Site Assistant</h4>
+        <div class="chatLog" id="chatLog">${renderChatLog()}</div>
+        <div class="aiInputRow">
+          <input id="chatInput" placeholder="e.g. Replace 3 exterior GFCI outlets, install a new ceiling fan..." onkeydown="if(event.key==='Enter')sendPresiteChat()">
+          <button class="btn" onclick="sendPresiteChat()">Send</button>
+        </div>
+        <div style="margin-top:10px;"><button class="btn secondary" onclick="generatePresiteLists()">Compile Lists Now</button></div>
+      </div>`;
+  } else if(PRESITE_STATE.stage==='review'){
+    const key=PRESITE_STATE.reviewOrder[PRESITE_STATE.reviewIdx];
+    const labels={labor:'Labor Line Items',materials:'Materials',tools:'Required Tools',issues:'Potential Unforeseen Issues',disclaimers:'Disclaimers'};
+    const items=PRESITE_STATE.lists[key]||[];
+    body.innerHTML=`
+      <p class="small">Step ${PRESITE_STATE.reviewIdx+1} of ${PRESITE_STATE.reviewOrder.length} — review, edit, add, or remove items.</p>
+      <div class="listEditor">
+        <h5>${labels[key]}</h5>
+        <div id="editRows">${items.map((it,i)=>`
+          <div class="editRow"><input value="${it.replace(/"/g,'&quot;')}" onchange="updatePresiteItem('${key}',${i},this.value)"><button onclick="removePresiteItem('${key}',${i})">✕</button></div>`).join('')}
+        </div>
+        <button class="btn secondary" onclick="addPresiteItem('${key}')" style="margin-top:6px;">+ Add Item</button>
+      </div>
+      <div class="btnRow" style="margin-top:16px;">
+        ${PRESITE_STATE.reviewIdx>0 ? '<button class="btn secondary" onclick="presiteReviewBack()">Back</button>' : ''}
+        <button class="btn" onclick="presiteReviewNext()">${PRESITE_STATE.reviewIdx===PRESITE_STATE.reviewOrder.length-1 ? 'Finish & Save to Work Order' : 'Next List'}</button>
+      </div>`;
+  }
+}
+function renderChatLog(){
+  if(!PRESITE_STATE.chat.length) return '<div class="small" style="color:#c8d2e0">No messages yet.</div>';
+  return PRESITE_STATE.chat.map(m=>`<div class="chatMsg ${m.role}"><b>${m.role==='user'?'You':'Assistant'}:</b> ${m.text}</div>`).join('');
+}
+async function callClaude(promptText){
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user', content:promptText}]})
+  });
+  const data=await resp.json();
+  const textBlock=(data.content||[]).find(c=>c.type==='text');
+  return textBlock ? textBlock.text : '';
+}
+async function sendPresiteChat(){
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();
+  if(!msg) return;
+  const wo=getWO(PRESITE_STATE.woId);
+  PRESITE_STATE.chat.push({role:'user', text:msg});
+  input.value='';
+  renderPresiteBody();
+  const history=PRESITE_STATE.chat.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.text}`).join('\n');
+  const prompt=`You are a pre-site inspection assistant for a handyman company. Job description so far: "${wo.jobDetails.description||'(none yet)'}". Conversation:\n${history}\n\nAsk ONE short, useful clarifying question that will help you compile labor line items, materials, tools, potential unforeseen issues, and disclaimers for this job. Reply with only the question, no preamble.`;
+  try{
+    const reply=await callClaude(prompt);
+    PRESITE_STATE.chat.push({role:'ai', text:reply});
+  }catch(e){
+    PRESITE_STATE.chat.push({role:'ai', text:'(Assistant unavailable right now — you can keep describing the job or click "Compile Lists Now" when ready.)'});
+  }
+  renderPresiteBody();
+}
+async function generatePresiteLists(){
+  const wo=getWO(PRESITE_STATE.woId);
+  const history=PRESITE_STATE.chat.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.text}`).join('\n');
+  const prompt=`You are a pre-site inspection assistant for a handyman & light contracting company. Job description: "${wo.jobDetails.description||''}". Conversation notes:\n${history}\n\nRespond with ONLY valid JSON, no markdown fences, no preamble, in this exact shape:\n{"labor":["..."],"materials":["..."],"tools":["..."],"issues":["..."],"disclaimers":["..."]}\nEach array should have 3-8 concise, specific items relevant to this job.`;
+  toast('Compiling lists...');
+  let lists;
+  try{
+    const raw=await callClaude(prompt);
+    const clean=raw.replace(/```json|```/g,'').trim();
+    lists=JSON.parse(clean);
+  }catch(e){
+    lists={labor:['Labor item — edit me'],materials:['Material — edit me'],tools:['Tool — edit me'],issues:['Potential issue — edit me'],disclaimers:['Standard disclaimer — edit me']};
+    toast('Assistant unavailable — starting with a blank template you can fill in.');
+  }
+  PRESITE_STATE.lists=lists;
+  PRESITE_STATE.stage='review';
+  PRESITE_STATE.reviewIdx=0;
+  renderPresiteBody();
+}
+function updatePresiteItem(key,i,val){ PRESITE_STATE.lists[key][i]=val; }
+function removePresiteItem(key,i){ PRESITE_STATE.lists[key].splice(i,1); renderPresiteBody(); }
+function addPresiteItem(key){ PRESITE_STATE.lists[key].push(''); renderPresiteBody(); }
+function presiteReviewBack(){ PRESITE_STATE.reviewIdx--; renderPresiteBody(); }
+function presiteReviewNext(){
+  if(PRESITE_STATE.reviewIdx < PRESITE_STATE.reviewOrder.length-1){
+    PRESITE_STATE.reviewIdx++;
+    renderPresiteBody();
+  } else {
+    finishPresite();
+  }
+}
+function finishPresite(){
+  const wo=getWO(PRESITE_STATE.woId);
+  wo.jobDetails.labor=PRESITE_STATE.lists.labor.filter(x=>x.trim());
+  wo.jobDetails.materials=PRESITE_STATE.lists.materials.filter(x=>x.trim());
+  wo.jobDetails.tools=PRESITE_STATE.lists.tools.filter(x=>x.trim());
+  wo.jobDetails.issues=PRESITE_STATE.lists.issues.filter(x=>x.trim());
+  wo.jobDetails.disclaimers=PRESITE_STATE.lists.disclaimers.filter(x=>x.trim());
+  addNote(wo, 'PRESITE', 'Pre-Site Inspection complete.');
+  wo.presiteDone=true;
+  saveDB(DB);
+  PRESITE_STATE=null;
+  closeModal();
+  renderTabCounts(); renderMain();
+  toast('Pre-site inspection saved — job moved to Estimates.');
+}
+
+/* =========================================================================
+   ESTIMATES SPLIT VIEW
+========================================================================= */
+function openEstimateSplit(id){ openSplit(id, 'estimate'); }
+function openInvoiceSplit(id){ openSplit(id, 'invoice'); }
+
+function openSplit(id, kind){
+  const wo=getWO(id);
+  const url = kind==='estimate' ? 'https://mattyc1026.github.io/estimatebuilder/' : 'https://mattyc1026.github.io/invoicebuilder/';
+  const laborSource = kind==='estimate' ? wo.jobDetails.labor : wo.jobDetails.labor;
+  const modal=document.getElementById('modalRoot');
+  modal.innerHTML=`
+  <div class="overlay">
+    <div class="modal" style="max-width:1300px;">
+      <div class="modalHead">
+        <h2>${wo.customer.name} — ${kind==='estimate'?'Estimate':'Invoice'} Builder</h2>
+        <button class="closeX" onclick="closeSplit('${kind}',${id})">&times;</button>
+      </div>
+      <div class="modalBody">
+        <div class="splitWrap">
+          <div class="splitLeft">
+            <div class="panelTitle">Job Info</div>
+            <div class="kv"><b>Customer</b>${wo.customer.name}</div>
+            <div class="kv"><b>Phone</b>${wo.customer.phone}</div>
+            <div class="kv"><b>Address</b>${wo.customer.address}</div>
+            <div class="kv"><b>Description</b>${wo.jobDetails.description||'—'}</div>
+            <div class="panelTitle" style="margin-top:16px;">Labor Line Items</div>
+            <div class="laborPick">
+              ${ (laborSource&&laborSource.length) ? laborSource.map((l,i)=>`<label><input type="checkbox" class="laborChk" value="${i}" checked> ${l}</label>`).join('') : '<div class="small">No labor items on file from the pre-site inspection.</div>'}
+            </div>
+            <button class="btn secondary" onclick="copyLabor(${id})">Copy Selected Items</button>
+            <div class="copyBox" id="copyBox">Select items above, then click "Copy Selected Items" to paste them into the builder on the right.</div>
+            <p class="small" style="margin-top:12px;">The builder opens in its own tab when you click Generate/Print. When you're done, close this window to record the result.</p>
+          </div>
+          <div class="splitRight">
+            <iframe src="${url}" title="${kind} builder"></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="footerActions">
+        <button class="btn secondary" onclick="closeSplit('${kind}',${id})">Close ${kind==='estimate'?'Estimate':'Invoice'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+function copyLabor(id){
+  const wo=getWO(id);
+  const checked=[...document.querySelectorAll('.laborChk:checked')].map(c=>wo.jobDetails.labor[+c.value]);
+  const text=checked.join('\n');
+  document.getElementById('copyBox').textContent = text || '(nothing selected)';
+  if(navigator.clipboard) navigator.clipboard.writeText(text).catch(()=>{});
+}
+function closeSplit(kind, id){
+  askYesNo(
+    kind==='estimate' ? 'Is the estimate complete?' : 'Is the invoice complete?',
+    (yes)=>{
+      const wo=getWO(id);
+      if(kind==='estimate'){
+        if(yes){ wo.estimateDone=true; toast('Moved to Invoices.'); }
+        saveDB(DB); closeModal(); renderTabCounts(); renderMain();
+      } else {
+        if(yes){ wo.invoiceDone=true; toast('Job complete — removed from active lists.'); }
+        saveDB(DB); closeModal(); renderTabCounts(); renderMain();
+      }
+    }
+  );
+}
+function askYesNo(question, cb){
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
+    <h3>${question}</h3>
+    <div class="btnRow">
+      <button class="btn" onclick="answerYesNo(true)">Yes</button>
+      <button class="btn secondary" onclick="answerYesNo(false)">No</button>
+    </div>
+  </div></div>`;
+  window._yesNoCb=cb;
+}
+function answerYesNo(val){
+  document.getElementById('confirmRoot').innerHTML='';
+  if(window._yesNoCb) window._yesNoCb(val);
+  window._yesNoCb=null;
+}
+
+/* Admin override: allow admins to freely move a work order's stage flags from the work order modal */
+function adminOverridePanel(){ /* reserved */ }
+
+</script>
+</body>
+</html>
