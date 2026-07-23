@@ -690,13 +690,139 @@ function toast(msg){
 }
 
 /* =========================================================================
-   PRE-SITE INSPECTION TOOL (Claude-powered)
+   PRE-SITE INSPECTION TOOL (local trade-knowledge assistant — no external API)
 ========================================================================= */
 let PRESITE_STATE=null; // {woId, chat:[], lists:{labor,materials,tools,issues,disclaimers}, stage:'chat'|'review', reviewIdx}
 
+/* ---- Trade knowledge base -------------------------------------------- */
+const TRADE_KB = {
+  plumbing:{
+    keywords:['plumb','faucet','toilet','sink','drain','pipe','leak','water heater','garbage disposal','shutoff','valve','supply line'],
+    labor:['Diagnose and locate source of issue','Shut off and drain relevant water supply lines','Remove and replace fixture/component','Test for leaks under pressure and confirm proper operation'],
+    materials:['Supply lines','Shutoff valve(s)','Plumber\'s putty / pipe sealant','Fixture or replacement part as specified'],
+    tools:['Basin wrench','Pipe wrench','Adjustable wrench set','Bucket / wet-vac for water catch','Plumber\'s tape'],
+    issues:['Corroded or seized fittings may require additional cutting/replacement','Older shutoff valves may fail to fully close, requiring a main water shutoff','Concealed pipe damage behind the wall/floor may be discovered once opened up'],
+    disclaimers:['Estimate assumes standard residential fixtures and access; permit and inspection fees, if required by the jurisdiction, are additional','Any water damage found from a pre-existing leak is outside the scope of this estimate']
+  },
+  electrical:{
+    keywords:['electric','outlet','gfci','breaker','panel','wiring','switch','light fixture','recessed light','circuit'],
+    labor:['Turn off power at breaker and verify de-energized with tester','Remove existing device/fixture','Install and wire new device/fixture to code','Restore power and test operation'],
+    materials:['Outlet / switch / fixture as specified','Wire nuts and electrical tape','Cover plate','GFCI/AFCI device if required by code'],
+    tools:['Voltage tester','Wire strippers','Screwdriver set','Fish tape (if running new wire)'],
+    issues:['Existing wiring may not meet current code and could require upgrading','Panel may not have available capacity for additional circuits','Older homes may have aluminum or knob-and-tube wiring requiring special handling'],
+    disclaimers:['Work performed to local code; permit/inspection by others unless otherwise stated','Any pre-existing wiring defects discovered during the work are outside the original scope and will be communicated before proceeding']
+  },
+  tile:{
+    keywords:['tile','grout','backsplash','shower surround','flooring tile','regrout'],
+    labor:['Prep and level substrate','Layout tile pattern and dry-fit','Set tile with appropriate mortar/adhesive','Grout, clean, and seal joints'],
+    materials:['Tile (customer-selected)','Thinset mortar','Grout','Spacers','Grout sealer','Backer board (if needed)'],
+    tools:['Wet tile saw','Notched trowel','Grout float','Level','Tile spacers'],
+    issues:['Uneven or damaged substrate may require additional leveling/repair work','Older tile removal may reveal water damage beneath','Discontinued tile patterns may limit patch/match options'],
+    disclaimers:['Estimate is based on the approximate square footage provided; a material overage of 10-15% is standard for cuts and waste','Tile, grout color, and pattern selections to be confirmed by customer before ordering']
+  },
+  carpentry:{
+    keywords:['carpentry','trim','baseboard','door','deck','framing','shelf','shelving','cabinet','molding','crown molding'],
+    labor:['Measure and cut materials to spec','Install and fasten new carpentry work','Fill, sand, and prep for finish as needed'],
+    materials:['Lumber / trim stock as specified','Fasteners (screws/nails)','Wood filler','Construction adhesive'],
+    tools:['Miter saw','Drill/driver','Level','Stud finder','Nail gun'],
+    issues:['Out-of-square walls/openings common in older homes may require scribing and extra fitting time','Hidden rot or pest damage may be found once old material is removed'],
+    disclaimers:['Estimate assumes standard dimensional lumber/trim; custom millwork is quoted separately','Paint or stain finish, if desired, is quoted separately unless included above']
+  },
+  painting:{
+    keywords:['paint','repaint','painting','stain the','wall color'],
+    labor:['Prep surfaces: patch, sand, and clean','Mask and protect trim, floors, and fixtures','Apply primer where needed','Apply finish coats to specification'],
+    materials:['Primer (as needed)','Paint (customer-selected color/sheen)','Painter\'s tape','Drop cloths','Caulk for gaps/seams'],
+    tools:['Rollers and brushes','Extension pole','Ladder','Drop cloths','Sander'],
+    issues:['Existing surface damage (cracking, peeling) may require more extensive prep than anticipated','Homes built before 1978 may require lead-safe practices per EPA RRP rule if surfaces are disturbed'],
+    disclaimers:['Estimate assumes standard drywall/trim in serviceable condition; extensive repair needed before painting is quoted separately','Two-coat finish assumed unless otherwise noted; deep or accent colors may require a third coat']
+  },
+  fencing:{
+    keywords:['fence','fencing','gate'],
+    labor:['Layout and mark post locations','Dig and set posts in concrete','Install rails and fence panels/pickets','Hang and adjust gate(s)'],
+    materials:['Fence posts','Rails and pickets/panels','Concrete mix','Post caps','Gate hardware'],
+    tools:['Post hole digger / auger','Level','String line','Circular saw','Drill/driver'],
+    issues:['Underground utility lines must be located (call 811) before digging, which may affect post placement','Property line/HOA setback requirements should be confirmed before installation','Rocky or root-heavy soil can slow post-hole digging significantly'],
+    disclaimers:['Estimate assumes standard soil conditions; rock excavation, if encountered, is billed as an additional item','Customer is responsible for confirming property lines; company is not liable for boundary disputes']
+  },
+  ceiling_fan:{
+    keywords:['ceiling fan','fan install'],
+    labor:['Turn off power and remove existing fixture/fan','Verify/install fan-rated electrical box','Mount and wire new ceiling fan','Balance fan and test all speeds/functions'],
+    materials:['Fan-rated electrical box (if not already present)','Mounting bracket and hardware (typically included with fan)','Wire nuts'],
+    tools:['Voltage tester','Stud finder','Ladder','Screwdriver set'],
+    issues:['Existing electrical box may not be fan-rated and will need to be swapped for safety','Ceiling height/vaulted ceilings may require a fan downrod extension'],
+    disclaimers:['Estimate assumes a standard flat ceiling under 10 ft with existing wiring in place; vaulted ceilings or new circuit runs are quoted separately']
+  },
+  drywall:{
+    keywords:['drywall','sheetrock','patch the wall','hole in the wall','ceiling repair'],
+    labor:['Cut out damaged area and square the opening','Install backing/support as needed','Set new drywall patch','Tape, mud, and sand to a smooth finish'],
+    materials:['Drywall patch/sheet','Joint compound','Drywall tape','Screws','Corner bead (if needed)'],
+    tools:['Drywall saw','Taping knives','Sanding sponge/pole sander','Drill/driver'],
+    issues:['Damage may extend behind the visible area (water/pest related) and require a larger repair','Texture matching to surrounding wall may require additional time'],
+    disclaimers:['Estimate does not include paint/finish coat unless noted separately','Texture match is done to best professional ability but may not be a perfect match under raking light']
+  },
+  appliance:{
+    keywords:['appliance','dishwasher','garbage disposal','washer','dryer','refrigerator','oven','range','microwave'],
+    labor:['Diagnose reported issue','Disconnect and remove appliance if needed for access','Install/repair/replace component','Reconnect and test full appliance function'],
+    materials:['Replacement part as diagnosed','Supply line/connector kit (if applicable)'],
+    tools:['Multimeter','Appliance dolly','Basic hand tool set','Level'],
+    issues:['Diagnosis may reveal the issue is a different/additional part than initially assumed','Older appliances may have discontinued parts requiring a compatible substitute or full replacement recommendation'],
+    disclaimers:['Diagnostic time is required before a final parts price can be confirmed','Manufacturer warranty coverage, if any, should be verified by customer before repair proceeds']
+  },
+  irrigation:{
+    keywords:['irrigation','sprinkler','drip line','sprinkler head','irrigation valve'],
+    labor:['Locate and test existing zones/valves','Repair or replace damaged heads/lines/valves','Adjust coverage and run-times','Test full system operation'],
+    materials:['Sprinkler heads / drip emitters as needed','PVC pipe and fittings','Valve(s) if replacement needed'],
+    tools:['Shovel','PVC cutter','Pipe glue/primer','Multimeter (valve diagnostics)'],
+    issues:['Root intrusion or old/brittle PVC found during repair may require additional line replacement','Existing controller programming may need to be redone after zone changes'],
+    disclaimers:['Estimate assumes standard residential irrigation components; well/pump systems are quoted separately']
+  },
+  general:{
+    keywords:[],
+    labor:['Perform on-site assessment of the reported issue','Complete requested repair/installation per scope','Clean up work area and haul away debris'],
+    materials:['Materials as required by scope, to be confirmed on-site'],
+    tools:['General hand tool kit','Ladder','Drop cloths/floor protection'],
+    issues:['Full scope may not be apparent until on-site access is possible'],
+    disclaimers:['Estimate is based on the information provided; final pricing may be adjusted after on-site inspection if conditions differ']
+  }
+};
+const GENERIC_DISCLAIMERS=['This estimate is valid for 30 days from the date issued','Additional work outside this scope requires written approval before proceeding'];
+
+/* ---- Clarifying questions per trade (asked only if the answer isn't already present) ---- */
+const TRADE_QUESTIONS = {
+  tile:{test:t=>!/\d+\s*(sq ?ft|square feet|sf)\b/i.test(t), q:'About how many square feet of tile area are we covering?'},
+  fencing:{test:t=>!/\d+\s*(ft|feet|linear)\b/i.test(t), q:'About how many linear feet of fence are we installing or repairing?'},
+  drywall:{test:t=>!/\d+\s*(sq ?ft|square feet|sf|inch|foot|feet)\b/i.test(t), q:'About how large is the damaged/patch area (rough dimensions)?'},
+  painting:{test:t=>!/\b(\d+\s*room|bedroom|bathroom|kitchen|living room|exterior|interior|whole house)\b/i.test(t), q:'Which room(s) or areas need to be painted, interior or exterior?'},
+  ceiling_fan:{test:t=>!/\b\d+\s*(fan|fans)\b/i.test(t), q:'How many ceiling fans are being installed?'},
+  fencing2:null
+};
+
+function detectTrades(text){
+  const t=(text||'').toLowerCase();
+  const hits=Object.keys(TRADE_KB).filter(k=>k!=='general' && TRADE_KB[k].keywords.some(kw=>t.includes(kw)));
+  return hits.length ? hits : ['general'];
+}
+function combinedText(){
+  const wo=getWO(PRESITE_STATE.woId);
+  const chatText=PRESITE_STATE.chat.map(m=>m.text).join(' ');
+  return (wo.jobDetails.description||'') + ' ' + chatText;
+}
+function nextClarifyingQuestion(){
+  const text=combinedText();
+  const trades=detectTrades(text);
+  for(const trade of trades){
+    const q=TRADE_QUESTIONS[trade];
+    if(q && q.test(text) && !PRESITE_STATE.askedQuestions.includes(trade)){
+      PRESITE_STATE.askedQuestions.push(trade);
+      return q.q;
+    }
+  }
+  return null;
+}
+
 function openPresiteTool(woId){
   const wo=getWO(woId);
-  PRESITE_STATE={woId, chat:[], lists:null, stage:'chat', reviewIdx:0,
+  PRESITE_STATE={woId, chat:[], lists:null, stage:'chat', reviewIdx:0, askedQuestions:[],
     reviewOrder:['labor','materials','tools','issues','disclaimers']};
   renderPresiteModal();
 }
@@ -717,7 +843,7 @@ function renderPresiteBody(){
   const wo=getWO(PRESITE_STATE.woId);
   if(PRESITE_STATE.stage==='chat'){
     body.innerHTML=`
-      <p class="small">Describe the job below. The assistant will ask clarifying questions, then compile labor, materials, tools, potential issues, and disclaimers.</p>
+      <p class="small">Describe the job below. The assistant draws on a built-in general-contractor knowledge base (plumbing, electrical, tile, carpentry, painting, fencing, ceiling fans, drywall, appliances, irrigation, and general repairs) to ask a couple of quick clarifying questions, then compile labor, materials, tools, potential issues, and disclaimers. Runs entirely on this device — no internet call required.</p>
       <div class="aiPanel">
         <h4>Pre-Site Assistant</h4>
         <div class="chatLog" id="chatLog">${renderChatLog()}</div>
@@ -750,48 +876,33 @@ function renderChatLog(){
   if(!PRESITE_STATE.chat.length) return '<div class="small" style="color:#c8d2e0">No messages yet.</div>';
   return PRESITE_STATE.chat.map(m=>`<div class="chatMsg ${m.role}"><b>${m.role==='user'?'You':'Assistant'}:</b> ${m.text}</div>`).join('');
 }
-async function callClaude(promptText){
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user', content:promptText}]})
-  });
-  const data=await resp.json();
-  const textBlock=(data.content||[]).find(c=>c.type==='text');
-  return textBlock ? textBlock.text : '';
-}
-async function sendPresiteChat(){
+function sendPresiteChat(){
   const input=document.getElementById('chatInput');
   const msg=input.value.trim();
   if(!msg) return;
-  const wo=getWO(PRESITE_STATE.woId);
   PRESITE_STATE.chat.push({role:'user', text:msg});
   input.value='';
-  renderPresiteBody();
-  const history=PRESITE_STATE.chat.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.text}`).join('\n');
-  const prompt=`You are a pre-site inspection assistant for a handyman company. Job description so far: "${wo.jobDetails.description||'(none yet)'}". Conversation:\n${history}\n\nAsk ONE short, useful clarifying question that will help you compile labor line items, materials, tools, potential unforeseen issues, and disclaimers for this job. Reply with only the question, no preamble.`;
-  try{
-    const reply=await callClaude(prompt);
-    PRESITE_STATE.chat.push({role:'ai', text:reply});
-  }catch(e){
-    PRESITE_STATE.chat.push({role:'ai', text:'(Assistant unavailable right now — you can keep describing the job or click "Compile Lists Now" when ready.)'});
+  const q=nextClarifyingQuestion();
+  if(q){
+    PRESITE_STATE.chat.push({role:'ai', text:q});
+  } else {
+    PRESITE_STATE.chat.push({role:'ai', text:'Got what I need — click "Compile Lists Now" below when you\'re ready.'});
   }
   renderPresiteBody();
 }
-async function generatePresiteLists(){
-  const wo=getWO(PRESITE_STATE.woId);
-  const history=PRESITE_STATE.chat.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.text}`).join('\n');
-  const prompt=`You are a pre-site inspection assistant for a handyman & light contracting company. Job description: "${wo.jobDetails.description||''}". Conversation notes:\n${history}\n\nRespond with ONLY valid JSON, no markdown fences, no preamble, in this exact shape:\n{"labor":["..."],"materials":["..."],"tools":["..."],"issues":["..."],"disclaimers":["..."]}\nEach array should have 3-8 concise, specific items relevant to this job.`;
-  toast('Compiling lists...');
-  let lists;
-  try{
-    const raw=await callClaude(prompt);
-    const clean=raw.replace(/```json|```/g,'').trim();
-    lists=JSON.parse(clean);
-  }catch(e){
-    lists={labor:['Labor item — edit me'],materials:['Material — edit me'],tools:['Tool — edit me'],issues:['Potential issue — edit me'],disclaimers:['Standard disclaimer — edit me']};
-    toast('Assistant unavailable — starting with a blank template you can fill in.');
-  }
-  PRESITE_STATE.lists=lists;
+function generatePresiteLists(){
+  const text=combinedText();
+  const trades=detectTrades(text);
+  const merged={labor:[],materials:[],tools:[],issues:[],disclaimers:[]};
+  trades.forEach(trade=>{
+    const kb=TRADE_KB[trade];
+    ['labor','materials','tools','issues','disclaimers'].forEach(k=>{
+      kb[k].forEach(item=>{ if(!merged[k].includes(item)) merged[k].push(item); });
+    });
+  });
+  GENERIC_DISCLAIMERS.forEach(d=>{ if(!merged.disclaimers.includes(d)) merged.disclaimers.push(d); });
+  toast('Lists compiled from the trade knowledge base — review each list below.');
+  PRESITE_STATE.lists=merged;
   PRESITE_STATE.stage='review';
   PRESITE_STATE.reviewIdx=0;
   renderPresiteBody();
