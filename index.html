@@ -284,7 +284,8 @@ function openSyncModal(){
       <div class="modalHead"><h2>Multi-Device Sync</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
       <div class="modalBody">
         <p class="small">Paste your Firebase project's web config to keep this portal in sync across every phone, tablet, and computer in real time. Create a free Firebase project at <b>firebase.google.com</b>, enable <b>Firestore</b>, and copy the config object from Project Settings.</p>
-        <textarea id="syncCfgInput" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'>${cfg?JSON.stringify(cfg,null,2):''}</textarea>
+        <p class="small">Paste it exactly as Firebase shows it — quoted or unquoted keys both work.</p>
+        <textarea id="syncCfgInput" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." }'>${cfg?JSON.stringify(cfg,null,2):''}</textarea>
         <div class="errMsg" id="syncErr"></div>
         <div class="btnRow">
           <button class="btn" style="flex:1" onclick="saveSyncConfig()">Connect &amp; Sync</button>
@@ -298,7 +299,19 @@ function saveSyncConfig(){
   const raw=document.getElementById('syncCfgInput').value.trim();
   const err=document.getElementById('syncErr');
   let cfg;
-  try{ cfg=JSON.parse(raw); }catch(e){ err.textContent='That doesn\'t look like valid JSON — paste the full Firebase config object.'; return; }
+  try{
+    cfg=JSON.parse(raw);
+  }catch(e){
+    // Firebase's console shows this as a JS object literal (unquoted keys),
+    // not strict JSON — accept that format too.
+    try{
+      cfg=Function('"use strict"; return (' + raw + ');')();
+    }catch(e2){
+      err.textContent='Could not read that — paste the full firebaseConfig object, curly braces included.';
+      return;
+    }
+  }
+  if(!cfg || typeof cfg!=='object'){ err.textContent='Could not read that — paste the full firebaseConfig object, curly braces included.'; return; }
   if(!cfg.apiKey || !cfg.projectId){ err.textContent='Config is missing apiKey or projectId.'; return; }
   localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(cfg));
   closeModal();
