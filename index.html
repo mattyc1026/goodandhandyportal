@@ -159,8 +159,8 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 
     <div id="signUpForm" class="hidden">
       <div class="formGrid">
-        <div class="field"><label>First Name</label><input id="suFirst" placeholder="Matthew"></div>
-        <div class="field"><label>Last Initial</label><input id="suLast" maxlength="1" placeholder="C"></div>
+        <div class="field"><label>First Name</label><input id="suFirst"></div>
+        <div class="field"><label>Last Initial</label><input id="suLast" maxlength="1"></div>
       </div>
       <div class="field"><label>Create a 4-Digit PIN</label><input id="suPin" type="password" inputmode="numeric" maxlength="4"></div>
       <div class="field"><label>Confirm PIN</label><input id="suPin2" type="password" inputmode="numeric" maxlength="4"></div>
@@ -200,6 +200,8 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
    DATA LAYER
 ========================================================================= */
 const DB_KEY='gh_portal_db_v1';
+const SYNC_CFG_KEY='gh_portal_sync_cfg';
+let syncDb=null, syncUnsub=null, applyingRemote=false, syncSaveTimer=null;
 function loadDB(){
   let raw=localStorage.getItem(DB_KEY);
   if(raw) return JSON.parse(raw);
@@ -217,12 +219,11 @@ let ACTIVE_TAB='workorders';
    Enter your Firebase project's config once per device to keep every
    device's Work Orders, users, and notes in sync in real time.
 ========================================================================= */
-const SYNC_CFG_KEY='gh_portal_sync_cfg';
-let syncDb=null, syncUnsub=null, applyingRemote=false, syncSaveTimer=null;
 
 function getSyncConfig(){
   try{ return JSON.parse(localStorage.getItem(SYNC_CFG_KEY)||'null'); }catch(e){ return null; }
 }
+
 function setSyncPill(state){ // 'on' | 'off' | 'connecting'
   const p=document.getElementById('syncPill');
   if(!p) return;
