@@ -95,9 +95,10 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .jobList h4{font-size:.82em;margin:10px 0 4px;color:var(--navy);}
 .jobList ul{margin:0;padding-left:18px;font-size:.85em;}
 .notesSection{margin-top:22px;border-top:1px solid #eee;padding-top:16px;}
-.noteEntryRow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.noteEntryRow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-start;}
 .noteEntryRow select{padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
 .noteEntryRow input{flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;}
+.noteEntryRow textarea{flex:1;min-width:180px;min-height:38px;max-height:60vh;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;font-family:inherit;font-size:.95em;resize:both;overflow:auto;line-height:1.4;}
 .noteItem{background:var(--cream);border-left:3px solid var(--orange);border-radius:6px;padding:10px 14px;margin-bottom:8px;}
 .noteItem .noteMeta{font-size:.72em;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
 .noteItem .noteType{font-weight:700;color:var(--navy);}
@@ -155,6 +156,14 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .custDisplay .kv{display:flex;justify-content:space-between;align-items:baseline;}
 .editLink{background:none;border:none;color:var(--orange);font-weight:700;font-size:.78em;cursor:pointer;padding:0;}
 .adminViewLink{background:none;border:none;color:var(--muted);font-size:.78em;font-weight:600;cursor:pointer;text-decoration:underline;margin-right:14px;}
+.woLastNote{font-size:.78em;color:var(--muted);margin-top:2px;}
+.woLastNote b{color:var(--navy);}
+.followupBadge{display:inline-flex;align-items:center;gap:4px;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:20px;background:#eef1f6;color:var(--navy);white-space:nowrap;}
+.followupBadge.due{background:#fde3e3;color:var(--redb);animation:pulseFollowup 1.6s infinite;}
+@keyframes pulseFollowup{0%,100%{box-shadow:0 0 0 0 rgba(200,50,50,.35);}50%{box-shadow:0 0 0 5px rgba(200,50,50,0);}}
+.noteEntryRow input[type="date"]{flex:0 0 150px;padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
+.noteFollowTag{display:inline-block;font-size:.72em;font-weight:700;padding:1px 7px;border-radius:20px;background:#eef1f6;color:var(--navy);margin-left:6px;}
+.noteFollowTag.due{background:#fde3e3;color:var(--redb);}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -474,9 +483,19 @@ function addAdminLog(wo, text){
   const ts=nowStamp();
   wo.adminLog.unshift({text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time});
 }
-function addNote(wo, type, text){
+function addNote(wo, type, text, followUpDate){
   const ts=nowStamp();
-  wo.notes.unshift({type, text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time});
+  wo.notes.unshift({type, text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time, followUpDate: followUpDate || null});
+}
+function isFollowUpDue(dateStr){
+  if(!dateStr) return false;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const fu=new Date(dateStr+'T00:00:00');
+  return fu.getTime() <= today.getTime();
+}
+function formatFollowUp(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString();
 }
 
 /* =========================================================================
@@ -527,18 +546,34 @@ function renderMain(){
   }
   main.innerHTML=html;
 }
+function mostRecentNote(wo){
+  return (wo.notes && wo.notes.length) ? wo.notes[0] : null;
+}
+function woIsFollowUpDue(wo){
+  const n=mostRecentNote(wo);
+  return !!(n && n.followUpDate && isFollowUpDue(n.followUpDate));
+}
 function rowHTML(wo){
   const cls=statusClass(wo);
   const openFn = (ACTIVE_TAB==='estimates') ? `openEstimateSplit(${wo.id})`
                : (ACTIVE_TAB==='invoices') ? `openInvoiceSplit(${wo.id})`
                : `openWorkOrder(${wo.id})`;
+  const n=mostRecentNote(wo);
+  const lastNoteHTML = n
+    ? `<div class="woLastNote"><b>${n.type}:</b> ${(n.text||'').slice(0,90)}${(n.text||'').length>90?'…':''} <span style="color:#9aa4b2">(${n.date})</span></div>`
+    : '';
+  const followUpBadge = (n && n.followUpDate)
+    ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span>`
+    : '';
   return `<div class="woRow ${cls}" onclick="${openFn}">
     <div class="woMain">
       <div class="woName">${wo.customer.name || '(No name yet)'}</div>
       <div class="woSub">${wo.jobDetails.description ? wo.jobDetails.description.slice(0,80) : 'No job description yet'}</div>
+      ${lastNoteHTML}
     </div>
     <div class="woMeta">
       ${statusTag(wo)}
+      ${followUpBadge}
       <span>${wo.customer.address || ''}</span>
     </div>
   </div>`;
@@ -565,12 +600,14 @@ function openNewWorkOrder(){
    WORK ORDER MODAL
 ========================================================================= */
 function getWO(id){ return DB.workOrders.find(w=>w.id===id); }
-let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false;
+let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null;
 
 function openWorkOrder(id){
   const wo=getWO(id);
   WO_CUST_EDIT = !hasRequiredInfo(wo);
   WO_ADMIN_VIEW = false;
+  WO_JOB_EDIT = false;
+  JD_EDIT = null;
   renderWorkOrderModal(id);
 }
 function toggleCustEdit(id){ WO_CUST_EDIT=!WO_CUST_EDIT; renderWorkOrderModal(id); }
@@ -612,9 +649,12 @@ function renderWorkOrderModal(id){
             `}
           </div>
           <div class="jobPanel">
-            <div class="panelTitle">Job Details</div>
-            ${jobListsHTML(wo)}
-            ${inPresiteList(wo) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
+            <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
+              <span>Job Details</span>
+              ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : ''}
+            </div>
+            ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
+            ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
           </div>
         </div>
 
@@ -622,7 +662,8 @@ function renderWorkOrderModal(id){
           <div class="panelTitle">Notes</div>
           <div class="noteEntryRow">
             <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
-            <input id="noteText" placeholder="Enter note...">
+            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="1"></textarea>
+            <input type="date" id="noteFollowUp" title="Follow-up date (optional)">
             <button class="btn" onclick="submitNote(${id})">Add Note</button>
           </div>
           <div id="notesList">${notesHTML(wo)}</div>
@@ -690,12 +731,102 @@ function jobListsHTML(wo){
       <details><summary>Disclaimers (${(jd.disclaimers||[]).length})</summary>${(jd.disclaimers||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
     </div>`;
 }
+
+/* ---- Job Details: edit mode ---- */
+function openJobDetailsEdit(id){
+  const wo=getWO(id);
+  const src=wo.jobDetails||{};
+  JD_EDIT={
+    description: src.description||'',
+    labor: (src.labor||[]).map(e=>typeof e==='string'?{item:e,price:''}:{item:e.item||'',price:e.price||''}),
+    materials: (src.materials||[]).map(e=>typeof e==='string'?{item:e,price:''}:{item:e.item||'',price:e.price||''}),
+    tools: (src.tools||[]).slice(),
+    issues: (src.issues||[]).slice(),
+    disclaimers: (src.disclaimers||[]).slice()
+  };
+  WO_JOB_EDIT=true;
+  renderWorkOrderModal(id);
+}
+function cancelJobDetailsEdit(id){
+  WO_JOB_EDIT=false;
+  JD_EDIT=null;
+  renderWorkOrderModal(id);
+}
+function saveJobDetailsEdit(id){
+  const wo=getWO(id);
+  const descEl=document.getElementById('jdDescription');
+  JD_EDIT.description = descEl ? descEl.value.trim() : JD_EDIT.description;
+  const cleaned={
+    description: JD_EDIT.description,
+    labor: JD_EDIT.labor.filter(e=>e.item && e.item.trim()),
+    materials: JD_EDIT.materials.filter(e=>e.item && e.item.trim()),
+    tools: JD_EDIT.tools.filter(t=>t && t.trim()),
+    issues: JD_EDIT.issues.filter(t=>t && t.trim()),
+    disclaimers: JD_EDIT.disclaimers.filter(t=>t && t.trim())
+  };
+  wo.jobDetails=cleaned;
+  saveDB(DB);
+  WO_JOB_EDIT=false;
+  JD_EDIT=null;
+  renderWorkOrderModal(id);
+  renderMain();
+  toast('Job details updated.');
+}
+function updateJDItem(key, idx, val, field){
+  if(!JD_EDIT) return;
+  if(field){ JD_EDIT[key][idx][field]=val; } else { JD_EDIT[key][idx]=val; }
+}
+function removeJDItem(id, key, idx){
+  JD_EDIT[key].splice(idx,1);
+  renderWorkOrderModal(id);
+}
+function addJDItem(id, key){
+  const isPriced = key==='labor' || key==='materials';
+  JD_EDIT[key].push(isPriced ? {item:'',price:''} : '');
+  renderWorkOrderModal(id);
+}
+function jdEditSection(id, key, label, isPriced){
+  const items=JD_EDIT[key]||[];
+  const rows = items.map((it,i)=>{
+    if(isPriced){
+      const itemVal=(it.item||'').replace(/"/g,'&quot;');
+      const priceVal=(it.price||'').replace(/"/g,'&quot;');
+      return `<div class="editRow"><input value="${itemVal}" placeholder="Item" style="flex:2" onchange="updateJDItem('${key}',${i},this.value,'item')"><input value="${priceVal}" placeholder="Price range" style="flex:1" onchange="updateJDItem('${key}',${i},this.value,'price')"><button onclick="removeJDItem(${id},'${key}',${i})">✕</button></div>`;
+    }
+    const val=(it||'').replace(/"/g,'&quot;');
+    return `<div class="editRow"><input value="${val}" onchange="updateJDItem('${key}',${i},this.value)"><button onclick="removeJDItem(${id},'${key}',${i})">✕</button></div>`;
+  }).join('') || '<div class="small">None yet.</div>';
+  return `<div class="listEditor" style="margin-top:10px;">
+    <h5>${label}</h5>
+    <div>${rows}</div>
+    <button class="btn secondary" onclick="addJDItem(${id},'${key}')" style="margin-top:6px;">+ Add Item</button>
+  </div>`;
+}
+function jobDetailsEditHTML(id){
+  if(!JD_EDIT) return '';
+  return `
+    <div class="kv">
+      <b>Job Description</b>
+      <textarea id="jdDescription" style="width:100%;min-height:70px;max-height:50vh;padding:8px;border-radius:8px;border:1px solid #d8d6cd;margin-top:4px;font-family:inherit;font-size:.9em;resize:vertical;">${(JD_EDIT.description||'').replace(/</g,'&lt;')}</textarea>
+    </div>
+    ${jdEditSection(id,'labor','Labor Line Items', true)}
+    ${jdEditSection(id,'materials','Materials', true)}
+    ${jdEditSection(id,'tools','Required Tools', false)}
+    ${jdEditSection(id,'issues','Potential Unforeseen Issues', false)}
+    ${jdEditSection(id,'disclaimers','Disclaimers', false)}
+    <div class="btnRow" style="margin-top:12px;">
+      <button class="btn" onclick="saveJobDetailsEdit(${id})">Save Job Details</button>
+      <button class="btn secondary" onclick="cancelJobDetailsEdit(${id})">Cancel</button>
+    </div>`;
+}
 function notesHTML(wo){
   if(!wo.notes.length) return '<div class="small">No notes yet.</div>';
   return wo.notes.map((n,idx)=>`
     <div class="noteItem">
       <div class="noteMeta">
-        <span><span class="noteType">${n.type}</span> — ${n.by} · ${n.date} ${n.time}</span>
+        <span><span class="noteType">${n.type}</span> — ${n.by} · ${n.date} ${n.time}
+          ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
+        </span>
         ${CURRENT_USER.isAdmin ? `<span class="noteActions">
           <button onclick="adminEditNote(${wo.id},${idx})">Edit</button>
           <button onclick="adminDeleteNote(${wo.id},${idx})">Delete</button>
@@ -737,15 +868,18 @@ function submitNote(id){
   const wo=getWO(id);
   const type=document.getElementById('noteType').value;
   const text=document.getElementById('noteText').value.trim();
+  const followUpEl=document.getElementById('noteFollowUp');
+  const followUp = followUpEl ? (followUpEl.value || null) : null;
   if(type==='PRESITE'){
     // Launch the pre-site inspection tool instead of logging plain text
     openPresiteTool(id);
     return;
   }
-  addNote(wo, type, text);
+  addNote(wo, type, text, followUp);
   saveDB(DB);
   renderWorkOrderModal(id);
   renderTabCounts(); renderMain();
+  if(followUp){ toast('Follow-up set for '+formatFollowUp(followUp)+'.'); }
 }
 
 /* Admin note edit/delete */
@@ -773,7 +907,7 @@ function adminDeleteWorkOrder(id){
   saveDB(DB); closeModal(); renderTabCounts(); renderMain();
 }
 
-function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; WO_JOB_EDIT=false; JD_EDIT=null; }
 function toast(msg){
   const t=document.createElement('div');
   t.textContent=msg;
