@@ -99,7 +99,8 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .noteEntryRow select{padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
 .noteEntryRow input{flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;}
 .noteEntryRow textarea{flex:1;min-width:180px;min-height:38px;max-height:60vh;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;font-family:inherit;font-size:.95em;resize:both;overflow:auto;line-height:1.4;}
-.noteItem{background:var(--cream);border-left:3px solid var(--orange);border-radius:6px;padding:10px 14px;margin-bottom:8px;}
+.noteItem{background:var(--cream);border-left:3px solid var(--orange);border-radius:6px;padding:10px 14px;margin-bottom:8px;max-width:100%;overflow-wrap:anywhere;word-break:break-word;box-sizing:border-box;}
+.noteItem > div:last-child{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
 .noteItem .noteMeta{font-size:.72em;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
 .noteItem .noteType{font-weight:700;color:var(--navy);}
 .noteItem .noteActions{display:flex;gap:8px;}
