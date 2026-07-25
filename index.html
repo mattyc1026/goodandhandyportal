@@ -1171,6 +1171,255 @@ const TRADE_KB = {
 };
 const GENERIC_DISCLAIMERS=['This estimate is valid for 30 days from the date issued','Additional work outside this scope requires written approval before proceeding','All prices reflect standard San Diego-area market rates as of the current season and may vary based on site access and material availability'];
 
+/* ---- Specific task library — matches concrete "action + object" phrasing in the notes
+   (e.g. "remove and replace an existing toilet") and produces a precisely-labeled labor
+   line item instead of a whole trade's generic checklist. This is what keeps the compiled
+   lists focused on what was actually described rather than everything that trade could involve. ---- */
+function pushUnique(arr, entry){ if(!arr.some(e=>e.item===entry.item)) arr.push(entry); }
+function pushUniqueStr(arr, val){ if(!arr.includes(val)) arr.push(val); }
+function splitClauses(text){
+  return (text||'').split(/[,.;\n]|\band then\b|\balso\b/i).map(s=>s.trim()).filter(Boolean);
+}
+function detectActionForClause(clause){
+  if(/\b(remove\s*(and|\/)?\s*replace|remove and install|swap out|swap the|swap a|replace the|replace an?|replace)\b/i.test(clause)) return 'replace';
+  if(/\b(repair|fix|unclog|patch up|patch)\b/i.test(clause)) return 'repair';
+  if(/\b(install|add|put in|hang|mount)\b/i.test(clause)) return 'install';
+  return 'service';
+}
+function detectActionObject(text, objRe){
+  const clauses=splitClauses(text);
+  for(const c of clauses){
+    if(objRe.test(c)) return {action:detectActionForClause(c), clause:c};
+  }
+  return null;
+}
+function taskLabel(taskDef, action){
+  switch(action){
+    case 'replace': return `Remove/Replace Existing ${taskDef.label}`;
+    case 'install': return `Install New ${taskDef.label}`;
+    case 'repair': return `Repair ${taskDef.label}`;
+    default: return `Diagnose and Address ${taskDef.label} Issue`;
+  }
+}
+function addTaskToMerged(merged, taskDef, action){
+  const label=taskLabel(taskDef, action);
+  const price=(taskDef.prices && taskDef.prices[action]) || (taskDef.prices && taskDef.prices.service) || '';
+  pushUnique(merged.labor, {item:label, price});
+  (taskDef.materials||[]).forEach(entry=>pushUnique(merged.materials, entry));
+  (taskDef.tools||[]).forEach(t=>pushUniqueStr(merged.tools, t));
+  (taskDef.issues||[]).forEach(i=>pushUniqueStr(merged.issues, i));
+  (taskDef.disclaimers||[]).forEach(d=>pushUniqueStr(merged.disclaimers, d));
+}
+
+const TASK_OBJECTS = [
+  { id:'toilet', trade:'plumbing', re:/\btoilet(s)?\b/i, label:'Toilet',
+    prices:{replace:'$220–$375', install:'$260–$420', repair:'$110–$200', service:'$140–$250'},
+    materials:[{item:'Wax ring with flange',price:'$8–$15'},{item:'Toilet bolts/cap kit',price:'$6–$12'},{item:'Braided toilet supply line',price:'$10–$18'},{item:'Toilet (customer-selected, mid-grade)',price:'$180–$350'}],
+    tools:['Adjustable wrench','Putty knife','Bucket/wet-vac for residual water','Level'],
+    issues:['Old wax ring may have leaked, requiring subfloor inspection/repair','Shutoff valve may be seized and need replacement before installation']
+  },
+  { id:'faucet', trade:'plumbing', re:/\bfaucet(s)?\b/i, label:'Faucet',
+    prices:{replace:'$150–$300', install:'$150–$320', repair:'$90–$175', service:'$100–$180'},
+    materials:[{item:'Supply lines (pair)',price:'$12–$25'},{item:"Plumber's putty/sealant",price:'$6–$12'},{item:'Faucet (customer-selected, mid-grade)',price:'$110–$320'}],
+    tools:['Basin wrench','Adjustable wrench','Bucket'],
+    issues:['Corroded shutoff valves may need replacement before the new faucet can be installed']
+  },
+  { id:'disposal', trade:'plumbing', re:/\b(garbage )?disposal(s)?\b/i, label:'Garbage Disposal',
+    prices:{replace:'$180–$320', install:'$200–$350', repair:'$110–$200', service:'$120–$220'},
+    materials:[{item:'Garbage disposal unit (customer-selected, mid-grade)',price:'$120–$280'},{item:'Disposal mounting/connector kit',price:'$10–$20'}],
+    tools:['Adjustable wrench','Screwdriver set','Bucket'],
+    issues:['Existing plumbing/electrical connections under the sink may not match the new unit and require adapting']
+  },
+  { id:'water_heater', trade:'plumbing', re:/\bwater heater(s)?\b/i, label:'Water Heater',
+    prices:{replace:'$1200–$2200', install:'$1300–$2400', repair:'$180–$400', service:'$150–$300'},
+    materials:[{item:'Water heater (customer-selected, standard tank)',price:'$900–$1800'},{item:'Supply/expansion fittings',price:'$30–$70'},{item:'Venting/flue materials (if needed)',price:'$40–$120'}],
+    tools:['Pipe wrench set','Tubing cutter','Multimeter (for electric units)'],
+    issues:['Existing venting or gas line may not meet current code and could require upgrading','Permit and inspection are typically required for water heater replacement']
+  },
+  { id:'dishwasher', trade:'appliance', re:/\bdishwasher(s)?\b/i, label:'Dishwasher',
+    prices:{replace:'$220–$400', install:'$220–$420', repair:'$130–$250', service:'$120–$220'},
+    materials:[{item:'Dishwasher supply/drain kit',price:'$20–$40'},{item:'Dishwasher (customer-selected, mid-grade)',price:'$450–$900'}],
+    tools:['Adjustable wrench','Screwdriver set','Level'],
+    issues:["Existing cabinet opening or connections may not match the new unit's dimensions"]
+  },
+  { id:'sink', trade:'plumbing', re:/\bsink(s)?\b/i, label:'Sink',
+    prices:{replace:'$220–$400', install:'$250–$450', repair:'$110–$200', service:'$120–$220'},
+    materials:[{item:'Sink basin (customer-selected, mid-grade)',price:'$150–$400'},{item:'P-trap and drain assembly',price:'$15–$30'},{item:'Silicone sealant/mounting clips',price:'$8–$15'}],
+    tools:['Basin wrench','Adjustable wrench','Bucket','Caulk gun'],
+    issues:['Countertop cutout may need adjustment to fit a differently-sized new sink']
+  },
+  { id:'gfci', trade:'electrical', re:/\bgfci\b/i, label:'GFCI Outlet',
+    prices:{replace:'$135–$225', install:'$135–$225', repair:'$85–$150', service:'$85–$150'},
+    materials:[{item:'GFCI device',price:'$18–$35 each'},{item:'Cover plate',price:'$2–$8 each'},{item:'Wire nuts',price:'$3–$6'}],
+    tools:['Voltage tester','Wire strippers','Screwdriver set'],
+    issues:['Downstream outlets protected by this GFCI may also need to be tested/updated']
+  },
+  { id:'outlet', trade:'electrical', re:/\boutlet(s)?\b/i, label:'Outlet', skipIfMatched:['gfci'],
+    prices:{replace:'$95–$175', install:'$95–$175', repair:'$70–$120', service:'$75–$130'},
+    materials:[{item:'Standard outlet',price:'$4–$12 each'},{item:'Cover plate',price:'$2–$8 each'},{item:'Wire nuts',price:'$3–$6'}],
+    tools:['Voltage tester','Wire strippers','Screwdriver set'],
+    issues:['Existing wiring may not meet current code and could require upgrading']
+  },
+  { id:'switch', trade:'electrical', re:/\b(light )?switch(es)?\b/i, label:'Switch',
+    prices:{replace:'$95–$165', install:'$95–$175', repair:'$70–$120', service:'$75–$130'},
+    materials:[{item:'Standard switch',price:'$4–$12 each'},{item:'Cover plate',price:'$2–$8 each'},{item:'Wire nuts',price:'$3–$6'}],
+    tools:['Voltage tester','Wire strippers','Screwdriver set'],
+    issues:['Multi-way (3-way/4-way) switch setups may require additional wiring verification']
+  },
+  { id:'light_fixture', trade:'electrical', re:/\blight fixture(s)?\b/i, label:'Light Fixture',
+    prices:{replace:'$120–$280', install:'$120–$300', repair:'$90–$175', service:'$90–$160'},
+    materials:[{item:'Light fixture (customer-selected, mid-grade)',price:'$60–$250'},{item:'Wire nuts',price:'$3–$6'},{item:'Mounting hardware (if not included)',price:'$5–$15'}],
+    tools:['Voltage tester','Ladder','Screwdriver set'],
+    issues:['Existing electrical box may not support the weight/style of the new fixture']
+  },
+  { id:'recessed_light', trade:'electrical', re:/\brecessed (can )?light(s|ing)?\b/i, label:'Recessed Light',
+    prices:{replace:'$130–$260 each', install:'$150–$300 each', repair:'$90–$160 each', service:'$90–$160 each'},
+    materials:[{item:'Recessed light/can kit',price:'$25–$60 each'},{item:'Wire nuts',price:'$3–$6'}],
+    tools:['Voltage tester','Ladder','Drywall saw (if new can location)','Screwdriver set'],
+    issues:['Cutting a new ceiling opening may reveal joists/obstructions requiring the layout to shift']
+  },
+  { id:'thermostat', trade:'hvac_light', re:/\bthermostat(s)?\b/i, label:'Thermostat',
+    prices:{replace:'$100–$225', install:'$100–$225', repair:'$85–$150', service:'$85–$150'},
+    materials:[{item:'Smart or standard thermostat (customer-selected)',price:'$100–$280'}],
+    tools:['Voltage tester','Screwdriver set'],
+    issues:['Existing low-voltage wiring may not have enough conductors for a smart thermostat (may need a C-wire adapter)']
+  },
+  { id:'interior_door', trade:'carpentry', re:/\binterior door(s)?\b/i, label:'Interior Door',
+    prices:{replace:'$180–$320', install:'$150–$300', repair:'$90–$180', service:'$90–$160'},
+    materials:[{item:'Interior door slab (mid-grade)',price:'$110–$280'},{item:'Hinges and hardware',price:'$15–$40'},{item:'Shims/fasteners',price:'$5–$10'}],
+    tools:['Miter saw','Drill/driver','Level','Chisel set'],
+    issues:['Out-of-square door openings common in older homes may require additional scribing/fitting time']
+  },
+  { id:'exterior_door', trade:'carpentry', re:/\bexterior door(s)?\b/i, label:'Exterior Door',
+    prices:{replace:'$350–$700', install:'$300–$650', repair:'$120–$250', service:'$120–$220'},
+    materials:[{item:'Exterior door slab (mid-grade)',price:'$250–$650'},{item:'Weatherstripping/threshold kit',price:'$20–$45'},{item:'Hinges and hardware',price:'$20–$50'}],
+    tools:['Miter saw','Drill/driver','Level','Caulk gun'],
+    issues:['Existing rough opening may have water damage or be out of level, requiring additional framing repair']
+  },
+  { id:'drywall_patch', trade:'drywall', re:/\bdrywall\b/i, label:'Drywall Patch',
+    excludeIf:(text)=>isCeilingFanInstall(text),
+    prices:{replace:'$180–$350', install:'$180–$350', repair:'$150–$300', service:'$120–$250'},
+    materials:[{item:'Drywall patch/sheet',price:'$14–$22 per 4x8 sheet'},{item:'Joint compound',price:'$14–$22 per bucket'},{item:'Drywall tape',price:'$4–$8'}],
+    tools:['Drywall saw','Taping knives','Sanding sponge/pole sander'],
+    issues:['Damage may extend behind the visible area (water/pest related) and require a larger repair','Texture matching to surrounding wall may require additional time']
+  },
+  { id:'fence_panel', trade:'fencing', re:/\bfence (panel|section|post)(s)?\b/i, label:'Fence Panel',
+    prices:{replace:'$220–$450 per panel', install:'$220–$450 per panel', repair:'$120–$250 per panel', service:'$120–$220'},
+    materials:[{item:'Fence post',price:'$18–$40 each'},{item:'Rails and pickets/panels (per linear ft)',price:'$12–$28'},{item:'Concrete mix (per post)',price:'$8–$14'}],
+    tools:['Post hole digger / auger','Level','Circular saw','Drill/driver'],
+    issues:['Underground utility lines must be located (call 811) before digging, which may affect post placement']
+  }
+];
+
+/* ---- Ceiling fan install — flagship "dig deeper" scenario. If the wiring situation isn't
+   already clear from the notes, the assistant asks targeted follow-ups (wire length, access,
+   drywall/stud cutting) so the resulting labor/materials/tools reflect the real scope instead
+   of a generic guess. ---- */
+function isCeilingFanInstall(text){
+  return /ceiling fan/i.test(text) && /\b(install|hang|put up|add|mount)\b/i.test(text);
+}
+const CEILING_FAN_QUESTIONS = {
+  wiringStatus:{
+    text:'Is there existing wiring already run to the fan location, or will new wiring need to be installed?',
+    parse(a){ const t=a.toLowerCase();
+      if(/no existing|not existing|no wiring|not wired|no power|\bnone\b|need(s)? new|\bnew\b/.test(t)) return 'new';
+      if(/exist|already|there'?s power|has power|current wiring/.test(t)) return 'existing';
+      return null; }
+  },
+  wireLength:{
+    text:'About how many feet of new wiring will need to be run to reach a power source?',
+    parse(a){ const m=a.match(/(\d+)/); return m?m[1]:null; }
+  },
+  access:{
+    text:'Is there attic or crawlspace access to run the wire, or is the space finished/closed off?',
+    parse(a){ const t=a.toLowerCase();
+      if(/no attic|no crawlspace|not accessible|inaccessible|finished (ceiling|space|attic)|sealed|closed off|no access/.test(t)) return 'inaccessible';
+      if(/attic|crawlspace|accessible|open access|can access/.test(t)) return 'accessible';
+      return null; }
+  },
+  cutting:{
+    text:'Will running this wire require cutting into drywall and/or drilling through studs?',
+    parse(a){ const t=a.toLowerCase().trim();
+      if(/^no\b|^n\b|not needed|not required|won'?t need|without cutting|no cutting|no drilling/.test(t)) return false;
+      if(/^yes\b|^y\b|will need|cutting|drilling/.test(t)) return true;
+      return null; }
+  }
+};
+function nextCeilingFanQuestionKey(){
+  const ctx=PRESITE_STATE.ctx;
+  const text=combinedText();
+  if(ctx.wiringStatus===undefined){
+    const t=text.toLowerCase();
+    if(/no existing wiring|new wiring|needs? (a )?new circuit|not (currently )?wired|no power (there|at that location)/.test(t)) ctx.wiringStatus='new';
+    else if(/existing wiring|already wired|wiring (is )?already (there|in place)|power (is )?already there/.test(t)) ctx.wiringStatus='existing';
+  }
+  if(ctx.wiringStatus===undefined) return PRESITE_STATE.askedKeys.includes('wiringStatus') ? null : 'wiringStatus';
+  if(ctx.wiringStatus==='new'){
+    if(ctx.wireLength===undefined){
+      const m=text.match(/(\d+)\s*(ft|feet|foot|')\b/i);
+      if(m) ctx.wireLength=m[1];
+    }
+    if(ctx.wireLength===undefined) return PRESITE_STATE.askedKeys.includes('wireLength') ? null : 'wireLength';
+    if(ctx.access===undefined){
+      if(/no attic access|no crawlspace access|finished ceiling|sealed|closed off|inaccessible/i.test(text)) ctx.access='inaccessible';
+      else if(/attic access|crawlspace access|\bcan access\b|\baccessible\b/i.test(text)) ctx.access='accessible';
+    }
+    if(ctx.access===undefined) return PRESITE_STATE.askedKeys.includes('access') ? null : 'access';
+    if(ctx.cutting===undefined){
+      if(/no cutting|won'?t need to cut|without cutting|no drywall cutting/i.test(text)) ctx.cutting=false;
+      else if(/cutting( into)? drywall|drill(ing)? through studs|open(ing)? up the (wall|ceiling)/i.test(text)) ctx.cutting=true;
+    }
+    if(ctx.cutting===undefined) return PRESITE_STATE.askedKeys.includes('cutting') ? null : 'cutting';
+  }
+  return null;
+}
+function addCeilingFanToMerged(merged, ctx){
+  const wiring = ctx.wiringStatus || 'existing';
+  if(wiring==='existing'){
+    pushUnique(merged.labor, {item:'Install Ceiling Fan (Existing Wiring)', price:'$120–$220'});
+    pushUnique(merged.materials, {item:'Fan-rated electrical box (if needed)', price:'$12–$25'});
+    pushUnique(merged.materials, {item:'Mounting bracket/hardware (usually included with fan)', price:'—'});
+    pushUnique(merged.materials, {item:'Wire nuts', price:'$3–$6'});
+    ['Voltage tester','Stud finder','Ladder','Screwdriver set'].forEach(t=>pushUniqueStr(merged.tools,t));
+    pushUniqueStr(merged.issues,'Existing electrical box may not be fan-rated and will need to be swapped for safety');
+    pushUniqueStr(merged.issues,'Ceiling height/vaulted ceilings may require a fan downrod extension');
+  } else {
+    const feet = ctx.wireLength ? parseInt(ctx.wireLength,10) : null;
+    const accessible = ctx.access==='accessible';
+    const cutting = ctx.cutting===true || (ctx.cutting===undefined && ctx.access==='inaccessible');
+    const laborRange = accessible ? '$285–$450' : '$400–$650';
+    pushUnique(merged.labor, {item:'Install Ceiling Fan (New Wiring)', price:laborRange});
+    pushUnique(merged.labor, {item:'Run new electrical wiring to fan location'+(feet?` (~${feet} ft)`:''), price: accessible ? '$4–$7 per linear ft' : '$8–$14 per linear ft'});
+    if(cutting){
+      pushUnique(merged.labor, {item:'Cut and patch drywall for wire access', price:'$150–$350'});
+      pushUnique(merged.materials, {item:'Drywall patch materials (mud, tape, patch)', price:'$25–$50'});
+      pushUniqueStr(merged.tools,'Drywall saw');
+    }
+    const wireFeet = feet ? Math.ceil(feet*1.15) : null;
+    pushUnique(merged.materials, {item:'14/2 Romex wire'+(wireFeet?` (~${wireFeet} ft incl. waste)`:''), price:'$0.70–$1.10 per ft'});
+    pushUnique(merged.materials, {item:'Fan-rated electrical box', price:'$12–$25'});
+    pushUnique(merged.materials, {item:'Wire nuts / electrical tape', price:'$5–$10'});
+    pushUnique(merged.materials, {item:'Wall switch/switch leg (if not already present)', price:'$4–$12'});
+    ['Voltage tester','Fish tape','Stud finder','Wire strippers','Ladder'].forEach(t=>pushUniqueStr(merged.tools,t));
+    if(!accessible){
+      pushUniqueStr(merged.issues,'Fishing wire through closed/finished spaces may require additional drywall openings not fully accounted for here');
+    }
+    pushUniqueStr(merged.issues,'Panel may not have available capacity for an additional circuit');
+    pushUniqueStr(merged.issues,'Older homes may have non-standard framing that complicates running new wire');
+  }
+}
+function getSatisfiedTrades(text){
+  const set=new Set();
+  const matchedTaskIds=new Set();
+  TASK_OBJECTS.forEach(taskDef=>{
+    if(taskDef.skipIfMatched && taskDef.skipIfMatched.some(id=>matchedTaskIds.has(id))) return;
+    if(taskDef.excludeIf && taskDef.excludeIf(text)) return;
+    if(detectActionObject(text, taskDef.re)){ matchedTaskIds.add(taskDef.id); set.add(taskDef.trade); }
+  });
+  if(isCeilingFanInstall(text)){ set.add('ceiling_fan'); set.add('electrical'); set.add('drywall'); }
+  return set;
+}
+
 /* ---- Clarifying questions per trade — several signals checked per trade so the
    assistant can pick up on quantities/dimensions phrased in different ways ---- */
 const TRADE_QUESTIONS = {
@@ -1194,17 +1443,22 @@ function detectTrades(text){
 }
 function combinedText(){
   const wo=getWO(PRESITE_STATE.woId);
-  const chatText=PRESITE_STATE.chat.map(m=>m.text).join(' ');
+  const chatText=PRESITE_STATE.chat.filter(m=>m.role==='user').map(m=>m.text).join(' ');
   return (wo.jobDetails.description||'') + ' ' + chatText;
 }
-function nextClarifyingQuestion(){
+function determineNextQuestion(){
   const text=combinedText();
-  const trades=detectTrades(text);
+  if(isCeilingFanInstall(text)){
+    const key=nextCeilingFanQuestionKey();
+    if(key) return {type:'structured', key};
+  }
+  const satisfied=getSatisfiedTrades(text);
+  const trades=detectTrades(text).filter(t=>!satisfied.has(t));
   for(const trade of trades){
     const q=TRADE_QUESTIONS[trade];
     if(q && q.test(text) && !PRESITE_STATE.askedQuestions.includes(trade)){
       PRESITE_STATE.askedQuestions.push(trade);
-      return q.q;
+      return {type:'legacy', text:q.q};
     }
   }
   return null;
@@ -1213,6 +1467,7 @@ function nextClarifyingQuestion(){
 function openPresiteTool(woId){
   const wo=getWO(woId);
   PRESITE_STATE={woId, chat:[], lists:null, stage:'chat', reviewIdx:0, askedQuestions:[],
+    ctx:{}, askedKeys:[], awaitingKey:null,
     reviewOrder:['labor','materials','tools','issues','disclaimers']};
   renderPresiteModal();
 }
@@ -1233,12 +1488,12 @@ function renderPresiteBody(){
   const wo=getWO(PRESITE_STATE.woId);
   if(PRESITE_STATE.stage==='chat'){
     body.innerHTML=`
-      <p class="small">Describe the job below. The assistant draws on a built-in general-contractor knowledge base (plumbing, electrical, tile, carpentry, painting, fencing, ceiling fans, drywall, appliances, irrigation, and general repairs) to ask a couple of quick clarifying questions, then compile labor, materials, tools, potential issues, and disclaimers. Runs entirely on this device — no internet call required.</p>
+      <p class="small">Describe the job below in your own words. The assistant looks for specific tasks (e.g. "remove and replace an existing toilet," "install a ceiling fan") and turns each one into a precisely-labeled labor line item — rather than dumping a whole trade's generic checklist. When a task's scope genuinely depends on site conditions (like whether a new ceiling fan circuit needs new wiring), it will ask a couple of targeted follow-up questions before compiling, so nothing important gets missed. Runs entirely on this device — no internet call required.</p>
       <div class="aiPanel">
         <h4>Pre-Site Assistant</h4>
         <div class="chatLog" id="chatLog">${renderChatLog()}</div>
         <div class="aiInputRow">
-          <input id="chatInput" placeholder="e.g. Replace 3 exterior GFCI outlets, install a new ceiling fan..." onkeydown="if(event.key==='Enter')sendPresiteChat()">
+          <input id="chatInput" placeholder="e.g. We will need to remove and replace an existing toilet, and install a ceiling fan with new wiring..." onkeydown="if(event.key==='Enter')sendPresiteChat()">
           <button class="btn" onclick="sendPresiteChat()">Send</button>
         </div>
         <div style="margin-top:10px;"><button class="btn" onclick="generatePresiteLists()">Compile Lists Now</button></div>
@@ -1279,9 +1534,24 @@ function sendPresiteChat(){
   if(!msg) return;
   PRESITE_STATE.chat.push({role:'user', text:msg});
   input.value='';
-  const q=nextClarifyingQuestion();
-  if(q){
-    PRESITE_STATE.chat.push({role:'ai', text:q});
+
+  // If we just asked a structured follow-up (e.g. ceiling fan wiring details), parse this reply as its answer
+  if(PRESITE_STATE.awaitingKey){
+    const qd=CEILING_FAN_QUESTIONS[PRESITE_STATE.awaitingKey];
+    if(qd){
+      const parsed=qd.parse(msg);
+      if(parsed!==null && parsed!==undefined) PRESITE_STATE.ctx[PRESITE_STATE.awaitingKey]=parsed;
+    }
+    PRESITE_STATE.awaitingKey=null;
+  }
+
+  const next=determineNextQuestion();
+  if(next && next.type==='structured'){
+    PRESITE_STATE.askedKeys.push(next.key);
+    PRESITE_STATE.awaitingKey=next.key;
+    PRESITE_STATE.chat.push({role:'ai', text:CEILING_FAN_QUESTIONS[next.key].text});
+  } else if(next && next.type==='legacy'){
+    PRESITE_STATE.chat.push({role:'ai', text:next.text});
   } else {
     PRESITE_STATE.chat.push({role:'ai', text:'Got what I need — click "Compile Lists Now" below when you\'re ready.'});
   }
@@ -1289,21 +1559,49 @@ function sendPresiteChat(){
 }
 function generatePresiteLists(){
   const text=combinedText();
-  const trades=detectTrades(text);
   const merged={labor:[],materials:[],tools:[],issues:[],disclaimers:[]};
-  trades.forEach(trade=>{
+  const satisfiedTrades=new Set();
+  const matchedTaskIds=new Set();
+
+  // 1. Specific "action + object" tasks described in the notes (e.g. "remove and replace a toilet")
+  TASK_OBJECTS.forEach(taskDef=>{
+    if(taskDef.skipIfMatched && taskDef.skipIfMatched.some(id=>matchedTaskIds.has(id))) return;
+    if(taskDef.excludeIf && taskDef.excludeIf(text)) return;
+    const match=detectActionObject(text, taskDef.re);
+    if(match){
+      matchedTaskIds.add(taskDef.id);
+      addTaskToMerged(merged, taskDef, match.action);
+      satisfiedTrades.add(taskDef.trade);
+    }
+  });
+
+  // 2. Ceiling fan install, using any wiring details gathered through clarifying questions
+  if(isCeilingFanInstall(text)){
+    addCeilingFanToMerged(merged, PRESITE_STATE.ctx);
+    satisfiedTrades.add('ceiling_fan');
+    satisfiedTrades.add('electrical'); // fan wiring already produces its own precise electrical items
+    satisfiedTrades.add('drywall'); // any drywall cutting is already covered by the fan-specific line item above
+  }
+
+  // 3. Broad trade-level fallback only for trades not already covered by a specific task above,
+  //    so the compiled list stays focused on what was actually described.
+  const detected=detectTrades(text);
+  const broadTrades=detected.filter(t=>t!=='general' && !satisfiedTrades.has(t));
+  if(merged.labor.length===0 && broadTrades.length===0 && detected.includes('general')){
+    broadTrades.push('general');
+  }
+  broadTrades.forEach(trade=>{
     const kb=TRADE_KB[trade];
     ['labor','materials'].forEach(k=>{
-      kb[k].forEach(entry=>{
-        if(!merged[k].some(e=>e.item===entry.item)) merged[k].push({item:entry.item, price:entry.price});
-      });
+      kb[k].forEach(entry=>{ if(!merged[k].some(e=>e.item===entry.item)) merged[k].push({item:entry.item, price:entry.price}); });
     });
     ['tools','issues','disclaimers'].forEach(k=>{
       kb[k].forEach(item=>{ if(!merged[k].includes(item)) merged[k].push(item); });
     });
   });
+
   GENERIC_DISCLAIMERS.forEach(d=>{ if(!merged.disclaimers.includes(d)) merged.disclaimers.push(d); });
-  toast('Lists compiled from the trade knowledge base — review each list below.');
+  toast('Lists compiled from the specific tasks described — review each list below.');
   PRESITE_STATE.lists=merged;
   PRESITE_STATE.stage='review';
   PRESITE_STATE.reviewIdx=0;
