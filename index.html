@@ -69,7 +69,7 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .woRow .woName{font-weight:700;color:var(--navy);}
 .woRow .woSub{font-size:.8em;color:var(--muted);}
 .woRow .woMeta{display:flex;align-items:center;gap:10px;font-size:.78em;color:var(--muted);}
-.tag{padding:2px 9px;border-radius:20px;font-size:.75em;font-weight:700;letter-spacing:.03em;}
+.tag{padding:2px 9px;border-radius:20px;font-size:.75em;font-weight:700;letter-spacing:.03em;white-space:nowrap;}
 .tag.pending{background:#fde3e3;color:var(--redb);}
 .tag.sched{background:#fff1cf;color:var(--yellowb);}
 .tag.go{background:#dcf5e8;color:var(--greenb);}
@@ -233,7 +233,7 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
     <button data-tab="estimates" onclick="switchTab('estimates')">Estimates <span class="count" id="cnt-estimates">0</span></button>
     <button data-tab="invoices" onclick="switchTab('invoices')">Invoices <span class="count" id="cnt-invoices">0</span></button>
     <button data-tab="surveys" onclick="switchTab('surveys')">Surveys <span class="count" id="cnt-surveys">0</span></button>
-    <button data-tab="jobhistory" onclick="switchTab('jobhistory')">Job History <span class="count" id="cnt-jobhistory">0</span></button>
+    <button data-tab="jobhistory" onclick="switchTab('jobhistory')">Job History</button>
   </nav>
   <main id="mainArea"></main>
 </div>
@@ -576,7 +576,6 @@ function renderTabCounts(){
   document.getElementById('cnt-estimates').textContent = DB.workOrders.filter(inEstimatesList).length;
   document.getElementById('cnt-invoices').textContent = DB.workOrders.filter(inInvoicesList).length;
   document.getElementById('cnt-surveys').textContent = DB.workOrders.filter(inSurveysList).length;
-  document.getElementById('cnt-jobhistory').textContent = DB.workOrders.filter(inJobHistoryList).length;
 }
 function subGroupHTML(label, list, opts){
   opts=opts||{};
