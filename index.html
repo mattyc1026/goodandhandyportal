@@ -825,7 +825,10 @@ function confirmJobComplete(id, checkboxEl){
     if(yes){
       wo.jobComplete=true;
       saveDB(DB);
-      openInvoiceSplit(id);
+      closeModal();
+      renderTabCounts();
+      renderMain();
+      toast('Job marked complete — moved to Build Invoice.');
     }
   });
 }
@@ -2319,9 +2322,15 @@ function parsePriceRange(str){
   return [low, high];
 }
 
-/* Sum every priced material into a single low/high range, add a 20% markup
-   (waste/overage/handling) on top of that sum, and return one combined
-   line item labeled "Materials" instead of the individual entries. */
+/* California statewide base sales tax rate. Local district add-ons vary by
+   jurisdiction and aren't accounted for here — this uses the base rate. */
+const CA_SALES_TAX_RATE = 0.0725;
+
+/* Sum every priced material into a single low/high range, then combine three
+   pieces into one final number: the raw materials sum, a 20% markup
+   (waste/overage/handling) on that sum, and CA sales tax calculated on the
+   raw materials sum (before the markup is added). Returns one combined line
+   item labeled "Materials" instead of the individual entries. */
 function buildMaterialsLineItem(materials){
   let lowSum=0, highSum=0, any=false;
   (materials||[]).forEach(m=>{
@@ -2329,8 +2338,12 @@ function buildMaterialsLineItem(materials){
     if(range){ any=true; lowSum+=range[0]; highSum+=range[1]; }
   });
   if(!any) return [];
-  const lowFinal = lowSum * 1.2;
-  const highFinal = highSum * 1.2;
+  const markupLow = lowSum * 0.2;
+  const markupHigh = highSum * 0.2;
+  const taxLow = lowSum * CA_SALES_TAX_RATE;
+  const taxHigh = highSum * CA_SALES_TAX_RATE;
+  const lowFinal = lowSum + markupLow + taxLow;
+  const highFinal = highSum + markupHigh + taxHigh;
   const fmt = n => '$' + n.toFixed(2).replace(/\.00$/,'');
   const price = (Math.round(lowFinal*100)===Math.round(highFinal*100))
     ? fmt(lowFinal)
