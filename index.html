@@ -107,7 +107,8 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .subListHeader .count{background:var(--navy);color:#fff;border-radius:999px;font-size:.7em;padding:2px 9px;}
 .jcCheck{display:flex;align-items:center;gap:6px;font-size:.82em;background:var(--cream);padding:4px 10px;border-radius:6px;cursor:pointer;}
 .estDecisionRow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
-.docsTab{border-top:1px solid #eee;margin-top:18px;padding-top:14px;}
+.docsTab{background:var(--paper);}
+.docsTab h4{margin-top:0;}
 .docRow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:8px;flex-wrap:wrap;}
 .docInfo{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .docName{font-weight:600;color:var(--navy);word-break:break-word;}
@@ -137,14 +138,14 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .noteEntryRow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-start;}
 .noteEntryRow select{padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
 .noteEntryRow input{flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;}
-.noteEntryRow textarea{flex:1;min-width:180px;min-height:38px;max-height:60vh;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;font-family:inherit;font-size:.95em;resize:both;overflow:auto;line-height:1.4;}
+.noteEntryRow textarea{flex:1;min-width:180px;min-height:96px;max-height:60vh;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;font-family:inherit;font-size:.95em;resize:both;overflow:auto;line-height:1.4;}
 .noteItem{background:var(--cream);border-left:3px solid var(--orange);border-radius:6px;padding:10px 14px;margin-bottom:8px;max-width:100%;overflow-wrap:anywhere;word-break:break-word;box-sizing:border-box;}
 .noteItem > div:last-child{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
 .noteItem .noteMeta{font-size:.72em;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
 .noteItem .noteType{font-weight:700;color:var(--navy);}
 .noteItem .noteActions{display:flex;gap:8px;}
 .noteItem .noteActions button{background:none;border:none;font-size:.75em;color:var(--redb);padding:0;}
-.adminTab{margin-top:16px;background:#fff7ea;border:1px solid #f0d9a8;border-radius:8px;padding:12px 14px;}
+.adminTab{background:#fff7ea;border:1px solid #f0d9a8;border-radius:8px;padding:12px 14px;}
 .adminTab h4{margin:0 0 8px;color:#8a5a00;font-size:.85em;}
 .adminLogRow{font-size:.78em;color:#6b5320;margin-bottom:4px;}
 .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -202,7 +203,9 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .followupBadge{display:inline-flex;align-items:center;gap:4px;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:20px;background:#eef1f6;color:var(--navy);white-space:nowrap;}
 .followupBadge.due{background:#fde3e3;color:var(--redb);animation:pulseFollowup 1.6s infinite;}
 @keyframes pulseFollowup{0%,100%{box-shadow:0 0 0 0 rgba(200,50,50,.35);}50%{box-shadow:0 0 0 5px rgba(200,50,50,0);}}
-.noteEntryRow input[type="date"]{flex:0 0 150px;padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
+.noteEntryRow input[type="date"]{flex:0 0 170px;min-width:150px;padding:8px 10px;border-radius:8px;border:1px solid #d8d6cd;background:#fff;color:var(--ink);color-scheme:light;font-size:.85em;}
+.followUpWrap{display:flex;flex-direction:column;gap:3px;flex:0 0 170px;align-self:flex-start;}
+.followUpLabel{font-size:.7em;color:var(--muted);font-weight:600;white-space:nowrap;}
 .noteFollowTag{display:inline-block;font-size:.72em;font-weight:700;padding:1px 7px;border-radius:20px;background:#eef1f6;color:var(--navy);margin-left:6px;}
 .noteFollowTag.due{background:#fde3e3;color:var(--redb);}
 
@@ -262,6 +265,8 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 
   /* ---- misc form rows ---- */
   .noteEntryRow{flex-direction:column;align-items:stretch;}
+  .noteEntryRow select{align-self:flex-start;width:auto;max-width:180px;flex:none;}
+  .followUpWrap{width:100%;flex:none;}
   .noteEntryRow input[type="date"]{flex:none;width:100%;}
   .docRow{flex-direction:column;align-items:flex-start;}
   .docActions{width:100%;}
@@ -897,18 +902,24 @@ function renderWorkOrderModal(id){
   const wo=getWO(id);
   const isAdmin=CURRENT_USER.isAdmin;
   const modal=document.getElementById('modalRoot');
-  modal.innerHTML=`
-  <div class="overlay" id="woOverlay">
-    <div class="modal">
-      <div class="modalHead">
-        <h2>${wo.customer.name || 'New Work Order'}</h2>
-        <div>
-          <button class="adminViewLink" onclick="toggleDocsView(${id})">${WO_DOCS_VIEW?'Hide Docs':'Docs'}${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
-          ${isAdmin ? `<button class="adminViewLink" onclick="toggleAdminView(${id})">${WO_ADMIN_VIEW?'Hide Admin View':'Admin View'}</button>` : ''}
-          <button class="closeX" onclick="closeModal()" style="display:inline">&times;</button>
-        </div>
-      </div>
-      <div class="modalBody">
+
+  let headerTitle = wo.customer.name || 'New Work Order';
+  let headerActions;
+  let bodyHTML;
+
+  if(WO_DOCS_VIEW){
+    headerTitle += ' — Documents';
+    headerActions = `<button class="adminViewLink" onclick="toggleDocsView(${id})">&larr; Back to Work Order</button>`;
+    bodyHTML = docsTabHTML(wo);
+  } else if(isAdmin && WO_ADMIN_VIEW){
+    headerTitle += ' — Admin View';
+    headerActions = `<button class="adminViewLink" onclick="toggleAdminView(${id})">&larr; Back to Work Order</button>`;
+    bodyHTML = adminTabHTML(wo);
+  } else {
+    headerActions = `
+          <button class="adminViewLink" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
+          ${isAdmin ? `<button class="adminViewLink" onclick="toggleAdminView(${id})">Admin View</button>` : ''}`;
+    bodyHTML = `
         <div class="woGrid">
           <div class="custPanel">
             <div class="panelTitle">Customer Information</div>
@@ -943,15 +954,29 @@ function renderWorkOrderModal(id){
           <div class="panelTitle">Notes</div>
           <div class="noteEntryRow">
             <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
-            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="1"></textarea>
-            <input type="date" id="noteFollowUp" title="Follow-up date (optional)">
+            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4"></textarea>
+            <div class="followUpWrap">
+              <label for="noteFollowUp" class="followUpLabel">Follow-up date (optional)</label>
+              <input type="date" id="noteFollowUp" title="Follow-up date (optional)">
+            </div>
             <button class="btn" onclick="submitNote(${id})">Add Note</button>
           </div>
           <div id="notesList">${notesHTML(wo)}</div>
-        </div>
+        </div>`;
+  }
 
-        ${WO_DOCS_VIEW ? docsTabHTML(wo) : ''}
-        ${(isAdmin && WO_ADMIN_VIEW) ? adminTabHTML(wo) : ''}
+  modal.innerHTML=`
+  <div class="overlay" id="woOverlay">
+    <div class="modal">
+      <div class="modalHead">
+        <h2>${headerTitle}</h2>
+        <div>
+          ${headerActions}
+          <button class="closeX" onclick="closeModal()" style="display:inline">&times;</button>
+        </div>
+      </div>
+      <div class="modalBody">
+        ${bodyHTML}
       </div>
       <div class="footerActions">
         ${(isAdmin && WO_ADMIN_VIEW) ? `<button class="btn danger" onclick="adminDeleteWorkOrder(${id})">Delete Work Order</button>` : ''}
