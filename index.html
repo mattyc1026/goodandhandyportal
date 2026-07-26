@@ -10,10 +10,10 @@
 :root{
   --navy:#0f2647; --navy2:#173563; --orange:#e8791a; --orange2:#ff9436;
   --cream:#f7f4ee; --paper:#ffffff; --ink:#182233; --muted:#5c6b82;
-  --red:rgba(200,50,50,.14); --redb:#c83232; --red-bold:rgba(200,50,50,.45);
-  --yellow:rgba(230,170,20,.18); --yellowb:#b8860b; --yellow-bold:rgba(230,170,20,.5);
-  --green:rgba(40,140,90,.16); --greenb:#1f8a55; --green-bold:rgba(40,140,90,.5);
-  --blue:rgba(40,100,200,.16); --blueb:#1f5aa8; --blue-bold:rgba(40,100,200,.5);
+  --red:rgba(200,50,50,.14); --redb:#c83232; --red-bold:rgba(200,50,50,.30);
+  --yellow:rgba(230,170,20,.18); --yellowb:#b8860b; --yellow-bold:rgba(230,170,20,.34);
+  --green:rgba(40,140,90,.16); --greenb:#1f8a55; --green-bold:rgba(40,140,90,.30);
+  --blue:rgba(40,100,200,.16); --blueb:#1f5aa8; --blue-bold:rgba(40,100,200,.30);
   --grey:rgba(120,120,120,.16); --greyb:#666666;
   --radius:10px;
 }
@@ -73,6 +73,19 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .woRow.st-blue{background:var(--blue);border-color:var(--blueb);}
 .woRow.st-blue-bold{background:var(--blue-bold);border:2px solid var(--blueb);}
 .woRow.st-grey{background:var(--grey);border-color:var(--greyb);}
+/* The "bold" rows use a more saturated background, so lighter grey text
+   (used by default for sub/meta/note text) loses contrast against them —
+   darken it specifically in these rows to keep everything readable. */
+.woRow.st-red-bold .woSub, .woRow.st-red-bold .woMeta, .woRow.st-red-bold .woLastNote, .woRow.st-red-bold .woNoteDate,
+.woRow.st-yellow-bold .woSub, .woRow.st-yellow-bold .woMeta, .woRow.st-yellow-bold .woLastNote, .woRow.st-yellow-bold .woNoteDate,
+.woRow.st-green-bold .woSub, .woRow.st-green-bold .woMeta, .woRow.st-green-bold .woLastNote, .woRow.st-green-bold .woNoteDate,
+.woRow.st-blue-bold .woSub, .woRow.st-blue-bold .woMeta, .woRow.st-blue-bold .woLastNote, .woRow.st-blue-bold .woNoteDate{
+  color:var(--ink);
+}
+.woRow.st-red-bold .followupBadge, .woRow.st-yellow-bold .followupBadge,
+.woRow.st-green-bold .followupBadge, .woRow.st-blue-bold .followupBadge{
+  background:rgba(255,255,255,.75);
+}
 .woRow .woMain{display:flex;flex-direction:column;gap:2px;}
 .woRow .woName{font-weight:700;color:var(--navy);}
 .woRow .woSub{font-size:.8em;color:var(--muted);}
@@ -182,6 +195,7 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .adminViewLink{background:none;border:none;color:var(--muted);font-size:.78em;font-weight:600;cursor:pointer;text-decoration:underline;margin-right:14px;}
 .woLastNote{font-size:.78em;color:var(--muted);margin-top:2px;}
 .woLastNote b{color:var(--navy);}
+.woNoteDate{color:#9aa4b2;}
 .followupBadge{display:inline-flex;align-items:center;gap:4px;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:20px;background:#eef1f6;color:var(--navy);white-space:nowrap;}
 .followupBadge.due{background:#fde3e3;color:var(--redb);animation:pulseFollowup 1.6s infinite;}
 @keyframes pulseFollowup{0%,100%{box-shadow:0 0 0 0 rgba(200,50,50,.35);}50%{box-shadow:0 0 0 5px rgba(200,50,50,0);}}
@@ -670,7 +684,7 @@ function rowHTML(wo, opts){
     : `openWorkOrder(${wo.id})`;
   const n=mostRecentNote(wo);
   const lastNoteHTML = n
-    ? `<div class="woLastNote"><b>${n.type}:</b> ${(n.text||'').slice(0,90)}${(n.text||'').length>90?'…':''} <span style="color:#9aa4b2">(${n.date})</span></div>`
+    ? `<div class="woLastNote"><b>${n.type}:</b> ${(n.text||'').slice(0,90)}${(n.text||'').length>90?'…':''} <span class="woNoteDate">(${n.date})</span></div>`
     : '';
   const followUpBadge = (n && n.followUpDate)
     ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span>`
