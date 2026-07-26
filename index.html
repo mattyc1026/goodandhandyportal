@@ -1687,7 +1687,7 @@ function openSplit(id, kind){
             <p class="small" style="margin-top:12px;">Click the ⧉ icon next to any line to copy it, then paste into the builder on the right. It opens in its own tab when you click Generate/Print — close this window when you're done to record the result.</p>
           </div>
           <div class="splitRight">
-            <iframe src="${url}" title="${kind} builder"></iframe>
+            <iframe src="${url}" title="${kind} builder" onload="sendJobDataToBuilder(this, ${id})"></iframe>
           </div>
         </div>
       </div>
@@ -1731,6 +1731,32 @@ function answerYesNo(val){
 
 /* Admin override: allow admins to freely move a work order's stage flags from the work order modal */
 function adminOverridePanel(){ /* reserved */ }
+
+/* =========================================================================
+   AUTOFILL: push pre-site job data into the estimate/invoice builder iframe.
+   The builder app (separate site) must add a message listener that receives
+   this payload and populates its own fields — while keeping every field
+   editable (set .value, never disabled/readonly) until Generate is clicked.
+========================================================================= */
+function sendJobDataToBuilder(iframeEl, id){
+  const wo=getWO(id);
+  if(!wo) return;
+  const jd=wo.jobDetails||{};
+  const payload={
+    source:'gh_portal',
+    type:'presite_data',
+    workOrderId:wo.id,
+    customer:{ name:wo.customer.name, phone:wo.customer.phone, address:wo.customer.address },
+    description: jd.description||'',
+    labor: jd.labor||[],
+    materials: jd.materials||[],
+    issues: jd.issues||[],
+    disclaimers: jd.disclaimers||[]
+  };
+  try{
+    iframeEl.contentWindow.postMessage(payload, '*');
+  }catch(e){ /* builder may not be ready yet; ignore */ }
+}
 
 </script>
 </body>
