@@ -1875,9 +1875,18 @@ function renderPresiteBody(){
         <h5>${labels[key]}</h5>
         <div id="editRows">${items.map((it,i)=>{
           if(isPriced){
+            ensurePricedFields(it);
             const itemVal=(it.item||'').replace(/"/g,'&quot;');
-            const priceVal=(it.price||'').replace(/"/g,'&quot;');
-            return `<div class="editRow"><input value="${itemVal}" placeholder="Item" style="flex:2" onchange="updatePresiteItem('${key}',${i},this.value,'item')"><input value="${priceVal}" placeholder="Price range" style="flex:1" onchange="updatePresiteItem('${key}',${i},this.value,'price')"><button onclick="removePresiteItem('${key}',${i})">✕</button></div>`;
+            const qtyVal=it.qty;
+            const unitVal=it.unit;
+            const totalVal=(parseFloat(it.qty)||0)*(parseFloat(it.unit)||0);
+            return `<div class="editRow">
+              <input value="${itemVal}" placeholder="Item" style="flex:2" onchange="updatePresiteItem('${key}',${i},this.value,'item')">
+              <input type="number" min="0" step="1" value="${qtyVal}" placeholder="Qty" style="flex:0 0 55px" onchange="updatePresiteItem('${key}',${i},this.value,'qty')">
+              <input type="number" min="0" step="0.01" value="${unitVal}" placeholder="$/EA" style="flex:0 0 80px" onchange="updatePresiteItem('${key}',${i},this.value,'unit')">
+              <input value="$${totalVal.toFixed(2)}" placeholder="Total" style="flex:0 0 90px;background:#f2f4f8;font-weight:600;" readonly>
+              <button onclick="removePresiteItem('${key}',${i})">✕</button>
+            </div>`;
           }
           return `<div class="editRow"><input value="${it.replace(/"/g,'&quot;')}" onchange="updatePresiteItem('${key}',${i},this.value)"><button onclick="removePresiteItem('${key}',${i})">✕</button></div>`;
         }).join('')}
@@ -1973,14 +1982,40 @@ function generatePresiteLists(){
   PRESITE_STATE.reviewIdx=0;
   renderPresiteBody();
 }
+// For a priced (labor/materials) item compiled from the trade knowledge base,
+// which only carries a suggested price range string, seed a starting Qty (1)
+// and $/EA (the average of that range) so the Total box has something
+// sensible to show before the user adjusts it.
+function ensurePricedFields(item){
+  if(item.qty===undefined || item.qty===null || item.qty==='') item.qty=1;
+  if(item.unit===undefined || item.unit===null || item.unit===''){
+    const nums=(item.price||'').match(/[\d,]+(?:\.\d+)?/g);
+    if(nums && nums.length){
+      const vals=nums.map(n=>parseFloat(n.replace(/,/g,'')));
+      const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+      item.unit=Math.round(avg*100)/100;
+    } else {
+      item.unit=0;
+    }
+  }
+}
 function updatePresiteItem(key,i,val,field){
-  if(field){ PRESITE_STATE.lists[key][i][field]=val; }
+  if(field){
+    const item=PRESITE_STATE.lists[key][i];
+    item[field]=val;
+    if(field==='qty' || field==='unit'){
+      const q=parseFloat(item.qty)||0;
+      const u=parseFloat(item.unit)||0;
+      item.price='$'+(q*u).toFixed(2);
+    }
+  }
   else { PRESITE_STATE.lists[key][i]=val; }
+  renderPresiteBody();
 }
 function removePresiteItem(key,i){ PRESITE_STATE.lists[key].splice(i,1); renderPresiteBody(); }
 function addPresiteItem(key){
   const isPriced = key==='labor' || key==='materials';
-  PRESITE_STATE.lists[key].push(isPriced ? {item:'', price:''} : '');
+  PRESITE_STATE.lists[key].push(isPriced ? {item:'', qty:1, unit:0, price:'$0.00'} : '');
   renderPresiteBody();
 }
 function presiteReviewBack(){ PRESITE_STATE.reviewIdx--; renderPresiteBody(); }
