@@ -74,6 +74,15 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .tag.sched{background:#fff1cf;color:var(--yellowb);}
 .tag.go{background:#dcf5e8;color:var(--greenb);}
 .emptyState{text-align:center;padding:60px 20px;color:var(--muted);}
+.subListHeader{margin:24px 4px 10px;font-size:1em;color:var(--navy);display:flex;align-items:center;gap:8px;border-bottom:2px solid #eee;padding-bottom:6px;}
+.subListHeader .count{background:var(--navy);color:#fff;border-radius:999px;font-size:.7em;padding:2px 9px;}
+.jcCheck{display:flex;align-items:center;gap:6px;font-size:.82em;background:var(--cream);padding:4px 10px;border-radius:6px;cursor:pointer;}
+.docsTab{border-top:1px solid #eee;margin-top:18px;padding-top:14px;}
+.docRow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:8px;flex-wrap:wrap;}
+.docInfo{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.docName{font-weight:600;color:var(--navy);word-break:break-word;}
+.docActions{display:flex;gap:6px;flex-wrap:wrap;}
+.docActions .btn{padding:5px 10px;font-size:.8em;}
 .newWoBtn{width:100%;border:2px dashed var(--orange);background:transparent;color:var(--orange);border-radius:var(--radius);padding:16px;font-weight:700;font-size:.95em;margin-bottom:16px;}
 .newWoBtn:hover{background:rgba(232,121,26,.08);}
 
@@ -221,6 +230,8 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
     <button data-tab="presite" onclick="switchTab('presite')">Pre-Site Inspections <span class="count" id="cnt-presite">0</span></button>
     <button data-tab="estimates" onclick="switchTab('estimates')">Estimates <span class="count" id="cnt-estimates">0</span></button>
     <button data-tab="invoices" onclick="switchTab('invoices')">Invoices <span class="count" id="cnt-invoices">0</span></button>
+    <button data-tab="surveys" onclick="switchTab('surveys')">Surveys <span class="count" id="cnt-surveys">0</span></button>
+    <button data-tab="jobhistory" onclick="switchTab('jobhistory')">Job History <span class="count" id="cnt-jobhistory">0</span></button>
   </nav>
   <main id="mainArea"></main>
 </div>
@@ -245,6 +256,8 @@ function loadDB(){
 }
 function saveDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); if(!applyingRemote) pushToCloud(); }
 let DB = loadDB();
+normalizeDB(DB);
+if(purgeOldHistory(DB)) saveDB(DB);
 let CURRENT_USER = null; // {username, displayName, isAdmin}
 let ACTIVE_TAB='workorders';
 
@@ -366,7 +379,29 @@ function disconnectSync(){
 }
 
 const ADMIN_USERNAMES=['matthewc','alyssac'];
-const NOTE_TYPES=['NOTE','L/M','WCB','SCHD','RESCHD','PRESITE','SURVEY'];
+const NOTE_TYPES=['NOTE','L/M','WCB','SCHD PRESITE','SCHD','RESCHD','PRESITE','SURVEY'];
+
+/* Ensure work orders created before this feature set have the newer fields. */
+function normalizeWO(wo){
+  if(wo.presiteScheduled===undefined) wo.presiteScheduled=false;
+  if(wo.invoiceApproved===undefined) wo.invoiceApproved=false;
+  if(wo.jobComplete===undefined) wo.jobComplete=false;
+  if(wo.movedToHistoryAt===undefined) wo.movedToHistoryAt=null;
+  if(!Array.isArray(wo.docs)) wo.docs=[];
+  return wo;
+}
+function normalizeDB(db){
+  (db.workOrders||[]).forEach(normalizeWO);
+  return db;
+}
+/* Job History records purge automatically 6 months after they arrive. */
+function purgeOldHistory(db){
+  const cutoff=new Date(); cutoff.setMonth(cutoff.getMonth()-6);
+  const cutoffMs=cutoff.getTime();
+  const before=db.workOrders.length;
+  db.workOrders=db.workOrders.filter(wo=>!(wo.movedToHistoryAt && wo.movedToHistoryAt<cutoffMs));
+  return db.workOrders.length!==before;
+}
 
 function nowStamp(){
   const d=new Date();
@@ -480,6 +515,19 @@ function inEstimatesList(wo){ return wo.presiteDone && !wo.estimateDone; }
 function inInvoicesList(wo){ return wo.estimateDone && !wo.invoiceDone; }
 function inWorkOrdersList(wo){ return !wo.invoiceDone; }
 
+/* Pre-Site sub-lists */
+function inPresiteIncompleteList(wo){ return inPresiteList(wo) && !wo.presiteScheduled; }
+function inPresiteScheduledList(wo){ return inPresiteList(wo) && !!wo.presiteScheduled; }
+
+/* Invoices sub-lists */
+function inInvoicesPendingList(wo){ return inInvoicesList(wo) && !wo.invoiceApproved; }
+function inInvoicesApprovedList(wo){ return inInvoicesList(wo) && wo.invoiceApproved && !wo.jobComplete; }
+function inSendInvoiceList(wo){ return inInvoicesList(wo) && !!wo.jobComplete; }
+
+/* Surveys + Job History */
+function inSurveysList(wo){ return !!wo.invoiceDone && !wo.movedToHistoryAt; }
+function inJobHistoryList(wo){ return !!wo.movedToHistoryAt; }
+
 function addAdminLog(wo, text){
   const ts=nowStamp();
   wo.adminLog.unshift({text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time});
@@ -509,41 +557,58 @@ function switchTab(tab){
   renderMain();
 }
 function renderTabCounts(){
+  if(purgeOldHistory(DB)) saveDB(DB);
   document.getElementById('cnt-workorders').textContent = DB.workOrders.filter(inWorkOrdersList).length;
   document.getElementById('cnt-presite').textContent = DB.workOrders.filter(inPresiteList).length;
   document.getElementById('cnt-estimates').textContent = DB.workOrders.filter(inEstimatesList).length;
   document.getElementById('cnt-invoices').textContent = DB.workOrders.filter(inInvoicesList).length;
+  document.getElementById('cnt-surveys').textContent = DB.workOrders.filter(inSurveysList).length;
+  document.getElementById('cnt-jobhistory').textContent = DB.workOrders.filter(inJobHistoryList).length;
+}
+function subGroupHTML(label, list, opts){
+  opts=opts||{};
+  let inner;
+  if(list.length===0){
+    inner=`<div class="emptyState" style="margin:0 0 18px;">${opts.emptyText||'Nothing here right now.'}</div>`;
+  } else {
+    inner='<div>'+list.map(wo=>rowHTML(wo, opts)).join('')+'</div>';
+  }
+  return `<h3 class="subListHeader">${label} <span class="count">${list.length}</span></h3>${inner}`;
 }
 function renderMain(){
   const main=document.getElementById('mainArea');
-  let list, title, blurb, emptyText, onClickMode;
+  let html='';
   if(ACTIVE_TAB==='workorders'){
-    list=DB.workOrders.filter(inWorkOrdersList); title='Work Orders';
-    blurb='All active jobs, oldest to newest. Highlight shows overall progress.';
-    emptyText='No work orders yet. Create the first one below.';
-  } else if(ACTIVE_TAB==='presite'){
-    list=DB.workOrders.filter(inPresiteList); title='Pre-Site Inspections';
-    blurb='Jobs with customer info on file, awaiting a completed pre-site inspection.';
-    emptyText='Nothing waiting on a pre-site inspection right now.';
-  } else if(ACTIVE_TAB==='estimates'){
-    list=DB.workOrders.filter(inEstimatesList); title='Estimates';
-    blurb='Pre-site is complete — build and send the estimate.';
-    emptyText='No jobs are ready for an estimate right now.';
-  } else {
-    list=DB.workOrders.filter(inInvoicesList); title='Invoices';
-    blurb='Estimate accepted — build and send the invoice.';
-    emptyText='No jobs are ready for an invoice right now.';
-  }
-  list=list.slice().sort((a,b)=>a.id-b.id);
-
-  let html=`<div class="listHeader"><div><h2>${title}</h2><p>${blurb}</p></div></div>`;
-  if(ACTIVE_TAB==='workorders'){
+    const list=DB.workOrders.filter(inWorkOrdersList).sort((a,b)=>a.id-b.id);
+    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>All active jobs, oldest to newest. Highlight shows overall progress.</p></div></div>`;
     html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">+ Create New Work Order</button>`;
-  }
-  if(list.length===0){
-    html+=`<div class="emptyState">${emptyText}</div>`;
+    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No work orders yet. Create the first one below.</div>`;
+  } else if(ACTIVE_TAB==='presite'){
+    const incomplete=DB.workOrders.filter(inPresiteIncompleteList).sort((a,b)=>a.id-b.id);
+    const scheduled=DB.workOrders.filter(inPresiteScheduledList).sort((a,b)=>a.id-b.id);
+    html+=`<div class="listHeader"><div><h2>Pre-Site Inspections</h2><p>Jobs with customer info on file, awaiting a completed pre-site inspection.</p></div></div>`;
+    html+=subGroupHTML('Pre-Site Incomplete', incomplete, {emptyText:'Nothing waiting to be scheduled right now.'});
+    html+=subGroupHTML('Pre-Site Scheduled', scheduled, {emptyText:'Nothing currently scheduled.'});
+  } else if(ACTIVE_TAB==='estimates'){
+    const list=DB.workOrders.filter(inEstimatesList).sort((a,b)=>a.id-b.id);
+    html+=`<div class="listHeader"><div><h2>Estimates</h2><p>Pre-site is complete — build and send the estimate.</p></div></div>`;
+    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No jobs are ready for an estimate right now.</div>`;
+  } else if(ACTIVE_TAB==='invoices'){
+    const pending=DB.workOrders.filter(inInvoicesPendingList).sort((a,b)=>a.id-b.id);
+    const approved=DB.workOrders.filter(inInvoicesApprovedList).sort((a,b)=>a.id-b.id);
+    const sendInvoice=DB.workOrders.filter(inSendInvoiceList).sort((a,b)=>a.id-b.id);
+    html+=`<div class="listHeader"><div><h2>Invoices</h2><p>Estimate accepted — approve the job, mark it complete, then build and send the invoice.</p></div></div>`;
+    html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending approval right now.'});
+    html+=subGroupHTML('Approved', approved, {emptyText:'Nothing approved and in progress right now.', showJobComplete:true});
+    html+=subGroupHTML('Send Invoice', sendInvoice, {emptyText:'No jobs ready to invoice right now.'});
+  } else if(ACTIVE_TAB==='surveys'){
+    const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
+    html+=`<div class="listHeader"><div><h2>Surveys</h2><p>Invoice complete — awaiting a customer survey. Enter a SURVEY note on a job to move it to Job History.</p></div></div>`;
+    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">Nothing awaiting a survey right now.</div>`;
   } else {
-    html+='<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>';
+    const list=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
+    html+=`<div class="listHeader"><div><h2>Job History</h2><p>Completed jobs are kept here for 6 months, then automatically removed.</p></div></div>`;
+    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No completed jobs on file yet.</div>`;
   }
   main.innerHTML=html;
 }
@@ -554,10 +619,11 @@ function woIsFollowUpDue(wo){
   const n=mostRecentNote(wo);
   return !!(n && n.followUpDate && isFollowUpDue(n.followUpDate));
 }
-function rowHTML(wo){
+function rowHTML(wo, opts){
+  opts=opts||{};
   const cls=statusClass(wo);
   const openFn = (ACTIVE_TAB==='estimates') ? `openEstimateSplit(${wo.id})`
-               : (ACTIVE_TAB==='invoices') ? `openInvoiceSplit(${wo.id})`
+               : (ACTIVE_TAB==='invoices' && wo.jobComplete) ? `openInvoiceSplit(${wo.id})`
                : `openWorkOrder(${wo.id})`;
   const n=mostRecentNote(wo);
   const lastNoteHTML = n
@@ -565,6 +631,11 @@ function rowHTML(wo){
     : '';
   const followUpBadge = (n && n.followUpDate)
     ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span>`
+    : '';
+  const jobCompleteCheckbox = opts.showJobComplete
+    ? `<label class="jcCheck" onclick="event.stopPropagation()">
+         <input type="checkbox" ${wo.jobComplete?'checked':''} onchange="confirmJobComplete(${wo.id}, this)"> Job Complete
+       </label>`
     : '';
   return `<div class="woRow ${cls}" onclick="${openFn}">
     <div class="woMain">
@@ -575,9 +646,23 @@ function rowHTML(wo){
     <div class="woMeta">
       ${statusTag(wo)}
       ${followUpBadge}
+      ${jobCompleteCheckbox}
       <span>${wo.customer.address || ''}</span>
     </div>
   </div>`;
+}
+function confirmJobComplete(id, checkboxEl){
+  const wo=getWO(id);
+  if(wo.jobComplete){ return; } // already complete; nothing to toggle back via this checkbox
+  checkboxEl.checked=false; // don't visually check until confirmed
+  askYesNo('Confirm this job is completed? It will move to Send Invoice.', (yes)=>{
+    if(yes){
+      wo.jobComplete=true;
+      saveDB(DB);
+      toast('Job marked complete — moved to Send Invoice.');
+      renderTabCounts(); renderMain();
+    }
+  });
 }
 
 /* =========================================================================
@@ -589,8 +674,9 @@ function openNewWorkOrder(){
     id, createdAt:Date.now(),
     customer:{name:'',phone:'',email:'',address:''},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]},
-    notes:[], adminLog:[],
-    presiteDone:false, estimateDone:false, invoiceDone:false
+    notes:[], adminLog:[], docs:[],
+    presiteDone:false, estimateDone:false, invoiceDone:false,
+    presiteScheduled:false, invoiceApproved:false, jobComplete:false, movedToHistoryAt:null
   };
   DB.workOrders.push(wo);
   saveDB(DB);
@@ -601,7 +687,7 @@ function openNewWorkOrder(){
    WORK ORDER MODAL
 ========================================================================= */
 function getWO(id){ return DB.workOrders.find(w=>w.id===id); }
-let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null;
+let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false;
 
 function openWorkOrder(id){
   const wo=getWO(id);
@@ -609,10 +695,12 @@ function openWorkOrder(id){
   WO_ADMIN_VIEW = false;
   WO_JOB_EDIT = false;
   JD_EDIT = null;
+  WO_DOCS_VIEW = false;
   renderWorkOrderModal(id);
 }
 function toggleCustEdit(id){ WO_CUST_EDIT=!WO_CUST_EDIT; renderWorkOrderModal(id); }
 function toggleAdminView(id){ WO_ADMIN_VIEW=!WO_ADMIN_VIEW; renderWorkOrderModal(id); }
+function toggleDocsView(id){ WO_DOCS_VIEW=!WO_DOCS_VIEW; renderWorkOrderModal(id); }
 
 function renderWorkOrderModal(id){
   const wo=getWO(id);
@@ -624,6 +712,7 @@ function renderWorkOrderModal(id){
       <div class="modalHead">
         <h2>${wo.customer.name || 'New Work Order'}</h2>
         <div>
+          <button class="adminViewLink" onclick="toggleDocsView(${id})">${WO_DOCS_VIEW?'Hide Docs':'Docs'}${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${isAdmin ? `<button class="adminViewLink" onclick="toggleAdminView(${id})">${WO_ADMIN_VIEW?'Hide Admin View':'Admin View'}</button>` : ''}
           <button class="closeX" onclick="closeModal()" style="display:inline">&times;</button>
         </div>
@@ -670,6 +759,7 @@ function renderWorkOrderModal(id){
           <div id="notesList">${notesHTML(wo)}</div>
         </div>
 
+        ${WO_DOCS_VIEW ? docsTabHTML(wo) : ''}
         ${(isAdmin && WO_ADMIN_VIEW) ? adminTabHTML(wo) : ''}
       </div>
       <div class="footerActions">
@@ -836,6 +926,96 @@ function notesHTML(wo){
       <div>${n.text || ''}</div>
     </div>`).join('');
 }
+function fmtBytes(n){
+  if(!n && n!==0) return '';
+  if(n<1024) return n+' B';
+  if(n<1024*1024) return (n/1024).toFixed(1)+' KB';
+  return (n/(1024*1024)).toFixed(1)+' MB';
+}
+function docsTabHTML(wo){
+  const docs=wo.docs||[];
+  const rows = docs.length ? docs.map(d=>`
+    <div class="docRow">
+      <div class="docInfo">
+        <span class="docName">${(d.name||'Untitled').replace(/</g,'&lt;')}</span>
+        <span class="small">${d.uploadedBy||''} · ${d.date||''} ${d.size?('· '+fmtBytes(d.size)):''}</span>
+      </div>
+      <div class="docActions">
+        <button class="btn secondary" onclick="viewDoc(${wo.id},'${d.id}')">View</button>
+        <button class="btn secondary" onclick="downloadDoc(${wo.id},'${d.id}')">Download</button>
+        <button class="btn secondary" onclick="renameDoc(${wo.id},'${d.id}')">Rename</button>
+        <button class="btn danger" onclick="deleteDoc(${wo.id},'${d.id}')">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="small">No documents uploaded yet.</div>';
+  return `<div class="docsTab">
+    <h4>Documents</h4>
+    <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. You'll be asked to name each file as it uploads.</div>
+    <input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
+    <div class="docList" style="margin-top:12px;">${rows}</div>
+  </div>`;
+}
+function handleDocUpload(id, inputEl){
+  const files=Array.from(inputEl.files||[]);
+  if(!files.length) return;
+  const wo=getWO(id);
+  let remaining=files.length;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const suggested=file.name.replace(/\.[^.]+$/,'');
+      let name=prompt('Name this file:', suggested);
+      if(name===null || !name.trim()) name=file.name;
+      const ts=nowStamp();
+      wo.docs.push({
+        id: 'd'+Date.now()+Math.random().toString(36).slice(2,7),
+        name: name.trim(), type: file.type||'', size: file.size,
+        dataUrl: reader.result,
+        uploadedBy: CURRENT_USER.displayName, date: ts.date
+      });
+      remaining--;
+      if(remaining===0){
+        saveDB(DB);
+        renderWorkOrderModal(id);
+        toast(files.length>1 ? 'Documents uploaded.' : 'Document uploaded.');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  inputEl.value='';
+}
+function getDoc(wo, docId){ return (wo.docs||[]).find(d=>d.id===docId); }
+function viewDoc(id, docId){
+  const wo=getWO(id); const d=getDoc(wo, docId);
+  if(!d) return;
+  const w=window.open();
+  if(!w) return;
+  if((d.type||'').startsWith('image/')){
+    w.document.write(`<title>${d.name}</title><body style="margin:0;background:#222;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${d.dataUrl}" style="max-width:100%;max-height:100vh;"></body>`);
+  } else {
+    w.location.href=d.dataUrl;
+  }
+}
+function downloadDoc(id, docId){
+  const wo=getWO(id); const d=getDoc(wo, docId);
+  if(!d) return;
+  const a=document.createElement('a');
+  a.href=d.dataUrl; a.download=d.name||'document';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function renameDoc(id, docId){
+  const wo=getWO(id); const d=getDoc(wo, docId);
+  if(!d) return;
+  const newName=prompt('Rename file:', d.name);
+  if(newName===null || !newName.trim()) return;
+  d.name=newName.trim();
+  saveDB(DB); renderWorkOrderModal(id);
+}
+function deleteDoc(id, docId){
+  const wo=getWO(id);
+  if(!confirm('Delete this file? This cannot be undone.')) return;
+  wo.docs=(wo.docs||[]).filter(d=>d.id!==docId);
+  saveDB(DB); renderWorkOrderModal(id);
+}
 function adminTabHTML(wo){
   const logHTML = wo.adminLog.length
     ? wo.adminLog.map(l=>`<div class="adminLogRow">${l.date} ${l.time} — <b>${l.by}</b>: ${l.text}</div>`).join('')
@@ -855,10 +1035,10 @@ function adminTabHTML(wo){
 }
 function adminSetStage(id, target){
   const wo=getWO(id);
-  if(target==='presite'){ wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false; }
-  if(target==='estimate'){ wo.presiteDone=true; wo.estimateDone=false; wo.invoiceDone=false; }
-  if(target==='invoice'){ wo.presiteDone=true; wo.estimateDone=true; wo.invoiceDone=false; }
-  if(target==='done'){ wo.presiteDone=true; wo.estimateDone=true; wo.invoiceDone=true; }
+  if(target==='presite'){ wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false; wo.presiteScheduled=false; wo.invoiceApproved=false; wo.jobComplete=false; wo.movedToHistoryAt=null; }
+  if(target==='estimate'){ wo.presiteDone=true; wo.estimateDone=false; wo.invoiceDone=false; wo.invoiceApproved=false; wo.jobComplete=false; wo.movedToHistoryAt=null; }
+  if(target==='invoice'){ wo.presiteDone=true; wo.estimateDone=true; wo.invoiceDone=false; wo.invoiceApproved=false; wo.jobComplete=false; wo.movedToHistoryAt=null; }
+  if(target==='done'){ wo.presiteDone=true; wo.estimateDone=true; wo.invoiceDone=true; wo.movedToHistoryAt=null; }
   addAdminLog(wo, `Overrode workflow — forced job to stage: ${target}`);
   saveDB(DB);
   renderWorkOrderModal(id);
@@ -877,10 +1057,22 @@ function submitNote(id){
     return;
   }
   addNote(wo, type, text, followUp);
+  let movedMsg=null;
+  if(type==='SCHD PRESITE' && inPresiteIncompleteList(wo)){
+    wo.presiteScheduled=true;
+    movedMsg='Moved to Pre-Site Scheduled.';
+  } else if(type==='SCHD' && inInvoicesPendingList(wo)){
+    wo.invoiceApproved=true;
+    movedMsg='Moved to Approved.';
+  } else if(type==='SURVEY' && inSurveysList(wo)){
+    wo.movedToHistoryAt=Date.now();
+    movedMsg='Moved to Job History.';
+  }
   saveDB(DB);
   renderWorkOrderModal(id);
   renderTabCounts(); renderMain();
-  if(followUp){ toast('Follow-up set for '+formatFollowUp(followUp)+'.'); }
+  if(movedMsg){ toast(movedMsg); }
+  else if(followUp){ toast('Follow-up set for '+formatFollowUp(followUp)+'.'); }
 }
 
 /* Admin note edit/delete */
@@ -1706,7 +1898,7 @@ function closeSplit(kind, id){
         if(yes){ wo.estimateDone=true; toast('Moved to Invoices.'); }
         saveDB(DB); closeModal(); renderTabCounts(); renderMain();
       } else {
-        if(yes){ wo.invoiceDone=true; toast('Job complete — removed from active lists.'); }
+        if(yes){ wo.invoiceDone=true; toast('Invoice complete — moved to Surveys.'); }
         saveDB(DB); closeModal(); renderTabCounts(); renderMain();
       }
     }
