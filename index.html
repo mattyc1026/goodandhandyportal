@@ -1042,8 +1042,16 @@ async function handleDocUpload(id, inputEl){
       const storagePath=`docs/${wo.id}/${docId}_${safeName}`;
       try{
         const uploadTask = syncStorage.ref(storagePath).put(blob, {contentType: blob.type||file.type||undefined});
-        const snapshot = await withTimeout(uploadTask, 30000);
-        if(!snapshot) throw new Error('Upload timed out after 30s — check your connection and Firebase Storage rules.');
+        const snapshot = await new Promise((resolve,reject)=>{
+          const timer=setTimeout(()=>{
+            reject(new Error('No response from Firebase after 30s. This is usually a CORS block, an ad-blocker/firewall blocking firebasestorage.googleapis.com, or the Storage bucket not fully finished provisioning yet.'));
+          }, 30000);
+          uploadTask.on('state_changed',
+            (p)=>{ if(statusEl && p.totalBytes){ statusEl.textContent=`Uploading "${name.trim()}"… ${Math.round((p.bytesTransferred/p.totalBytes)*100)}%`; } },
+            (err)=>{ clearTimeout(timer); reject(new Error(`${err.code||'error'}: ${err.message||err}`)); },
+            ()=>{ clearTimeout(timer); resolve(uploadTask.snapshot); }
+          );
+        });
         const url = await snapshot.ref.getDownloadURL();
         const ts=nowStamp();
         wo.docs.push({
