@@ -96,9 +96,10 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .tag.pending{background:#fde3e3;color:var(--redb);}
 .tag.sched{background:#fde3e3;color:var(--redb);}
 .tag.build-est{background:#fff1cf;color:var(--yellowb);}
-.tag.go{background:#fff1cf;color:var(--yellowb);}
+.tag.awaiting-approval{background:#fff1cf;color:var(--yellowb);}
+.tag.go{background:#dcf5e8;color:var(--greenb);}
 .tag.in-prog{background:#dcf5e8;color:var(--greenb);}
-.tag.build-inv{background:#dcf5e8;color:var(--greenb);}
+.tag.build-inv{background:#dbe8fb;color:var(--blueb);}
 .tag.survey{background:#dbe8fb;color:var(--blueb);}
 .tag.hist{background:#e6e6e6;color:var(--greyb);}
 .emptyState{text-align:center;padding:60px 20px;color:var(--muted);}
@@ -638,7 +639,7 @@ function statusTag(wo){
   if(wo.jobComplete) return '<span class="tag build-inv">Build Invoice</span>';
   if(wo.jobScheduled) return '<span class="tag in-prog">In Progress</span>';
   if(wo.estimateApproved) return '<span class="tag go">Schedule Job</span>';
-  if(wo.estimateDone) return '<span class="tag pending">Pending Approval</span>';
+  if(wo.estimateDone) return '<span class="tag awaiting-approval">Pending Approval</span>';
   if(wo.presiteDone) return '<span class="tag build-est">Build Estimate</span>';
   if(wo.presiteScheduled) return '<span class="tag sched">Pre-Site Scheduled</span>';
   return '<span class="tag pending">Incomplete</span>';
