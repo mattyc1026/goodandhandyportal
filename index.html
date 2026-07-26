@@ -961,7 +961,8 @@ function docsTabHTML(wo){
     </div>`).join('') : '<div class="small">No documents uploaded yet.</div>';
   const uploaderHTML = syncStorage
     ? `<input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
-       <div class="small" style="margin-top:6px;color:#9aa4b2;">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>`
+       <div id="docUploadStatus_${wo.id}" class="small" style="color:var(--orange);font-weight:600;min-height:1.2em;margin-top:4px;"></div>
+       <div class="small" style="margin-top:2px;color:#9aa4b2;">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>`
     : `<div class="small" style="background:#fff3e0;padding:10px;border-radius:8px;">Document uploads need Multi-Device Sync connected first, since files are stored in your Firebase project rather than on this device. <button class="btn secondary" onclick="openSyncModal()">Set up Sync</button></div>`;
   return `<div class="docsTab">
     <h4>Documents</h4>
@@ -998,6 +999,12 @@ function compressImageToBlob(file){
   });
 }
 const DOC_MAX_BYTES = 25*1024*1024; // 25MB per non-image file — generous now that it's real cloud storage
+function withTimeout(promise, ms){
+  return Promise.race([
+    promise,
+    new Promise(resolve=>setTimeout(()=>resolve(null), ms))
+  ]);
+}
 async function handleDocUpload(id, inputEl){
   const files=Array.from(inputEl.files||[]);
   if(!files.length) return;
@@ -1008,34 +1015,51 @@ async function handleDocUpload(id, inputEl){
     alert('These files are over the 25MB limit and were skipped:\n'+oversized.map(f=>f.name).join('\n'));
   }
   const toProcess=files.filter(f=>f.type.startsWith('image/') || f.size<=DOC_MAX_BYTES);
+  const statusEl=document.getElementById(`docUploadStatus_${wo.id}`);
+  inputEl.disabled=true;
   let addedCount=0;
-  for(const file of toProcess){
-    const suggested=file.name.replace(/\.[^.]+$/,'');
-    let name=prompt('Name this file:', suggested);
-    if(name===null) continue; // user cancelled naming = skip this file
-    if(!name.trim()) name=file.name;
-    let blob;
-    try{
-      blob = file.type.startsWith('image/') ? (await compressImageToBlob(file) || file) : file;
-    }catch(e){ blob=file; }
-    const docId='d'+Date.now()+Math.random().toString(36).slice(2,7);
-    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const storagePath=`docs/${wo.id}/${docId}_${safeName}`;
-    try{
-      const snapshot = await syncStorage.ref(storagePath).put(blob, {contentType: blob.type||file.type||undefined});
-      const url = await snapshot.ref.getDownloadURL();
-      const ts=nowStamp();
-      const now=Date.now();
-      wo.docs.push({
-        id: docId, name: name.trim(), type: file.type||'', size: blob.size,
-        url, storagePath, uploadedBy: CURRENT_USER.displayName, date: ts.date, uploadedAt: now
-      });
-      DB.storageUsedBytes=(DB.storageUsedBytes||0)+blob.size;
-      addedCount++;
-    }catch(e){
-      console.error(e);
-      alert(`Couldn't upload "${file.name}" — check your connection and Firebase Storage rules, then try again.`);
+  try{
+    for(const [i,file] of toProcess.entries()){
+      const suggested=file.name.replace(/\.[^.]+$/,'');
+      let name=prompt('Name this file:', suggested);
+      if(name===null) continue; // user cancelled naming = skip this file
+      if(!name.trim()) name=file.name;
+      if(statusEl) statusEl.textContent=`Uploading "${name.trim()}"… (${i+1}/${toProcess.length})`;
+
+      let blob=file;
+      // HEIC/HEIF (common for iPhone camera photos) can't be decoded by <canvas> in most
+      // browsers, which would otherwise hang compression forever — skip straight to raw upload.
+      const isHeic=/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+      if(file.type.startsWith('image/') && !isHeic){
+        try{
+          const compressed = await withTimeout(compressImageToBlob(file), 8000);
+          if(compressed) blob=compressed;
+        }catch(e){ /* fall back to raw file below */ }
+      }
+
+      const docId='d'+Date.now()+Math.random().toString(36).slice(2,7);
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const storagePath=`docs/${wo.id}/${docId}_${safeName}`;
+      try{
+        const uploadTask = syncStorage.ref(storagePath).put(blob, {contentType: blob.type||file.type||undefined});
+        const snapshot = await withTimeout(uploadTask, 30000);
+        if(!snapshot) throw new Error('Upload timed out after 30s — check your connection and Firebase Storage rules.');
+        const url = await snapshot.ref.getDownloadURL();
+        const ts=nowStamp();
+        wo.docs.push({
+          id: docId, name: name.trim(), type: file.type||'', size: blob.size,
+          url, storagePath, uploadedBy: CURRENT_USER.displayName, date: ts.date, uploadedAt: Date.now()
+        });
+        DB.storageUsedBytes=(DB.storageUsedBytes||0)+blob.size;
+        addedCount++;
+      }catch(e){
+        console.error(e);
+        alert(`Couldn't upload "${file.name}" — ${e.message||'check your connection and Firebase Storage rules, then try again.'}`);
+      }
     }
+  } finally {
+    if(statusEl) statusEl.textContent='';
+    inputEl.disabled=false;
   }
   if(addedCount){
     await purgeStorageIfOverCap();
