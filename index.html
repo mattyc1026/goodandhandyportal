@@ -2103,23 +2103,63 @@ function adminOverridePanel(){ /* reserved */ }
    this payload and populates its own fields — while keeping every field
    editable (set .value, never disabled/readonly) until Generate is clicked.
 ========================================================================= */
+/* Parse a price string like "$8–$15", "$120", "TBD", "included in job labor", "—"
+   into a [low, high] numeric range. Non-numeric entries return null and are
+   excluded from the materials total (their cost is unknown/non-billed). */
+function parsePriceRange(str){
+  if(!str) return null;
+  const nums = String(str).match(/[\d,]+(?:\.\d+)?/g);
+  if(!nums || !nums.length) return null;
+  const vals = nums.map(n=>parseFloat(n.replace(/,/g,'')));
+  const low = Math.min(...vals);
+  const high = Math.max(...vals);
+  return [low, high];
+}
+
+/* Sum every priced material into a single low/high range, add a 20% markup
+   (waste/overage/handling) on top of that sum, and return one combined
+   line item labeled "Materials" instead of the individual entries. */
+function buildMaterialsLineItem(materials){
+  let lowSum=0, highSum=0, any=false;
+  (materials||[]).forEach(m=>{
+    const range = parsePriceRange(m && m.price);
+    if(range){ any=true; lowSum+=range[0]; highSum+=range[1]; }
+  });
+  if(!any) return [];
+  const lowFinal = lowSum * 1.2;
+  const highFinal = highSum * 1.2;
+  const fmt = n => '$' + n.toFixed(2).replace(/\.00$/,'');
+  const price = (Math.round(lowFinal*100)===Math.round(highFinal*100))
+    ? fmt(lowFinal)
+    : `${fmt(lowFinal)}–${fmt(highFinal)}`;
+  return [{ item:'Materials', price }];
+}
+
 function sendJobDataToBuilder(iframeEl, id){
   const wo=getWO(id);
   if(!wo) return;
   const jd=wo.jobDetails||{};
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
   const payload={
     source:'gh_portal',
     type:'presite_data',
     workOrderId:wo.id,
+    date: dateStr,
     customer:{ name:wo.customer.name, phone:wo.customer.phone, address:wo.customer.address },
     description: jd.description||'',
     labor: jd.labor||[],
-    materials: jd.materials||[],
+    materials: buildMaterialsLineItem(jd.materials),
     issues: jd.issues||[],
     disclaimers: jd.disclaimers||[]
   };
   try{
-    iframeEl.contentWindow.postMessage(payload, '*');
+    // Tell the builder to wipe any prior estimate before this work order's
+    // data is generated over, then send the fresh data right behind it.
+    iframeEl.contentWindow.postMessage({source:'gh_portal', type:'clear_estimate', workOrderId:wo.id}, '*');
+    setTimeout(()=>{
+      try{ iframeEl.contentWindow.postMessage(payload, '*'); }catch(e){}
+    }, 50);
   }catch(e){ /* builder may not be ready yet; ignore */ }
 }
 
