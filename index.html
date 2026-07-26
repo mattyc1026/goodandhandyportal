@@ -53,6 +53,8 @@ header.top .brand span{color:var(--orange);}
 .logoutBtn{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:6px 12px;border-radius:6px;font-size:.82em;}
 .logoutBtn:hover{background:rgba(255,255,255,.15);}
 
+.tabsBarWrap{position:sticky;top:0;z-index:49;}
+.tabsToggleBtn{display:none;}
 nav.tabs{display:flex;background:var(--navy2);padding:0 20px;gap:4px;overflow-x:auto;}
 nav.tabs button{background:transparent;border:none;color:rgba(255,255,255,.7);padding:14px 20px;font-size:.92em;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;}
 nav.tabs button.active{color:#fff;border-bottom-color:var(--orange);}
@@ -202,6 +204,79 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .noteEntryRow input[type="date"]{flex:0 0 150px;padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
 .noteFollowTag{display:inline-block;font-size:.72em;font-weight:700;padding:1px 7px;border-radius:20px;background:#eef1f6;color:var(--navy);margin-left:6px;}
 .noteFollowTag.due{background:#fde3e3;color:var(--redb);}
+
+/* =========================================================================
+   RESPONSIVE — TABLET / PHONE (<=900px)
+========================================================================= */
+@media (max-width:900px){
+  /* ---- header ---- */
+  header.top{padding:10px 14px;flex-wrap:wrap;gap:8px;}
+  header.top .brand img{width:28px;height:28px;}
+  .userBadge{font-size:.76em;gap:8px;flex-wrap:wrap;}
+  .logoutBtn{padding:5px 9px;}
+
+  /* ---- hamburger tabs menu ---- */
+  .tabsToggleBtn{
+    display:flex;align-items:center;gap:10px;width:100%;
+    background:var(--navy2);color:#fff;border:none;
+    padding:13px 18px;font-size:.95em;font-weight:700;text-align:left;
+  }
+  .tabsToggleBtn .hamburgerIcon{font-size:1.2em;line-height:1;}
+  nav.tabs#tabsNav{
+    display:none;position:absolute;top:100%;left:0;right:0;
+    flex-direction:column;gap:0;padding:0;
+    background:var(--navy2);box-shadow:0 10px 24px rgba(0,0,0,.3);
+    max-height:75vh;overflow-y:auto;
+  }
+  nav.tabs#tabsNav.open{display:flex;}
+  nav.tabs#tabsNav button{
+    width:100%;text-align:left;padding:14px 20px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    border-left:3px solid transparent;
+  }
+  nav.tabs#tabsNav button.active{border-left-color:var(--orange);}
+
+  /* ---- main content ---- */
+  main{padding:14px 12px;}
+  .listHeader{flex-direction:column;align-items:flex-start;gap:6px;}
+  .subListHeader{margin:18px 2px 8px;}
+
+  .woRow{flex-direction:column;align-items:flex-start;gap:8px;padding:12px 14px;}
+  .woRow .woMeta{flex-wrap:wrap;gap:6px;}
+
+  /* ---- modals ---- */
+  .overlay{padding:0;align-items:stretch;}
+  .modal{max-width:100%;width:100%;min-height:100vh;border-radius:0;}
+  .modalHead{padding:14px 16px;}
+  .modalBody{padding:14px 16px;}
+  .footerActions{padding:12px 16px;flex-wrap:wrap;}
+  .woGrid{flex-direction:column;gap:14px;}
+  .custPanel,.jobPanel{flex:1 1 100%;min-width:0;}
+  .formGrid{grid-template-columns:1fr;}
+
+  /* ---- estimate / invoice split builder: stack vertically ---- */
+  .splitWrap{flex-direction:column;height:auto;gap:12px;}
+  .splitLeft{flex:none;max-height:46vh;padding-right:0;order:1;}
+  .splitRight{flex:none;height:60vh;order:2;}
+
+  /* ---- misc form rows ---- */
+  .noteEntryRow{flex-direction:column;align-items:stretch;}
+  .noteEntryRow input[type="date"]{flex:none;width:100%;}
+  .docRow{flex-direction:column;align-items:flex-start;}
+  .docActions{width:100%;}
+  .btnRow{flex-wrap:wrap;}
+  .estDecisionRow{flex-direction:column;align-items:stretch;}
+  .estDecisionRow .btn{width:100%;}
+}
+
+@media (max-width:480px){
+  header.top .brand img{width:24px;height:24px;}
+  .userBadge span#whoami{display:none;}
+  main{padding:10px 8px;}
+  .loginCard{padding:28px 20px;}
+  .splitLeft{max-height:40vh;}
+  .splitRight{height:52vh;}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -254,14 +329,20 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
       <button class="logoutBtn" onclick="logout()">Sign Out</button>
     </div>
   </header>
-  <nav class="tabs">
-    <button data-tab="workorders" onclick="switchTab('workorders')">Work Orders <span class="count" id="cnt-workorders">0</span></button>
-    <button data-tab="presite" onclick="switchTab('presite')">Pre-Site Inspections <span class="count" id="cnt-presite">0</span></button>
-    <button data-tab="estimates" onclick="switchTab('estimates')">Estimates <span class="count" id="cnt-estimates">0</span></button>
-    <button data-tab="invoices" onclick="switchTab('invoices')">Invoices <span class="count" id="cnt-invoices">0</span></button>
-    <button data-tab="surveys" onclick="switchTab('surveys')">Surveys <span class="count" id="cnt-surveys">0</span></button>
-    <button data-tab="jobhistory" onclick="switchTab('jobhistory')">Job History</button>
-  </nav>
+  <div class="tabsBarWrap" id="tabsBarWrap">
+    <button class="tabsToggleBtn" id="tabsToggleBtn" onclick="toggleTabsMenu()">
+      <span class="hamburgerIcon">&#9776;</span>
+      <span id="currentTabLabel">Work Orders</span>
+    </button>
+    <nav class="tabs" id="tabsNav">
+      <button data-tab="workorders" onclick="switchTab('workorders')">Work Orders <span class="count" id="cnt-workorders">0</span></button>
+      <button data-tab="presite" onclick="switchTab('presite')">Pre-Site Inspections <span class="count" id="cnt-presite">0</span></button>
+      <button data-tab="estimates" onclick="switchTab('estimates')">Estimates <span class="count" id="cnt-estimates">0</span></button>
+      <button data-tab="invoices" onclick="switchTab('invoices')">Invoices <span class="count" id="cnt-invoices">0</span></button>
+      <button data-tab="surveys" onclick="switchTab('surveys')">Surveys <span class="count" id="cnt-surveys">0</span></button>
+      <button data-tab="jobhistory" onclick="switchTab('jobhistory')">Job History</button>
+    </nav>
+  </div>
   <main id="mainArea"></main>
 </div>
 
@@ -609,8 +690,22 @@ function formatFollowUp(dateStr){
 function switchTab(tab){
   ACTIVE_TAB=tab;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const activeBtn = document.querySelector('nav.tabs button[data-tab="'+tab+'"]');
+  const label = document.getElementById('currentTabLabel');
+  if(activeBtn && label){
+    label.textContent = activeBtn.textContent.replace(/\s*\d+\s*$/,'').trim();
+  }
+  closeTabsMenu();
   renderTabCounts();
   renderMain();
+}
+function toggleTabsMenu(){
+  const nav = document.getElementById('tabsNav');
+  if(nav) nav.classList.toggle('open');
+}
+function closeTabsMenu(){
+  const nav = document.getElementById('tabsNav');
+  if(nav) nav.classList.remove('open');
 }
 function renderTabCounts(){
   if(purgeOldHistory(DB)) saveDB(DB);
@@ -2244,6 +2339,23 @@ function sendJobDataToBuilder(iframeEl, id){
     }, 50);
   }catch(e){ /* builder may not be ready yet; ignore */ }
 }
+
+function positionTabsBar(){
+  var header = document.querySelector('header.top');
+  var wrap = document.getElementById('tabsBarWrap');
+  if(header && wrap){ wrap.style.top = header.offsetHeight + 'px'; }
+}
+window.addEventListener('load', positionTabsBar);
+window.addEventListener('resize', positionTabsBar);
+setInterval(positionTabsBar, 500);
+
+document.addEventListener('click', function(e){
+  const wrap = document.getElementById('tabsBarWrap');
+  const nav = document.getElementById('tabsNav');
+  if(nav && nav.classList.contains('open') && wrap && !wrap.contains(e.target)){
+    nav.classList.remove('open');
+  }
+});
 
 </script>
 </body>
