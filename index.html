@@ -189,10 +189,12 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .jobList h4{font-size:.82em;margin:10px 0 4px;color:var(--navy);}
 .jobList ul{margin:0;padding-left:18px;font-size:.85em;}
 .notesSection{margin-top:22px;border-top:1px solid #eee;padding-top:16px;}
-.noteEntryRow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-start;}
-.noteEntryRow select{padding:9px;border-radius:8px;border:1px solid #d8d6cd;}
-.noteEntryRow input{flex:1;min-width:180px;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;}
-.noteEntryRow textarea{flex:1;min-width:180px;min-height:96px;max-height:60vh;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;font-family:inherit;font-size:.95em;resize:both;overflow:auto;line-height:1.4;}
+.noteEntryRow{display:flex;flex-direction:column;gap:12px;margin-bottom:14px;}
+.noteEntryTop{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;}
+.noteFieldGroup{display:flex;flex-direction:column;gap:4px;}
+.noteFieldGroup label{font-size:.72em;color:var(--muted);font-weight:600;white-space:nowrap;}
+.noteEntryTop select{padding:9px 10px;border-radius:8px;border:1px solid #d8d6cd;min-height:40px;font-size:.92em;}
+.noteEntryRow textarea{width:100%;min-height:96px;max-height:60vh;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;font-family:inherit;font-size:.95em;resize:both;overflow:auto;line-height:1.4;box-sizing:border-box;}
 .noteItem{background:var(--cream);border-left:3px solid var(--orange);border-radius:6px;padding:10px 14px;margin-bottom:8px;max-width:100%;overflow-wrap:anywhere;word-break:break-word;box-sizing:border-box;}
 .noteItem > div:last-child{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
 .noteItem .noteMeta{font-size:.72em;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
@@ -257,9 +259,20 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .followupBadge{display:inline-flex;align-items:center;gap:4px;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:20px;background:#eef1f6;color:var(--navy);white-space:nowrap;}
 .followupBadge.due{background:#fde3e3;color:var(--redb);animation:pulseFollowup 1.6s infinite;}
 @keyframes pulseFollowup{0%,100%{box-shadow:0 0 0 0 rgba(200,50,50,.35);}50%{box-shadow:0 0 0 5px rgba(200,50,50,0);}}
-.noteEntryRow input[type="date"]{flex:0 0 170px;min-width:150px;padding:8px 10px;border-radius:8px;border:1px solid #d8d6cd;background:#fff;color:var(--ink);color-scheme:light;font-size:.85em;}
-.followUpWrap{display:flex;flex-direction:column;gap:3px;flex:0 0 170px;align-self:flex-start;}
-.followUpLabel{font-size:.7em;color:var(--muted);font-weight:600;white-space:nowrap;}
+.dateFieldWrap{display:flex;align-items:stretch;gap:0;flex:0 0 190px;}
+.dateFieldWrap input[type="text"]{
+  flex:1;min-width:0;padding:8px 10px;border-radius:8px 0 0 8px;
+  border:1px solid #d8d6cd;border-right:none;background:#fff;color:var(--ink);
+  font-size:.9em;min-height:40px;box-sizing:border-box;
+}
+.dateFieldWrap input[type="text"].dateInvalid{border-color:var(--redb);}
+.dateFieldWrap .calBtn{
+  flex:0 0 auto;min-width:40px;min-height:40px;padding:0 10px;
+  border:1px solid #d8d6cd;border-radius:0 8px 8px 0;background:#f7f4ee;
+  color:var(--navy);font-size:1.05em;display:inline-flex;align-items:center;justify-content:center;
+}
+.dateFieldWrap .calBtn:hover{background:#eee7d8;}
+.hiddenDateInput{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
 .noteFollowTag{display:inline-block;font-size:.72em;font-weight:700;padding:1px 7px;border-radius:20px;background:#eef1f6;color:var(--navy);margin-left:6px;}
 .noteFollowTag.due{background:#fde3e3;color:var(--redb);}
 
@@ -402,11 +415,13 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   .splitRight{flex:none;height:56vh;order:2;}
 
   /* ---- misc form rows ---- */
-  .noteEntryRow{flex-direction:column;align-items:stretch;gap:10px;}
-  .noteEntryRow select{align-self:stretch;width:100%;max-width:none;flex:none;min-height:48px;}
-  .noteEntryRow input,.noteEntryRow textarea{min-height:48px;}
-  .followUpWrap{width:100%;flex:none;}
-  .noteEntryRow input[type="date"]{flex:none;width:100%;min-height:48px;}
+  .noteEntryTop{flex-direction:column;align-items:stretch;gap:10px;}
+  .noteEntryTop select{align-self:stretch;width:100%;max-width:none;flex:none;min-height:48px;}
+  .noteEntryRow textarea{min-height:48px;}
+  .noteFieldGroup{width:100%;}
+  .dateFieldWrap{width:100%;flex:none;}
+  .dateFieldWrap input[type="text"]{min-height:48px;}
+  .dateFieldWrap .calBtn{min-height:48px;min-width:48px;}
   .docRow{flex-direction:column;align-items:stretch;gap:8px;}
   .docActions{width:100%;}
   .docActions .btn{flex:1;min-height:44px;}
@@ -932,6 +947,67 @@ function formatFollowUp(dateStr){
   return d.toLocaleDateString();
 }
 
+/* ---- Flexible follow-up date entry ----
+   Lets someone type a date in whatever style is natural to them —
+   7-30-26, 07/30/2026, 7.30.26, etc. — instead of forcing one exact
+   format, while a calendar-icon button still opens a native date
+   picker for anyone who'd rather tap than type. Both paths converge
+   on the same ISO (YYYY-MM-DD) string the rest of the app already
+   stores and compares follow-up dates with. */
+function parseFlexibleDate(str){
+  if(!str) return null;
+  const m = str.trim().match(/^(\d{1,2})[-.\/](\d{1,2})[-.\/](\d{2}|\d{4})$/);
+  if(!m) return null;
+  const month = parseInt(m[1], 10);
+  const day = parseInt(m[2], 10);
+  let year = parseInt(m[3], 10);
+  if(m[3].length === 2) year += 2000;
+  if(month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const d = new Date(year, month - 1, day);
+  // Catches rollovers like 02/30 -> March 2nd, which Date() would
+  // otherwise silently "correct" instead of rejecting.
+  if(d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+  return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+}
+function formatDateDisplay(iso){
+  if(!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return m + '/' + d + '/' + y;
+}
+function clearDateInvalid(el){ el.classList.remove('dateInvalid'); }
+function normalizeFollowUpDisplay(){
+  const el=document.getElementById('noteFollowUp');
+  if(!el || !el.value.trim()) return;
+  const iso=parseFlexibleDate(el.value.trim());
+  if(iso){
+    el.value=formatDateDisplay(iso);
+    el.classList.remove('dateInvalid');
+    const nativeEl=document.getElementById('noteFollowUpNative');
+    if(nativeEl) nativeEl.value=iso;
+  } else {
+    el.classList.add('dateInvalid');
+  }
+}
+function openFollowUpCalendar(){
+  const nativeEl=document.getElementById('noteFollowUpNative');
+  if(!nativeEl) return;
+  const textEl=document.getElementById('noteFollowUp');
+  const current = textEl ? parseFlexibleDate(textEl.value.trim()) : null;
+  if(current) nativeEl.value=current;
+  if(typeof nativeEl.showPicker === 'function'){
+    try{ nativeEl.showPicker(); return; }catch(e){}
+  }
+  nativeEl.focus();
+  nativeEl.click();
+}
+function applyFollowUpFromNative(){
+  const nativeEl=document.getElementById('noteFollowUpNative');
+  const textEl=document.getElementById('noteFollowUp');
+  if(!nativeEl || !textEl || !nativeEl.value) return;
+  textEl.value=formatDateDisplay(nativeEl.value);
+  textEl.classList.remove('dateInvalid');
+}
+
 /* =========================================================================
    RENDER: TABS / LISTS
 ========================================================================= */
@@ -1204,12 +1280,28 @@ function renderWorkOrderModal(id){
         <div class="notesSection">
           <div class="panelTitle">Notes</div>
           <div class="noteEntryRow">
-            <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
-            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4" oninput="saveNoteDraft(${id}, this.value)">${(noteDraftFor(id)||'').replace(/</g,'&lt;')}</textarea>
-            <div class="followUpWrap">
-              <label for="noteFollowUp" class="followUpLabel">Follow-up date (optional)</label>
-              <input type="date" id="noteFollowUp" title="Follow-up date (optional)">
+            <div class="noteEntryTop">
+              <div class="noteFieldGroup">
+                <label for="noteType">Note Type</label>
+                <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+              </div>
+              <div class="noteFieldGroup">
+                <label for="noteFollowUp">Follow-up date (optional)</label>
+                <div class="dateFieldWrap">
+                  <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional) — type in any common format" autocomplete="off" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
+                  <button type="button" class="calBtn" onclick="openFollowUpCalendar()" title="Pick a date" aria-label="Pick a date">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                      <line x1="8" y1="3" x2="8" y2="7"></line>
+                      <line x1="16" y1="3" x2="16" y2="7"></line>
+                    </svg>
+                  </button>
+                  <input type="date" id="noteFollowUpNative" class="hiddenDateInput" tabindex="-1" aria-hidden="true" onchange="applyFollowUpFromNative()">
+                </div>
+              </div>
             </div>
+            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4" oninput="saveNoteDraft(${id}, this.value)">${(noteDraftFor(id)||'').replace(/</g,'&lt;')}</textarea>
             <button class="btn" onclick="submitNote(${id})">Add Note</button>
           </div>
           <div id="notesList">${notesHTML(wo)}</div>
@@ -1660,7 +1752,16 @@ function submitNote(id){
   const type=document.getElementById('noteType').value;
   const text=document.getElementById('noteText').value.trim();
   const followUpEl=document.getElementById('noteFollowUp');
-  const followUp = followUpEl ? (followUpEl.value || null) : null;
+  let followUp = null;
+  if(followUpEl && followUpEl.value.trim()){
+    followUp = parseFlexibleDate(followUpEl.value.trim());
+    if(!followUp){
+      followUpEl.classList.add('dateInvalid');
+      followUpEl.focus();
+      toast('That follow-up date doesn\'t look right — try MM/DD/YYYY.');
+      return;
+    }
+  }
   if(type==='PRESITE'){
     // Launch the pre-site inspection tool instead of logging plain text
     openPresiteTool(id);
