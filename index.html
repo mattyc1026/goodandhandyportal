@@ -54,13 +54,13 @@ button{cursor:pointer;font-family:inherit;}
 .field label{display:block;font-size:.78em;color:var(--muted);margin-bottom:4px;font-weight:600;}
 .field input{width:100%;padding:10px 12px;border:1px solid #d8d6cd;border-radius:8px;font-size:1em;}
 .field input:focus{outline:2px solid var(--orange);border-color:var(--orange);}
-.btn{background:var(--orange);color:#fff;border:none;padding:11px 18px;border-radius:8px;font-weight:700;font-size:.95em;transition:background .15s;}
+.btn{background:var(--orange);color:#fff;border:none;padding:13px 22px;border-radius:8px;font-weight:700;font-size:1em;min-height:44px;transition:background .15s;}
 .btn:hover{background:var(--orange2);}
 .btn.secondary{background:transparent;color:var(--navy);border:1.5px solid var(--navy);}
 .btn.secondary:hover{background:var(--navy);color:#fff;}
 .btn.danger{background:var(--redb);}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
-.btnRow{display:flex;gap:10px;margin-top:18px;}
+.btnRow{display:flex;gap:16px;margin-top:18px;flex-wrap:wrap;}
 .switchLine{text-align:center;margin-top:16px;font-size:.85em;color:var(--muted);}
 .switchLine a{color:var(--orange);cursor:pointer;font-weight:600;text-decoration:none;}
 .errMsg{color:var(--redb);font-size:.82em;margin-top:-6px;margin-bottom:10px;min-height:1em;}
@@ -159,15 +159,15 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .subListHeader{margin:24px 4px 10px;font-size:1em;color:var(--navy);display:flex;align-items:center;gap:8px;border-bottom:2px solid #eee;padding-bottom:6px;}
 .subListHeader .count{background:var(--navy);color:#fff;border-radius:999px;font-size:.7em;padding:2px 9px;}
 input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--orange);}
-.jcCheck{display:flex;align-items:center;gap:8px;font-size:.85em;background:var(--cream);padding:6px 12px;border-radius:6px;cursor:pointer;}
-.estDecisionRow{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;}
+.jcCheck{display:flex;align-items:center;gap:10px;font-size:.88em;background:var(--cream);padding:9px 16px;border-radius:6px;cursor:pointer;min-height:40px;box-sizing:border-box;}
+.estDecisionRow{display:flex;gap:18px;margin-top:8px;flex-wrap:wrap;}
 .docsTab{background:var(--paper);}
 .docsTab h4{margin-top:0;}
-.docRow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:8px;flex-wrap:wrap;}
+.docRow{display:flex;justify-content:space-between;align-items:center;gap:14px;background:var(--cream);border-radius:8px;padding:14px 16px;margin-bottom:12px;flex-wrap:wrap;}
 .docInfo{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .docName{font-weight:600;color:var(--navy);word-break:break-word;}
-.docActions{display:flex;gap:6px;flex-wrap:wrap;}
-.docActions .btn{padding:5px 10px;font-size:.8em;}
+.docActions{display:flex;gap:12px;flex-wrap:wrap;}
+.docActions .btn{padding:9px 16px;font-size:.88em;min-height:40px;}
 .newWoBtn{width:100%;border:2px dashed var(--orange);background:transparent;color:var(--orange);border-radius:var(--radius);padding:16px;font-weight:700;font-size:.95em;margin-bottom:16px;}
 .newWoBtn:hover{background:rgba(232,121,26,.08);}
 
@@ -177,7 +177,8 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 @keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .modalHead{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid #eee;}
 .modalHead h2{margin:0;font-size:1.25em;}
-.closeX{background:transparent;border:none;font-size:1.4em;color:var(--muted);}
+.closeX{background:transparent;border:none;font-size:1.5em;color:var(--muted);min-width:40px;min-height:40px;border-radius:6px;}
+.closeX:hover{background:var(--cream);}
 .modalBody{padding:20px 24px;}
 .woGrid{display:flex;gap:20px;flex-wrap:wrap;}
 .custPanel{flex:1 1 30%;min-width:240px;background:var(--cream);border-radius:10px;padding:16px;}
@@ -199,14 +200,14 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .noteItem > div:last-child{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
 .noteItem .noteMeta{font-size:.72em;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
 .noteItem .noteType{font-weight:700;color:var(--navy);}
-.noteItem .noteActions{display:flex;gap:8px;}
-.noteItem .noteActions button{background:none;border:none;font-size:.75em;color:var(--redb);padding:0;}
+.noteItem .noteActions{display:flex;gap:16px;}
+.noteItem .noteActions button{background:none;border:none;font-size:.82em;color:var(--redb);padding:6px 4px;min-height:32px;font-weight:600;}
 .adminTab{background:#fff7ea;border:1px solid #f0d9a8;border-radius:8px;padding:12px 14px;}
 .adminTab h4{margin:0 0 8px;color:#8a5a00;font-size:.85em;}
 .adminLogRow{font-size:.78em;color:#6b5320;margin-bottom:4px;}
 .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .formGrid .full{grid-column:1/-1;}
-.footerActions{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid #eee;}
+.footerActions{display:flex;justify-content:flex-end;gap:16px;padding:16px 24px;border-top:1px solid #eee;flex-wrap:wrap;}
 
 .splitWrap{display:flex;gap:16px;height:78vh;}
 .splitLeft{flex:0 0 38%;overflow-y:auto;padding-right:6px;}
@@ -251,8 +252,8 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .expandLinks summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:.82em;}
 .expandLinks .lineRow{font-size:.82em;}
 .custDisplay .kv{display:flex;justify-content:space-between;align-items:baseline;}
-.editLink{background:none;border:none;color:var(--orange);font-weight:700;font-size:.78em;cursor:pointer;padding:0;}
-.adminViewLink{background:none;border:none;color:var(--muted);font-size:.78em;font-weight:600;cursor:pointer;text-decoration:underline;margin-right:14px;}
+.editLink{background:none;border:none;color:var(--orange);font-weight:700;font-size:.85em;cursor:pointer;padding:8px 4px;min-height:36px;}
+.adminViewLink{background:none;border:none;color:var(--muted);font-size:.85em;font-weight:600;cursor:pointer;text-decoration:underline;margin-right:20px;padding:8px 4px;min-height:36px;display:inline-flex;align-items:center;}
 .woLastNote{font-size:.78em;color:var(--muted);margin-top:2px;}
 .woLastNote b{color:var(--navy);}
 .woNoteDate{color:#9aa4b2;}
@@ -266,13 +267,15 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   font-size:.9em;min-height:40px;box-sizing:border-box;
 }
 .dateFieldWrap input[type="text"].dateInvalid{border-color:var(--redb);}
+.dateFieldWrap .calWrap{position:relative;flex:0 0 auto;display:flex;}
 .dateFieldWrap .calBtn{
   flex:0 0 auto;min-width:40px;min-height:40px;padding:0 10px;
   border:1px solid #d8d6cd;border-radius:0 8px 8px 0;background:#f7f4ee;
   color:var(--navy);font-size:1.05em;display:inline-flex;align-items:center;justify-content:center;
+  pointer-events:none;
 }
-.dateFieldWrap .calBtn:hover{background:#eee7d8;}
-.hiddenDateInput{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+.dateFieldWrap .calWrap:hover .calBtn{background:#eee7d8;}
+.calNativeOverlay{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;padding:0;margin:0;cursor:pointer;}
 .noteFollowTag{display:inline-block;font-size:.72em;font-weight:700;padding:1px 7px;border-radius:20px;background:#eef1f6;color:var(--navy);margin-left:6px;}
 .noteFollowTag.due{background:#fde3e3;color:var(--redb);}
 
@@ -397,7 +400,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
     background:var(--paper);border-top:1px solid #eee;
     padding-bottom:calc(14px + env(safe-area-inset-bottom,0));
   }
-  .footerActions .btn{flex:1 1 auto;min-width:120px;min-height:48px;}
+  .footerActions .btn{flex:1 1 auto;min-width:120px;min-height:52px;}
   .woGrid{flex-direction:column;gap:16px;}
   .custPanel,.jobPanel{flex:1 1 100%;min-width:0;}
   .formGrid{grid-template-columns:1fr;gap:14px;}
@@ -405,9 +408,9 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   .field input{padding:13px 14px;min-height:48px;}
 
   /* ---- buttons everywhere: comfortable thumb-sized targets ---- */
-  .btn{padding:14px 18px;min-height:48px;font-size:1em;}
-  .btnRow{gap:12px;}
-  .editLink,.adminViewLink{min-height:44px;display:inline-flex;align-items:center;}
+  .btn{padding:15px 20px;min-height:52px;font-size:1.02em;}
+  .btnRow{gap:16px;}
+  .editLink,.adminViewLink{min-height:48px;display:inline-flex;align-items:center;font-size:.9em;margin-right:22px;padding:10px 6px;}
 
   /* ---- estimate / invoice split builder: stack vertically ---- */
   .splitWrap{flex-direction:column;height:auto;gap:14px;}
@@ -415,19 +418,22 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   .splitRight{flex:none;height:56vh;order:2;}
 
   /* ---- misc form rows ---- */
-  .noteEntryTop{flex-direction:column;align-items:stretch;gap:10px;}
-  .noteEntryTop select{align-self:stretch;width:100%;max-width:none;flex:none;min-height:48px;}
-  .noteEntryRow textarea{min-height:48px;}
-  .noteFieldGroup{width:100%;}
+  .noteEntryTop{flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:10px;}
+  .noteEntryTop select{min-height:48px;font-size:.9em;}
+  .noteFieldGroup{flex:1 1 130px;min-width:130px;}
   .dateFieldWrap{width:100%;flex:none;}
-  .dateFieldWrap input[type="text"]{min-height:48px;}
-  .dateFieldWrap .calBtn{min-height:48px;min-width:48px;}
-  .docRow{flex-direction:column;align-items:stretch;gap:8px;}
-  .docActions{width:100%;}
-  .docActions .btn{flex:1;min-height:44px;}
+  .dateFieldWrap input[type="text"]{min-height:48px;min-width:0;}
+  .dateFieldWrap .calBtn{min-height:48px;min-width:44px;}
+  .noteEntryRow textarea{min-height:48px;}
+  .jcCheck{min-height:48px;padding:10px 16px;gap:12px;}
+  .noteItem .noteActions{gap:20px;}
+  .noteItem .noteActions button{min-height:40px;font-size:.88em;padding:8px 4px;}
+  .docRow{flex-direction:column;align-items:stretch;gap:12px;padding:16px;}
+  .docActions{width:100%;gap:12px;}
+  .docActions .btn{flex:1 1 auto;min-width:100px;min-height:48px;}
   .btnRow{flex-wrap:wrap;}
-  .estDecisionRow{flex-direction:column;align-items:stretch;}
-  .estDecisionRow .btn{width:100%;min-height:48px;}
+  .estDecisionRow{flex-direction:column;align-items:stretch;gap:12px;}
+  .estDecisionRow .btn{width:100%;min-height:52px;}
 }
 
 @media (max-width:480px){
@@ -988,17 +994,16 @@ function normalizeFollowUpDisplay(){
     el.classList.add('dateInvalid');
   }
 }
-function openFollowUpCalendar(){
+function syncNativeFromText(){
+  // The real native date input sits invisibly on top of the calendar
+  // icon, so the user's actual click lands on it directly (the most
+  // reliable way to open a native date picker across browsers). Before
+  // it opens, seed it with whatever valid date is already typed.
   const nativeEl=document.getElementById('noteFollowUpNative');
-  if(!nativeEl) return;
   const textEl=document.getElementById('noteFollowUp');
-  const current = textEl ? parseFlexibleDate(textEl.value.trim()) : null;
-  if(current) nativeEl.value=current;
-  if(typeof nativeEl.showPicker === 'function'){
-    try{ nativeEl.showPicker(); return; }catch(e){}
-  }
-  nativeEl.focus();
-  nativeEl.click();
+  if(!nativeEl || !textEl) return;
+  const current = parseFlexibleDate(textEl.value.trim());
+  nativeEl.value = current || '';
 }
 function applyFollowUpFromNative(){
   const nativeEl=document.getElementById('noteFollowUpNative');
@@ -1289,15 +1294,17 @@ function renderWorkOrderModal(id){
                 <label for="noteFollowUp">Follow-up date (optional)</label>
                 <div class="dateFieldWrap">
                   <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional) — type in any common format" autocomplete="off" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
-                  <button type="button" class="calBtn" onclick="openFollowUpCalendar()" title="Pick a date" aria-label="Pick a date">
-                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="3" y="5" width="18" height="16" rx="2"></rect>
-                      <line x1="3" y1="10" x2="21" y2="10"></line>
-                      <line x1="8" y1="3" x2="8" y2="7"></line>
-                      <line x1="16" y1="3" x2="16" y2="7"></line>
-                    </svg>
-                  </button>
-                  <input type="date" id="noteFollowUpNative" class="hiddenDateInput" tabindex="-1" aria-hidden="true" onchange="applyFollowUpFromNative()">
+                  <div class="calWrap">
+                    <button type="button" class="calBtn" tabindex="-1" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                        <line x1="8" y1="3" x2="8" y2="7"></line>
+                        <line x1="16" y1="3" x2="16" y2="7"></line>
+                      </svg>
+                    </button>
+                    <input type="date" id="noteFollowUpNative" class="calNativeOverlay" title="Pick a date" aria-label="Pick a date" onfocus="syncNativeFromText()" onchange="applyFollowUpFromNative()">
+                  </div>
                 </div>
               </div>
             </div>
