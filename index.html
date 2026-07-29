@@ -17,6 +17,28 @@
   --grey:rgba(120,120,120,.16); --greyb:#666666;
   --radius:10px;
 }
+/* ---- High Contrast mode ----
+   Toggled by adding class "hc" to <html>. Overrides the same CSS
+   variables everything else already reads, so the whole app (text,
+   borders, status highlight colors) gets darker text and stronger
+   borders/backgrounds without needing separate override rules per
+   element. */
+html.hc{
+  --navy:#000000; --navy2:#000000; --orange:#a83e00; --orange2:#c74600;
+  --cream:#ffffff; --paper:#ffffff; --ink:#000000; --muted:#2b2b2b;
+  --red:#ffd6d6; --redb:#a30000; --red-bold:#ffb0b0;
+  --yellow:#fff0b8; --yellowb:#6b5400; --yellow-bold:#ffe07a;
+  --green:#cdf3dc; --greenb:#0b5c34; --green-bold:#a3edbf;
+  --blue:#d3e4ff; --blueb:#0a3a86; --blue-bold:#a9c9ff;
+  --grey:#e6e6e6; --greyb:#222222;
+}
+html.hc body{background:#fff;}
+html.hc .woRow{border-width:2px !important;}
+html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,html.hc .woRow.st-green-bold,html.hc .woRow.st-blue-bold{border-width:3px !important;}
+html.hc .woSub,html.hc .woMeta,html.hc .woLastNote,html.hc .woNoteDate,html.hc .listHeader p,html.hc .small,html.hc .field label{color:#000 !important;}
+html.hc .tag{border:1px solid #000;}
+html.hc .field input,html.hc select,html.hc textarea{border:1.5px solid #000;}
+html.hc a,html.hc .editLink,html.hc .adminViewLink{color:#a83e00;}
 *{box-sizing:border-box;}
 body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--cream);color:var(--ink);}
 h1,h2,h3{font-family:Georgia,'Times New Roman',serif;margin:0 0 .3em;color:var(--navy);}
@@ -52,7 +74,34 @@ header.top .brand span{color:var(--orange);}
 .adminPill{background:var(--orange);color:#fff;font-size:.7em;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:.04em;}
 .logoutBtn{background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;padding:6px 12px;border-radius:6px;font-size:.82em;}
 .logoutBtn:hover{background:rgba(255,255,255,.15);}
-.textSizeBtn{display:none;}
+.settingsWrap{position:relative;}
+.settingsBtn{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:34px;min-height:34px;padding:0;border-radius:50%;
+  border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;
+  font-size:1.15em;line-height:1;
+}
+.settingsMenu{
+  display:none;position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--paper);color:var(--ink);border:1px solid #e4e0d4;
+  border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);
+  padding:10px;min-width:190px;z-index:200;
+}
+.settingsMenu.open{display:block;}
+.settingsRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 6px;}
+.settingsRow:not(:last-child){border-bottom:1px solid #eee;}
+.settingsRow span{font-size:.85em;font-weight:600;color:var(--ink);}
+.textSizeBtn{
+  min-width:40px;min-height:34px;padding:0 10px;
+  border:1px solid #d8d6cd;border-radius:6px;
+  background:transparent;color:var(--navy);font-weight:700;
+}
+.hcToggleBtn{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:34px;min-height:34px;padding:0;border-radius:50%;
+  border:1px solid #d8d6cd;background:transparent;
+}
+.hcToggleBtn[aria-pressed="true"]{border-color:var(--navy);border-width:2px;}
 
 .tabsBarWrap{position:sticky;top:0;z-index:49;}
 .tabsToggleBtn{display:none;}
@@ -62,8 +111,11 @@ nav.tabs button.active{color:#fff;border-bottom-color:var(--orange);}
 nav.tabs button .count{background:rgba(255,255,255,.18);border-radius:10px;padding:1px 7px;margin-left:6px;font-size:.85em;}
 
 main{padding:24px 30px;max-width:1300px;margin:0 auto;}
-.listHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.listHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap;}
 .listHeader p{color:var(--muted);font-size:.85em;margin:0;}
+.sortWrap{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+.sortWrap label{font-size:.8em;color:var(--muted);font-weight:600;white-space:nowrap;}
+.sortWrap select{border:1px solid #e4e0d4;border-radius:8px;padding:8px 10px;font-size:.85em;font-family:inherit;background:var(--paper);color:var(--navy);font-weight:600;}
 
 .woRow{background:var(--paper);border:1px solid #e4e0d4;border-radius:var(--radius);padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:transform .1s, box-shadow .1s;}
 .woRow:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
@@ -92,7 +144,7 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .woRow .woMain{display:flex;flex-direction:column;gap:2px;}
 .woRow .woName{font-weight:700;color:var(--navy);}
 .woRow .woSub{font-size:.8em;color:var(--muted);}
-.woRow .woMeta{display:flex;align-items:center;gap:10px;font-size:.78em;color:var(--muted);}
+.woRow .woMeta{display:flex;align-items:center;gap:16px;font-size:.78em;color:var(--muted);row-gap:10px;flex-wrap:wrap;}
 .tag{padding:2px 9px;border-radius:20px;font-size:.75em;font-weight:700;letter-spacing:.03em;white-space:nowrap;}
 .tag.pending{background:#fde3e3;color:var(--redb);}
 .tag.sched{background:#fde3e3;color:var(--redb);}
@@ -106,8 +158,9 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
 .emptyState{text-align:center;padding:60px 20px;color:var(--muted);}
 .subListHeader{margin:24px 4px 10px;font-size:1em;color:var(--navy);display:flex;align-items:center;gap:8px;border-bottom:2px solid #eee;padding-bottom:6px;}
 .subListHeader .count{background:var(--navy);color:#fff;border-radius:999px;font-size:.7em;padding:2px 9px;}
-.jcCheck{display:flex;align-items:center;gap:6px;font-size:.82em;background:var(--cream);padding:4px 10px;border-radius:6px;cursor:pointer;}
-.estDecisionRow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--orange);}
+.jcCheck{display:flex;align-items:center;gap:8px;font-size:.85em;background:var(--cream);padding:6px 12px;border-radius:6px;cursor:pointer;}
+.estDecisionRow{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;}
 .docsTab{background:var(--paper);}
 .docsTab h4{margin-top:0;}
 .docRow{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:8px;flex-wrap:wrap;}
@@ -231,17 +284,11 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
   input,select,textarea{font-size:max(16px,var(--mScale));}
   button{font-size:var(--mScale);}
 
-  /* ---- text size control (mobile only) ----
-     Lets anyone bump the whole app's reading size up further with one
-     tap, no pinching or system settings hunting required. Because
-     nearly everything below is sized in em, this one variable scales
-     the entire interface — buttons, cards, notes, tabs — together. */
-  .textSizeBtn{
-    display:inline-flex;align-items:center;justify-content:center;
-    min-width:40px;min-height:40px;padding:0 10px;
-    border:1px solid rgba(255,255,255,.4);border-radius:6px;
-    background:transparent;color:#fff;font-weight:700;font-size:.8em;
-  }
+  /* ---- accessibility settings menu ----
+     The gear-icon button and its dropdown (text size + high contrast)
+     stay a comfortable tap size on mobile too. */
+  .settingsBtn{min-width:40px;min-height:40px;}
+  .settingsMenu{min-width:210px;}
 
   /* ---- header ---- */
   header.top{padding:12px 16px;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:60;}
@@ -276,11 +323,11 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
   nav.tabs#tabsNav button{
     scroll-snap-align:start;
     flex:0 0 auto;width:auto;text-align:center;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     color:var(--muted);background:transparent;
     border:none;border-bottom:none;border-radius:12px;
-    padding:9px 16px;min-height:56px;min-width:84px;
-    font-size:.78em;font-weight:700;white-space:normal;line-height:1.15;
+    padding:12px 20px;min-height:64px;min-width:92px;
+    font-size:.88em;font-weight:700;white-space:normal;line-height:1.2;
   }
   nav.tabs#tabsNav button.active{
     color:var(--orange);background:rgba(232,121,26,.12);
@@ -298,6 +345,8 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
   .listHeader{flex-direction:column;align-items:flex-start;gap:8px;}
   .listHeader h2{font-size:1.15em;}
   .listHeader p{font-size:.88em;}
+  .sortWrap{width:100%;}
+  .sortWrap select{flex:1;min-height:44px;}
   .subListHeader{margin:20px 2px 10px;font-size:1.05em;}
 
   /* ---- work order cards: bigger, clearer, obviously tappable ---- */
@@ -314,7 +363,7 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
   }
   .woRow .woName{font-size:1.2em;line-height:1.3;}
   .woRow .woSub{font-size:.95em;line-height:1.4;}
-  .woRow .woMeta{flex-wrap:wrap;gap:8px;font-size:.92em;line-height:1.4;}
+  .woRow .woMeta{flex-wrap:wrap;gap:12px;row-gap:12px;font-size:.92em;line-height:1.4;}
   .woRow .woLastNote{font-size:.92em;line-height:1.45;}
   .tag{padding:6px 13px;font-size:.88em;}
   .newWoBtn{padding:20px;font-size:1.05em;min-height:56px;}
@@ -375,7 +424,7 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
   .field input{font-size:16px;}
   .splitLeft{max-height:40vh;}
   .splitRight{height:50vh;}
-  nav.tabs#tabsNav button{min-width:76px;padding:8px 12px;font-size:.74em;}
+  nav.tabs#tabsNav button{min-width:84px;padding:11px 16px;font-size:.82em;}
 }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -391,7 +440,24 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
     <div class="tag">Job Portal</div>
     <div style="text-align:center;margin-bottom:18px;">
       <button class="syncPill off" id="loginSyncPill" onclick="openSyncModal()" style="border-color:var(--navy);color:var(--navy);">Sync: Off</button>
-      <button class="textSizeBtn" id="loginTextSizeBtn" onclick="cycleTextSize()" title="Adjust text size" style="border-color:var(--navy);color:var(--navy);margin-left:6px;">Aa</button>
+      <div class="settingsWrap" style="display:inline-block;margin-left:6px;">
+        <button class="settingsBtn" id="loginSettingsBtn" onclick="toggleSettingsMenu('loginSettingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false" style="border-color:var(--navy);color:var(--navy);">&#9881;</button>
+        <div class="settingsMenu" id="loginSettingsMenu">
+          <div class="settingsRow">
+            <span>Text Size</span>
+            <button class="textSizeBtn" id="loginTextSizeBtn" onclick="cycleTextSize()" title="Adjust text size">Aa</button>
+          </div>
+          <div class="settingsRow">
+            <span>High Contrast</span>
+            <button class="hcToggleBtn" id="loginContrastBtn" onclick="toggleHighContrast()" title="Toggle high contrast" aria-pressed="false">
+              <svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">
+                <circle cx="10" cy="10" r="8.5" fill="#fff" stroke="#000" stroke-width="1.4"/>
+                <path d="M10 1.5a8.5 8.5 0 0 1 0 17z" fill="#000"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="signInForm">
@@ -426,7 +492,24 @@ main{padding:24px 30px;max-width:1300px;margin:0 auto;}
     <div class="userBadge">
       <span id="whoami"></span>
       <span id="adminPill" class="adminPill hidden">ADMIN</span>
-      <button class="textSizeBtn" id="textSizeBtn" onclick="cycleTextSize()" title="Adjust text size">Aa</button>
+      <div class="settingsWrap">
+        <button class="settingsBtn" id="settingsBtn" onclick="toggleSettingsMenu('settingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false">&#9881;</button>
+        <div class="settingsMenu" id="settingsMenu">
+          <div class="settingsRow">
+            <span>Text Size</span>
+            <button class="textSizeBtn" id="textSizeBtn" onclick="cycleTextSize()" title="Adjust text size">Aa</button>
+          </div>
+          <div class="settingsRow">
+            <span>High Contrast</span>
+            <button class="hcToggleBtn" id="contrastBtn" onclick="toggleHighContrast()" title="Toggle high contrast" aria-pressed="false">
+              <svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">
+                <circle cx="10" cy="10" r="8.5" fill="#fff" stroke="#000" stroke-width="1.4"/>
+                <path d="M10 1.5a8.5 8.5 0 0 1 0 17z" fill="#000"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
       <button class="syncPill off" id="syncPill" onclick="openSyncModal()">Sync: Off</button>
       <button class="logoutBtn" onclick="logout()">Sign Out</button>
     </div>
@@ -472,6 +555,67 @@ normalizeDB(DB);
 if(purgeOldHistory(DB)) saveDB(DB);
 let CURRENT_USER = null; // {username, displayName, isAdmin}
 let ACTIVE_TAB='workorders';
+const WO_SORT_KEY='gh_wo_sort';
+let WO_SORT = localStorage.getItem(WO_SORT_KEY) || 'progression';
+function setWoSort(val){
+  WO_SORT = val;
+  localStorage.setItem(WO_SORT_KEY, val);
+  renderMain();
+}
+/* Progression order matches stage: bold red -> red -> bold yellow -> yellow
+   -> bold green -> green -> bold blue -> blue (earliest to latest stage) */
+const PROGRESSION_ORDER=['st-red-bold','st-red','st-yellow-bold','st-yellow','st-green-bold','st-green','st-blue-bold','st-blue','st-grey'];
+function woFirstName(wo){
+  const n=(wo.customer.name||'').trim();
+  if(!n) return '';
+  return n.split(/\s+/)[0];
+}
+function woLastName(wo){
+  const n=(wo.customer.name||'').trim();
+  if(!n) return '';
+  const parts=n.split(/\s+/);
+  return parts.length>1 ? parts[parts.length-1] : parts[0];
+}
+function sortWorkOrders(list){
+  const arr=list.slice();
+  switch(WO_SORT){
+    case 'dateNew':
+      arr.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      break;
+    case 'dateOld':
+      arr.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+      break;
+    case 'firstName':
+      arr.sort((a,b)=>woFirstName(a).localeCompare(woFirstName(b), undefined, {sensitivity:'base'}));
+      break;
+    case 'lastName':
+      arr.sort((a,b)=>woLastName(a).localeCompare(woLastName(b), undefined, {sensitivity:'base'}));
+      break;
+    case 'progression':
+    default:
+      arr.sort((a,b)=>{
+        const pa=PROGRESSION_ORDER.indexOf(statusClass(a));
+        const pb=PROGRESSION_ORDER.indexOf(statusClass(b));
+        if(pa!==pb) return pa-pb;
+        return (a.createdAt||0)-(b.createdAt||0);
+      });
+      break;
+  }
+  return arr;
+}
+function sortDropdownHTML(){
+  const opts=[
+    ['progression','Progression'],
+    ['dateNew','Input date new'],
+    ['dateOld','Input date old'],
+    ['firstName','Alphabetical first name'],
+    ['lastName','Alphabetical last name']
+  ];
+  return `<div class="sortWrap"><label for="woSortSelect">Sort by</label>
+    <select id="woSortSelect" onchange="setWoSort(this.value)">
+      ${opts.map(([val,label])=>`<option value="${val}" ${WO_SORT===val?'selected':''}>${label}</option>`).join('')}
+    </select></div>`;
+}
 
 /* =========================================================================
    MULTI-DEVICE SYNC (Firebase Firestore)
@@ -636,7 +780,7 @@ function fullName(u){ return u.firstName + ' ' + u.lastInitial + '.'; }
    AUTH
 ========================================================================= */
 const SESSION_KEY='gh_portal_session';
-const SESSION_MAX_AGE=14*24*60*60*1000; // 14 days
+const SESSION_MAX_AGE=45*24*60*60*1000; // 45 days
 
 document.getElementById('loginLogo').src = LOGO_DATA_URI;
 document.getElementById('headerLogo').src = LOGO_DATA_URI;
@@ -711,6 +855,8 @@ function tryRestoreSession(){
 function logout(){
   CURRENT_USER=null;
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(WO_SORT_KEY);
+  WO_SORT='progression';
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('siUser').value=''; document.getElementById('siPin').value='';
@@ -837,8 +983,8 @@ function renderMain(){
   const main=document.getElementById('mainArea');
   let html='';
   if(ACTIVE_TAB==='workorders'){
-    const list=DB.workOrders.filter(inWorkOrdersList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>All active jobs, oldest to newest. Highlight shows overall progress.</p></div></div>`;
+    const list=sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
+    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>All active jobs. Highlight shows overall progress.</p></div>${sortDropdownHTML()}</div>`;
     html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">+ Create New Work Order</button>`;
     html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No work orders yet. Create the first one below.</div>`;
   } else if(ACTIVE_TAB==='presite'){
@@ -1059,7 +1205,7 @@ function renderWorkOrderModal(id){
           <div class="panelTitle">Notes</div>
           <div class="noteEntryRow">
             <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
-            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4"></textarea>
+            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4" oninput="saveNoteDraft(${id}, this.value)">${(noteDraftFor(id)||'').replace(/</g,'&lt;')}</textarea>
             <div class="followUpWrap">
               <label for="noteFollowUp" class="followUpLabel">Follow-up date (optional)</label>
               <input type="date" id="noteFollowUp" title="Follow-up date (optional)">
@@ -1219,7 +1365,7 @@ function jobDetailsEditHTML(id){
   return `
     <div class="kv">
       <b>Job Description</b>
-      <textarea id="jdDescription" style="width:100%;min-height:70px;max-height:50vh;padding:8px;border-radius:8px;border:1px solid #d8d6cd;margin-top:4px;font-family:inherit;font-size:.9em;resize:vertical;">${(JD_EDIT.description||'').replace(/</g,'&lt;')}</textarea>
+      <textarea id="jdDescription" style="width:100%;min-height:70px;max-height:50vh;padding:8px;border-radius:8px;border:1px solid #d8d6cd;margin-top:4px;font-family:inherit;font-size:.9em;resize:vertical;" oninput="JD_EDIT.description=this.value">${(JD_EDIT.description||'').replace(/</g,'&lt;')}</textarea>
     </div>
     ${jdEditSection(id,'labor','Labor Line Items', true)}
     ${jdEditSection(id,'materials','Materials', true)}
@@ -1491,6 +1637,24 @@ function adminSetStage(id, target){
   renderTabCounts(); renderMain();
 }
 
+/* ---- Note draft autosave ----
+   Protects against losing a typed-but-not-submitted note if someone
+   gets interrupted, navigates away, or the tab closes. Stored per
+   work order, cleared once the note is actually submitted. */
+function noteDraftKey(id){ return 'gh_note_draft_'+id; }
+function noteDraftFor(id){
+  try{ return localStorage.getItem(noteDraftKey(id)) || ''; }catch(e){ return ''; }
+}
+function saveNoteDraft(id, text){
+  try{
+    if(text){ localStorage.setItem(noteDraftKey(id), text); }
+    else{ localStorage.removeItem(noteDraftKey(id)); }
+  }catch(e){}
+}
+function clearNoteDraft(id){
+  try{ localStorage.removeItem(noteDraftKey(id)); }catch(e){}
+}
+
 function submitNote(id){
   const wo=getWO(id);
   const type=document.getElementById('noteType').value;
@@ -1503,6 +1667,7 @@ function submitNote(id){
     return;
   }
   addNote(wo, type, text, followUp);
+  clearNoteDraft(id);
   let movedMsg=null;
   if(type==='SCHD PRESITE' && inPresiteIncompleteList(wo)){
     wo.presiteScheduled=true;
@@ -1543,6 +1708,7 @@ function adminDeleteNote(woId, idx){
 function adminDeleteWorkOrder(id){
   if(!confirm('Delete this entire work order? This cannot be undone.')) return;
   DB.workOrders=DB.workOrders.filter(w=>w.id!==id);
+  clearNoteDraft(id);
   saveDB(DB); closeModal(); renderTabCounts(); renderMain();
 }
 
@@ -2495,29 +2661,80 @@ function positionTabsBar(){
 }
 window.addEventListener('load', positionTabsBar);
 
+/* ---- Accessibility settings menu (gear icon, upper right) ----
+   Houses the text-size control and high-contrast toggle in one
+   dropdown instead of separate always-visible buttons. */
+function toggleSettingsMenu(menuId){
+  const menu = document.getElementById(menuId);
+  if(!menu) return;
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.settingsMenu.open').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.settingsBtn[aria-expanded="true"]').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(!isOpen){
+    menu.classList.add('open');
+    const btn = menu.previousElementSibling;
+    if(btn) btn.setAttribute('aria-expanded','true');
+  }
+}
+function closeSettingsMenus(){
+  document.querySelectorAll('.settingsMenu.open').forEach(m=>m.classList.remove('open'));
+  document.querySelectorAll('.settingsBtn[aria-expanded="true"]').forEach(b=>b.setAttribute('aria-expanded','false'));
+}
+
 /* ---- Adjustable text size (mobile) ----
-   Three steps — Normal / Large / Extra Large — covering the whole app
-   at once via the --mScale CSS variable, which the mobile stylesheet
-   uses as its base font size. Persisted so it's remembered next visit. */
-var TEXT_SIZES = [18, 21, 25];
-var TEXT_SIZE_LABELS = ['Aa', 'Aa+', 'Aa++'];
+   Five steps — Small / Normal / Large / Extra Large / Extra Extra Large —
+   covering the whole app at once via the --mScale CSS variable, which
+   the mobile stylesheet uses as its base font size. Defaults to the
+   largest size for readability; the Aa button steps it down (and
+   wraps back around) from there. Persisted so it's remembered next
+   visit. */
+var TEXT_SIZES = [15, 18, 21, 25, 29];
+var TEXT_SIZE_NAMES = ['Small', 'Normal', 'Large', 'Extra Large', 'Extra Extra Large'];
+var TEXT_SIZE_BTN_SCALE = [0.75, 0.9, 1.05, 1.2, 1.35];
+var DEFAULT_TEXT_SIZE = TEXT_SIZES[TEXT_SIZES.length-1];
 function applyTextSize(px){
   document.documentElement.style.setProperty('--mScale', px + 'px');
   var idx = TEXT_SIZES.indexOf(px);
-  var label = idx>=0 ? TEXT_SIZE_LABELS[idx] : 'Aa';
+  if(idx<0) idx = 0;
+  var name = TEXT_SIZE_NAMES[idx];
   ['textSizeBtn','loginTextSizeBtn'].forEach(function(id){
     var b = document.getElementById(id);
-    if(b) b.textContent = label;
+    if(b){
+      b.style.fontSize = TEXT_SIZE_BTN_SCALE[idx] + 'em';
+      b.title = 'Text size: ' + name + ' (tap to change)';
+    }
   });
 }
 function cycleTextSize(){
-  var current = parseInt(localStorage.getItem('gh_text_scale'), 10) || TEXT_SIZES[0];
+  var current = parseInt(localStorage.getItem('gh_text_scale'), 10) || DEFAULT_TEXT_SIZE;
   var idx = TEXT_SIZES.indexOf(current);
-  var next = TEXT_SIZES[(idx + 1) % TEXT_SIZES.length];
+  if(idx<0) idx = TEXT_SIZES.length-1;
+  var next = TEXT_SIZES[(idx - 1 + TEXT_SIZES.length) % TEXT_SIZES.length];
   localStorage.setItem('gh_text_scale', next);
   applyTextSize(next);
 }
-applyTextSize(parseInt(localStorage.getItem('gh_text_scale'), 10) || TEXT_SIZES[0]);
+applyTextSize(parseInt(localStorage.getItem('gh_text_scale'), 10) || DEFAULT_TEXT_SIZE);
+
+/* ---- High contrast mode ----
+   Toggled by the "High Contrast" button in the header (login screen
+   and app screen). Adds/removes an "hc" class on <html>, which the
+   stylesheet uses to override the color variables everything else
+   already reads from. Persisted so it's remembered next visit. */
+var HC_KEY = 'gh_high_contrast';
+function applyHighContrast(on){
+  document.documentElement.classList.toggle('hc', !!on);
+  ['contrastBtn','loginContrastBtn'].forEach(function(id){
+    var b = document.getElementById(id);
+    if(b) b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+function toggleHighContrast(){
+  var on = document.documentElement.classList.contains('hc');
+  var next = !on;
+  localStorage.setItem(HC_KEY, next ? '1' : '0');
+  applyHighContrast(next);
+}
+applyHighContrast(localStorage.getItem(HC_KEY) === '1');
 window.addEventListener('resize', positionTabsBar);
 setInterval(positionTabsBar, 500);
 
@@ -2527,6 +2744,16 @@ document.addEventListener('click', function(e){
   if(nav && nav.classList.contains('open') && wrap && !wrap.contains(e.target)){
     nav.classList.remove('open');
   }
+  document.querySelectorAll('.settingsWrap').forEach(function(w){
+    if(!w.contains(e.target)){
+      const m = w.querySelector('.settingsMenu.open');
+      if(m){
+        m.classList.remove('open');
+        const b = w.querySelector('.settingsBtn');
+        if(b) b.setAttribute('aria-expanded','false');
+      }
+    }
+  });
 });
 
 /* Every modal in the app (sync, work order, pre-site, etc.) is injected
