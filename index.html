@@ -185,6 +185,15 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .jobPanel{flex:2 1 60%;min-width:300px;background:var(--cream);border-radius:10px;padding:16px;}
 .panelTitle{font-size:.75em;text-transform:uppercase;letter-spacing:.06em;color:var(--orange);font-weight:700;margin-bottom:10px;}
 .kv{margin-bottom:8px;font-size:.9em;}
+.addrSuggest{
+  position:absolute;left:0;right:0;top:100%;z-index:80;
+  background:#fff;border:1px solid #d8d6cd;border-top:none;
+  border-radius:0 0 6px 6px;box-shadow:0 8px 20px rgba(0,0,0,.15);
+  max-height:220px;overflow-y:auto;
+}
+.addrSuggestItem{padding:9px 10px;font-size:.85em;line-height:1.3;cursor:pointer;border-bottom:1px solid #f0eee6;color:var(--navy);}
+.addrSuggestItem:last-child{border-bottom:none;}
+.addrSuggestItem:hover,.addrSuggestItem:active{background:var(--cream);}
 .kv b{color:var(--navy);display:block;font-size:.72em;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);}
 .jobList{margin:10px 0;}
 .jobList h4{font-size:.82em;margin:10px 0 4px;color:var(--navy);}
@@ -260,7 +269,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .followupBadge{display:inline-flex;align-items:center;gap:4px;font-size:.72em;font-weight:700;padding:2px 8px;border-radius:20px;background:#eef1f6;color:var(--navy);white-space:nowrap;}
 .followupBadge.due{background:#fde3e3;color:var(--redb);animation:pulseFollowup 1.6s infinite;}
 @keyframes pulseFollowup{0%,100%{box-shadow:0 0 0 0 rgba(200,50,50,.35);}50%{box-shadow:0 0 0 5px rgba(200,50,50,0);}}
-.dateFieldWrap{display:flex;align-items:stretch;gap:0;flex:0 0 190px;}
+.dateFieldWrap{display:flex;align-items:stretch;gap:0;width:190px;max-width:100%;}
 .dateFieldWrap input[type="text"]{
   flex:1;min-width:0;padding:8px 10px;border-radius:8px 0 0 8px;
   border:1px solid #d8d6cd;border-right:none;background:#fff;color:var(--ink);
@@ -920,7 +929,7 @@ function statusTag(wo){
 function inPresiteList(wo){ return hasRequiredInfo(wo) && !wo.presiteDone; }
 function inEstimatesList(wo){ return wo.presiteDone && !wo.jobScheduled && !wo.movedToHistoryAt; }
 function inInvoicesList(wo){ return !!wo.jobScheduled && !wo.invoiceDone && !wo.movedToHistoryAt; }
-function inWorkOrdersList(wo){ return !wo.invoiceDone && !wo.movedToHistoryAt; }
+function inWorkOrdersList(wo){ return !wo.movedToHistoryAt; }
 
 /* Pre-Site sub-lists */
 function inPresiteIncompleteList(wo){ return inPresiteList(wo) && !wo.presiteScheduled; }
@@ -1205,7 +1214,7 @@ function openNewWorkOrder(){
   const id=DB.nextId++;
   const wo={
     id, createdAt:Date.now(),
-    customer:{name:'',phone:'',email:'',address:''},
+    customer:{name:'',phone:'',altPhone:'',email:'',address:''},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
@@ -1262,15 +1271,17 @@ function renderWorkOrderModal(id){
             <div class="panelTitle">Customer Information</div>
             ${WO_CUST_EDIT ? `
               ${custField('name','Full Name', wo.customer.name)}
-              ${custField('phone','Phone Number', wo.customer.phone)}
+              ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
+              ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
               ${custField('email','Email (optional)', wo.customer.email)}
-              ${custField('address','Address', wo.customer.address)}
+              ${addressField('address','Address', wo.customer.address)}
               <button class="btn secondary" style="margin-top:8px;width:100%" onclick="saveCustomer(${id})">Save Customer Info</button>
               ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);margin-top:6px">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
             ` : `
               <div class="custDisplay">
                 <div class="kv"><span><b>Name</b><br>${wo.customer.name}</span></div>
-                <div class="kv"><span><b>Phone</b><br>${wo.customer.phone}</span></div>
+                <div class="kv"><span><b>Primary Phone</b><br>${wo.customer.phone}</span></div>
+                ${wo.customer.altPhone ? `<div class="kv"><span><b>Alternate Phone</b><br>${wo.customer.altPhone}</span></div>` : ''}
                 <div class="kv"><span><b>Email</b><br>${wo.customer.email||'—'}</span></div>
                 <div class="kv"><span><b>Address</b><br>${wo.customer.address}</span></div>
               </div>
@@ -1343,10 +1354,80 @@ function renderWorkOrderModal(id){
 function custField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${(val||'').replace(/"/g,'&quot;')}" style="width:100%;padding:7px 9px;border-radius:6px;border:1px solid #d8d6cd;margin-top:2px;"></div>`;
 }
+function phoneField(key,label,val){
+  return `<div class="kv"><b>${label}</b><input id="cf_${key}" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" maxlength="14" value="${(val||'').replace(/"/g,'&quot;')}" oninput="onPhoneFieldInput(this)" style="width:100%;padding:7px 9px;border-radius:6px;border:1px solid #d8d6cd;margin-top:2px;"></div>`;
+}
+function addressField(key,label,val){
+  return `<div class="kv" style="position:relative;">
+    <b>${label}</b>
+    <input id="cf_${key}" type="text" autocomplete="off" value="${(val||'').replace(/"/g,'&quot;')}"
+      style="width:100%;padding:7px 9px;border-radius:6px;border:1px solid #d8d6cd;margin-top:2px;"
+      oninput="onAddressFieldInput(this)" onblur="scheduleHideAddressSuggestions()">
+    <div id="addrSuggest_${key}" class="addrSuggest" style="display:none;"></div>
+  </div>`;
+}
+/* ---- Phone number formatting: always normalized to (XXX) XXX-XXXX ---- */
+function formatPhoneNumber(raw){
+  let d=(raw||'').replace(/\D/g,'');
+  if(d.length===11 && d[0]==='1') d=d.slice(1);
+  d=d.slice(0,10);
+  if(!d.length) return '';
+  if(d.length<4) return '('+d;
+  if(d.length<7) return '('+d.slice(0,3)+') '+d.slice(3);
+  return '('+d.slice(0,3)+') '+d.slice(3,6)+'-'+d.slice(6);
+}
+function onPhoneFieldInput(el){
+  el.value=formatPhoneNumber(el.value);
+}
+/* ---- Address autocomplete (OpenStreetMap Nominatim) ---- */
+let ADDR_DEBOUNCE_TIMER=null;
+let ADDR_HIDE_TIMER=null;
+function onAddressFieldInput(el){
+  const key=el.id.replace('cf_','');
+  const q=el.value.trim();
+  clearTimeout(ADDR_DEBOUNCE_TIMER);
+  if(q.length<4){ hideAddressSuggestions(); return; }
+  ADDR_DEBOUNCE_TIMER=setTimeout(()=>fetchAddressSuggestions(q,key), 350);
+}
+function fetchAddressSuggestions(q,key){
+  const url='https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q);
+  fetch(url,{headers:{'Accept':'application/json'}})
+    .then(r=>r.ok?r.json():[])
+    .then(results=>renderAddressSuggestions(results||[],key))
+    .catch(()=>hideAddressSuggestions());
+}
+function renderAddressSuggestions(results,key){
+  const box=document.getElementById('addrSuggest_'+key);
+  if(!box) return;
+  if(!results.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML=results.map(r=>{
+    const label=(r.display_name||'').replace(/"/g,'&quot;');
+    return `<div class="addrSuggestItem" onmousedown="selectAddressSuggestion('${key}', this)" data-val="${label}">${r.display_name}</div>`;
+  }).join('');
+  box.style.display='block';
+}
+function selectAddressSuggestion(key, itemEl){
+  const el=document.getElementById('cf_'+key);
+  const val=itemEl.getAttribute('data-val');
+  if(el && val!==null){ el.value=val.replace(/&quot;/g,'"'); }
+  hideAddressSuggestions();
+}
+function scheduleHideAddressSuggestions(){
+  clearTimeout(ADDR_HIDE_TIMER);
+  ADDR_HIDE_TIMER=setTimeout(hideAddressSuggestions,150);
+}
+function hideAddressSuggestions(){
+  document.querySelectorAll('.addrSuggest').forEach(b=>{ b.style.display='none'; b.innerHTML=''; });
+}
 function saveCustomer(id){
   const wo=getWO(id);
   const wasEligible=inPresiteList(wo);
-  ['name','phone','email','address'].forEach(k=>{ wo.customer[k]=document.getElementById('cf_'+k).value.trim(); });
+  ['name','phone','altPhone','email','address'].forEach(k=>{
+    const field=document.getElementById('cf_'+k);
+    wo.customer[k]= field ? field.value.trim() : (wo.customer[k]||'');
+  });
+  wo.customer.phone = formatPhoneNumber(wo.customer.phone);
+  wo.customer.altPhone = wo.customer.altPhone ? formatPhoneNumber(wo.customer.altPhone) : '';
   saveDB(DB);
   const nowEligible=inPresiteList(wo);
   WO_CUST_EDIT=false;
@@ -1371,9 +1452,11 @@ function plainLineRow(text){
 }
 function jobListsHTML(wo){
   const jd=wo.jobDetails;
-  const hasAny = (jd.labor&&jd.labor.length) || (jd.materials&&jd.materials.length);
+  const hasAny = (jd.description && jd.description.trim())
+    || (jd.labor&&jd.labor.length) || (jd.materials&&jd.materials.length)
+    || (jd.tools&&jd.tools.length) || (jd.issues&&jd.issues.length) || (jd.disclaimers&&jd.disclaimers.length);
   if(!hasAny){
-    return '<div class="small">Job detail lists will appear here once the pre-site inspection is complete.</div>';
+    return '<div class="small">No job details yet. Select "Edit job details" to add them, or complete a pre-site inspection.</div>';
   }
   return `
     ${jd.description ? `<div class="descParagraph">${jd.description}</div>` : ''}
