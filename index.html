@@ -68,6 +68,9 @@ button{cursor:pointer;font-family:inherit;}
 /* ---- APP SHELL ---- */
 #appScreen{min-height:100vh;}
 header.top{background:var(--navy);color:#fff;padding:14px 26px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,.15);position:sticky;top:0;z-index:50;}
+.globalSearchBar{background:#fff;border-bottom:1px solid #e4e0d4;padding:10px 26px;display:flex;gap:8px;align-items:center;}
+.globalSearchBar input{flex:1;max-width:480px;padding:9px 12px;border-radius:8px;border:1px solid #d8d6cd;font-size:.92em;box-sizing:border-box;}
+.globalSearchBar button{white-space:nowrap;flex:0 0 auto;}
 header.top .brand{font-family:Georgia,serif;font-size:1.35em;}
 header.top .brand span{color:var(--orange);}
 .userBadge{display:flex;align-items:center;gap:12px;font-size:.85em;}
@@ -317,6 +320,8 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 
   /* ---- header ---- */
   header.top{padding:12px 16px;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:60;}
+  .globalSearchBar{padding:8px 12px;}
+  .globalSearchBar input{max-width:none;}
   header.top .brand img{width:30px;height:30px;}
   .userBadge{font-size:.85em;gap:10px;flex-wrap:wrap;}
   .logoutBtn{padding:9px 14px;min-height:40px;font-size:.85em;}
@@ -549,6 +554,10 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
       <button class="logoutBtn" onclick="logout()">Sign Out</button>
     </div>
   </header>
+  <div class="globalSearchBar">
+    <input type="text" id="globalSearchInput" placeholder="Search work orders by name, number, or address..." onkeydown="if(event.key==='Enter'){runGlobalSearch();}">
+    <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
+  </div>
   <div class="tabsBarWrap" id="tabsBarWrap">
     <button class="tabsToggleBtn" id="tabsToggleBtn" onclick="toggleTabsMenu()">
       <span class="hamburgerIcon">&#9776;</span>
@@ -1226,10 +1235,64 @@ function openNewWorkOrder(){
 }
 
 /* =========================================================================
+   GLOBAL SEARCH
+========================================================================= */
+function runGlobalSearch(){
+  const input=document.getElementById('globalSearchInput');
+  const raw=input ? input.value.trim() : '';
+  if(!raw){ toast('Type a name, work order number, or address to search.'); return; }
+  const q=raw.toLowerCase();
+  const results=(DB.workOrders||[]).filter(wo=>{
+    const name=(wo.customer.name||'').toLowerCase();
+    const nameParts=name.split(/\s+/).filter(Boolean);
+    const address=(wo.customer.address||'').toLowerCase();
+    const idStr=String(wo.id);
+    return (name && name.includes(q))
+      || nameParts.some(p=>p.startsWith(q))
+      || (address && address.includes(q))
+      || idStr===q || idStr.includes(q);
+  }).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  renderSearchResultsModal(raw, results);
+}
+function renderSearchResultsModal(query, results){
+  const modal=document.getElementById('modalRoot');
+  const safeQuery=query.replace(/</g,'&lt;');
+  const rows = results.length ? results.map(wo=>`
+    <div class="woRow" style="cursor:pointer;" onclick="selectSearchResult(${wo.id})">
+      <div class="woMain">
+        <div class="woName">${wo.customer.name || '(No name yet)'}</div>
+        <div class="woSub">${wo.jobDetails.description ? wo.jobDetails.description.slice(0,80) : 'No job description yet'}</div>
+      </div>
+      <div class="woMeta">
+        ${statusTag(wo)}
+        <span>${wo.customer.address || ''}</span>
+        <span class="small">WO #${wo.id}</span>
+      </div>
+    </div>`).join('') : `<div class="small">No work orders match "${safeQuery}".</div>`;
+  modal.innerHTML=`
+  <div class="overlay" id="searchResultsModal">
+    <div class="modal" style="max-width:640px;">
+      <div class="modalHead"><h2>Search Results</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
+      <div class="modalBody">
+        <div class="small" style="margin-bottom:10px;">${results.length} result${results.length===1?'':'s'} for "${safeQuery}"</div>
+        <div class="docList">${rows}</div>
+        <div class="btnRow" style="margin-top:14px;">
+          <button class="btn secondary" onclick="closeModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function selectSearchResult(id){
+  closeModal();
+  openWorkOrder(id);
+}
+
+/* =========================================================================
    WORK ORDER MODAL
 ========================================================================= */
 function getWO(id){ return DB.workOrders.find(w=>w.id===id); }
-let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false;
+let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false, WO_EDIT_NOTE_IDX=null;
 
 function openWorkOrder(id){
   const wo=getWO(id);
@@ -1300,16 +1363,23 @@ function renderWorkOrderModal(id){
 
         <div class="notesSection">
           <div class="panelTitle">Notes</div>
+          ${(() => {
+            const editingNote = (WO_EDIT_NOTE_IDX!==null && wo.notes[WO_EDIT_NOTE_IDX]) ? wo.notes[WO_EDIT_NOTE_IDX] : null;
+            const typeVal = editingNote ? editingNote.type : '';
+            const followUpVal = editingNote && editingNote.followUpDate ? formatDateDisplay(editingNote.followUpDate) : '';
+            const textVal = editingNote ? editingNote.text : (noteDraftFor(id)||'');
+            return `
           <div class="noteEntryRow">
+            ${editingNote ? '<div class="small" style="color:var(--orange);font-weight:700;">Editing note — Save Edit to update it, or Cancel to discard changes.</div>' : ''}
             <div class="noteEntryTop">
               <div class="noteFieldGroup">
                 <label for="noteType">Note Type</label>
-                <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+                <select id="noteType">${NOTE_TYPES.map(t=>`<option value="${t}" ${t===typeVal?'selected':''}>${t}</option>`).join('')}</select>
               </div>
               <div class="noteFieldGroup">
                 <label for="noteFollowUp">Follow-up date (optional)</label>
                 <div class="dateFieldWrap">
-                  <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional) — type in any common format" autocomplete="off" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
+                  <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional) — type in any common format" autocomplete="off" value="${followUpVal}" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
                   <div class="calWrap">
                     <button type="button" class="calBtn" tabindex="-1" aria-hidden="true">
                       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1324,9 +1394,13 @@ function renderWorkOrderModal(id){
                 </div>
               </div>
             </div>
-            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4" oninput="saveNoteDraft(${id}, this.value)">${(noteDraftFor(id)||'').replace(/</g,'&lt;')}</textarea>
-            <button class="btn" onclick="submitNote(${id})">Add Note</button>
-          </div>
+            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4" oninput="${editingNote ? '' : `saveNoteDraft(${id}, this.value)`}">${(textVal||'').replace(/</g,'&lt;')}</textarea>
+            <div class="btnRow">
+              <button class="btn" onclick="${editingNote ? `saveNoteEdit(${id})` : `submitNote(${id})`}">${editingNote ? 'Save Edit' : 'Add Note'}</button>
+              ${editingNote ? `<button class="btn secondary" onclick="cancelNoteEdit(${id})">Cancel</button>` : ''}
+            </div>
+          </div>`;
+          })()}
           <div id="notesList">${notesHTML(wo)}</div>
         </div>`;
   }
@@ -1588,9 +1662,12 @@ function fmtBytes(n){
 }
 const STORAGE_CAP_BYTES = 5*1024*1024*1024; // 5GB — Firebase Storage free-tier ceiling
 function storageUsagePct(){ return Math.min(100, Math.round(((DB.storageUsedBytes||0)/STORAGE_CAP_BYTES)*100)); }
-function docsTabHTML(wo){
-  const docs=wo.docs||[];
-  const rows = docs.length ? docs.map(d=>`
+function isImageDoc(d){
+  if(d.type) return d.type.startsWith('image/');
+  return /\.(jpe?g|png|gif|webp|heic|heif|bmp|svg)$/i.test(d.name||'');
+}
+function docRowHTML(wo, d){
+  return `
     <div class="docRow">
       <div class="docInfo">
         <span class="docName">${(d.name||'Untitled').replace(/</g,'&lt;')}</span>
@@ -1602,7 +1679,14 @@ function docsTabHTML(wo){
         <button class="btn secondary" onclick="renameDoc(${wo.id},'${d.id}')">Rename</button>
         <button class="btn danger" onclick="deleteDoc(${wo.id},'${d.id}')">Delete</button>
       </div>
-    </div>`).join('') : '<div class="small">No documents uploaded yet.</div>';
+    </div>`;
+}
+function docsTabHTML(wo){
+  const docs=wo.docs||[];
+  const images = docs.filter(isImageDoc);
+  const files = docs.filter(d=>!isImageDoc(d));
+  const imageRows = images.length ? images.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No images uploaded yet.</div>';
+  const fileRows = files.length ? files.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No documents uploaded yet.</div>';
   const uploaderHTML = syncStorage
     ? `<input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
        <div id="docUploadStatus_${wo.id}" class="small" style="color:var(--orange);font-weight:600;min-height:1.2em;margin-top:4px;"></div>
@@ -1612,7 +1696,10 @@ function docsTabHTML(wo){
     <h4>Documents</h4>
     <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. You'll be asked to name each file as it uploads.</div>
     ${uploaderHTML}
-    <div class="docList" style="margin-top:12px;">${rows}</div>
+    <h4 style="margin-top:18px;">Images${images.length?` (${images.length})`:''}</h4>
+    <div class="docList" style="margin-top:8px;">${imageRows}</div>
+    <h4 style="margin-top:18px;">Documents${files.length?` (${files.length})`:''}</h4>
+    <div class="docList" style="margin-top:8px;">${fileRows}</div>
   </div>`;
 }
 function compressImageToBlob(file){
@@ -1884,14 +1971,42 @@ function submitNote(id){
 
 /* Admin note edit/delete */
 function adminEditNote(woId, idx){
-  const wo=getWO(woId);
-  const n=wo.notes[idx];
-  const newText=prompt('Edit note text:', n.text);
-  if(newText===null) return;
+  WO_EDIT_NOTE_IDX = idx;
+  renderWorkOrderModal(woId);
+  const ta = document.getElementById('noteText');
+  if(ta){ ta.focus(); ta.scrollIntoView({behavior:'smooth', block:'center'}); }
+}
+function cancelNoteEdit(id){
+  WO_EDIT_NOTE_IDX = null;
+  renderWorkOrderModal(id);
+}
+function saveNoteEdit(id){
+  const wo=getWO(id);
+  const n = (WO_EDIT_NOTE_IDX!==null) ? wo.notes[WO_EDIT_NOTE_IDX] : null;
+  if(!n){ WO_EDIT_NOTE_IDX=null; renderWorkOrderModal(id); return; }
+  const type=document.getElementById('noteType').value;
+  const text=document.getElementById('noteText').value.trim();
+  const followUpEl=document.getElementById('noteFollowUp');
+  let followUp = null;
+  if(followUpEl && followUpEl.value.trim()){
+    followUp = parseFlexibleDate(followUpEl.value.trim());
+    if(!followUp){
+      followUpEl.classList.add('dateInvalid');
+      followUpEl.focus();
+      toast('That follow-up date doesn\'t look right — try MM/DD/YYYY.');
+      return;
+    }
+  }
   const oldText=n.text;
-  n.text=newText;
-  addAdminLog(wo, `Edited a ${n.type} note (was: "${oldText}")`);
-  saveDB(DB); renderWorkOrderModal(woId);
+  n.type=type;
+  n.text=text;
+  n.followUpDate=followUp;
+  addAdminLog(wo, `Edited a ${type} note (was: "${oldText}")`);
+  WO_EDIT_NOTE_IDX=null;
+  saveDB(DB);
+  renderWorkOrderModal(id);
+  renderTabCounts(); renderMain();
+  toast('Note updated.');
 }
 function adminDeleteNote(woId, idx){
   const wo=getWO(woId);
@@ -1899,6 +2014,7 @@ function adminDeleteNote(woId, idx){
   if(!confirm('Delete this note? This cannot be undone.')) return;
   wo.notes.splice(idx,1);
   addAdminLog(wo, `Deleted a ${n.type} note ("${n.text}")`);
+  if(WO_EDIT_NOTE_IDX===idx) WO_EDIT_NOTE_IDX=null;
   saveDB(DB); renderWorkOrderModal(woId); renderTabCounts(); renderMain();
 }
 function adminDeleteWorkOrder(id){
@@ -1908,7 +2024,7 @@ function adminDeleteWorkOrder(id){
   saveDB(DB); closeModal(); renderTabCounts(); renderMain();
 }
 
-function closeModal(){ document.getElementById('modalRoot').innerHTML=''; WO_JOB_EDIT=false; JD_EDIT=null; }
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; WO_JOB_EDIT=false; JD_EDIT=null; WO_EDIT_NOTE_IDX=null; }
 function toast(msg){
   const t=document.createElement('div');
   t.textContent=msg;
@@ -2951,25 +3067,6 @@ document.addEventListener('click', function(e){
     }
   });
 });
-
-/* Every modal in the app (sync, work order, pre-site, etc.) is injected
-   into #modalRoot. Whatever page position or scroll state the user was
-   in — including the old zoomed-in login screen that made new modals
-   look like a blank page — always snap the window back to the top the
-   instant a modal appears, so it's immediately visible in full. */
-(function(){
-  const root = document.getElementById('modalRoot');
-  if(!root || !window.MutationObserver) return;
-  const obs = new MutationObserver(function(){
-    if(root.firstElementChild){
-      window.scrollTo({top:0, left:0, behavior:'auto'});
-      root.scrollTop = 0;
-      const ov = root.querySelector('.overlay');
-      if(ov) ov.scrollTop = 0;
-    }
-  });
-  obs.observe(root, {childList:true});
-})();
 
 </script>
 </body>
