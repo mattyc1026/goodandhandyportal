@@ -373,7 +373,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   nav.tabs#tabsNav button.active .count{background:var(--orange);}
   /* room so the fixed bottom bar never covers content, and top offset
      handled purely in CSS (no JS-computed inline "top" needed on mobile) */
-  main{padding-bottom:100px;}
+  main{padding-bottom:calc(130px + env(safe-area-inset-bottom,0px));}
 
   /* ---- main content ---- */
   main{padding-left:14px;padding-right:14px;padding-top:16px;}
