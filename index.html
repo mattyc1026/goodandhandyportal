@@ -198,6 +198,29 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .addrSuggestItem:last-child{border-bottom:none;}
 .addrSuggestItem:hover,.addrSuggestItem:active{background:var(--cream);}
 .kv b{color:var(--navy);display:block;font-size:.72em;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);}
+.schedSection{margin-top:18px;border-top:1px solid #e6e2d6;padding-top:14px;}
+.schedSubHeader{font-size:.72em;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin:10px 0 4px;}
+.schedRow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:.88em;}
+.schedRow b{color:var(--navy);}
+.tinyDel{background:none;border:none;color:var(--redb);font-size:1.1em;font-weight:700;cursor:pointer;padding:2px 6px;line-height:1;min-height:28px;}
+.schedWidgetWrap{display:flex;gap:20px;flex-wrap:wrap;}
+.schedCalCol{flex:1 1 320px;min-width:280px;}
+.schedFormCol{flex:1 1 280px;min-width:260px;}
+.schedCalNav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.schedCalNav button{background:var(--cream);border:1px solid #d8d6cd;border-radius:8px;padding:6px 12px;font-weight:700;color:var(--navy);}
+.schedCalGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.schedCalGrid .dow{font-size:.7em;text-transform:uppercase;color:var(--muted);text-align:center;font-weight:700;padding-bottom:4px;}
+.schedCalDay{position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #e6e2d6;background:#fff;font-size:.85em;cursor:pointer;min-height:36px;}
+.schedCalDay.empty{visibility:hidden;cursor:default;}
+.schedCalDay.past{color:#bbb;cursor:not-allowed;}
+.schedCalDay.hasJob::after{content:'';position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--orange);}
+.schedCalDay.selStart,.schedCalDay.selEnd{background:var(--navy);color:#fff;border-color:var(--navy);}
+.schedCalDay.inRange{background:rgba(15,38,71,.15);}
+.schedTypeToggle{display:flex;gap:8px;margin-bottom:14px;}
+.schedTypeToggle button{flex:1;padding:9px 8px;border-radius:8px;border:1px solid #d8d6cd;background:#fff;font-weight:700;font-size:.85em;color:var(--muted);}
+.schedTypeToggle button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.schedPendingList{margin-top:16px;}
+.schedPendingItem{display:flex;justify-content:space-between;align-items:center;background:var(--cream);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:.85em;}
 .jobList{margin:10px 0;}
 .jobList h4{font-size:.82em;margin:10px 0 4px;color:var(--navy);}
 .jobList ul{margin:0;padding-left:18px;font-size:.85em;}
@@ -854,6 +877,7 @@ function normalizeWO(wo){
   if(wo.checkOut===undefined) wo.checkOut=null;
   if(!Array.isArray(wo.docs)) wo.docs=[];
   wo.docs.forEach(d=>{ if(d.uploadedAt===undefined) d.uploadedAt=0; });
+  if(!Array.isArray(wo.scheduleDates)) wo.scheduleDates=[];
   return wo;
 }
 function normalizeDB(db){
@@ -1334,7 +1358,7 @@ function openNewWorkOrder(){
     id, createdAt:Date.now(),
     customer:{name:'',phone:'',altPhone:'',email:'',address:''},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]},
-    notes:[], adminLog:[], docs:[],
+    notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
     presiteScheduled:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
@@ -1399,6 +1423,298 @@ function selectSearchResult(id){
 }
 
 /* =========================================================================
+   SCHEDULE DATE(S) + APPLE CALENDAR (.ics) INTEGRATION
+========================================================================= */
+let SCHED_WO_ID=null, SCHED_CAL_MONTH=null, SCHED_TYPE='full', SCHED_START=null, SCHED_END=null, SCHED_PENDING=[];
+
+function scheduleDatesSectionHTML(wo, id){
+  const all=(wo.scheduleDates||[]).slice().sort((a,b)=>(a.startDate+a.startTime).localeCompare(b.startDate+b.startTime));
+  const presite=all.filter(d=>d.type==='presite');
+  const full=all.filter(d=>d.type==='full');
+  return `
+    <div class="schedSection">
+      <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Schedule Date(s)</span>
+        <button class="editLink" onclick="openScheduleWidget(${id})">+ Add</button>
+      </div>
+      ${(!presite.length && !full.length) ? '<div class="small">No dates scheduled yet.</div>' : ''}
+      ${presite.length ? `<div class="schedSubHeader">Pre-Site Inspection</div>${presite.map(d=>schedRowHTML(id,d)).join('')}` : ''}
+      ${full.length ? `<div class="schedSubHeader">Whole Job</div>${full.map(d=>schedRowHTML(id,d)).join('')}` : ''}
+    </div>`;
+}
+function schedRowHTML(woId, d){
+  const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
+  return `<div class="schedRow">
+    <div><b>${range}</b><br><span class="small">Arrival ${formatArrivalWindow(d.startTime)}${d.multiDay ? ' (repeats daily)' : ''}</span></div>
+    <button class="tinyDel" title="Remove" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
+  </div>`;
+}
+function deleteScheduleDate(woId, dateId){
+  const wo=getWO(woId);
+  askYesNo('Remove this scheduled date? This does not remove it from any calendar it was already added to.', (yes)=>{
+    if(yes){
+      wo.scheduleDates=(wo.scheduleDates||[]).filter(d=>d.id!==dateId);
+      saveDB(DB);
+      renderWorkOrderModal(woId);
+    }
+  });
+}
+
+/* Converts a 24hr "HH:MM" start time into a 1-hour arrival window string,
+   e.g. "10:00" -> "10-11AM". */
+function formatArrivalWindow(hhmm){
+  if(!hhmm) return '';
+  const [h,m]=hhmm.split(':').map(Number);
+  const start=new Date(2000,0,1,h,m);
+  const end=new Date(2000,0,1,h+1,m);
+  const startHr = start.getHours()%12===0 ? 12 : start.getHours()%12;
+  const endHr = end.getHours()%12===0 ? 12 : end.getHours()%12;
+  const ampm = start.getHours()<12 ? 'AM' : 'PM';
+  return `${startHr}-${endHr}${ampm} Arrival`;
+}
+function formatTime12(hhmm){
+  if(!hhmm) return '';
+  const [h,m]=hhmm.split(':').map(Number);
+  const d=new Date(2000,0,1,h,m);
+  return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+}
+function isoToday(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function openScheduleWidget(id){
+  SCHED_WO_ID=id;
+  const today=new Date();
+  SCHED_CAL_MONTH=new Date(today.getFullYear(), today.getMonth(), 1);
+  SCHED_TYPE='full';
+  SCHED_START=null; SCHED_END=null;
+  SCHED_PENDING=[];
+  renderScheduleWidget();
+}
+function renderScheduleWidget(){
+  const wo=getWO(SCHED_WO_ID);
+  const modal=document.getElementById('modalRoot');
+  modal.innerHTML=`
+  <div class="overlay">
+    <div class="modal" style="max-width:900px;">
+      <div class="modalHead">
+        <h2>${wo.customer.name || 'Work Order'} — Schedule Date(s)</h2>
+        <button class="closeX" onclick="renderWorkOrderModal(${SCHED_WO_ID})">&times;</button>
+      </div>
+      <div class="modalBody">
+        <div class="schedWidgetWrap">
+          <div class="schedCalCol">
+            ${scheduleCalendarHTML()}
+          </div>
+          <div class="schedFormCol">
+            <div class="schedTypeToggle">
+              <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site Inspection</button>
+              <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
+            </div>
+            <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${isoToday()}" onchange="onSchedStartDateChange(this.value)"></div>
+            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" value="09:00"></div>
+            <div class="field"><label>Multi-day job? (optional end date)</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||isoToday()}" onchange="onSchedEndDateChange(this.value)"></div>
+            <div class="field" id="schedEndTimeField" style="${SCHED_END?'':'display:none'}"><label>End Time (on last day)</label><input type="time" id="schedEndTime" value="17:00"></div>
+            <button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>
+
+            ${SCHED_PENDING.length ? `
+              <div class="schedPendingList">
+                <div class="panelTitle" style="margin-top:16px;">Dates to Add</div>
+                ${SCHED_PENDING.map((p,i)=>`
+                  <div class="schedPendingItem">
+                    <span>${p.type==='presite'?'Pre-Site':'Whole Job'} — ${formatDateDisplay(p.startDate)}${p.multiDay?' – '+formatDateDisplay(p.endDate):''} @ ${formatTime12(p.startTime)}</span>
+                    <button class="tinyDel" onclick="removePendingScheduleDate(${i})">&times;</button>
+                  </div>
+                `).join('')}
+              </div>
+            ` : '<div class="small" style="margin-top:12px;">Pick dates/times above and click "Add This Date" for each visit, then Add to Calendar when done.</div>'}
+          </div>
+        </div>
+      </div>
+      <div class="footerActions">
+        <button class="btn secondary" onclick="renderWorkOrderModal(${SCHED_WO_ID})">Cancel</button>
+        <button class="btn" ${SCHED_PENDING.length?'':'disabled'} onclick="finalizeScheduleDates()">Add to Calendar</button>
+      </div>
+    </div>
+  </div>`;
+}
+function setSchedType(t){ SCHED_TYPE=t; renderScheduleWidget(); }
+function onSchedStartDateChange(val){ SCHED_START=val||null; renderScheduleWidget(); }
+function onSchedEndDateChange(val){ SCHED_END=val||null; renderScheduleWidget(); }
+
+function scheduleCalendarHTML(){
+  const month=SCHED_CAL_MONTH;
+  const y=month.getFullYear(), m=month.getMonth();
+  const first=new Date(y,m,1);
+  const startDow=first.getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const monthLabel=month.toLocaleDateString([], {month:'long', year:'numeric'});
+  const todayIso=isoToday();
+
+  // Collect every scheduled date (across all work orders) that falls in this
+  // visible month, so the tech can see what else is already on the books.
+  const jobDays=new Set();
+  (DB.workOrders||[]).forEach(w=>{
+    (w.scheduleDates||[]).forEach(d=>{
+      if(d.multiDay && d.endDate){
+        let cur=new Date(d.startDate+'T00:00:00');
+        const end=new Date(d.endDate+'T00:00:00');
+        while(cur<=end){
+          jobDays.add(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0'));
+          cur.setDate(cur.getDate()+1);
+        }
+      } else {
+        jobDays.add(d.startDate);
+      }
+    });
+  });
+
+  let cells='';
+  for(let i=0;i<startDow;i++) cells+='<div class="schedCalDay empty"></div>';
+  for(let day=1; day<=daysInMonth; day++){
+    const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    const isPast = iso<todayIso;
+    const isStart = iso===SCHED_START;
+    const isEnd = SCHED_END && iso===SCHED_END;
+    const inRange = SCHED_START && SCHED_END && iso>SCHED_START && iso<SCHED_END;
+    const cls=['schedCalDay'];
+    if(isPast) cls.push('past');
+    if(jobDays.has(iso)) cls.push('hasJob');
+    if(isStart) cls.push('selStart');
+    if(isEnd) cls.push('selEnd');
+    if(inRange) cls.push('inRange');
+    cells += `<div class="${cls.join(' ')}" ${isPast?'':`onclick="pickSchedDay('${iso}')"`} title="${jobDays.has(iso)?'Another job is already scheduled this day':''}">${day}</div>`;
+  }
+
+  return `
+    <div class="schedCalNav">
+      <button onclick="changeSchedMonth(-1)">&larr;</button>
+      <b>${monthLabel}</b>
+      <button onclick="changeSchedMonth(1)">&rarr;</button>
+    </div>
+    <div class="schedCalGrid">
+      <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+      ${cells}
+    </div>
+    <div class="small" style="margin-top:8px;">A dot marks a day with another job already scheduled. Click a date to set the start date; click a later date to set a multi-day end date.</div>`;
+}
+function changeSchedMonth(delta){
+  SCHED_CAL_MONTH=new Date(SCHED_CAL_MONTH.getFullYear(), SCHED_CAL_MONTH.getMonth()+delta, 1);
+  renderScheduleWidget();
+}
+function pickSchedDay(iso){
+  if(!SCHED_START || (SCHED_START && SCHED_END) || iso<=SCHED_START){
+    SCHED_START=iso; SCHED_END=null;
+  } else {
+    SCHED_END=iso;
+  }
+  renderScheduleWidget();
+}
+function addPendingScheduleDate(){
+  const startDate=document.getElementById('schedStartDate').value || SCHED_START;
+  const startTime=document.getElementById('schedStartTime').value;
+  const endDateEl=document.getElementById('schedEndDate');
+  const endDate=endDateEl ? endDateEl.value : '';
+  const endTimeEl=document.getElementById('schedEndTime');
+  if(!startDate || !startTime){ toast('Pick a start date and time first.'); return; }
+  if(endDate && endDate<startDate){ toast('End date must be on or after the start date.'); return; }
+  const entry={
+    id:'sd'+Date.now()+Math.random().toString(36).slice(2,7),
+    type:SCHED_TYPE,
+    startDate, startTime,
+    multiDay: !!endDate && endDate!==startDate,
+    endDate: endDate || startDate,
+    endTime: (endDate && endTimeEl) ? endTimeEl.value : startTime
+  };
+  SCHED_PENDING.push(entry);
+  SCHED_START=null; SCHED_END=null;
+  renderScheduleWidget();
+}
+function removePendingScheduleDate(i){
+  SCHED_PENDING.splice(i,1);
+  renderScheduleWidget();
+}
+function finalizeScheduleDates(){
+  const wo=getWO(SCHED_WO_ID);
+  if(!SCHED_PENDING.length) return;
+  wo.scheduleDates=(wo.scheduleDates||[]).concat(SCHED_PENDING);
+  addAdminLog(wo, `Added ${SCHED_PENDING.length} schedule date(s) and generated a calendar (.ics) download.`);
+  saveDB(DB);
+  downloadICS(wo, SCHED_PENDING);
+  const doneId=SCHED_WO_ID;
+  SCHED_PENDING=[]; SCHED_WO_ID=null;
+  toast('Schedule dates saved — .ics file downloaded. Open it to add to Apple Calendar.');
+  renderWorkOrderModal(doneId);
+  renderMain();
+}
+
+/* ---- .ics generation ---- */
+function icsEscape(str){
+  return String(str||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+}
+function icsDateTime(dateIso, timeHHMM){
+  const [y,mo,d]=dateIso.split('-');
+  const [h,mi]=timeHHMM.split(':');
+  return `${y}${mo}${d}T${h}${mi}00`;
+}
+function icsDateOnly(dateIso){
+  return dateIso.replace(/-/g,'');
+}
+function buildICS(wo, entries){
+  const name=(wo.customer.name||'Customer').trim();
+  const phone=wo.customer.phone||'';
+  const address=wo.customer.address||'';
+  const notes=wo.jobDetails && wo.jobDetails.description ? wo.jobDetails.description : '';
+  const stamp=icsDateTime(isoToday(), new Date().toTimeString().slice(0,5));
+
+  let events='';
+  entries.forEach(e=>{
+    const title=`${name} \u30fb ${phone} \u30fb ${formatArrivalWindow(e.startTime)}`;
+    const dtStart=icsDateTime(e.startDate, e.startTime);
+    const dtEnd=icsDateTime(e.multiDay ? e.startDate : e.endDate, e.endTime);
+    let rrule='';
+    if(e.multiDay){
+      rrule=`RRULE:FREQ=DAILY;UNTIL=${icsDateOnly(e.endDate)}T235959Z\n`;
+    }
+    events += `BEGIN:VEVENT
+UID:${e.id}@goodandhandy
+DTSTAMP:${stamp}
+SUMMARY:${icsEscape(title)}
+LOCATION:${icsEscape(address)}
+DTSTART:${dtStart}
+DTEND:${dtEnd}
+${rrule}DESCRIPTION:${icsEscape(notes)}
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Job Reminder
+TRIGGER:-PT2H
+END:VALARM
+END:VEVENT
+`;
+  });
+
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Good & Handy//Portal//EN
+CALSCALE:GREGORIAN
+${events}END:VCALENDAR`;
+}
+function downloadICS(wo, entries){
+  const ics=buildICS(wo, entries);
+  const blob=new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const safeName=(wo.customer.name||'job').replace(/[^a-z0-9]+/gi,'_');
+  a.href=url;
+  a.download=`${safeName}_schedule.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
+
+/* =========================================================================
    WORK ORDER MODAL
 ========================================================================= */
 function getWO(id){ return DB.workOrders.find(w=>w.id===id); }
@@ -1460,6 +1776,7 @@ function renderWorkOrderModal(id){
               </div>
               <button class="editLink" style="margin-top:8px;" onclick="toggleCustEdit(${id})">Edit customer info</button>
             `}
+            ${scheduleDatesSectionHTML(wo, id)}
           </div>
           <div class="jobPanel">
             <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
