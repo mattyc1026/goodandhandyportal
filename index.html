@@ -671,8 +671,7 @@ function sortDropdownHTML(){
     ['dateNew','Input date new'],
     ['dateOld','Input date old'],
     ['firstName','Alphabetical first name'],
-    ['lastName','Alphabetical last name'],
-    ['followupDue','Follow-up due/overdue']
+    ['lastName','Alphabetical last name']
   ];
   return `<div class="sortWrap"><label for="woSortSelect">Sort by</label>
     <select id="woSortSelect" onchange="setWoSort(this.value)">
@@ -1150,15 +1149,14 @@ function renderMain(){
   const main=document.getElementById('mainArea');
   let html='';
   if(ACTIVE_TAB==='workorders'){
-    const isFollowUpFilter = WO_SORT==='followupDue';
-    const list = isFollowUpFilter ? followUpDueList() : sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
-    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>${isFollowUpFilter ? 'Jobs with a follow-up that is due or overdue. Tap one to jump to where it currently sits in the workflow.' : 'All active jobs. Highlight shows overall progress.'}</p></div>${sortDropdownHTML()}</div>`;
+    const dueList = followUpDueList();
+    const list = sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
+    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>All active jobs. Highlight shows overall progress.</p></div>${sortDropdownHTML()}</div>`;
     html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">+ Create New Work Order</button>`;
-    if(isFollowUpFilter){
-      html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo,{followUpNav:true})).join('')+'</div>' : `<div class="emptyState">No follow-ups are due or overdue right now.</div>`;
-    } else {
-      html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No work orders yet. Create the first one below.</div>`;
+    if(dueList.length){
+      html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
     }
+    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No work orders yet. Create the first one below.</div>`;
   } else if(ACTIVE_TAB==='presite'){
     const incomplete=DB.workOrders.filter(inPresiteIncompleteList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inPresiteScheduledList).sort((a,b)=>a.id-b.id);
