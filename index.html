@@ -1156,7 +1156,7 @@ function renderMain(){
     if(dueList.length){
       html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
     }
-    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No work orders yet. Create the first one below.</div>`;
+    html+=subGroupHTML('All Work Orders', list, {emptyText:'No work orders yet. Create the first one above.'});
   } else if(ACTIVE_TAB==='presite'){
     const incomplete=DB.workOrders.filter(inPresiteIncompleteList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inPresiteScheduledList).sort((a,b)=>a.id-b.id);
