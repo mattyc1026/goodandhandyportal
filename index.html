@@ -1317,6 +1317,36 @@ function checkOutWO(id, checkboxEl){
     }
   });
 }
+function editCheckInTime(id){
+  const wo=getWO(id);
+  if(!wo.checkIn) return;
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
+    <h3>Edit Check In Time</h3>
+    <div class="field"><label>Date</label><input type="text" id="editCheckInDate" value="${wo.checkIn.date}"></div>
+    <div class="field"><label>Time</label><input type="text" id="editCheckInTimeVal" value="${wo.checkIn.time}"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveCheckInTime(${id})">Save</button>
+      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function saveCheckInTime(id){
+  const wo=getWO(id);
+  if(!wo.checkIn) return;
+  const newDate=document.getElementById('editCheckInDate').value.trim();
+  const newTime=document.getElementById('editCheckInTimeVal').value.trim();
+  if(!newDate || !newTime){ toast('Date and time are required.'); return; }
+  const oldDate=wo.checkIn.date, oldTime=wo.checkIn.time;
+  wo.checkIn.date=newDate;
+  wo.checkIn.time=newTime;
+  addAdminLog(wo, 'Check-in time edited from '+oldDate+' '+oldTime+' to '+newDate+' '+newTime+'.');
+  saveDB(DB);
+  document.getElementById('confirmRoot').innerHTML='';
+  renderMain();
+  renderWorkOrderModal(id);
+  toast('Check-in time updated.');
+}
 function approveEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
   askYesNo('Confirm this estimate is approved? It will move to Schedule Job.', (yes)=>{
@@ -1784,7 +1814,7 @@ function renderWorkOrderModal(id){
               ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : ''}
             </div>
             ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
-                <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by : '—'}</span></div>
+                <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by : '—'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
                 <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by : '—'}</span></div>
               </div>` : ''}
             ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
