@@ -291,6 +291,23 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .noteFollowTag{display:inline-block;font-size:.72em;font-weight:700;padding:1px 7px;border-radius:20px;background:#eef1f6;color:var(--navy);margin-left:6px;}
 .noteFollowTag.due{background:#fde3e3;color:var(--redb);}
 
+/* ---- Check-In / Check-Out (In Progress NAV tab) ---- */
+.woRow.checkedInGlow{
+  outline:3px solid #39ff14;
+  box-shadow:0 0 8px 2px #39ff14, 0 0 18px 4px rgba(57,255,20,.65);
+  animation:checkedInPulse 1.8s ease-in-out infinite;
+}
+@keyframes checkedInPulse{
+  0%,100%{box-shadow:0 0 8px 2px #39ff14, 0 0 18px 4px rgba(57,255,20,.65);}
+  50%{box-shadow:0 0 12px 4px #39ff14, 0 0 26px 8px rgba(57,255,20,.85);}
+}
+.checkInOutRow{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px;}
+.checkInOutRow .jcCheck{white-space:nowrap;}
+.checkInOutRow .jcCheck input:disabled{opacity:.6;}
+.checkStampBox{background:#eafcef;border:1px solid #39ff14;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:.85em;}
+.checkStampBox .kv{display:flex;justify-content:space-between;gap:10px;}
+.woRow.jumpHighlight{outline:3px solid var(--orange);box-shadow:0 0 0 6px rgba(232,121,26,.25);}
+
 /* =========================================================================
    RESPONSIVE — TABLET / PHONE (<=900px)
    Redesigned for large touch targets, a fixed thumb-reach bottom nav,
@@ -567,6 +584,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
       <button data-tab="workorders" onclick="switchTab('workorders')">Work Orders <span class="count" id="cnt-workorders">0</span></button>
       <button data-tab="presite" onclick="switchTab('presite')">Pre-Site Inspections <span class="count" id="cnt-presite">0</span></button>
       <button data-tab="estimates" onclick="switchTab('estimates')">Estimates <span class="count" id="cnt-estimates">0</span></button>
+      <button data-tab="inprogress" onclick="switchTab('inprogress')">In Progress <span class="count" id="cnt-inprogress">0</span></button>
       <button data-tab="invoices" onclick="switchTab('invoices')">Invoices <span class="count" id="cnt-invoices">0</span></button>
       <button data-tab="surveys" onclick="switchTab('surveys')">Surveys <span class="count" id="cnt-surveys">0</span></button>
       <button data-tab="jobhistory" onclick="switchTab('jobhistory')">Job History</button>
@@ -653,12 +671,54 @@ function sortDropdownHTML(){
     ['dateNew','Input date new'],
     ['dateOld','Input date old'],
     ['firstName','Alphabetical first name'],
-    ['lastName','Alphabetical last name']
+    ['lastName','Alphabetical last name'],
+    ['followupDue','Follow-up due/overdue']
   ];
   return `<div class="sortWrap"><label for="woSortSelect">Sort by</label>
     <select id="woSortSelect" onchange="setWoSort(this.value)">
       ${opts.map(([val,label])=>`<option value="${val}" ${WO_SORT===val?'selected':''}>${label}</option>`).join('')}
     </select></div>`;
+}
+/* Follow-up Due filter: shows only work orders whose most recent note has
+   a follow-up date that is today or in the past. Clicking one of these
+   doesn't open the work order directly — it jumps to whichever NAV tab
+   the job currently lives in (its place in the workflow). */
+function followUpDueList(){
+  return DB.workOrders.filter(inWorkOrdersList).filter(woIsFollowUpDue).sort((a,b)=>{
+    const na=mostRecentNote(a), nb=mostRecentNote(b);
+    const da=(na&&na.followUpDate)||'';
+    const db=(nb&&nb.followUpDate)||'';
+    return da.localeCompare(db);
+  });
+}
+/* Determines which NAV tab a work order currently belongs to, based on
+   the same stage logic used by statusClass()/statusTag(). */
+function workOrderCurrentTab(wo){
+  if(inJobHistoryList(wo)) return 'jobhistory';
+  if(inSurveysList(wo)) return 'surveys';
+  if(inBuildInvoiceList(wo)) return 'invoices';
+  if(inInvoiceInProgressList(wo)) return 'inprogress';
+  if(inScheduleJobList(wo)) return 'inprogress';
+  if(inEstimatePendingApprovalList(wo)) return 'estimates';
+  if(inBuildEstimateList(wo)) return 'estimates';
+  if(inPresiteScheduledList(wo)) return 'presite';
+  if(inPresiteIncompleteList(wo)) return 'presite';
+  return 'workorders';
+}
+/* Navigates to the NAV tab where the work order currently sits in the
+   workflow, then briefly highlights/scrolls to its row. */
+function goToWorkOrderInWorkflow(id){
+  const wo=getWO(id);
+  if(!wo) return;
+  switchTab(workOrderCurrentTab(wo));
+  setTimeout(()=>{
+    const el=document.querySelector('.woRow[data-wo-id="'+id+'"]');
+    if(el){
+      el.scrollIntoView({behavior:'smooth', block:'center'});
+      el.classList.add('jumpHighlight');
+      setTimeout(()=>el.classList.remove('jumpHighlight'), 2200);
+    }
+  }, 60);
 }
 
 /* =========================================================================
@@ -791,6 +851,8 @@ function normalizeWO(wo){
   if(wo.jobScheduled===undefined) wo.jobScheduled=!!wo.invoiceApproved; // migrate from prior workflow version
   if(wo.jobComplete===undefined) wo.jobComplete=false;
   if(wo.movedToHistoryAt===undefined) wo.movedToHistoryAt=null;
+  if(wo.checkIn===undefined) wo.checkIn=null;
+  if(wo.checkOut===undefined) wo.checkOut=null;
   if(!Array.isArray(wo.docs)) wo.docs=[];
   wo.docs.forEach(d=>{ if(d.uploadedAt===undefined) d.uploadedAt=0; });
   return wo;
@@ -917,8 +979,8 @@ function statusClass(wo){
   if(wo.movedToHistoryAt) return 'st-grey';
   if(wo.invoiceDone) return 'st-blue';                 // Surveys
   if(wo.jobComplete) return 'st-blue-bold';            // Invoices > Build Invoice
-  if(wo.jobScheduled) return 'st-green';                // Invoices > In Progress
-  if(wo.estimateApproved) return 'st-green-bold';       // Estimates > Schedule Job
+  if(wo.jobScheduled) return 'st-green';                // In Progress > In Progress
+  if(wo.estimateApproved) return 'st-green-bold';       // In Progress > Schedule Job
   if(wo.estimateDone) return 'st-yellow';                // Estimates > Pending Approval
   if(wo.presiteDone) return 'st-yellow-bold';           // Estimates > Build Estimate
   if(wo.presiteScheduled) return 'st-red';               // Pre-Site > Scheduled
@@ -1069,8 +1131,9 @@ function renderTabCounts(){
   if(purgeOldHistory(DB)) saveDB(DB);
   document.getElementById('cnt-workorders').textContent = DB.workOrders.filter(inWorkOrdersList).length;
   document.getElementById('cnt-presite').textContent = DB.workOrders.filter(inPresiteList).length;
-  document.getElementById('cnt-estimates').textContent = DB.workOrders.filter(inEstimatesList).length;
-  document.getElementById('cnt-invoices').textContent = DB.workOrders.filter(inInvoicesList).length;
+  document.getElementById('cnt-estimates').textContent = DB.workOrders.filter(wo=>inEstimatesList(wo) && !inScheduleJobList(wo)).length;
+  document.getElementById('cnt-inprogress').textContent = DB.workOrders.filter(wo=>inScheduleJobList(wo) || inInvoiceInProgressList(wo)).length;
+  document.getElementById('cnt-invoices').textContent = DB.workOrders.filter(wo=>inInvoicesList(wo) && !inInvoiceInProgressList(wo)).length;
   document.getElementById('cnt-surveys').textContent = DB.workOrders.filter(inSurveysList).length;
 }
 function subGroupHTML(label, list, opts){
@@ -1087,10 +1150,15 @@ function renderMain(){
   const main=document.getElementById('mainArea');
   let html='';
   if(ACTIVE_TAB==='workorders'){
-    const list=sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
-    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>All active jobs. Highlight shows overall progress.</p></div>${sortDropdownHTML()}</div>`;
+    const isFollowUpFilter = WO_SORT==='followupDue';
+    const list = isFollowUpFilter ? followUpDueList() : sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
+    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>${isFollowUpFilter ? 'Jobs with a follow-up that is due or overdue. Tap one to jump to where it currently sits in the workflow.' : 'All active jobs. Highlight shows overall progress.'}</p></div>${sortDropdownHTML()}</div>`;
     html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">+ Create New Work Order</button>`;
-    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No work orders yet. Create the first one below.</div>`;
+    if(isFollowUpFilter){
+      html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo,{followUpNav:true})).join('')+'</div>' : `<div class="emptyState">No follow-ups are due or overdue right now.</div>`;
+    } else {
+      html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No work orders yet. Create the first one below.</div>`;
+    }
   } else if(ACTIVE_TAB==='presite'){
     const incomplete=DB.workOrders.filter(inPresiteIncompleteList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inPresiteScheduledList).sort((a,b)=>a.id-b.id);
@@ -1100,16 +1168,18 @@ function renderMain(){
   } else if(ACTIVE_TAB==='estimates'){
     const build=DB.workOrders.filter(inBuildEstimateList).sort((a,b)=>a.id-b.id);
     const pending=DB.workOrders.filter(inEstimatePendingApprovalList).sort((a,b)=>a.id-b.id);
-    const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Estimates</h2><p>Pre-site is complete — build the estimate, get a decision, then schedule the job.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Estimates</h2><p>Pre-site is complete — build the estimate and get a decision. Approved jobs move to the In Progress tab to be scheduled.</p></div></div>`;
     html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', openMode:'estimate'});
     html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', showEstimateDecision:true});
-    html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.'});
-  } else if(ACTIVE_TAB==='invoices'){
+  } else if(ACTIVE_TAB==='inprogress'){
+    const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
     const inProgress=DB.workOrders.filter(inInvoiceInProgressList).sort((a,b)=>a.id-b.id);
+    html+=`<div class="listHeader"><div><h2>In Progress</h2><p>Estimate approved and job underway — schedule the job, then check in/out as work happens on site.</p></div></div>`;
+    html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.'});
+    html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', showJobComplete:true, showCheckInOut:true});
+  } else if(ACTIVE_TAB==='invoices'){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Invoices</h2><p>Job scheduled — mark it complete to build and send the invoice.</p></div></div>`;
-    html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', showJobComplete:true});
+    html+=`<div class="listHeader"><div><h2>Invoices</h2><p>Job complete — build and send the invoice.</p></div></div>`;
     html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', openMode:'invoice'});
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
@@ -1132,7 +1202,9 @@ function woIsFollowUpDue(wo){
 function rowHTML(wo, opts){
   opts=opts||{};
   const cls=statusClass(wo);
-  const openFn = (opts.openMode==='estimate') ? `openEstimateSplit(${wo.id})`
+  const glowCls = (wo.checkIn && !wo.checkOut) ? ' checkedInGlow' : '';
+  const openFn = opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})`
+    : (opts.openMode==='estimate') ? `openEstimateSplit(${wo.id})`
     : (opts.openMode==='invoice') ? `openInvoiceSplit(${wo.id})`
     : `openWorkOrder(${wo.id})`;
   const n=mostRecentNote(wo);
@@ -1154,12 +1226,19 @@ function rowHTML(wo, opts){
          <label class="jcCheck"><input type="checkbox" onchange="declineEstimate(${wo.id}, this)"> Declined</label>
        </div>`
     : '';
-  return `<div class="woRow ${cls}" onclick="${openFn}">
+  const checkInOutRow = opts.showCheckInOut
+    ? `<div class="checkInOutRow" onclick="event.stopPropagation()">
+         <label class="jcCheck"><input type="checkbox" ${wo.checkIn?'checked disabled':''} onchange="checkInWO(${wo.id}, this)"> Check In${wo.checkIn?` (${wo.checkIn.time})`:''}</label>
+         <label class="jcCheck"><input type="checkbox" ${!wo.checkIn?'disabled':''} ${wo.checkOut?'checked disabled':''} onchange="checkOutWO(${wo.id}, this)"> Check Out${wo.checkOut?` (${wo.checkOut.time})`:''}</label>
+       </div>`
+    : '';
+  return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
     <div class="woMain">
       <div class="woName">${wo.customer.name || '(No name yet)'}</div>
       <div class="woSub">${wo.jobDetails.description ? wo.jobDetails.description.slice(0,80) : 'No job description yet'}</div>
       ${lastNoteHTML}
       ${estimateDecisionRow}
+      ${checkInOutRow}
     </div>
     <div class="woMeta">
       ${statusTag(wo)}
@@ -1181,6 +1260,38 @@ function confirmJobComplete(id, checkboxEl){
       renderTabCounts();
       renderMain();
       toast('Job marked complete — moved to Build Invoice.');
+    }
+  });
+}
+function checkInWO(id, checkboxEl){
+  const wo=getWO(id);
+  if(wo.checkIn){ return; }
+  checkboxEl.checked=false; // don't visually check until confirmed
+  askYesNo('Confirm you are checking in on site for this job now?', (yes)=>{
+    if(yes){
+      const ts=nowStamp();
+      wo.checkIn={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
+      addAdminLog(wo, 'Checked in on site at '+ts.time+' on '+ts.date+'.');
+      saveDB(DB);
+      renderTabCounts();
+      renderMain();
+      toast('Checked in — time logged on the work order.');
+    }
+  });
+}
+function checkOutWO(id, checkboxEl){
+  const wo=getWO(id);
+  if(!wo.checkIn || wo.checkOut){ return; }
+  checkboxEl.checked=false;
+  askYesNo('Confirm you are checking out — leaving the job site for now?', (yes)=>{
+    if(yes){
+      const ts=nowStamp();
+      wo.checkOut={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
+      addAdminLog(wo, 'Checked out from site at '+ts.time+' on '+ts.date+'.');
+      saveDB(DB);
+      renderTabCounts();
+      renderMain();
+      toast('Checked out — time logged on the work order.');
     }
   });
 }
@@ -1227,7 +1338,8 @@ function openNewWorkOrder(){
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
-    presiteScheduled:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null
+    presiteScheduled:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
+    checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
   saveDB(DB);
@@ -1356,6 +1468,10 @@ function renderWorkOrderModal(id){
               <span>Job Details</span>
               ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : ''}
             </div>
+            ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
+                <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by : '—'}</span></div>
+                <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by : '—'}</span></div>
+              </div>` : ''}
             ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
             ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
           </div>
@@ -1957,7 +2073,7 @@ function submitNote(id){
     movedMsg='Moved to Pre-Site Scheduled.';
   } else if(type==='SCHD' && inScheduleJobList(wo)){
     wo.jobScheduled=true;
-    movedMsg='Moved to Invoices.';
+    movedMsg='Job scheduled — moved to In Progress.';
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
     movedMsg='Moved to Job History.';
