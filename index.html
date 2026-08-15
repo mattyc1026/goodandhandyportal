@@ -213,9 +213,18 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .schedCalDay{position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #e6e2d6;background:#fff;font-size:.85em;cursor:pointer;min-height:36px;}
 .schedCalDay.empty{visibility:hidden;cursor:default;}
 .schedCalDay.past{color:#bbb;cursor:not-allowed;}
-.schedCalDay.hasJob::after{content:'';position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--orange);}
+.schedCalDay.hasJob{background:var(--yellow);border-color:var(--yellowb);cursor:pointer;}
+.schedCalDay.hasJob::after{content:'';position:absolute;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--yellowb);}
 .schedCalDay.selStart,.schedCalDay.selEnd{background:var(--navy);color:#fff;border-color:var(--navy);}
 .schedCalDay.inRange{background:rgba(15,38,71,.15);}
+.schedDayPopup{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 10px;border-radius:8px;font-size:.72em;line-height:1.4;white-space:nowrap;z-index:60;box-shadow:0 8px 22px rgba(0,0,0,.3);display:none;text-align:left;cursor:default;}
+.schedDayPopup b{color:#fff;display:block;font-size:1em;}
+.schedDayPopup .schedDayPopupRow{margin-top:3px;}
+.schedDayPopup .schedDayPopupRow:first-child{margin-top:0;}
+.schedCalDay.hasJob.showInfo .schedDayPopup{display:block;}
+@media (hover:hover) and (pointer:fine){
+  .schedCalDay.hasJob:hover .schedDayPopup{display:block;}
+}
 .schedTypeToggle{display:flex;gap:8px;margin-bottom:14px;}
 .schedTypeToggle button{flex:1;padding:9px 8px;border-radius:8px;border:1px solid #d8d6cd;background:#fff;font-weight:700;font-size:.85em;color:var(--muted);}
 .schedTypeToggle button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
@@ -236,7 +245,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .noteItem .noteMeta{font-size:.72em;color:var(--muted);margin-bottom:3px;display:flex;justify-content:space-between;}
 .noteItem .noteType{font-weight:700;color:var(--navy);}
 .noteItem .noteActions{display:flex;gap:16px;}
-.noteItem .noteActions button{background:none;border:none;font-size:.82em;color:var(--redb);padding:6px 4px;min-height:32px;font-weight:600;}
+.noteItem .noteActions button{background:none;border:none;font-size:.82em;color:var(--redb);padding:6px 4px;min-height:32px;font-weight:600;white-space:nowrap;word-break:normal;overflow-wrap:normal;}
 .adminTab{background:#fff7ea;border:1px solid #f0d9a8;border-radius:8px;padding:12px 14px;}
 .adminTab h4{margin:0 0 8px;color:#8a5a00;font-size:.85em;}
 .adminLogRow{font-size:.78em;color:#6b5320;margin-bottom:4px;}
@@ -486,7 +495,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   .noteEntryRow textarea{min-height:48px;}
   .jcCheck{min-height:48px;padding:10px 16px;gap:12px;}
   .noteItem .noteActions{gap:20px;}
-  .noteItem .noteActions button{min-height:40px;font-size:.88em;padding:8px 4px;}
+  .noteItem .noteActions button{min-height:40px;font-size:.88em;padding:8px 4px;white-space:nowrap;}
   .docRow{flex-direction:column;align-items:stretch;gap:12px;padding:16px;}
   .docActions{width:100%;gap:12px;}
   .docActions .btn{flex:1 1 auto;min-width:100px;min-height:48px;}
@@ -1347,6 +1356,36 @@ function saveCheckInTime(id){
   renderWorkOrderModal(id);
   toast('Check-in time updated.');
 }
+function editCheckOutTime(id){
+  const wo=getWO(id);
+  if(!wo.checkOut) return;
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
+    <h3>Edit Check Out Time</h3>
+    <div class="field"><label>Date</label><input type="text" id="editCheckOutDate" value="${wo.checkOut.date}"></div>
+    <div class="field"><label>Time</label><input type="text" id="editCheckOutTimeVal" value="${wo.checkOut.time}"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveCheckOutTime(${id})">Save</button>
+      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function saveCheckOutTime(id){
+  const wo=getWO(id);
+  if(!wo.checkOut) return;
+  const newDate=document.getElementById('editCheckOutDate').value.trim();
+  const newTime=document.getElementById('editCheckOutTimeVal').value.trim();
+  if(!newDate || !newTime){ toast('Date and time are required.'); return; }
+  const oldDate=wo.checkOut.date, oldTime=wo.checkOut.time;
+  wo.checkOut.date=newDate;
+  wo.checkOut.time=newTime;
+  addAdminLog(wo, 'Check-out time edited from '+oldDate+' '+oldTime+' to '+newDate+' '+newTime+'.');
+  saveDB(DB);
+  document.getElementById('confirmRoot').innerHTML='';
+  renderMain();
+  renderWorkOrderModal(id);
+  toast('Check-out time updated.');
+}
 function approveEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
   askYesNo('Confirm this estimate is approved? It will move to Schedule Job.', (yes)=>{
@@ -1508,6 +1547,9 @@ function formatTime12(hhmm){
   const d=new Date(2000,0,1,h,m);
   return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
 }
+function escapeHTML(str){
+  return String(str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function isoToday(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -1543,9 +1585,9 @@ function renderScheduleWidget(){
               <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
             </div>
             <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${isoToday()}" onchange="onSchedStartDateChange(this.value)"></div>
-            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" value="09:00"></div>
-            <div class="field"><label>Multi-day job? (optional end date)</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||isoToday()}" onchange="onSchedEndDateChange(this.value)"></div>
-            <div class="field" id="schedEndTimeField" style="${SCHED_END?'':'display:none'}"><label>End Time (on last day)</label><input type="time" id="schedEndTime" value="17:00"></div>
+            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" value=""></div>
+            <div class="field"><label>End Date</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||isoToday()}" onchange="onSchedEndDateChange(this.value)"></div>
+            <div class="field"><label>End Time</label><input type="time" id="schedEndTime" value=""></div>
             <button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>
 
             ${SCHED_PENDING.length ? `
@@ -1570,9 +1612,74 @@ function renderScheduleWidget(){
   </div>`;
 }
 function setSchedType(t){ SCHED_TYPE=t; renderScheduleWidget(); }
-function onSchedStartDateChange(val){ SCHED_START=val||null; renderScheduleWidget(); }
-function onSchedEndDateChange(val){ SCHED_END=val||null; renderScheduleWidget(); }
+function onSchedStartDateChange(val){
+  val=val||null;
+  if(val && isDateBooked(val)){
+    toast('That date already has a job scheduled — pick another date.');
+    document.getElementById('schedStartDate').value=SCHED_START||'';
+    return;
+  }
+  SCHED_START=val;
+  refreshSchedCalendar();
+}
+function onSchedEndDateChange(val){
+  val=val||null;
+  if(val && SCHED_START && val<SCHED_START){
+    toast('End date must be on or after the start date.');
+    document.getElementById('schedEndDate').value=SCHED_END||'';
+    return;
+  }
+  if(val && isDateRangeBooked(SCHED_START||val, val)){
+    toast('That range includes a day that is already scheduled — pick different dates.');
+    document.getElementById('schedEndDate').value=SCHED_END||'';
+    return;
+  }
+  SCHED_END=val;
+  refreshSchedCalendar();
+}
 
+/* Collects every scheduled date (across all work orders), keyed by ISO date,
+   with the job details needed for the hover/tap info popup. */
+function buildJobDaysMap(){
+  const map={};
+  (DB.workOrders||[]).forEach(w=>{
+    (w.scheduleDates||[]).forEach(d=>{
+      const info={
+        customer: (w.customer && w.customer.name) ? w.customer.name : 'Unnamed customer',
+        type: d.type==='presite' ? 'Pre-Site' : 'Whole Job',
+        startTime: d.startTime, endTime: d.endTime
+      };
+      if(d.multiDay && d.endDate){
+        let cur=new Date(d.startDate+'T00:00:00');
+        const end=new Date(d.endDate+'T00:00:00');
+        while(cur<=end){
+          const iso=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+          (map[iso]=map[iso]||[]).push(info);
+          cur.setDate(cur.getDate()+1);
+        }
+      } else {
+        (map[d.startDate]=map[d.startDate]||[]).push(info);
+      }
+    });
+  });
+  return map;
+}
+function isDateBooked(iso){
+  const map=buildJobDaysMap();
+  return !!(map[iso] && map[iso].length);
+}
+function isDateRangeBooked(startIso, endIso){
+  if(!startIso || !endIso) return false;
+  const map=buildJobDaysMap();
+  let cur=new Date(startIso+'T00:00:00');
+  const end=new Date(endIso+'T00:00:00');
+  while(cur<=end){
+    const iso=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+    if(map[iso] && map[iso].length) return true;
+    cur.setDate(cur.getDate()+1);
+  }
+  return false;
+}
 function scheduleCalendarHTML(){
   const month=SCHED_CAL_MONTH;
   const y=month.getFullYear(), m=month.getMonth();
@@ -1581,24 +1688,7 @@ function scheduleCalendarHTML(){
   const daysInMonth=new Date(y,m+1,0).getDate();
   const monthLabel=month.toLocaleDateString([], {month:'long', year:'numeric'});
   const todayIso=isoToday();
-
-  // Collect every scheduled date (across all work orders) that falls in this
-  // visible month, so the tech can see what else is already on the books.
-  const jobDays=new Set();
-  (DB.workOrders||[]).forEach(w=>{
-    (w.scheduleDates||[]).forEach(d=>{
-      if(d.multiDay && d.endDate){
-        let cur=new Date(d.startDate+'T00:00:00');
-        const end=new Date(d.endDate+'T00:00:00');
-        while(cur<=end){
-          jobDays.add(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0'));
-          cur.setDate(cur.getDate()+1);
-        }
-      } else {
-        jobDays.add(d.startDate);
-      }
-    });
-  });
+  const jobDays=buildJobDaysMap();
 
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="schedCalDay empty"></div>';
@@ -1608,13 +1698,24 @@ function scheduleCalendarHTML(){
     const isStart = iso===SCHED_START;
     const isEnd = SCHED_END && iso===SCHED_END;
     const inRange = SCHED_START && SCHED_END && iso>SCHED_START && iso<SCHED_END;
+    const booked = jobDays[iso];
     const cls=['schedCalDay'];
     if(isPast) cls.push('past');
-    if(jobDays.has(iso)) cls.push('hasJob');
+    if(booked) cls.push('hasJob');
     if(isStart) cls.push('selStart');
     if(isEnd) cls.push('selEnd');
     if(inRange) cls.push('inRange');
-    cells += `<div class="${cls.join(' ')}" ${isPast?'':`onclick="pickSchedDay('${iso}')"`} title="${jobDays.has(iso)?'Another job is already scheduled this day':''}">${day}</div>`;
+    let popup='';
+    let clickAttr='';
+    if(booked){
+      popup=`<div class="schedDayPopup" onclick="event.stopPropagation()">
+        ${booked.map(b=>`<div class="schedDayPopupRow"><b>${escapeHTML(b.customer)}</b>${b.type} \u2022 ${formatTime12(b.startTime)}${b.endTime && b.endTime!==b.startTime ? ' \u2013 '+formatTime12(b.endTime) : ''}</div>`).join('')}
+      </div>`;
+      clickAttr = `onclick="this.classList.toggle('showInfo')"`;
+    } else if(!isPast){
+      clickAttr = `onclick="pickSchedDay('${iso}')"`;
+    }
+    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${booked?'Already scheduled — tap or hover for details':''}">${day}${popup}</div>`;
   }
 
   return `
@@ -1627,19 +1728,36 @@ function scheduleCalendarHTML(){
       <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
       ${cells}
     </div>
-    <div class="small" style="margin-top:8px;">A dot marks a day with another job already scheduled. Click a date to set the start date; click a later date to set a multi-day end date.</div>`;
+    <div class="small" style="margin-top:8px;">Shaded days already have a job scheduled — tap (or hover on desktop) to see what's booked. Click an open date to set the start date; click a later open date to set the end date.</div>`;
+}
+/* Re-renders only the calendar column, leaving the form fields (and the
+   rest of the page) untouched so typing/tapping in the date & time inputs
+   doesn't lose focus, close native pickers mid-interaction, or reset the
+   modal's scroll position back to the top. */
+function refreshSchedCalendar(){
+  const col=document.getElementById('schedCalCol');
+  if(col) col.innerHTML=scheduleCalendarHTML();
 }
 function changeSchedMonth(delta){
   SCHED_CAL_MONTH=new Date(SCHED_CAL_MONTH.getFullYear(), SCHED_CAL_MONTH.getMonth()+delta, 1);
-  renderScheduleWidget();
+  refreshSchedCalendar();
 }
 function pickSchedDay(iso){
+  if(isDateBooked(iso)) return;
   if(!SCHED_START || (SCHED_START && SCHED_END) || iso<=SCHED_START){
     SCHED_START=iso; SCHED_END=null;
   } else {
+    if(isDateRangeBooked(SCHED_START, iso)){
+      toast('That range includes a day that is already scheduled — pick different dates.');
+      return;
+    }
     SCHED_END=iso;
   }
-  renderScheduleWidget();
+  const startEl=document.getElementById('schedStartDate');
+  const endEl=document.getElementById('schedEndDate');
+  if(startEl) startEl.value=SCHED_START||'';
+  if(endEl) endEl.value=SCHED_END||'';
+  refreshSchedCalendar();
 }
 function addPendingScheduleDate(){
   const startDate=document.getElementById('schedStartDate').value || SCHED_START;
@@ -1647,15 +1765,19 @@ function addPendingScheduleDate(){
   const endDateEl=document.getElementById('schedEndDate');
   const endDate=endDateEl ? endDateEl.value : '';
   const endTimeEl=document.getElementById('schedEndTime');
-  if(!startDate || !startTime){ toast('Pick a start date and time first.'); return; }
-  if(endDate && endDate<startDate){ toast('End date must be on or after the start date.'); return; }
+  const endTime=endTimeEl ? endTimeEl.value : '';
+  if(!startDate || !startTime || !endDate || !endTime){ toast('Start date/time and end date/time are all required.'); return; }
+  if(endDate<startDate){ toast('End date must be on or after the start date.'); return; }
+  if(isDateRangeBooked(startDate, endDate)){
+    toast('That date range includes a day that is already scheduled. Pick different dates.');
+    return;
+  }
   const entry={
     id:'sd'+Date.now()+Math.random().toString(36).slice(2,7),
     type:SCHED_TYPE,
     startDate, startTime,
-    multiDay: !!endDate && endDate!==startDate,
-    endDate: endDate || startDate,
-    endTime: (endDate && endTimeEl) ? endTimeEl.value : startTime
+    multiDay: endDate!==startDate,
+    endDate, endTime
   };
   SCHED_PENDING.push(entry);
   SCHED_START=null; SCHED_END=null;
@@ -1815,7 +1937,7 @@ function renderWorkOrderModal(id){
             </div>
             ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
                 <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by : '—'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
-                <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by : '—'}</span></div>
+                <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by : '—'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
               </div>` : ''}
             ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
             ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
@@ -3512,6 +3634,9 @@ window.addEventListener('resize', positionTabsBar);
 setInterval(positionTabsBar, 500);
 
 document.addEventListener('click', function(e){
+  document.querySelectorAll('.schedCalDay.hasJob.showInfo').forEach(function(cell){
+    if(!cell.contains(e.target)) cell.classList.remove('showInfo');
+  });
   const wrap = document.getElementById('tabsBarWrap');
   const nav = document.getElementById('tabsNav');
   if(nav && nav.classList.contains('open') && wrap && !wrap.contains(e.target)){
