@@ -176,16 +176,16 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 
 /* ---- MODAL ---- */
 .overlay{position:fixed;inset:0;background:rgba(15,38,71,.55);display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;z-index:100;}
-.modal{background:var(--paper);border-radius:14px;width:100%;max-width:1100px;box-shadow:0 30px 70px rgba(0,0,0,.4);animation:pop .12s ease-out;}
+.modal{background:var(--paper);border-radius:14px;width:100%;max-width:1100px;box-shadow:0 30px 70px rgba(0,0,0,.4);animation:pop .12s ease-out;overflow-x:hidden;}
 @keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .modalHead{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid #eee;}
 .modalHead h2{margin:0;font-size:1.25em;}
 .closeX{background:transparent;border:none;font-size:1.5em;color:var(--muted);min-width:40px;min-height:40px;border-radius:6px;}
 .closeX:hover{background:var(--cream);}
-.modalBody{padding:20px 24px;}
+.modalBody{padding:20px 24px;overflow-x:hidden;}
 .woGrid{display:flex;gap:20px;flex-wrap:wrap;}
-.custPanel{flex:1 1 30%;min-width:240px;background:var(--cream);border-radius:10px;padding:16px;}
-.jobPanel{flex:2 1 60%;min-width:300px;background:var(--cream);border-radius:10px;padding:16px;}
+.custPanel{flex:1 1 30%;min-width:min(240px,100%);background:var(--cream);border-radius:10px;padding:16px;box-sizing:border-box;}
+.jobPanel{flex:2 1 60%;min-width:min(300px,100%);background:var(--cream);border-radius:10px;padding:16px;box-sizing:border-box;}
 .panelTitle{font-size:.75em;text-transform:uppercase;letter-spacing:.06em;color:var(--orange);font-weight:700;margin-bottom:10px;}
 .kv{margin-bottom:8px;font-size:.9em;}
 .addrSuggest{
@@ -203,9 +203,9 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .schedRow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;background:#fff;border-left:3px solid var(--orange);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:.88em;}
 .schedRow b{color:var(--navy);}
 .tinyDel{background:none;border:none;color:var(--redb);font-size:1.1em;font-weight:700;cursor:pointer;padding:2px 6px;line-height:1;min-height:28px;}
-.schedWidgetWrap{display:flex;gap:20px;flex-wrap:wrap;}
-.schedCalCol{flex:1 1 320px;min-width:280px;}
-.schedFormCol{flex:1 1 280px;min-width:260px;}
+.schedWidgetWrap{display:flex;gap:20px;flex-wrap:wrap;max-width:100%;}
+.schedCalCol{flex:1 1 320px;min-width:min(280px,100%);max-width:100%;}
+.schedFormCol{flex:1 1 280px;min-width:min(260px,100%);max-width:100%;box-sizing:border-box;}
 .schedCalNav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .schedCalNav button{background:var(--cream);border:1px solid #d8d6cd;border-radius:8px;padding:6px 12px;font-weight:700;color:var(--navy);}
 .schedCalGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
@@ -217,7 +217,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .schedCalDay.hasJob::after{content:'';position:absolute;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--yellowb);}
 .schedCalDay.selStart,.schedCalDay.selEnd{background:var(--navy);color:#fff;border-color:var(--navy);}
 .schedCalDay.inRange{background:rgba(15,38,71,.15);}
-.schedDayPopup{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 10px;border-radius:8px;font-size:.72em;line-height:1.4;white-space:nowrap;z-index:60;box-shadow:0 8px 22px rgba(0,0,0,.3);display:none;text-align:left;cursor:default;}
+.schedDayPopup{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 10px;border-radius:8px;font-size:.72em;line-height:1.4;white-space:normal;width:max-content;max-width:200px;z-index:60;box-shadow:0 8px 22px rgba(0,0,0,.3);display:none;text-align:left;cursor:default;}
 .schedDayPopup b{color:#fff;display:block;font-size:1em;}
 .schedDayPopup .schedDayPopupRow{margin-top:3px;}
 .schedDayPopup .schedDayPopupRow:first-child{margin-top:0;}
@@ -249,13 +249,14 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .adminTab{background:#fff7ea;border:1px solid #f0d9a8;border-radius:8px;padding:12px 14px;}
 .adminTab h4{margin:0 0 8px;color:#8a5a00;font-size:.85em;}
 .adminLogRow{font-size:.78em;color:#6b5320;margin-bottom:4px;}
-.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:100%;}
+.formGrid > *{min-width:0;}
 .formGrid .full{grid-column:1/-1;}
 .footerActions{display:flex;justify-content:flex-end;gap:16px;padding:16px 24px;border-top:1px solid #eee;flex-wrap:wrap;}
 
-.splitWrap{display:flex;gap:16px;height:78vh;}
-.splitLeft{flex:0 0 38%;overflow-y:auto;padding-right:6px;}
-.splitRight{flex:1;border-radius:10px;overflow:hidden;border:1px solid #ddd;display:flex;flex-direction:column;}
+.splitWrap{display:flex;gap:16px;height:78vh;max-width:100%;}
+.splitLeft{flex:0 0 38%;overflow-y:auto;padding-right:6px;min-width:0;box-sizing:border-box;}
+.splitRight{flex:1;border-radius:10px;overflow:hidden;border:1px solid #ddd;display:flex;flex-direction:column;min-width:0;}
 .splitRight iframe{flex:1;border:none;width:100%;}
 .laborPick{background:var(--cream);border-radius:8px;padding:10px;margin-bottom:10px;}
 .laborPick label{display:flex;gap:8px;align-items:flex-start;font-size:.85em;margin-bottom:6px;}
@@ -275,8 +276,8 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .editRow input{flex:1;padding:6px 8px;border-radius:6px;border:1px solid #ddd;}
 .editRow button{background:var(--redb);color:#fff;border:none;border-radius:6px;padding:0 10px;}
 .small{font-size:.8em;color:var(--muted);}
-.confirmBox{position:fixed;inset:0;background:rgba(15,38,71,.6);display:flex;align-items:center;justify-content:center;z-index:200;}
-.confirmCard{background:#fff;border-radius:12px;padding:26px 28px;max-width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.confirmBox{position:fixed;inset:0;background:rgba(15,38,71,.6);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;box-sizing:border-box;overflow-y:auto;}
+.confirmCard{background:#fff;border-radius:12px;padding:26px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);box-sizing:border-box;overflow-x:hidden;}
 .confirmCard .btnRow{justify-content:center;}
 .syncPill{font-size:.7em;padding:2px 9px;border-radius:20px;font-weight:700;letter-spacing:.03em;cursor:pointer;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;}
 .syncPill.on{background:var(--greenb);border-color:var(--greenb);}
