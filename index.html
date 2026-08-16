@@ -1349,7 +1349,7 @@ function rowHTML(wo, opts){
       ${statusTag(wo)}
       ${followUpBadge}
       ${jobCompleteCheckbox}
-      <span>${wo.customer.address || ''}</span>
+      <span>${wo.customer.address ? formatAddress(wo.customer.address, wo.customer.unit) : ''}</span>
     </div>
   </div>`;
 }
@@ -1640,7 +1640,7 @@ function openNewWorkOrder(){
   const id=DB.nextId++;
   const wo={
     id, createdAt:Date.now(),
-    customer:{name:'',phone:'',altPhone:'',email:'',address:''},
+    customer:{name:'',phone:'',altPhone:'',email:'',address:'',unit:''},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
@@ -1683,7 +1683,7 @@ function renderSearchResultsModal(query, results){
       </div>
       <div class="woMeta">
         ${statusTag(wo)}
-        <span>${wo.customer.address || ''}</span>
+        <span>${wo.customer.address ? formatAddress(wo.customer.address, wo.customer.unit) : ''}</span>
         <span class="small">WO #${wo.id}</span>
       </div>
     </div>`).join('') : `<div class="small">No work orders match "${safeQuery}".</div>`;
@@ -2034,7 +2034,7 @@ function icsDateOnly(dateIso){
 function buildICS(wo, entries){
   const name=(wo.customer.name||'Customer').trim();
   const phone=wo.customer.phone||'';
-  const address=wo.customer.address||'';
+  const address=formatAddress(wo.customer.address, wo.customer.unit)||'';
   const notes=wo.jobDetails && wo.jobDetails.description ? wo.jobDetails.description : '';
   const stamp=icsDateTime(isoToday(), new Date().toTimeString().slice(0,5));
 
@@ -2129,53 +2129,120 @@ function attachHeaderCustOutsideClickHandler(id){
 function toggleAdminView(id){ WO_ADMIN_VIEW=!WO_ADMIN_VIEW; renderWorkOrderModal(id); }
 function toggleDocsView(id){ WO_DOCS_VIEW=!WO_DOCS_VIEW; renderWorkOrderModal(id); }
 
-function splitAddress(addr){
+/* ---- Address normalization -------------------------------------------------
+   Work orders can save a long autocomplete-sourced address string (with
+   neighborhood/suburb/county segments baked in) OR a short manually-typed
+   one. Every place we DISPLAY an address should always render as:
+     Number StreetName StreetSuffix [Unit] City, ST Zip
+   with exactly one comma in the whole string (between City and State).
+   The raw saved string is left untouched — this is display-only formatting. */
+const STREET_SUFFIX_ABBR={
+  alley:'Aly', avenue:'Ave', boulevard:'Blvd', circle:'Cir', court:'Ct',
+  drive:'Dr', lane:'Ln', parkway:'Pkwy', place:'Pl', road:'Rd',
+  square:'Sq', street:'St', terrace:'Ter', trail:'Trl', way:'Way'
+};
+const STREET_DIRECTION_ABBR={
+  north:'N', south:'S', east:'E', west:'W',
+  northwest:'NW', northeast:'NE', southwest:'SW', southeast:'SE'
+};
+const STATE_ABBR={
+  alabama:'AL',alaska:'AK',arizona:'AZ',arkansas:'AR',california:'CA',colorado:'CO',
+  connecticut:'CT',delaware:'DE',florida:'FL',georgia:'GA',hawaii:'HI',idaho:'ID',
+  illinois:'IL',indiana:'IN',iowa:'IA',kansas:'KS',kentucky:'KY',louisiana:'LA',
+  maine:'ME',maryland:'MD',massachusetts:'MA',michigan:'MI',minnesota:'MN',
+  mississippi:'MS',missouri:'MO',montana:'MT',nebraska:'NE',nevada:'NV',
+  'new hampshire':'NH','new jersey':'NJ','new mexico':'NM','new york':'NY',
+  'north carolina':'NC','north dakota':'ND',ohio:'OH',oklahoma:'OK',oregon:'OR',
+  pennsylvania:'PA','rhode island':'RI','south carolina':'SC','south dakota':'SD',
+  tennessee:'TN',texas:'TX',utah:'UT',vermont:'VT',virginia:'VA',washington:'WA',
+  'west virginia':'WV',wisconsin:'WI',wyoming:'WY','district of columbia':'DC'
+};
+function abbreviateStreetWord(word){
+  const bare=word.replace(/\.$/,'');
+  const lower=bare.toLowerCase();
+  if(STREET_SUFFIX_ABBR[lower]) return STREET_SUFFIX_ABBR[lower];
+  if(STREET_DIRECTION_ABBR[lower]) return STREET_DIRECTION_ABBR[lower];
+  return word;
+}
+function abbreviateStreet(street){
+  return (street||'').split(/\s+/).filter(Boolean).map(abbreviateStreetWord).join(' ');
+}
+function abbreviateState(state){
+  const s=(state||'').trim();
+  if(!s) return '';
+  if(/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  const abbr=STATE_ABBR[s.toLowerCase()];
+  return abbr || s;
+}
+const HOUSE_NUM_RE=/^\d+[A-Za-z]?$/;
+const STREET_SUFFIX_SPLIT_RE=new RegExp(
+  '^(.*?\\b(?:'+Object.keys(STREET_SUFFIX_ABBR).concat(Object.keys(STREET_SUFFIX_ABBR).map(k=>STREET_SUFFIX_ABBR[k]))
+    .concat(['Hwy','Highway','Loop']).join('|')+')\\.?)\\s+(.+)$','i');
+function parseAddress(addr){
   addr=(addr||'').trim();
-  if(!addr) return {line1:'', line2:''};
+  if(!addr) return {house:'',street:'',city:'',state:'',zip:''};
   let parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
-  const streetSuffixRe=/^(.*?\b(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Pkwy|Parkway|Hwy|Highway|Trail|Trl|Loop|Sq|Square)\.?)\s+(.+)$/i;
-  if(parts.length<=1){
-    // No commas at all — peel a trailing "STATE ZIP" off the end, then split the
-    // remainder on the street-type word (St/Ave/Rd/etc.) so the city still lands
-    // on the same line as state/zip instead of staying stuck to the street.
-    let rest=addr, stateZip='';
-    const szMatch=rest.match(/\s+([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)\s*$/);
-    if(szMatch){
-      stateZip=szMatch[1].toUpperCase()+' '+szMatch[2];
-      rest=rest.slice(0, szMatch.index).trim();
-    }
-    const sm=rest.match(streetSuffixRe);
-    let street=rest, city='';
-    if(sm){ street=sm[1].trim(); city=sm[2].trim(); }
-    const line2=[city, stateZip].filter(Boolean).join(', ');
-    return {line1:street, line2};
+  const hadCommas=parts.length>1;
+  // Drop a trailing country segment.
+  if(parts.length && /^(united states|usa|u\.s\.a\.|u\.s\.|united states of america)$/i.test(parts[parts.length-1])){
+    parts.pop();
   }
-  // Comma-separated address (typed or from autocomplete). Drop a trailing country
-  // segment, pull the zip and state off the end, then take the very next
-  // segment after the street as the city — skipping any county in between —
-  // so city always ends up paired with state/zip, never with the street.
-  if(/^(united states|usa|us|united states of america)$/i.test(parts[parts.length-1])) parts.pop();
-  let zip='', state='';
+  // Pull the zip off the end (standalone, or combined with state as "CA 92024").
+  let zip='';
   if(parts.length && /^\d{5}(-\d{4})?$/.test(parts[parts.length-1])){
     zip=parts.pop();
+  } else if(parts.length){
+    const combo=parts[parts.length-1].match(/^(.*?)\s+(\d{5}(?:-\d{4})?)$/);
+    if(combo){ zip=combo[2]; parts[parts.length-1]=combo[1].trim(); }
   }
-  if(parts.length>=2){
-    const last=parts[parts.length-1];
-    const combo=last.match(/^(.*?)\s+(\d{5}(?:-\d{4})?)$/);
-    if(combo && !zip){ state=combo[1].trim(); zip=combo[2]; parts.pop(); }
-    else { state=parts.pop(); }
+  // Pull the state off the end and abbreviate it. For a comma-separated
+  // address this is its own segment; for a single no-comma string, only
+  // peel a trailing token that's a real 2-letter state abbreviation, so we
+  // don't mistake an ordinary trailing word for a state name.
+  let state='';
+  if(hadCommas){
+    if(parts.length){ state=abbreviateState(parts.pop()); }
+  } else if(parts.length && zip){
+    // Only guess a trailing 2-letter state token when a zip was actually
+    // found — otherwise a street suffix like "Ln" could be mistaken for one.
+    const m=parts[0].match(/^(.*?)\s+([A-Za-z]{2})$/);
+    if(m){ state=m[2].toUpperCase(); parts[0]=m[1].trim(); }
   }
-  let street=parts.length ? parts[0] : '';
-  let city=parts.length>1 ? parts[1] : '';
-  // If what looks like the "street" segment doesn't actually contain a street-type
-  // word, the address was probably typed as "123 Main St City" with no comma
-  // between street and city — try to split that single segment the same way.
-  if(street && !city){
-    const sm=street.match(streetSuffixRe);
-    if(sm){ city=sm[2].trim(); street=sm[1].trim(); }
+  // Drop any "___ County" segment (autocomplete adds these) — the segment
+  // right before it, or the last remaining segment if there's no county
+  // marker, is the city. Neighborhood/suburb segments in between are dropped.
+  const remaining=parts.filter(p=>!/\bcounty$/i.test(p));
+  let idx=0, house='', street='', inlineCity='';
+  if(remaining.length && HOUSE_NUM_RE.test(remaining[0]) && remaining.length>1){
+    // "123, Main St, San Diego" — house and street are their own comma segments.
+    house=remaining[0]; street=remaining[1]; idx=2;
+  } else if(remaining.length){
+    // Single segment holding house+street (and maybe city too), e.g. from a
+    // manually-typed address with no commas: "789 Ocean View Dr Carlsbad".
+    let rest=remaining[0];
+    const hm=rest.match(/^(\d+[A-Za-z]?)\s+(.+)$/);
+    if(hm){ house=hm[1]; rest=hm[2]; }
+    const sm=rest.match(STREET_SUFFIX_SPLIT_RE);
+    if(sm){ street=sm[1].trim(); inlineCity=sm[2].trim(); } else { street=rest; }
+    idx=1;
   }
-  const line2=[city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  return {line1: street || addr, line2};
+  const cityParts=remaining.slice(idx);
+  const city=cityParts.length ? cityParts[cityParts.length-1] : inlineCity;
+  return {house, street:abbreviateStreet(street), city, state, zip};
+}
+function formatAddress(addr, unit){
+  const p=parseAddress(addr);
+  if(!p.house && !p.street && !p.city && !p.state && !p.zip) return (addr||'').trim();
+  const line1=[p.house, p.street, (unit||'').trim()].filter(Boolean).join(' ');
+  const cityState=[p.city, [p.state, p.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [line1, cityState].filter(Boolean).join(' ');
+}
+function splitAddress(addr, unit){
+  const p=parseAddress(addr);
+  const line1=[p.house, p.street, (unit||'').trim()].filter(Boolean).join(' ');
+  const line2=[p.city, [p.state, p.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  if(!line1 && !line2) return {line1: addr||'', line2:''};
+  return {line1, line2};
 }
 function renderWorkOrderModal(id){
   const wo=getWO(id);
@@ -2269,7 +2336,7 @@ function renderWorkOrderModal(id){
         </div>`;
   }
 
-  const addr=splitAddress(wo.customer.address);
+  const addr=splitAddress(wo.customer.address, wo.customer.unit);
   const headerCustHTML = WO_CUST_EDIT ? `
         <div class="modalHeadCust editing" id="modalHeadCust">
           ${custField('name','Full Name', wo.customer.name)}
@@ -2277,6 +2344,7 @@ function renderWorkOrderModal(id){
           ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
           ${custField('email','Email (optional)', wo.customer.email)}
           ${addressField('address','Address', wo.customer.address)}
+          ${custField('unit','Unit / Suite (optional)', wo.customer.unit)}
           ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
           <div class="small">Tap outside this box to save and close.</div>
         </div>` : `
@@ -2381,7 +2449,7 @@ function hideAddressSuggestions(){
 function saveCustomer(id){
   const wo=getWO(id);
   const wasEligible=inPresiteList(wo);
-  ['name','phone','altPhone','email','address'].forEach(k=>{
+  ['name','phone','altPhone','email','address','unit'].forEach(k=>{
     const field=document.getElementById('cf_'+k);
     wo.customer[k]= field ? field.value.trim() : (wo.customer[k]||'');
   });
@@ -3729,7 +3797,7 @@ function openSplit(id, kind){
             <div class="panelTitle">Job Info</div>
             <div class="kv"><b>Customer</b>${wo.customer.name}</div>
             <div class="kv"><b>Phone</b>${wo.customer.phone}</div>
-            <div class="kv"><b>Address</b>${wo.customer.address}</div>
+            <div class="kv"><b>Address</b>${formatAddress(wo.customer.address, wo.customer.unit)}</div>
             ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${jd.description}</div>` : ''}
 
             <div class="panelTitle" style="margin-top:16px;">Labor Line Items</div>
@@ -3851,7 +3919,7 @@ function sendJobDataToBuilder(iframeEl, id){
     type:'presite_data',
     workOrderId:wo.id,
     date: dateStr,
-    customer:{ name:wo.customer.name, phone:wo.customer.phone, address:wo.customer.address },
+    customer:{ name:wo.customer.name, phone:wo.customer.phone, address:formatAddress(wo.customer.address, wo.customer.unit) },
     description: jd.description||'',
     labor: jd.labor||[],
     materials: buildMaterialsLineItem(jd.materials),
