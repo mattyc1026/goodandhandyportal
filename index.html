@@ -1721,6 +1721,7 @@ function selectSearchResult(id){
    SCHEDULE DATE(S) + APPLE CALENDAR (.ics) INTEGRATION
 ========================================================================= */
 let SCHED_WO_ID=null, SCHED_CAL_MONTH=null, SCHED_TYPE='full', SCHED_START=null, SCHED_END=null, SCHED_PENDING=[];
+let SCHED_LONGPRESS_TIMER=null, SCHED_LONGPRESS_FIRED=false;
 
 function scheduleDatesSectionHTML(wo, id){
   const all=(wo.scheduleDates||[]).slice().sort((a,b)=>(a.startDate+a.startTime).localeCompare(b.startDate+b.startTime));
@@ -1840,11 +1841,6 @@ function renderScheduleWidget(){
 function setSchedType(t){ SCHED_TYPE=t; renderScheduleWidget(); }
 function onSchedStartDateChange(val){
   val=val||null;
-  if(val && isDateBooked(val)){
-    toast('That date already has a job scheduled — pick another date.');
-    document.getElementById('schedStartDate').value=SCHED_START||'';
-    return;
-  }
   SCHED_START=val;
   refreshSchedCalendar();
 }
@@ -1855,17 +1851,13 @@ function onSchedEndDateChange(val){
     document.getElementById('schedEndDate').value=SCHED_END||'';
     return;
   }
-  if(val && isDateRangeBooked(SCHED_START||val, val)){
-    toast('That range includes a day that is already scheduled — pick different dates.');
-    document.getElementById('schedEndDate').value=SCHED_END||'';
-    return;
-  }
   SCHED_END=val;
   refreshSchedCalendar();
 }
 
 /* Collects every scheduled date (across all work orders), keyed by ISO date,
-   with the job details needed for the hover/tap info popup. */
+   with the job details needed for the hover/tap info popup and for
+   start/end-time overlap checks. */
 function buildJobDaysMap(){
   const map={};
   (DB.workOrders||[]).forEach(w=>{
@@ -1890,21 +1882,48 @@ function buildJobDaysMap(){
   });
   return map;
 }
-function isDateBooked(iso){
-  const map=buildJobDaysMap();
-  return !!(map[iso] && map[iso].length);
+/* Whether two start/end time-of-day strings ("HH:MM") overlap. Missing
+   times are treated conservatively as a conflict, since we can't confirm
+   there's no overlap without both times. */
+function timesOverlap(aStart,aEnd,bStart,bEnd){
+  if(!aStart || !aEnd || !bStart || !bEnd) return true;
+  return aStart<bEnd && bStart<aEnd;
 }
-function isDateRangeBooked(startIso, endIso){
-  if(!startIso || !endIso) return false;
+/* Expands the not-yet-saved SCHED_PENDING list (this session, for the work
+   order currently being scheduled) into per-day time bookings, so a second
+   pending date being added in the same session is also checked for
+   overlap, not just dates already saved to the database. */
+function pendingDayBookings(iso){
+  const out=[];
+  (SCHED_PENDING||[]).forEach(d=>{
+    const endDate=d.endDate||d.startDate;
+    if(iso>=d.startDate && iso<=endDate){
+      out.push({startTime:d.startTime, endTime:d.endTime});
+    }
+  });
+  return out;
+}
+/* Multiple jobs are allowed on the same day — a day is only a real
+   double-booking if the new start/end time overlaps an existing
+   appointment's start/end time on one of the days in range. */
+function isDateTimeRangeConflict(startDate, startTime, endDate, endTime){
+  if(!startDate || !startTime || !endDate || !endTime) return false;
   const map=buildJobDaysMap();
-  let cur=new Date(startIso+'T00:00:00');
-  const end=new Date(endIso+'T00:00:00');
+  let cur=new Date(startDate+'T00:00:00');
+  const end=new Date(endDate+'T00:00:00');
   while(cur<=end){
     const iso=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
-    if(map[iso] && map[iso].length) return true;
+    const bookings=(map[iso]||[]).concat(pendingDayBookings(iso));
+    for(const b of bookings){
+      if(timesOverlap(startTime, endTime, b.startTime, b.endTime)) return true;
+    }
     cur.setDate(cur.getDate()+1);
   }
   return false;
+}
+function isDateBooked(iso){
+  const map=buildJobDaysMap();
+  return !!(map[iso] && map[iso].length);
 }
 function scheduleCalendarHTML(){
   const month=SCHED_CAL_MONTH;
@@ -1937,11 +1956,16 @@ function scheduleCalendarHTML(){
       popup=`<div class="schedDayPopup" onclick="event.stopPropagation()">
         ${booked.map(b=>`<div class="schedDayPopupRow"><b>${escapeHTML(b.customer)}</b>${b.type} \u2022 ${formatTime12(b.startTime)}${b.endTime && b.endTime!==b.startTime ? ' \u2013 '+formatTime12(b.endTime) : ''}</div>`).join('')}
       </div>`;
-      clickAttr = `onclick="this.classList.toggle('showInfo')"`;
-    } else if(!isPast){
-      clickAttr = `onclick="pickSchedDay('${iso}')"`;
     }
-    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${booked?'Already scheduled — tap or hover for details':''}">${day}${popup}</div>`;
+    if(!isPast){
+      // Booked ("has job") days need to both select the date (tap) and reveal
+      // the info popup (press-and-hold), since a single tap can't do both on
+      // a touch device. Non-booked days just select on tap as before.
+      clickAttr = booked
+        ? `onclick="schedDayClick('${iso}')" onpointerdown="schedDayPointerDown('${iso}', this)" onpointerup="schedDayPointerUp()" onpointerleave="schedDayPointerUp()" onpointercancel="schedDayPointerUp()"`
+        : `onclick="pickSchedDay('${iso}')"`;
+    }
+    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${booked?'Already has a job that day — tap to pick this day, or press and hold for details. You can still schedule here if your time doesn\u2019t conflict.':''}">${day}${popup}</div>`;
   }
 
   return `
@@ -1954,7 +1978,7 @@ function scheduleCalendarHTML(){
       <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
       ${cells}
     </div>
-    <div class="small" style="margin-top:8px;">Shaded days already have a job scheduled — tap (or hover on desktop) to see what's booked. Click an open date to set the start date; click a later open date to set the end date.</div>`;
+    <div class="small" style="margin-top:8px;">Shaded days already have a job scheduled — hover on desktop (press and hold on mobile) to see what's booked, or just tap to pick that day. You can still schedule another job the same day as long as the times don't overlap. Click an open date to set the start date; click a later date to set the end date.</div>`;
 }
 /* Re-renders only the calendar column, leaving the form fields (and the
    rest of the page) untouched so typing/tapping in the date & time inputs
@@ -1968,15 +1992,29 @@ function changeSchedMonth(delta){
   SCHED_CAL_MONTH=new Date(SCHED_CAL_MONTH.getFullYear(), SCHED_CAL_MONTH.getMonth()+delta, 1);
   refreshSchedCalendar();
 }
+/* Long-press support for "has job" calendar cells on touch devices: a plain
+   tap selects the date (same as any open day), while a press-and-hold
+   reveals the info popup showing what's already booked that day. Desktop
+   still gets the popup on hover regardless. */
+function schedDayPointerDown(iso, el){
+  SCHED_LONGPRESS_FIRED=false;
+  clearTimeout(SCHED_LONGPRESS_TIMER);
+  SCHED_LONGPRESS_TIMER=setTimeout(()=>{
+    SCHED_LONGPRESS_FIRED=true;
+    if(el) el.classList.add('showInfo');
+  }, 450);
+}
+function schedDayPointerUp(){
+  clearTimeout(SCHED_LONGPRESS_TIMER);
+}
+function schedDayClick(iso){
+  if(SCHED_LONGPRESS_FIRED){ SCHED_LONGPRESS_FIRED=false; return; }
+  pickSchedDay(iso);
+}
 function pickSchedDay(iso){
-  if(isDateBooked(iso)) return;
   if(!SCHED_START || (SCHED_START && SCHED_END) || iso<=SCHED_START){
     SCHED_START=iso; SCHED_END=null;
   } else {
-    if(isDateRangeBooked(SCHED_START, iso)){
-      toast('That range includes a day that is already scheduled — pick different dates.');
-      return;
-    }
     SCHED_END=iso;
   }
   const startEl=document.getElementById('schedStartDate');
@@ -1994,8 +2032,9 @@ function addPendingScheduleDate(){
   const endTime=endTimeEl ? endTimeEl.value : '';
   if(!startDate || !startTime || !endDate || !endTime){ toast('Start date/time and end date/time are all required.'); return; }
   if(endDate<startDate){ toast('End date must be on or after the start date.'); return; }
-  if(isDateRangeBooked(startDate, endDate)){
-    toast('That date range includes a day that is already scheduled. Pick different dates.');
+  if(endDate===startDate && endTime<=startTime){ toast('End time must be after the start time.'); return; }
+  if(isDateTimeRangeConflict(startDate, startTime, endDate, endTime)){
+    toast('That time conflicts with another job already scheduled that day. Pick a different time.');
     return;
   }
   const entry={
@@ -2118,7 +2157,9 @@ function startHeaderCustEdit(id){
 let HEADER_LONGPRESS_TIMER=null;
 function headerCustTouchStart(id){
   clearTimeout(HEADER_LONGPRESS_TIMER);
-  HEADER_LONGPRESS_TIMER=setTimeout(()=>{ HEADER_LONGPRESS_TIMER=null; startHeaderCustEdit(id); }, 550);
+  // 1.5s so the OS's native ~0.5s press-and-hold text selection gets to fire
+  // first (on iOS/Android) without our edit mode stealing that same gesture.
+  HEADER_LONGPRESS_TIMER=setTimeout(()=>{ HEADER_LONGPRESS_TIMER=null; startHeaderCustEdit(id); }, 1500);
 }
 function headerCustTouchEnd(){
   clearTimeout(HEADER_LONGPRESS_TIMER);
