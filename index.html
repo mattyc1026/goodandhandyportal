@@ -480,6 +480,17 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   .modalHeadCust{grid-template-columns:1fr;column-gap:0;}
   .modalHeadCust.editing{width:100%;}
   .modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2{align-self:auto;}
+  /* Reflow order for single-column mobile/tablet stacking: name, primary phone,
+     alt phone, address line 1, address line 2, then email. The desktop 2-column
+     grid relies on DOM order (name/addr1, phone/addr2, alt/email) to line up
+     side-by-side, so we override with explicit order here instead of reordering
+     the markup itself. */
+  .modalHeadCust .mhName{order:1;}
+  .modalHeadCust .mhPrimary{order:2;}
+  .modalHeadCust .mhAlt{order:3;}
+  .modalHeadCust .mhAddr1{order:4;}
+  .modalHeadCust .mhAddr2{order:5;}
+  .modalHeadCust .mhEmail{order:6;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
   .modalBody{padding:16px;font-size:1em;flex:1;}
