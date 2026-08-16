@@ -180,7 +180,9 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 @keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .modalHead{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 24px;border-bottom:1px solid #eee;gap:14px;}
 .modalHead h2{margin:0;font-size:1.25em;}
-.modalHeadCust{display:grid;grid-template-columns:auto auto;column-gap:34px;row-gap:2px;align-content:start;}
+.modalHeadCust{display:grid;grid-template-columns:auto auto;column-gap:34px;row-gap:2px;align-content:start;cursor:pointer;}
+.modalHeadCust.editing{display:flex;flex-direction:column;gap:6px;width:360px;max-width:100%;cursor:default;}
+.modalHeadCust.editing .kv{margin-bottom:0;}
 .modalHeadCust .mhName{font-family:Georgia,'Times New Roman',serif;font-size:1.25em;color:var(--navy);font-weight:700;}
 .modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2{font-size:.88em;color:var(--muted);align-self:end;}
 .modalHeadCust .mhPrimary,.modalHeadCust .mhAlt{font-size:.92em;color:var(--ink);}
@@ -476,6 +478,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   }
   .modalHead h2{font-size:1.2em;}
   .modalHeadCust{grid-template-columns:1fr;column-gap:0;}
+  .modalHeadCust.editing{width:100%;}
   .modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2{align-self:auto;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
@@ -2096,16 +2099,83 @@ function openWorkOrder(id){
   WO_DOCS_VIEW = false;
   renderWorkOrderModal(id);
 }
-function toggleCustEdit(id){ WO_CUST_EDIT=!WO_CUST_EDIT; renderWorkOrderModal(id); }
+function startHeaderCustEdit(id){
+  WO_CUST_EDIT=true;
+  renderWorkOrderModal(id);
+  attachHeaderCustOutsideClickHandler(id);
+}
+let HEADER_LONGPRESS_TIMER=null;
+function headerCustTouchStart(id){
+  clearTimeout(HEADER_LONGPRESS_TIMER);
+  HEADER_LONGPRESS_TIMER=setTimeout(()=>{ HEADER_LONGPRESS_TIMER=null; startHeaderCustEdit(id); }, 550);
+}
+function headerCustTouchEnd(){
+  clearTimeout(HEADER_LONGPRESS_TIMER);
+  HEADER_LONGPRESS_TIMER=null;
+}
+function attachHeaderCustOutsideClickHandler(id){
+  // Deferred so the very click/tap that opened edit mode isn't the same one
+  // that immediately closes it again.
+  setTimeout(()=>{
+    document.addEventListener('click', function handler(e){
+      const cust=document.getElementById('modalHeadCust');
+      if(!cust || !cust.contains(e.target)){
+        document.removeEventListener('click', handler);
+        if(WO_CUST_EDIT){ saveCustomer(id); }
+      }
+    });
+  }, 0);
+}
 function toggleAdminView(id){ WO_ADMIN_VIEW=!WO_ADMIN_VIEW; renderWorkOrderModal(id); }
 function toggleDocsView(id){ WO_DOCS_VIEW=!WO_DOCS_VIEW; renderWorkOrderModal(id); }
 
 function splitAddress(addr){
   addr=(addr||'').trim();
   if(!addr) return {line1:'', line2:''};
-  const parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
-  if(parts.length<=1) return {line1:addr, line2:''};
-  return {line1:parts[0], line2:parts.slice(1).join(', ')};
+  let parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
+  const streetSuffixRe=/^(.*?\b(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Pkwy|Parkway|Hwy|Highway|Trail|Trl|Loop|Sq|Square)\.?)\s+(.+)$/i;
+  if(parts.length<=1){
+    // No commas at all — peel a trailing "STATE ZIP" off the end, then split the
+    // remainder on the street-type word (St/Ave/Rd/etc.) so the city still lands
+    // on the same line as state/zip instead of staying stuck to the street.
+    let rest=addr, stateZip='';
+    const szMatch=rest.match(/\s+([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)\s*$/);
+    if(szMatch){
+      stateZip=szMatch[1].toUpperCase()+' '+szMatch[2];
+      rest=rest.slice(0, szMatch.index).trim();
+    }
+    const sm=rest.match(streetSuffixRe);
+    let street=rest, city='';
+    if(sm){ street=sm[1].trim(); city=sm[2].trim(); }
+    const line2=[city, stateZip].filter(Boolean).join(', ');
+    return {line1:street, line2};
+  }
+  // Comma-separated address (typed or from autocomplete). Drop a trailing country
+  // segment, pull the zip and state off the end, then take the very next
+  // segment after the street as the city — skipping any county in between —
+  // so city always ends up paired with state/zip, never with the street.
+  if(/^(united states|usa|us|united states of america)$/i.test(parts[parts.length-1])) parts.pop();
+  let zip='', state='';
+  if(parts.length && /^\d{5}(-\d{4})?$/.test(parts[parts.length-1])){
+    zip=parts.pop();
+  }
+  if(parts.length>=2){
+    const last=parts[parts.length-1];
+    const combo=last.match(/^(.*?)\s+(\d{5}(?:-\d{4})?)$/);
+    if(combo && !zip){ state=combo[1].trim(); zip=combo[2]; parts.pop(); }
+    else { state=parts.pop(); }
+  }
+  let street=parts.length ? parts[0] : '';
+  let city=parts.length>1 ? parts[1] : '';
+  // If what looks like the "street" segment doesn't actually contain a street-type
+  // word, the address was probably typed as "123 Main St City" with no comma
+  // between street and city — try to split that single segment the same way.
+  if(street && !city){
+    const sm=street.match(streetSuffixRe);
+    if(sm){ city=sm[2].trim(); street=sm[1].trim(); }
+  }
+  const line2=[city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return {line1: street || addr, line2};
 }
 function renderWorkOrderModal(id){
   const wo=getWO(id);
@@ -2132,19 +2202,6 @@ function renderWorkOrderModal(id){
     bodyHTML = `
         <div class="woGrid">
           <div class="custPanel">
-            <div class="panelTitle">Customer Information</div>
-            ${WO_CUST_EDIT ? `
-              ${custField('name','Full Name', wo.customer.name)}
-              ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
-              ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
-              ${custField('email','Email (optional)', wo.customer.email)}
-              ${addressField('address','Address', wo.customer.address)}
-              <button class="btn secondary" style="margin-top:8px;width:100%" onclick="saveCustomer(${id})">Save Customer Info</button>
-              ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);margin-top:6px">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
-            ` : `
-              <div class="small">Customer contact info is shown above in the header bar.</div>
-              <button class="editLink" style="margin-top:8px;" onclick="toggleCustEdit(${id})">Edit customer info</button>
-            `}
             ${scheduleDatesSectionHTML(wo, id)}
             <div class="schedSection">
               <div class="panelTitle">Check In / Check Out by Day</div>
@@ -2213,18 +2270,31 @@ function renderWorkOrderModal(id){
   }
 
   const addr=splitAddress(wo.customer.address);
-  modal.innerHTML=`
-  <div class="overlay" id="woOverlay">
-    <div class="modal">
-      <div class="modalHead">
-        <div class="modalHeadCust">
+  const headerCustHTML = WO_CUST_EDIT ? `
+        <div class="modalHeadCust editing" id="modalHeadCust">
+          ${custField('name','Full Name', wo.customer.name)}
+          ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
+          ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
+          ${custField('email','Email (optional)', wo.customer.email)}
+          ${addressField('address','Address', wo.customer.address)}
+          ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
+          <div class="small">Tap outside this box to save and close.</div>
+        </div>` : `
+        <div class="modalHeadCust" id="modalHeadCust" title="Double-click (or long-press) to edit"
+          ondblclick="startHeaderCustEdit(${id})"
+          ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
           <div class="mhName">${(wo.customer.name || 'New Work Order')}${headerSuffix}</div>
           <div class="mhAddr1">${addr.line1}</div>
           <div class="mhPrimary">${wo.customer.phone||''}</div>
           <div class="mhAddr2">${addr.line2}</div>
           <div class="mhAlt">${wo.customer.altPhone||''}</div>
           <div class="mhEmail">${wo.customer.email||''}</div>
-        </div>
+        </div>`;
+  modal.innerHTML=`
+  <div class="overlay" id="woOverlay">
+    <div class="modal">
+      <div class="modalHead">
+        ${headerCustHTML}
         <div class="headerActionsWrap">
           ${headerActions}
           <button class="closeX" onclick="closeModal()" style="display:inline">&times;</button>
