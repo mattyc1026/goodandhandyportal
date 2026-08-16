@@ -178,8 +178,18 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .overlay{position:fixed;inset:0;background:rgba(15,38,71,.55);display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;z-index:100;}
 .modal{background:var(--paper);border-radius:14px;width:100%;max-width:1100px;box-shadow:0 30px 70px rgba(0,0,0,.4);animation:pop .12s ease-out;overflow-x:hidden;}
 @keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-.modalHead{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid #eee;}
+.modalHead{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 24px;border-bottom:1px solid #eee;gap:14px;}
 .modalHead h2{margin:0;font-size:1.25em;}
+.modalHeadCust{display:grid;grid-template-columns:auto auto;column-gap:34px;row-gap:2px;align-content:start;}
+.modalHeadCust .mhName{font-family:Georgia,'Times New Roman',serif;font-size:1.25em;color:var(--navy);font-weight:700;}
+.modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2{font-size:.88em;color:var(--muted);align-self:end;}
+.modalHeadCust .mhPrimary,.modalHeadCust .mhAlt{font-size:.92em;color:var(--ink);}
+.modalHeadCust .mhEmail{font-size:.88em;color:var(--muted);}
+.headerActionsWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.headerTabs{display:flex;gap:3px;}
+.headerTabs button{background:var(--cream);border:1px solid #e4e0d4;border-bottom:none;color:var(--muted);font-weight:700;font-size:.8em;padding:9px 16px;border-radius:8px 8px 0 0;cursor:pointer;position:relative;top:1px;min-height:36px;}
+.headerTabs button:hover{background:#efece2;}
+.headerTabs button.active{background:var(--paper);color:var(--orange);border-color:#e4e0d4;}
 .closeX{background:transparent;border:none;font-size:1.5em;color:var(--muted);min-width:40px;min-height:40px;border-radius:6px;}
 .closeX:hover{background:var(--cream);}
 .modalBody{padding:20px 24px;overflow-x:hidden;}
@@ -462,9 +472,12 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   .modal{max-width:100% !important;width:100%;min-height:100vh;border-radius:0;display:flex;flex-direction:column;}
   .modalHead{
     padding:16px 18px;position:sticky;top:0;background:var(--paper);
-    z-index:5;min-height:56px;
+    z-index:5;min-height:56px;flex-wrap:wrap;
   }
   .modalHead h2{font-size:1.2em;}
+  .modalHeadCust{grid-template-columns:1fr;column-gap:0;}
+  .modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2{align-self:auto;}
+  .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
   .modalBody{padding:16px;font-size:1em;flex:1;}
   .footerActions{
@@ -2087,27 +2100,35 @@ function toggleCustEdit(id){ WO_CUST_EDIT=!WO_CUST_EDIT; renderWorkOrderModal(id
 function toggleAdminView(id){ WO_ADMIN_VIEW=!WO_ADMIN_VIEW; renderWorkOrderModal(id); }
 function toggleDocsView(id){ WO_DOCS_VIEW=!WO_DOCS_VIEW; renderWorkOrderModal(id); }
 
+function splitAddress(addr){
+  addr=(addr||'').trim();
+  if(!addr) return {line1:'', line2:''};
+  const parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
+  if(parts.length<=1) return {line1:addr, line2:''};
+  return {line1:parts[0], line2:parts.slice(1).join(', ')};
+}
 function renderWorkOrderModal(id){
   const wo=getWO(id);
   const isAdmin=CURRENT_USER.isAdmin;
   const modal=document.getElementById('modalRoot');
 
-  let headerTitle = wo.customer.name || 'New Work Order';
+  let headerSuffix = '';
   let headerActions;
   let bodyHTML;
 
   if(WO_DOCS_VIEW){
-    headerTitle += ' — Documents';
-    headerActions = `<button class="adminViewLink" onclick="toggleDocsView(${id})">&larr; Back to Work Order</button>`;
+    headerSuffix = ' — Documents';
+    headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleDocsView(${id})">&larr; Docs</button></div>`;
     bodyHTML = docsTabHTML(wo);
   } else if(isAdmin && WO_ADMIN_VIEW){
-    headerTitle += ' — Admin View';
-    headerActions = `<button class="adminViewLink" onclick="toggleAdminView(${id})">&larr; Back to Work Order</button>`;
+    headerSuffix = ' — Admin';
+    headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleAdminView(${id})">&larr; Admin</button></div>`;
     bodyHTML = adminTabHTML(wo);
   } else {
-    headerActions = `
-          <button class="adminViewLink" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
-          ${isAdmin ? `<button class="adminViewLink" onclick="toggleAdminView(${id})">Admin View</button>` : ''}`;
+    headerActions = `<div class="headerTabs">
+          <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
+          ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
+        </div>`;
     bodyHTML = `
         <div class="woGrid">
           <div class="custPanel">
@@ -2121,31 +2142,27 @@ function renderWorkOrderModal(id){
               <button class="btn secondary" style="margin-top:8px;width:100%" onclick="saveCustomer(${id})">Save Customer Info</button>
               ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);margin-top:6px">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
             ` : `
-              <div class="custDisplay">
-                <div class="kv"><span><b>Name</b><br>${wo.customer.name}</span></div>
-                <div class="kv"><span><b>Primary Phone</b><br>${wo.customer.phone}</span></div>
-                ${wo.customer.altPhone ? `<div class="kv"><span><b>Alternate Phone</b><br>${wo.customer.altPhone}</span></div>` : ''}
-                <div class="kv"><span><b>Email</b><br>${wo.customer.email||'—'}</span></div>
-                <div class="kv"><span><b>Address</b><br>${wo.customer.address}</span></div>
-              </div>
+              <div class="small">Customer contact info is shown above in the header bar.</div>
               <button class="editLink" style="margin-top:8px;" onclick="toggleCustEdit(${id})">Edit customer info</button>
             `}
             ${scheduleDatesSectionHTML(wo, id)}
+            <div class="schedSection">
+              <div class="panelTitle">Check In / Check Out by Day</div>
+              <div class="checkStampBox">
+                ${dayLogsSectionHTML(wo)}
+              </div>
+              ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
+                  <div class="small" style="margin-bottom:4px;"><b>Legacy job-level stamp</b> (from before per-day check-in/out)</div>
+                  <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by : '—'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
+                  <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by : '—'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
+                </div>` : ''}
+            </div>
           </div>
           <div class="jobPanel">
             <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
               <span>Job Details</span>
               ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : ''}
             </div>
-            <div class="checkStampBox">
-                <div class="panelTitle" style="margin-bottom:6px;">Check In / Check Out by Day</div>
-                ${dayLogsSectionHTML(wo)}
-              </div>
-            ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
-                <div class="small" style="margin-bottom:4px;"><b>Legacy job-level stamp</b> (from before per-day check-in/out)</div>
-                <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by : '—'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
-                <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by : '—'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
-              </div>` : ''}
             ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
             ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
           </div>
@@ -2195,12 +2212,20 @@ function renderWorkOrderModal(id){
         </div>`;
   }
 
+  const addr=splitAddress(wo.customer.address);
   modal.innerHTML=`
   <div class="overlay" id="woOverlay">
     <div class="modal">
       <div class="modalHead">
-        <h2>${headerTitle}</h2>
-        <div>
+        <div class="modalHeadCust">
+          <div class="mhName">${(wo.customer.name || 'New Work Order')}${headerSuffix}</div>
+          <div class="mhAddr1">${addr.line1}</div>
+          <div class="mhPrimary">${wo.customer.phone||''}</div>
+          <div class="mhAddr2">${addr.line2}</div>
+          <div class="mhAlt">${wo.customer.altPhone||''}</div>
+          <div class="mhEmail">${wo.customer.email||''}</div>
+        </div>
+        <div class="headerActionsWrap">
           ${headerActions}
           <button class="closeX" onclick="closeModal()" style="display:inline">&times;</button>
         </div>
