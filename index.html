@@ -2140,9 +2140,28 @@ function attachHeaderCustOutsideClickHandler(id){
 function toggleAdminView(id){ WO_ADMIN_VIEW=!WO_ADMIN_VIEW; renderWorkOrderModal(id); }
 function toggleDocsView(id){ WO_DOCS_VIEW=!WO_DOCS_VIEW; renderWorkOrderModal(id); }
 
-function splitAddress(addr){
-  addr=(addr||'').trim();
-  if(!addr) return {line1:'', line2:''};
+function extractUnit(str){
+  // Pulls a unit/suite/apt/building/# designator out of a freeform address
+  // string (whether it's its own comma segment or jammed onto the street,
+  // e.g. "123 Main St Apt 4B") so it can be re-attached right after the
+  // street suffix on line 1, and doesn't confuse city/state/zip parsing.
+  const re=/,?\s*\b(unit|ste|suite|apt|apartment|bldg|building)\.?\s*#?\s*([A-Za-z0-9-]+)\b|,?\s*#\s*([A-Za-z0-9-]+)\b/i;
+  const m=str.match(re);
+  if(!m) return {rest:str, unit:''};
+  const rest=(str.slice(0,m.index)+str.slice(m.index+m[0].length)).replace(/,\s*,/g,',').replace(/,\s*$/,'').trim();
+  let unit;
+  if(m[1]){
+    const wordMap={unit:'Unit',ste:'Ste',suite:'Suite',apt:'Apt',apartment:'Apt',bldg:'Bldg',building:'Bldg'};
+    unit=(wordMap[m[1].toLowerCase()]||m[1])+' '+m[2];
+  } else {
+    unit='#'+m[3];
+  }
+  return {rest, unit};
+}
+function splitAddress(rawAddr){
+  const trimmedRaw=(rawAddr||'').trim();
+  if(!trimmedRaw) return {line1:'', line2:''};
+  const {rest:addr, unit}=extractUnit(trimmedRaw);
   let parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
   const streetSuffixRe=/^(.*?\b(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Pkwy|Parkway|Hwy|Highway|Trail|Trl|Loop|Sq|Square)\.?)\s+(.+)$/i;
   if(parts.length<=1){
@@ -2159,7 +2178,7 @@ function splitAddress(addr){
     let street=rest, city='';
     if(sm){ street=sm[1].trim(); city=sm[2].trim(); }
     const line2=[city, stateZip].filter(Boolean).join(', ');
-    return {line1:street, line2};
+    return {line1: unit ? [street, unit].filter(Boolean).join(' ') : street, line2};
   }
   // Comma-separated address (typed or from autocomplete). Drop a trailing country
   // segment, pull the zip and state off the end, then take the very next
@@ -2186,7 +2205,8 @@ function splitAddress(addr){
     if(sm){ city=sm[2].trim(); street=sm[1].trim(); }
   }
   const line2=[city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  return {line1: street || addr, line2};
+  const line1Base=street || addr;
+  return {line1: unit ? [line1Base, unit].filter(Boolean).join(' ') : line1Base, line2};
 }
 function renderWorkOrderModal(id){
   const wo=getWO(id);
