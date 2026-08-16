@@ -1333,8 +1333,8 @@ function rowHTML(wo, opts){
     : '';
   const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? `<div class="checkInOutRow" onclick="event.stopPropagation()">
-         <label class="jcCheck"><input type="checkbox" ${todayLog.log.checkIn?'checked disabled':''} onchange="checkInDay(${wo.id}, '${todayLog.log.date}', this)"> Check In (today)${todayLog.log.checkIn?` (${todayLog.log.checkIn.time})`:''}</label>
-         <label class="jcCheck"><input type="checkbox" ${!todayLog.log.checkIn||todayLog.log.checkOut?'disabled':''} ${todayLog.log.checkOut?'checked':''} onchange="checkOutDay(${wo.id}, '${todayLog.log.date}', this)"> Check Out (today)${todayLog.log.checkOut?` (${todayLog.log.checkOut.time})`:''}</label>
+         <label class="jcCheck"><input type="checkbox" ${todayLog.log.checkIn?'checked disabled':''} onchange="checkInDay(${wo.id}, '${todayLog.log.date}', this)"> In${todayLog.log.checkIn?` (${todayLog.log.checkIn.time})`:''}</label>
+         <label class="jcCheck"><input type="checkbox" ${!todayLog.log.checkIn||todayLog.log.checkOut?'disabled':''} ${todayLog.log.checkOut?'checked':''} onchange="checkOutDay(${wo.id}, '${todayLog.log.date}', this)"> Out${todayLog.log.checkOut?` (${todayLog.log.checkOut.time})`:''}</label>
        </div>`
     : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today — see Job Details for other days.</div>' : '');
   return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
@@ -1592,11 +1592,11 @@ function dayLogsSectionHTML(wo){
   return `<div class="dayLogsList">` + rows.map(({log})=>{
     const inDone = !!log.checkIn;
     const outDone = !!log.checkOut;
-    return `<div class="dayLogRow">
-      <div class="dayLogDate">${log.date}</div>
-      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)"> Check In${inDone?` (${log.checkIn.time})`:''}</label>
+    return `<div class="dayLogRow" style="flex-wrap:nowrap;white-space:nowrap;overflow-x:auto;">
+      <div class="dayLogDate">${formatDateDisplay(log.date)}</div>
+      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)"> In${inDone?` (${log.checkIn.time})`:''}</label>
       ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
-      <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${wo.id}, '${log.date}', this)"> Check Out${outDone?` (${log.checkOut.time})`:''}</label>
+      <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${wo.id}, '${log.date}', this)"> Out${outDone?` (${log.checkOut.time})`:''}</label>
       ${(isAdmin && outDone) ? `<button class="editLink" onclick="editCheckOutDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
     </div>`;
   }).join('') + `</div>`;
@@ -1729,7 +1729,7 @@ function scheduleDatesSectionHTML(wo, id){
 function schedRowHTML(woId, d){
   const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
   return `<div class="schedRow">
-    <div><b>${range}</b><br><span class="small">Arrival ${formatArrivalWindow(d.startTime)}${d.multiDay ? ' (repeats daily)' : ''}</span></div>
+    <div><b>${range}</b><br><span class="small">${formatArrivalWindow(d.startTime)}${d.multiDay ? ' (repeats daily)' : ''}</span></div>
     <button class="tinyDel" title="Remove" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
   </div>`;
 }
@@ -2204,7 +2204,7 @@ function renderWorkOrderModal(id){
           <div class="custPanel">
             ${scheduleDatesSectionHTML(wo, id)}
             <div class="schedSection">
-              <div class="panelTitle">Check In / Check Out by Day</div>
+              <div class="panelTitle">Check In / Check Out</div>
               <div class="checkStampBox">
                 ${dayLogsSectionHTML(wo)}
               </div>
