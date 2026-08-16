@@ -339,6 +339,9 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .checkInOutRow .jcCheck input:disabled{opacity:.6;}
 .checkStampBox{background:#eafcef;border:1px solid #39ff14;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:.85em;}
 .checkStampBox .kv{display:flex;justify-content:space-between;gap:10px;}
+.dayLogsList{display:flex;flex-direction:column;gap:8px;}
+.dayLogRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fff;border:1px solid #d9e9dc;border-radius:6px;padding:6px 8px;}
+.dayLogDate{font-weight:700;min-width:100px;}
 .woRow.jumpHighlight{outline:3px solid var(--orange);box-shadow:0 0 0 6px rgba(232,121,26,.25);}
 
 /* =========================================================================
@@ -888,7 +891,23 @@ function normalizeWO(wo){
   if(!Array.isArray(wo.docs)) wo.docs=[];
   wo.docs.forEach(d=>{ if(d.uploadedAt===undefined) d.uploadedAt=0; });
   if(!Array.isArray(wo.scheduleDates)) wo.scheduleDates=[];
+  wo.scheduleDates.forEach(sd=>{
+    if(!Array.isArray(sd.dayLogs) || sd.dayLogs.length===0){
+      sd.dayLogs=datesInRange(sd.startDate, sd.endDate||sd.startDate).map(date=>({date, checkIn:null, checkOut:null}));
+    }
+  });
   return wo;
+}
+function datesInRange(startIso, endIso){
+  const out=[];
+  if(!startIso) return out;
+  let cur=new Date(startIso+'T00:00:00');
+  const end=new Date((endIso||startIso)+'T00:00:00');
+  while(cur<=end){
+    out.push(cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0'));
+    cur.setDate(cur.getDate()+1);
+  }
+  return out;
 }
 function normalizeDB(db){
   (db.workOrders||[]).forEach(normalizeWO);
@@ -898,7 +917,43 @@ function normalizeDB(db){
     (db.workOrders||[]).forEach(wo=>(wo.docs||[]).forEach(d=>{ if(d.url) total+=(d.size||0); }));
     db.storageUsedBytes=total;
   }
+  fixLegacyUserDisplayNames(db);
   return db;
+}
+/* Older records (created before usernames were shown everywhere) may still
+   have a name stored as "Firstname L." instead of the "firstnamel" username
+   format. This rewrites every such reference — notes, admin log entries,
+   check-in/out stamps, document uploads — to the correct username, by
+   matching the stored first name + last initial against DB.users. Runs
+   automatically every time the app loads. */
+function fixLegacyUserDisplayNames(db){
+  const users=Object.values(db.users||{});
+  if(!users.length) return;
+  function resolve(str){
+    if(!str || typeof str!=='string') return str;
+    const m=str.trim().match(/^([A-Za-z][A-Za-z'-]*)\s+([A-Za-z])\.?$/);
+    if(!m) return str;
+    const [ , first, lastInit ] = m;
+    const match=users.find(u=>u.firstName && u.lastInitial &&
+      u.firstName.toLowerCase()===first.toLowerCase() &&
+      u.lastInitial.toLowerCase()===lastInit.toLowerCase());
+    return match ? match.username : str;
+  }
+  let changed=false;
+  (db.workOrders||[]).forEach(wo=>{
+    (wo.notes||[]).forEach(n=>{ const fixed=resolve(n.by); if(fixed!==n.by){ n.by=fixed; changed=true; } });
+    (wo.adminLog||[]).forEach(l=>{ const fixed=resolve(l.by); if(fixed!==l.by){ l.by=fixed; changed=true; } });
+    (wo.docs||[]).forEach(d=>{ const fixed=resolve(d.uploadedBy); if(fixed!==d.uploadedBy){ d.uploadedBy=fixed; changed=true; } });
+    if(wo.checkIn){ const fixed=resolve(wo.checkIn.by); if(fixed!==wo.checkIn.by){ wo.checkIn.by=fixed; changed=true; } }
+    if(wo.checkOut){ const fixed=resolve(wo.checkOut.by); if(fixed!==wo.checkOut.by){ wo.checkOut.by=fixed; changed=true; } }
+    (wo.scheduleDates||[]).forEach(sd=>{
+      (sd.dayLogs||[]).forEach(dl=>{
+        if(dl.checkIn){ const fixed=resolve(dl.checkIn.by); if(fixed!==dl.checkIn.by){ dl.checkIn.by=fixed; changed=true; } }
+        if(dl.checkOut){ const fixed=resolve(dl.checkOut.by); if(fixed!==dl.checkOut.by){ dl.checkOut.by=fixed; changed=true; } }
+      });
+    });
+  });
+  return changed;
 }
 /* Job History records purge automatically 6 months after they arrive. */
 function purgeOldHistory(db){
@@ -1234,7 +1289,9 @@ function woIsFollowUpDue(wo){
 function rowHTML(wo, opts){
   opts=opts||{};
   const cls=statusClass(wo);
-  const glowCls = (wo.checkIn && !wo.checkOut) ? ' checkedInGlow' : '';
+  const todayLog = todaysDayLog(wo);
+  const anyOpenCheckIn = allDayLogsSorted(wo).some(({log})=>log.checkIn && !log.checkOut);
+  const glowCls = anyOpenCheckIn ? ' checkedInGlow' : '';
   const openFn = opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})`
     : (opts.openMode==='estimate') ? `openEstimateSplit(${wo.id})`
     : (opts.openMode==='invoice') ? `openInvoiceSplit(${wo.id})`
@@ -1258,12 +1315,12 @@ function rowHTML(wo, opts){
          <label class="jcCheck"><input type="checkbox" onchange="declineEstimate(${wo.id}, this)"> Declined</label>
        </div>`
     : '';
-  const checkInOutRow = opts.showCheckInOut
+  const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? `<div class="checkInOutRow" onclick="event.stopPropagation()">
-         <label class="jcCheck"><input type="checkbox" ${wo.checkIn?'checked disabled':''} onchange="checkInWO(${wo.id}, this)"> Check In${wo.checkIn?` (${wo.checkIn.time})`:''}</label>
-         <label class="jcCheck"><input type="checkbox" ${!wo.checkIn?'disabled':''} ${wo.checkOut?'checked disabled':''} onchange="checkOutWO(${wo.id}, this)"> Check Out${wo.checkOut?` (${wo.checkOut.time})`:''}</label>
+         <label class="jcCheck"><input type="checkbox" ${todayLog.log.checkIn?'checked disabled':''} onchange="checkInDay(${wo.id}, '${todayLog.log.date}', this)"> Check In (today)${todayLog.log.checkIn?` (${todayLog.log.checkIn.time})`:''}</label>
+         <label class="jcCheck"><input type="checkbox" ${!todayLog.log.checkIn||todayLog.log.checkOut?'disabled':''} ${todayLog.log.checkOut?'checked':''} onchange="checkOutDay(${wo.id}, '${todayLog.log.date}', this)"> Check Out (today)${todayLog.log.checkOut?` (${todayLog.log.checkOut.time})`:''}</label>
        </div>`
-    : '';
+    : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today — see Job Details for other days.</div>' : '');
   return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
     <div class="woMain">
       <div class="woName">${wo.customer.name || '(No name yet)'}</div>
@@ -1386,6 +1443,147 @@ function saveCheckOutTime(id){
   renderMain();
   renderWorkOrderModal(id);
   toast('Check-out time updated.');
+}
+
+/* =========================================================================
+   PER-DAY CHECK IN / CHECK OUT
+   Every individual day a work order is scheduled for (each date produced by
+   the Schedule Date(s) feature) gets its own independent check-in and
+   check-out stamp, stored on that day's entry in scheduleDates[].dayLogs.
+========================================================================= */
+function findDayLog(wo, date){
+  for(const entry of (wo.scheduleDates||[])){
+    const log=(entry.dayLogs||[]).find(l=>l.date===date);
+    if(log) return {entry, log};
+  }
+  return null;
+}
+function allDayLogsSorted(wo){
+  const out=[];
+  (wo.scheduleDates||[]).forEach(entry=>{
+    (entry.dayLogs||[]).forEach(log=>out.push({entry, log}));
+  });
+  out.sort((a,b)=>a.log.date.localeCompare(b.log.date));
+  return out;
+}
+function todaysDayLog(wo){
+  return findDayLog(wo, isoToday());
+}
+function checkInDay(woId, date, checkboxEl){
+  const wo=getWO(woId);
+  const found=findDayLog(wo, date);
+  if(!found || found.log.checkIn){ return; }
+  if(checkboxEl) checkboxEl.checked=false; // don't visually check until confirmed
+  askYesNo('Confirm you are checking in on site for '+date+'?', (yes)=>{
+    if(yes){
+      const ts=nowStamp();
+      found.log.checkIn={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
+      addAdminLog(wo, 'Checked in on site for '+date+' at '+ts.time+' on '+ts.date+'.');
+      saveDB(DB);
+      renderTabCounts();
+      renderMain();
+      if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
+      toast('Checked in — time logged for '+date+'.');
+    }
+  });
+}
+function checkOutDay(woId, date, checkboxEl){
+  const wo=getWO(woId);
+  const found=findDayLog(wo, date);
+  if(!found || !found.log.checkIn || found.log.checkOut){ return; }
+  if(checkboxEl) checkboxEl.checked=false;
+  askYesNo('Confirm you are checking out — leaving the job site for '+date+'?', (yes)=>{
+    if(yes){
+      const ts=nowStamp();
+      found.log.checkOut={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
+      addAdminLog(wo, 'Checked out from site for '+date+' at '+ts.time+' on '+ts.date+'.');
+      saveDB(DB);
+      renderTabCounts();
+      renderMain();
+      if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
+      toast('Checked out — time logged for '+date+'.');
+    }
+  });
+}
+function editCheckInDayTime(woId, date){
+  const wo=getWO(woId);
+  const found=findDayLog(wo, date);
+  if(!found || !found.log.checkIn) return;
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
+    <h3>Edit Check In Time — ${date}</h3>
+    <div class="field"><label>Date</label><input type="text" id="editDayCheckInDate" value="${found.log.checkIn.date}"></div>
+    <div class="field"><label>Time</label><input type="text" id="editDayCheckInTimeVal" value="${found.log.checkIn.time}"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveCheckInDayTime(${woId}, '${date}')">Save</button>
+      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function saveCheckInDayTime(woId, date){
+  const wo=getWO(woId);
+  const found=findDayLog(wo, date);
+  if(!found || !found.log.checkIn) return;
+  const newDate=document.getElementById('editDayCheckInDate').value.trim();
+  const newTime=document.getElementById('editDayCheckInTimeVal').value.trim();
+  if(!newDate || !newTime){ toast('Date and time are required.'); return; }
+  const oldDate=found.log.checkIn.date, oldTime=found.log.checkIn.time;
+  found.log.checkIn.date=newDate;
+  found.log.checkIn.time=newTime;
+  addAdminLog(wo, 'Check-in time for '+date+' edited from '+oldDate+' '+oldTime+' to '+newDate+' '+newTime+'.');
+  saveDB(DB);
+  document.getElementById('confirmRoot').innerHTML='';
+  renderMain();
+  renderWorkOrderModal(woId);
+  toast('Check-in time updated.');
+}
+function editCheckOutDayTime(woId, date){
+  const wo=getWO(woId);
+  const found=findDayLog(wo, date);
+  if(!found || !found.log.checkOut) return;
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
+    <h3>Edit Check Out Time — ${date}</h3>
+    <div class="field"><label>Date</label><input type="text" id="editDayCheckOutDate" value="${found.log.checkOut.date}"></div>
+    <div class="field"><label>Time</label><input type="text" id="editDayCheckOutTimeVal" value="${found.log.checkOut.time}"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveCheckOutDayTime(${woId}, '${date}')">Save</button>
+      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function saveCheckOutDayTime(woId, date){
+  const wo=getWO(woId);
+  const found=findDayLog(wo, date);
+  if(!found || !found.log.checkOut) return;
+  const newDate=document.getElementById('editDayCheckOutDate').value.trim();
+  const newTime=document.getElementById('editDayCheckOutTimeVal').value.trim();
+  if(!newDate || !newTime){ toast('Date and time are required.'); return; }
+  const oldDate=found.log.checkOut.date, oldTime=found.log.checkOut.time;
+  found.log.checkOut.date=newDate;
+  found.log.checkOut.time=newTime;
+  addAdminLog(wo, 'Check-out time for '+date+' edited from '+oldDate+' '+oldTime+' to '+newDate+' '+newTime+'.');
+  saveDB(DB);
+  document.getElementById('confirmRoot').innerHTML='';
+  renderMain();
+  renderWorkOrderModal(woId);
+  toast('Check-out time updated.');
+}
+function dayLogsSectionHTML(wo){
+  const rows=allDayLogsSorted(wo);
+  const isAdmin = !!(CURRENT_USER && CURRENT_USER.isAdmin);
+  if(!rows.length) return '<div class="small">No scheduled days yet — use Schedule Date(s) to add visit dates.</div>';
+  return `<div class="dayLogsList">` + rows.map(({log})=>{
+    const inDone = !!log.checkIn;
+    const outDone = !!log.checkOut;
+    return `<div class="dayLogRow">
+      <div class="dayLogDate">${log.date}</div>
+      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)"> Check In${inDone?` (${log.checkIn.time})`:''}</label>
+      ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
+      <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${wo.id}, '${log.date}', this)"> Check Out${outDone?` (${log.checkOut.time})`:''}</label>
+      ${(isAdmin && outDone) ? `<button class="editLink" onclick="editCheckOutDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
+    </div>`;
+  }).join('') + `</div>`;
 }
 function approveEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
@@ -1791,6 +1989,9 @@ function removePendingScheduleDate(i){
 function finalizeScheduleDates(){
   const wo=getWO(SCHED_WO_ID);
   if(!SCHED_PENDING.length) return;
+  SCHED_PENDING.forEach(entry=>{
+    entry.dayLogs=datesInRange(entry.startDate, entry.endDate||entry.startDate).map(date=>({date, checkIn:null, checkOut:null}));
+  });
   wo.scheduleDates=(wo.scheduleDates||[]).concat(SCHED_PENDING);
   addAdminLog(wo, `Added ${SCHED_PENDING.length} schedule date(s) and generated a calendar (.ics) download.`);
   saveDB(DB);
@@ -1936,7 +2137,12 @@ function renderWorkOrderModal(id){
               <span>Job Details</span>
               ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : ''}
             </div>
+            <div class="checkStampBox">
+                <div class="panelTitle" style="margin-bottom:6px;">Check In / Check Out by Day</div>
+                ${dayLogsSectionHTML(wo)}
+              </div>
             ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
+                <div class="small" style="margin-bottom:4px;"><b>Legacy job-level stamp</b> (from before per-day check-in/out)</div>
                 <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by : '—'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
                 <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by : '—'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
               </div>` : ''}
@@ -2474,10 +2680,12 @@ function adminTabHTML(wo){
     <h4>Admin Controls</h4>
     <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow. The job resumes normally from wherever you place it.</div>
     <div class="btnRow" style="flex-wrap:wrap;">
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'presite')">Send to Pre-Site</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'estimate')">Send to Estimates</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'invoice')">Send to Invoices</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'done')">Mark Fully Complete</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'presite')">Send to Pre-Site Inspections</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'estimates')">Send to Estimates</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'inprogress')">Send to In Progress</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'invoices')">Send to Invoices</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'surveys')">Send to Surveys</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'jobhistory')">Send to Job History</button>
     </div>
     <h4 style="margin-top:14px;">Admin Log</h4>
     ${logHTML}
@@ -2485,10 +2693,32 @@ function adminTabHTML(wo){
 }
 function adminSetStage(id, target){
   const wo=getWO(id);
-  if(target==='presite'){ wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false; wo.presiteScheduled=false; wo.estimateApproved=false; wo.estimateDeclined=false; wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null; }
-  if(target==='estimate'){ wo.presiteDone=true; wo.estimateDone=false; wo.invoiceDone=false; wo.estimateApproved=false; wo.estimateDeclined=false; wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null; }
-  if(target==='invoice'){ wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false; wo.invoiceDone=false; wo.jobScheduled=true; wo.jobComplete=false; wo.movedToHistoryAt=null; }
-  if(target==='done'){ wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.jobScheduled=true; wo.invoiceDone=true; wo.movedToHistoryAt=null; }
+  if(target==='presite'){
+    wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false;
+    wo.presiteScheduled=false; wo.estimateApproved=false; wo.estimateDeclined=false;
+    wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='estimates'){
+    wo.presiteDone=true; wo.estimateDone=false; wo.invoiceDone=false;
+    wo.estimateApproved=false; wo.estimateDeclined=false;
+    wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='inprogress'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
+    wo.jobScheduled=true; wo.invoiceDone=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='invoices'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
+    wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='surveys'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
+    wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=null;
+  }
+  if(target==='jobhistory'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
+    wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=Date.now();
+  }
   addAdminLog(wo, `Overrode workflow — forced job to stage: ${target}`);
   saveDB(DB);
   renderWorkOrderModal(id);
