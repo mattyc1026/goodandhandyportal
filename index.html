@@ -1603,7 +1603,7 @@ function dayLogsSectionHTML(wo){
   return `<div class="dayLogsList">` + rows.map(({log})=>{
     const inDone = !!log.checkIn;
     const outDone = !!log.checkOut;
-    return `<div class="dayLogRow" style="flex-wrap:nowrap;white-space:nowrap;overflow-x:auto;">
+    return `<div class="dayLogRow">
       <div class="dayLogDate">${formatDateDisplay(log.date)}</div>
       <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)"> In${inDone?` (${log.checkIn.time})`:''}</label>
       ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
