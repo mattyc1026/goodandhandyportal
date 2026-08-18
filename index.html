@@ -2148,6 +2148,7 @@ function openWorkOrder(id){
   JD_EDIT = null;
   WO_DOCS_VIEW = false;
   renderWorkOrderModal(id);
+  if(WO_CUST_EDIT){ attachHeaderCustOutsideClickHandler(id); }
 }
 function startHeaderCustEdit(id){
   WO_CUST_EDIT=true;
