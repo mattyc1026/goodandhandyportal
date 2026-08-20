@@ -1321,7 +1321,13 @@ function closeTabsMenu(){
   const nav = document.getElementById('tabsNav');
   if(nav) nav.classList.remove('open');
 }
-let LAST_HISTORY_PURGE=0;
+/* Declared with var, not let: renderTabCounts() runs during session restore
+   near the top of this script, long before execution reaches this line. A
+   function declaration is hoisted and callable early, but a `let` binding is
+   not — it sits in the temporal dead zone until its line executes, so touching
+   it from that early call threw and aborted every render. `var` hoists with
+   the function, so the early call reads 0 and behaves correctly. */
+var LAST_HISTORY_PURGE=0;
 function renderTabCounts(){
   // This used to purge + saveDB() (and therefore push to Firestore) on every
   // single re-render — several writes per tab switch. Once an hour is plenty
