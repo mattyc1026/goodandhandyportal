@@ -548,6 +548,37 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
   #toastStack{bottom:calc(96px + env(safe-area-inset-bottom,0px));}
 }
 
+/* Edit/remove controls on a scheduled date row. */
+.schedRowBtns{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.tinyEdit{
+  background:none;border:1px solid var(--line);color:var(--navy);
+  font-size:.72em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:4px 9px;border-radius:5px;cursor:pointer;line-height:1;
+}
+.tinyEdit:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
+.schedLoggedTag{
+  display:inline-block;margin-left:8px;padding:2px 7px;border-radius:10px;
+  background:#e8f0e8;color:#2c5c2c;font-size:.68em;font-weight:700;
+  text-transform:uppercase;letter-spacing:.03em;vertical-align:middle;
+}
+/* Deliberate double-booking, flagged in amber so it reads as "on purpose"
+   rather than "mistake" — it sits next to the logged-time tag on the row. */
+.schedDblTag{
+  display:inline-block;margin-left:8px;padding:2px 7px;border-radius:10px;
+  background:#fdf0dc;color:#8a4b00;border:1px solid #e0b070;font-size:.68em;
+  font-weight:700;text-transform:uppercase;letter-spacing:.03em;vertical-align:middle;
+}
+html.hc .tinyEdit{border-color:#000;color:#000;}
+html.hc .schedLoggedTag{background:#fff;color:#000;border:1px solid #000;}
+html.hc .schedDblTag{background:#fff;color:#000;border:1px solid #000;}
+
+/* The override prompt lists each clashing appointment on its own line, so the
+   confirm dialog has to honour newlines instead of collapsing them. It's also
+   widened and left-aligned, since a list reads badly centred. */
+.confirmCard h3{white-space:pre-line;}
+.confirmCard.wide{max-width:440px;}
+.confirmCard.wide h3{text-align:left;font-size:1em;line-height:1.5;}
+
 /* ---- Toast stack ----
    Toasts share one fixed container and stack upward, so two messages in
    quick succession are both readable instead of overlapping exactly. */
@@ -960,6 +991,7 @@ function normalizeWO(wo){
   if(!wo.jobDetails || typeof wo.jobDetails!=='object') wo.jobDetails={description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]};
   ['labor','materials','tools','issues','disclaimers'].forEach(k=>{ if(!Array.isArray(wo.jobDetails[k])) wo.jobDetails[k]=[]; });
   if(typeof wo.jobDetails.description!=='string') wo.jobDetails.description='';
+  (wo.scheduleDates||[]).forEach(d=>{ if(d.overridden===undefined) d.overridden=false; });
   if(!Array.isArray(wo.notes)) wo.notes=[];
   if(!Array.isArray(wo.adminLog)) wo.adminLog=[];
   if(wo.presiteScheduled===undefined) wo.presiteScheduled=false;
@@ -1794,6 +1826,9 @@ let SCHED_WO_ID=null, SCHED_CAL_MONTH=null, SCHED_TYPE='full', SCHED_START=null,
    re-emitted with a hard-coded value="", so switching Pre-Site/Whole Job or
    adding a second date silently erased whatever times had been typed. */
 let SCHED_STIME='', SCHED_ETIME='';
+/* When set, the schedule widget is editing that existing saved date instead of
+   building a list of new ones. */
+let SCHED_EDIT_ID=null;
 function captureSchedFields(){
   const g=id=>{ const el=document.getElementById(id); return el?el.value:null; };
   const sd=g('schedStartDate'), st=g('schedStartTime'), ed=g('schedEndDate'), et=g('schedEndTime');
@@ -1821,10 +1856,117 @@ function scheduleDatesSectionHTML(wo, id){
 }
 function schedRowHTML(woId, d){
   const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
+  // Days that already have a check-in are called out, so it's obvious before
+  // editing that changing the dates could affect logged time.
+  const logged=(d.dayLogs||[]).filter(l=>l.checkIn).length;
+  const loggedNote = logged ? `<span class="schedLoggedTag" title="This date has logged time">${logged} day${logged>1?'s':''} logged</span>` : '';
+  // An intentional double-booking is flagged so it never looks like an oversight.
+  const dblNote = d.overridden ? `<span class="schedDblTag" title="Double-booked over another appointment">double-booked</span>` : '';
   return `<div class="schedRow">
-    <div><b>${range}</b><br><span class="small">${formatArrivalWindow(d.startTime)}${d.multiDay ? ' (repeats daily)' : ''}</span></div>
-    <button class="tinyDel" title="Remove" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
+    <div><b>${range}</b>${loggedNote}${dblNote}<br><span class="small">${formatArrivalWindow(d.startTime)}${d.multiDay ? ' (repeats daily)' : ''}</span></div>
+    <div class="schedRowBtns">
+      <button class="tinyEdit" title="Edit this date" aria-label="Edit this scheduled date" onclick="openScheduleEdit(${woId},'${d.id}')">Edit</button>
+      <button class="tinyDel" title="Remove" aria-label="Remove this scheduled date" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
+    </div>
   </div>`;
+}
+
+/* ---- Editing an existing scheduled date ----
+   Reuses the same calendar/form as adding, switched into a single-entry mode
+   by SCHED_EDIT_ID rather than the pending-list mode used for new dates. */
+function openScheduleEdit(woId, dateId){
+  const wo=getWO(woId);
+  const d=wo && (wo.scheduleDates||[]).find(x=>x.id===dateId);
+  if(!d){ toast('That scheduled date no longer exists.'); return; }
+  SCHED_WO_ID=woId;
+  SCHED_EDIT_ID=dateId;
+  SCHED_PENDING=[];
+  SCHED_TYPE=d.type||'full';
+  SCHED_START=d.startDate;
+  SCHED_END=d.endDate||d.startDate;
+  SCHED_STIME=d.startTime||'';
+  SCHED_ETIME=d.endTime||'';
+  const anchor=new Date(d.startDate+'T00:00:00');
+  SCHED_CAL_MONTH=new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  renderScheduleWidget();
+}
+
+/* Rebuilds the per-day check in/out list for a new date range, carrying over
+   any stamps for days that are still in range. Days dropped from the range
+   lose their stamps, which is why saveScheduleEdit() confirms first. */
+function remapDayLogs(existing, startDate, endDate){
+  const old={};
+  (existing||[]).forEach(l=>{ old[l.date]=l; });
+  return datesInRange(startDate, endDate||startDate).map(date=>
+    old[date] ? {date, checkIn:old[date].checkIn||null, checkOut:old[date].checkOut||null}
+              : {date, checkIn:null, checkOut:null}
+  );
+}
+
+function saveScheduleEdit(){
+  captureSchedFields();
+  const wo=getWO(SCHED_WO_ID);
+  const d=wo && (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID);
+  if(!d){ toast('That scheduled date no longer exists.'); return; }
+
+  const startDate=(document.getElementById('schedStartDate')||{}).value || SCHED_START;
+  const startTime=(document.getElementById('schedStartTime')||{}).value || SCHED_STIME;
+  const endDate=(document.getElementById('schedEndDate')||{}).value || SCHED_END;
+  const endTime=(document.getElementById('schedEndTime')||{}).value || SCHED_ETIME;
+
+  if(!startDate || !startTime || !endDate || !endTime){ toast('Start date/time and end date/time are all required.'); return; }
+  if(endDate<startDate){ toast('End date must be on or after the start date.'); return; }
+  if(endDate===startDate && endTime<=startTime){ toast('End time must be after the start time.'); return; }
+  const unchanged = d.startDate===startDate && d.startTime===startTime &&
+                    (d.endDate||d.startDate)===endDate && d.endTime===endTime && d.type===SCHED_TYPE;
+  if(unchanged){ SCHED_EDIT_ID=null; renderWorkOrderModal(SCHED_WO_ID); return; }
+
+  withConflictOverride(startDate, startTime, endDate, endTime, SCHED_EDIT_ID, (overridden)=>{
+    // Warn before silently discarding logged time on days leaving the range.
+    const kept=datesInRange(startDate, endDate);
+    const losing=(d.dayLogs||[]).filter(l=>l.checkIn && kept.indexOf(l.date)===-1);
+    const commit=()=>applyScheduleEdit(d, startDate, startTime, endDate, endTime, overridden);
+    if(losing.length){
+      askYesNo(`This removes ${losing.length} day${losing.length>1?'s':''} that already ${losing.length>1?'have':'has'} logged time (${losing.map(l=>formatDateDisplay(l.date)).join(', ')}). That time log will be deleted. Continue?`,
+        (yes)=>{ if(yes) commit(); });
+    } else {
+      commit();
+    }
+  });
+}
+
+function applyScheduleEdit(d, startDate, startTime, endDate, endTime, overridden){
+  const wo=getWO(SCHED_WO_ID);
+  const before=`${formatDateDisplay(d.startDate)}${d.multiDay?' – '+formatDateDisplay(d.endDate):''} @ ${formatTime12(d.startTime)}-${formatTime12(d.endTime)}`;
+  d.type=SCHED_TYPE;
+  d.startDate=startDate;
+  d.startTime=startTime;
+  d.endDate=endDate;
+  d.endTime=endTime;
+  d.multiDay=endDate!==startDate;
+  d.overridden=!!overridden;
+  d.dayLogs=remapDayLogs(d.dayLogs, startDate, endDate);
+  const after=`${formatDateDisplay(startDate)}${d.multiDay?' – '+formatDateDisplay(endDate):''} @ ${formatTime12(startTime)}-${formatTime12(endTime)}`;
+  addAdminLog(wo, `Changed a scheduled date from ${before} to ${after}.${overridden?' Double-booked over an existing appointment (override).':''}`);
+  saveDB(DB);
+  const woId=SCHED_WO_ID, editedId=d.id;
+  SCHED_EDIT_ID=null;
+  renderWorkOrderModal(woId);
+  renderMain();
+  // The .ics already sent to a calendar can't be edited in place, so offer a
+  // corrected one rather than leaving the calendar silently out of date.
+  askYesNo('Schedule updated. Download an updated calendar (.ics) file for this date?', (yes)=>{
+    if(yes){
+      const w=getWO(woId);
+      const entry=w && (w.scheduleDates||[]).find(x=>x.id===editedId);
+      if(entry){
+        downloadICS(w, [entry]);
+        toast('Updated .ics downloaded — opening it will update the existing calendar entry.');
+      }
+    } else {
+      toast('Schedule updated.');
+    }
+  });
 }
 function deleteScheduleDate(woId, dateId){
   const wo=getWO(woId);
@@ -1865,9 +2007,19 @@ function isoToday(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+/* Earliest date the widget will allow. Today for new dates; for an edit, the
+   earlier of today and the date's existing start, so a past booking can still
+   be corrected. */
+function minSchedDate(){
+  if(!SCHED_EDIT_ID) return isoToday();
+  const wo=getWO(SCHED_WO_ID);
+  const d=wo && (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID);
+  return (d && d.startDate < isoToday()) ? d.startDate : isoToday();
+}
 
 function openScheduleWidget(id){
   SCHED_WO_ID=id;
+  SCHED_EDIT_ID=null;
   const today=new Date();
   SCHED_CAL_MONTH=new Date(today.getFullYear(), today.getMonth(), 1);
   SCHED_TYPE='full';
@@ -1883,8 +2035,8 @@ function renderScheduleWidget(){
   <div class="overlay">
     <div class="modal" style="max-width:900px;">
       <div class="modalHead">
-        <h2>${esc(wo.customer.name) || 'Work Order'} — Schedule Date(s)</h2>
-        <button class="closeX" onclick="renderWorkOrderModal(${SCHED_WO_ID})">&times;</button>
+        <h2>${esc(wo.customer.name) || 'Work Order'} — ${SCHED_EDIT_ID?'Edit Scheduled Date':'Schedule Date(s)'}</h2>
+        <button class="closeX" aria-label="Close" onclick="cancelScheduleWidget()">&times;</button>
       </div>
       <div class="modalBody">
         <div class="schedWidgetWrap">
@@ -1896,32 +2048,41 @@ function renderScheduleWidget(){
               <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site Inspection</button>
               <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
             </div>
-            <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${isoToday()}" onchange="onSchedStartDateChange(this.value)"></div>
+            <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
             <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
-            <div class="field"><label>End Date</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||isoToday()}" onchange="onSchedEndDateChange(this.value)"></div>
+            <div class="field"><label>End Date</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
             <div class="field"><label>End Time</label><input type="time" id="schedEndTime" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
-            <button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>
+            ${SCHED_EDIT_ID ? '' : `<button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>`}
 
-            ${SCHED_PENDING.length ? `
+            ${SCHED_EDIT_ID ? `<div class="small" style="margin-top:12px;">Adjust the date, time, or type above, then click Save Changes. Any logged check-in time on days that stay in range is kept.</div>` : ''}
+            ${(!SCHED_EDIT_ID && SCHED_PENDING.length) ? `
               <div class="schedPendingList">
                 <div class="panelTitle" style="margin-top:16px;">Dates to Add</div>
                 ${SCHED_PENDING.map((p,i)=>`
                   <div class="schedPendingItem">
-                    <span>${p.type==='presite'?'Pre-Site':'Whole Job'} — ${formatDateDisplay(p.startDate)}${p.multiDay?' – '+formatDateDisplay(p.endDate):''} @ ${formatTime12(p.startTime)}</span>
+                    <span>${p.overridden?'⚠ ':''}${p.type==='presite'?'Pre-Site':'Whole Job'} — ${formatDateDisplay(p.startDate)}${p.multiDay?' – '+formatDateDisplay(p.endDate):''} @ ${formatTime12(p.startTime)}</span>
                     <button class="tinyDel" onclick="removePendingScheduleDate(${i})">&times;</button>
                   </div>
                 `).join('')}
               </div>
-            ` : '<div class="small" style="margin-top:12px;">Pick dates/times above and click "Add This Date" for each visit, then Add to Calendar when done.</div>'}
+            ` : (SCHED_EDIT_ID ? '' : '<div class="small" style="margin-top:12px;">Pick dates/times above and click "Add This Date" for each visit, then Add to Calendar when done.</div>')}
           </div>
         </div>
       </div>
       <div class="footerActions">
-        <button class="btn secondary" onclick="renderWorkOrderModal(${SCHED_WO_ID})">Cancel</button>
-        <button class="btn" ${SCHED_PENDING.length?'':'disabled'} onclick="finalizeScheduleDates()">Add to Calendar</button>
+        <button class="btn secondary" onclick="cancelScheduleWidget()">Cancel</button>
+        ${SCHED_EDIT_ID
+          ? `<button class="btn" onclick="saveScheduleEdit()">Save Changes</button>`
+          : `<button class="btn" ${SCHED_PENDING.length?'':'disabled'} onclick="finalizeScheduleDates()">Add to Calendar</button>`}
       </div>
     </div>
   </div>`;
+}
+function cancelScheduleWidget(){
+  const id=SCHED_WO_ID;
+  // Leaving edit mode set would make the next "+ Add" open as an edit.
+  SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME='';
+  renderWorkOrderModal(id);
 }
 function setSchedType(t){ captureSchedFields(); SCHED_TYPE=t; renderScheduleWidget(); }
 function onSchedStartDateChange(val){
@@ -1943,10 +2104,14 @@ function onSchedEndDateChange(val){
 /* Collects every scheduled date (across all work orders), keyed by ISO date,
    with the job details needed for the hover/tap info popup and for
    start/end-time overlap checks. */
-function buildJobDaysMap(){
+function buildJobDaysMap(excludeDateId){
   const map={};
   (DB.workOrders||[]).forEach(w=>{
     (w.scheduleDates||[]).forEach(d=>{
+      // When editing an existing date, that date must not be treated as a
+      // conflict with itself — otherwise nudging the time by five minutes
+      // would always report a double-booking.
+      if(excludeDateId && d.id===excludeDateId) return;
       const info={
         customer: (w.customer && w.customer.name) ? w.customer.name : 'Unnamed customer',
         type: d.type==='presite' ? 'Pre-Site' : 'Whole Job',
@@ -1991,23 +2156,59 @@ function pendingDayBookings(iso){
 /* Multiple jobs are allowed on the same day — a day is only a real
    double-booking if the new start/end time overlaps an existing
    appointment's start/end time on one of the days in range. */
-function isDateTimeRangeConflict(startDate, startTime, endDate, endTime){
-  if(!startDate || !startTime || !endDate || !endTime) return false;
-  const map=buildJobDaysMap();
+/* Returns the list of clashing bookings (empty when there are none) so the
+   override prompt can say exactly what is being double-booked, rather than
+   just refusing with a generic message. */
+function findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDateId){
+  const out=[];
+  if(!startDate || !startTime || !endDate || !endTime) return out;
+  const map=buildJobDaysMap(excludeDateId);
   let cur=new Date(startDate+'T00:00:00');
   const end=new Date(endDate+'T00:00:00');
   while(cur<=end){
     const iso=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
-    const bookings=(map[iso]||[]).concat(pendingDayBookings(iso));
-    for(const b of bookings){
-      if(timesOverlap(startTime, endTime, b.startTime, b.endTime)) return true;
-    }
+    // In edit mode there is no pending list to check against.
+    const bookings=(map[iso]||[]).concat(SCHED_EDIT_ID ? [] : pendingDayBookings(iso).map(b=>
+      Object.assign({customer:'another date you just added', type:'Pending'}, b)));
+    bookings.forEach(b=>{
+      if(timesOverlap(startTime, endTime, b.startTime, b.endTime)){
+        out.push({date:iso, customer:b.customer||'Unnamed customer', type:b.type||'', startTime:b.startTime, endTime:b.endTime});
+      }
+    });
     cur.setDate(cur.getDate()+1);
   }
-  return false;
+  return out;
+}
+function isDateTimeRangeConflict(startDate, startTime, endDate, endTime, excludeDateId){
+  return findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDateId).length>0;
+}
+/* Plain-language summary of a clash, used in the override prompt. */
+function describeConflicts(list){
+  const seen=[], lines=[];
+  list.forEach(c=>{
+    const key=c.customer+'|'+c.date+'|'+c.startTime;
+    if(seen.indexOf(key)!==-1) return;
+    seen.push(key);
+    const when=c.startTime&&c.endTime ? `${formatTime12(c.startTime)}–${formatTime12(c.endTime)}` : 'time not set';
+    lines.push(`• ${formatDateDisplay(c.date)} — ${c.customer} (${when})`);
+  });
+  const shown=lines.slice(0,4).join('\n');
+  const more=lines.length>4 ? `\n…and ${lines.length-4} more` : '';
+  return shown+more;
+}
+/* Shared override gate. Runs onOk() when clear; otherwise lays out the clash
+   and lets the user book over it deliberately. */
+function withConflictOverride(startDate, startTime, endDate, endTime, excludeDateId, onOk){
+  const clashes=findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDateId);
+  if(!clashes.length){ onOk(false); return; }
+  askYesNo(
+    `This overlaps something already on the calendar:\n\n${describeConflicts(clashes)}\n\nSchedule it anyway (double-book)?`,
+    (yes)=>{ if(yes) onOk(true); },
+    {yes:'Double-book it', no:'Pick another time'}
+  );
 }
 function isDateBooked(iso){
-  const map=buildJobDaysMap();
+  const map=buildJobDaysMap(SCHED_EDIT_ID);
   return !!(map[iso] && map[iso].length);
 }
 function scheduleCalendarHTML(){
@@ -2018,13 +2219,16 @@ function scheduleCalendarHTML(){
   const daysInMonth=new Date(y,m+1,0).getDate();
   const monthLabel=month.toLocaleDateString([], {month:'long', year:'numeric'});
   const todayIso=isoToday();
-  const jobDays=buildJobDaysMap();
+  const jobDays=buildJobDaysMap(SCHED_EDIT_ID);
 
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="schedCalDay empty"></div>';
   for(let day=1; day<=daysInMonth; day++){
     const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-    const isPast = iso<todayIso;
+    // Normally past days are unselectable. When editing a date that already
+    // started, its own days must stay reachable so the entry can be corrected
+    // after the fact (e.g. fixing yesterday's arrival time).
+    const isPast = iso < (SCHED_EDIT_ID ? minSchedDate() : todayIso);
     const isStart = iso===SCHED_START;
     const isEnd = SCHED_END && iso===SCHED_END;
     const inRange = SCHED_START && SCHED_END && iso>SCHED_START && iso<SCHED_END;
@@ -2120,22 +2324,25 @@ function addPendingScheduleDate(){
   if(!startDate || !startTime || !endDate || !endTime){ toast('Start date/time and end date/time are all required.'); return; }
   if(endDate<startDate){ toast('End date must be on or after the start date.'); return; }
   if(endDate===startDate && endTime<=startTime){ toast('End time must be after the start time.'); return; }
-  if(isDateTimeRangeConflict(startDate, startTime, endDate, endTime)){
-    toast('That time conflicts with another job already scheduled that day. Pick a different time.');
-    return;
-  }
-  const entry={
-    id:'sd'+Date.now()+Math.random().toString(36).slice(2,7),
-    type:SCHED_TYPE,
-    startDate, startTime,
-    multiDay: endDate!==startDate,
-    endDate, endTime
-  };
-  SCHED_PENDING.push(entry);
-  // Keep the times so back-to-back visits at the same hour don't need retyping.
-  SCHED_START=null; SCHED_END=null;
-  renderScheduleWidget();
-  toast('Date added to the list below. Click "Add to Calendar" when you\'re done.');
+  // A clash no longer blocks the booking outright — it asks, and records the
+  // decision on the entry so the double-booking stays visible afterwards.
+  withConflictOverride(startDate, startTime, endDate, endTime, null, (overridden)=>{
+    const entry={
+      id:'sd'+Date.now()+Math.random().toString(36).slice(2,7),
+      type:SCHED_TYPE,
+      startDate, startTime,
+      multiDay: endDate!==startDate,
+      endDate, endTime,
+      overridden: !!overridden
+    };
+    SCHED_PENDING.push(entry);
+    // Keep the times so back-to-back visits at the same hour don't need retyping.
+    SCHED_START=null; SCHED_END=null;
+    renderScheduleWidget();
+    toast(overridden
+      ? 'Double-booked date added to the list below.'
+      : 'Date added to the list below. Click "Add to Calendar" when you\'re done.');
+  });
 }
 function removePendingScheduleDate(i){
   captureSchedFields();
@@ -2149,7 +2356,9 @@ function finalizeScheduleDates(){
     entry.dayLogs=datesInRange(entry.startDate, entry.endDate||entry.startDate).map(date=>({date, checkIn:null, checkOut:null}));
   });
   wo.scheduleDates=(wo.scheduleDates||[]).concat(SCHED_PENDING);
-  addAdminLog(wo, `Added ${SCHED_PENDING.length} schedule date(s) and generated a calendar (.ics) download.`);
+  const dbl=SCHED_PENDING.filter(e=>e.overridden).length;
+  addAdminLog(wo, `Added ${SCHED_PENDING.length} schedule date(s) and generated a calendar (.ics) download.`+
+    (dbl?` ${dbl} of them double-booked over an existing appointment (override).`:''));
   saveDB(DB);
   downloadICS(wo, SCHED_PENDING);
   const doneId=SCHED_WO_ID;
@@ -3203,7 +3412,7 @@ function closeModal(){
   WO_JOB_EDIT=false; JD_EDIT=null; WO_EDIT_NOTE_IDX=null;
   WO_CUST_EDIT=false; WO_ADMIN_VIEW=false; WO_DOCS_VIEW=false;
   PRESITE_STATE=null;
-  SCHED_WO_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null;
+  SCHED_WO_ID=null; SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME='';
 }
 /* Toasts used to be individually position:fixed at the same coordinates, so
    two in quick succession landed exactly on top of each other and only the
@@ -4062,13 +4271,16 @@ function closeSplit(kind, id){
     }
   );
 }
-function askYesNo(question, cb){
+function askYesNo(question, cb, labels){
   const root=document.getElementById('confirmRoot');
-  root.innerHTML=`<div class="confirmBox" onclick="if(event.target===this)answerYesNo(false)"><div class="confirmCard">
+  // Multi-line questions (e.g. a list of scheduling conflicts) get the wider,
+  // left-aligned card; short one-liners keep the original centred look.
+  const wide = /\n/.test(String(question)) ? ' wide' : '';
+  root.innerHTML=`<div class="confirmBox" onclick="if(event.target===this)answerYesNo(false)"><div class="confirmCard${wide}">
     <h3>${esc(question)}</h3>
     <div class="btnRow">
-      <button class="btn" id="yesNoYes" onclick="answerYesNo(true)">Yes</button>
-      <button class="btn secondary" onclick="answerYesNo(false)">No</button>
+      <button class="btn" id="yesNoYes" onclick="answerYesNo(true)">${esc(labels&&labels.yes||'Yes')}</button>
+      <button class="btn secondary" onclick="answerYesNo(false)">${esc(labels&&labels.no||'No')}</button>
     </div>
   </div></div>`;
   window._yesNoCb=cb;
