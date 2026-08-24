@@ -2636,6 +2636,24 @@ function splitAddress(rawAddr){
   const {rest:addr, unit}=extractUnit(trimmedRaw);
   let parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
   const streetSuffixRe=/^(.*?\b(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Pkwy|Parkway|Hwy|Highway|Trail|Trl|Loop|Sq|Square)\.?)\s+(.+)$/i;
+  // Some street names (common in San Diego and elsewhere in California) use a
+  // Spanish street-type word as a PREFIX right after the house number —
+  // e.g. "1234 Caminito Corriente" — instead of a traditional English suffix
+  // like "St" or "Ave" at the end. streetSuffixRe never finds a match on
+  // those, so without this fallback the city stays stuck on the street line.
+  // When it applies, treat the type word plus the next word as the full
+  // street name and everything after that as the city.
+  const streetPrefixWords=['Camino','Caminito','Calle','Callejon','Callejuela','Paseo','Via','Avenida','Corte','Punta','Sendero','Cresta','Bahia','Ladera','Loma','Vereda','Cerro','Portal','Rincon'];
+  const streetPrefixRe=new RegExp('^(\\d+\\S*\\s+(?:'+streetPrefixWords.join('|')+')\\s+\\S+)\\s+(.+)$','i');
+  // Tries the normal suffix match first, then falls back to the prefix-word
+  // heuristic above; returns null if neither finds a street/city boundary.
+  function matchStreetEnd(str){
+    const sm=str.match(streetSuffixRe);
+    if(sm) return {street:sm[1].trim(), rest:sm[2].trim()};
+    const pm=str.match(streetPrefixRe);
+    if(pm) return {street:pm[1].trim(), rest:pm[2].trim()};
+    return null;
+  }
   if(parts.length<=1){
     // No commas at all — peel a trailing "STATE ZIP" off the end, then split the
     // remainder on the street-type word (St/Ave/Rd/etc.) so the city still lands
@@ -2646,9 +2664,9 @@ function splitAddress(rawAddr){
       stateZip=szMatch[1].toUpperCase()+' '+szMatch[2];
       rest=rest.slice(0, szMatch.index).trim();
     }
-    const sm=rest.match(streetSuffixRe);
+    const sm=matchStreetEnd(rest);
     let street=rest, city='';
-    if(sm){ street=sm[1].trim(); city=sm[2].trim(); }
+    if(sm){ street=sm.street; city=sm.rest; }
     const line2=[city, stateZip].filter(Boolean).join(', ');
     return {line1: unit ? [street, unit].filter(Boolean).join(' ') : street, line2};
   }
@@ -2673,8 +2691,8 @@ function splitAddress(rawAddr){
   // word, the address was probably typed as "123 Main St City" with no comma
   // between street and city — try to split that single segment the same way.
   if(street && !city){
-    const sm=street.match(streetSuffixRe);
-    if(sm){ city=sm[2].trim(); street=sm[1].trim(); }
+    const sm=matchStreetEnd(street);
+    if(sm){ city=sm.rest; street=sm.street; }
   }
   const line2=[city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   const line1Base=street || addr;
