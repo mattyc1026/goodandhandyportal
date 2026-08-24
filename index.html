@@ -1120,9 +1120,9 @@ function fixLegacyUserDisplayNames(db){
   });
   return changed;
 }
-/* Job History records purge automatically 6 months after they arrive. */
+/* Job History records purge automatically 2 years after they arrive. */
 function purgeOldHistory(db){
-  const cutoff=new Date(); cutoff.setMonth(cutoff.getMonth()-6);
+  const cutoff=new Date(); cutoff.setFullYear(cutoff.getFullYear()-2);
   const cutoffMs=cutoff.getTime();
   const before=db.workOrders.length;
   db.workOrders=db.workOrders.filter(wo=>!(wo.movedToHistoryAt && wo.movedToHistoryAt<cutoffMs));
@@ -1465,7 +1465,7 @@ function renderMain(){
     html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">Nothing awaiting a survey right now.</div>`;
   } else {
     const list=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
-    html+=`<div class="listHeader"><div><h2>Job History</h2><p>Completed jobs are kept here for 6 months, then automatically removed.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Job History</h2><p>Completed jobs are kept here for 2 years, then automatically removed.</p></div></div>`;
     html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No completed jobs on file yet.</div>`;
   }
   main.innerHTML=html;
@@ -2762,7 +2762,7 @@ function renderWorkOrderModal(id){
                 </div>
               </div>
             </div>
-            <textarea id="noteText" placeholder="Enter note... (drag the bottom-right corner to expand)" rows="4" oninput="${editingNote ? '' : `saveNoteDraft(${id}, this.value)`}">${esc(textVal)}</textarea>
+            <textarea id="noteText" placeholder="Enter note..." rows="4" oninput="${editingNote ? '' : `saveNoteDraft(${id}, this.value)`}">${esc(textVal)}</textarea>
             <div class="btnRow">
               <button class="btn" onclick="${editingNote ? `saveNoteEdit(${id})` : `submitNote(${id})`}">${editingNote ? 'Save Edit' : 'Add Note'}</button>
               ${editingNote ? `<button class="btn secondary" onclick="cancelNoteEdit(${id})">Cancel</button>` : ''}
@@ -4311,7 +4311,7 @@ function openInvoiceSplit(id){ openSplit(id, 'invoice'); }
 function openSplit(id, kind){
   const wo=getWO(id);
   if(!wo) return;
-  const url = kind==='estimate' ? 'https://mattyc1026.github.io/estimatebuilder/' : 'https://mattyc1026.github.io/invoicebuilder/';
+  const url = 'https://mattyc1026.github.io/estimatebuilder/';
   const jd=wo.jobDetails;
   const modal=document.getElementById('modalRoot');
   modal.innerHTML=`
@@ -4345,7 +4345,7 @@ function openSplit(id, kind){
             <p class="small" style="margin-top:12px;">Click the ⧉ icon next to any line to copy it, then paste into the builder on the right. It opens in its own tab when you click Generate/Print — close this window when you're done to record the result.</p>
           </div>
           <div class="splitRight">
-            <iframe src="${url}" title="${kind} builder" onload="sendJobDataToBuilder(this, ${id})"></iframe>
+            <iframe src="${url}" title="${kind} builder" onload="sendJobDataToBuilder(this, ${id}, '${kind}')"></iframe>
           </div>
         </div>
       </div>
@@ -4452,7 +4452,7 @@ function buildMaterialsLineItem(materials){
   return [{ item:'Materials', price }];
 }
 
-function sendJobDataToBuilder(iframeEl, id){
+function sendJobDataToBuilder(iframeEl, id, kind){
   const wo=getWO(id);
   if(!wo) return;
   const jd=wo.jobDetails||{};
@@ -4476,6 +4476,12 @@ function sendJobDataToBuilder(iframeEl, id){
     iframeEl.contentWindow.postMessage({source:'gh_portal', type:'clear_estimate', workOrderId:wo.id}, '*');
     setTimeout(()=>{
       try{ iframeEl.contentWindow.postMessage(payload, '*'); }catch(e){}
+      // The estimate/invoice builder is one unified app with tabs — tell it
+      // which tab to land on so opening "Invoice" doesn't leave the visitor
+      // sitting on the Estimate tab.
+      if(kind==='invoice'){
+        try{ iframeEl.contentWindow.postMessage({source:'gh_portal', type:'switch_tab', tab:'invoice', workOrderId:wo.id}, '*'); }catch(e){}
+      }
     }, 50);
   }catch(e){ /* builder may not be ready yet; ignore */ }
 }
