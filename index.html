@@ -19,12 +19,14 @@
   --cream:#e9edf3; --paper:#ffffff; --ink:#141f33; --muted:#5f6e87;
   --line:#dbe2ec; --line-soft:#eaeef4;
   /* Status tints, solid rather than translucent, so stacked colours never
-     muddy each other. "-bold" = needs attention now. */
-  --red:#fdecec; --redb:#c0392b; --red-bold:#fbd9d9;
-  --yellow:#fff4dc; --yellowb:#a5710a; --yellow-bold:#ffe9bd;
-  --green:#e4f6ec; --greenb:#1f8a55; --green-bold:#c8ecd8;
-  --blue:#e7f0fd; --blueb:#1f5aa8; --blue-bold:#cfe1fa;
-  --grey:#eef1f5; --greyb:#5f6e87;
+     muddy each other. Pitched to actually carry across the card — a pale
+     wash disappears against white and the stage stops being readable at a
+     glance. High-contrast mode pushes these further still. */
+  --red:#ffd9d9; --redb:#c0392b; --red-bold:#ffb3b3;
+  --yellow:#fff1c4; --yellowb:#a5710a; --yellow-bold:#ffe08a;
+  --green:#d2f2df; --greenb:#1f8a55; --green-bold:#a8ecc4;
+  --blue:#d8e6ff; --blueb:#1f5aa8; --blue-bold:#aecdfa;
+  --grey:#e9edf2; --greyb:#5f6e87;
   --radius:12px; --radius-sm:8px; --radius-lg:18px;
   /* Layered shadows read as real elevation instead of a single grey blur. */
   --sh-1:0 1px 2px rgba(15,38,71,.06), 0 1px 3px rgba(15,38,71,.04);
@@ -45,16 +47,21 @@ html.hc{
   --navy:#000000; --navy2:#000000; --orange:#a83e00; --orange2:#c74600;
   --cream:#ffffff; --paper:#ffffff; --ink:#000000; --muted:#2b2b2b;
   --line:#000000; --line-soft:#000000;
-  --red:#ffd6d6; --redb:#a30000; --red-bold:#ffb0b0;
-  --yellow:#fff0b8; --yellowb:#6b5400; --yellow-bold:#ffe07a;
-  --green:#cdf3dc; --greenb:#0b5c34; --green-bold:#a3edbf;
-  --blue:#d3e4ff; --blueb:#0a3a86; --blue-bold:#a9c9ff;
-  --grey:#e6e6e6; --greyb:#222222;
+  --red:#ffbfbf; --redb:#a30000; --red-bold:#ff8f8f;
+  --yellow:#ffe89a; --yellowb:#6b5400; --yellow-bold:#ffcf3d;
+  --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
+  --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
+  --grey:#e0e0e0; --greyb:#222222;
   --sh-1:none; --sh-2:none; --sh-3:none; --sh-4:none;
 }
 html.hc body{background:#fff;}
-html.hc .woRow{border-width:2px !important;}
-html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,html.hc .woRow.st-green-bold,html.hc .woRow.st-blue-bold{border-width:3px !important;}
+/* High contrast keeps the status spine — it just makes it heavier, along with
+   the surrounding border. Setting only the individual sides leaves the left
+   rail intact; a `border-width` shorthand here would flatten it. */
+html.hc .woRow{border-top-width:2px;border-right-width:2px;border-bottom-width:2px;border-left-width:8px;}
+html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,html.hc .woRow.st-green-bold,html.hc .woRow.st-blue-bold{
+  border-top-width:3px;border-right-width:3px;border-bottom-width:3px;border-left-width:12px;
+}
 html.hc .woSub,html.hc .woMeta,html.hc .woLastNote,html.hc .woNoteDate,html.hc .listHeader p,html.hc .small,html.hc .field label{color:#000 !important;}
 html.hc .tag{border:1px solid #000;}
 html.hc .field input,html.hc select,html.hc textarea{border:1.5px solid #000;}
@@ -255,18 +262,25 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
   transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;
 }
 .woRow:hover{box-shadow:var(--sh-2);transform:translateY(-2px);}
-.woRow.st-red{border-left-color:var(--redb);background:linear-gradient(90deg,var(--red),var(--paper) 190px);}
-.woRow.st-red-bold{border-color:var(--redb);border-left-color:var(--redb);border-left-width:8px;background:linear-gradient(90deg,var(--red-bold),var(--paper) 260px);}
-.woRow.st-yellow{border-left-color:var(--yellowb);background:linear-gradient(90deg,var(--yellow),var(--paper) 190px);}
-.woRow.st-yellow-bold{border-color:var(--yellowb);border-left-color:var(--yellowb);border-left-width:8px;background:linear-gradient(90deg,var(--yellow-bold),var(--paper) 260px);}
-.woRow.st-green{border-left-color:var(--greenb);background:linear-gradient(90deg,var(--green),var(--paper) 190px);}
-.woRow.st-green-bold{border-color:var(--greenb);border-left-color:var(--greenb);border-left-width:8px;background:linear-gradient(90deg,var(--green-bold),var(--paper) 260px);}
-.woRow.st-blue{border-left-color:var(--blueb);background:linear-gradient(90deg,var(--blue),var(--paper) 190px);}
-.woRow.st-blue-bold{border-color:var(--blueb);border-left-color:var(--blueb);border-left-width:8px;background:linear-gradient(90deg,var(--blue-bold),var(--paper) 260px);}
-.woRow.st-grey{border-left-color:var(--greyb);background:linear-gradient(90deg,var(--grey),var(--paper) 190px);}
-/* The tints are pale enough now that the default muted text stays legible on
-   every state, so the old per-state text-darkening override is no longer
-   needed — but the follow-up badge still needs a solid ground to sit on. */
+.woRow.st-red{border-left-color:var(--redb);background:linear-gradient(90deg,var(--red),var(--paper) 300px);}
+.woRow.st-red-bold{border-color:var(--redb);border-left-color:var(--redb);border-left-width:8px;background:linear-gradient(90deg,var(--red-bold),var(--paper) 400px);}
+.woRow.st-yellow{border-left-color:var(--yellowb);background:linear-gradient(90deg,var(--yellow),var(--paper) 300px);}
+.woRow.st-yellow-bold{border-color:var(--yellowb);border-left-color:var(--yellowb);border-left-width:8px;background:linear-gradient(90deg,var(--yellow-bold),var(--paper) 400px);}
+.woRow.st-green{border-left-color:var(--greenb);background:linear-gradient(90deg,var(--green),var(--paper) 300px);}
+.woRow.st-green-bold{border-color:var(--greenb);border-left-color:var(--greenb);border-left-width:8px;background:linear-gradient(90deg,var(--green-bold),var(--paper) 400px);}
+.woRow.st-blue{border-left-color:var(--blueb);background:linear-gradient(90deg,var(--blue),var(--paper) 300px);}
+.woRow.st-blue-bold{border-color:var(--blueb);border-left-color:var(--blueb);border-left-width:8px;background:linear-gradient(90deg,var(--blue-bold),var(--paper) 400px);}
+.woRow.st-grey{border-left-color:var(--greyb);background:linear-gradient(90deg,var(--grey),var(--paper) 300px);}
+/* The bold tints are saturated enough that the default muted grey loses
+   contrast against them — darken the supporting text on those rows so a
+   job that still needs action stays the most readable one on the board. */
+.woRow.st-red-bold .woSub, .woRow.st-red-bold .woMeta, .woRow.st-red-bold .woLastNote, .woRow.st-red-bold .woNoteDate,
+.woRow.st-yellow-bold .woSub, .woRow.st-yellow-bold .woMeta, .woRow.st-yellow-bold .woLastNote, .woRow.st-yellow-bold .woNoteDate,
+.woRow.st-green-bold .woSub, .woRow.st-green-bold .woMeta, .woRow.st-green-bold .woLastNote, .woRow.st-green-bold .woNoteDate,
+.woRow.st-blue-bold .woSub, .woRow.st-blue-bold .woMeta, .woRow.st-blue-bold .woLastNote, .woRow.st-blue-bold .woNoteDate{
+  color:var(--ink);
+}
+/* The follow-up badge needs a solid ground so it stays legible on the tint. */
 .woRow.st-red-bold .followupBadge, .woRow.st-yellow-bold .followupBadge,
 .woRow.st-green-bold .followupBadge, .woRow.st-blue-bold .followupBadge{
   background:rgba(255,255,255,.85);
