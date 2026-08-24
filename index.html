@@ -574,6 +574,34 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 html.hc .tinyEdit{border-color:#000;color:#000;}
 html.hc .schedLoggedTag{background:#fff;color:#000;border:1px solid #000;}
 html.hc .schedDblTag{background:#fff;color:#000;border:1px solid #000;}
+/* Per-date hours tag (schedRowHTML) and the section-wide running total
+   (scheduleDatesSectionHTML) — both built from completed check-in/check-out
+   pairs, so they only ever count time that's actually been logged. */
+.schedHoursTag{
+  display:inline-block;margin-left:8px;padding:2px 7px;border-radius:10px;
+  background:#e6eefc;color:#1a4a8a;font-size:.68em;font-weight:700;
+  text-transform:uppercase;letter-spacing:.03em;vertical-align:middle;
+}
+.schedHoursTotal{
+  margin-top:10px;padding-top:10px;border-top:1px dashed #e6e2d6;
+  font-size:.85em;color:var(--navy);font-weight:700;
+}
+.schedHoursTotal .small{font-weight:400;}
+html.hc .schedHoursTag{background:#fff;color:#000;border:1px solid #000;}
+html.hc .schedHoursTotal{border-top:1px dashed #000;}
+/* "Get Directions" — sits directly above the Schedule Date(s) panel and
+   hands the customer's address to whichever map app the device opens
+   maps:// / https://maps.apple.com links with by default. */
+.directionsBtn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;background:var(--navy);color:#fff;border:none;
+  padding:12px 16px;border-radius:8px;font-weight:700;font-size:.92em;
+  min-height:44px;text-decoration:none;margin-bottom:14px;cursor:pointer;
+  transition:background .15s;box-sizing:border-box;
+}
+.directionsBtn:hover{background:var(--navy2);}
+.directionsBtn svg{flex-shrink:0;}
+html.hc .directionsBtn{background:#000;color:#fff;border:1px solid #fff;}
 
 /* The override prompt lists each clashing appointment on its own line, so the
    confirm dialog has to honour newlines instead of collapsing them. It's also
@@ -1629,6 +1657,50 @@ function allDayLogsSorted(wo){
   out.sort((a,b)=>a.log.date.localeCompare(b.log.date));
   return out;
 }
+/* Parses a "h:mm AM/PM" clock string — the format nowStamp() produces for
+   check-in/check-out stamps — into minutes since midnight. Returns null for
+   anything that doesn't look like a time (so a hand-edited/blank value never
+   gets silently treated as midnight). */
+function parseClockTime(str){
+  if(!str) return null;
+  const m=String(str).match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+  if(!m) return null;
+  let h=parseInt(m[1],10)%12;
+  if(/PM/i.test(m[3])) h+=12;
+  return h*60+parseInt(m[2],10);
+}
+/* Hours worked for one day's log — null unless it has BOTH a check-in and a
+   check-out, so a day that's only half-logged never counts toward a total.
+   A check-out clock time earlier than check-in is treated as crossing
+   midnight (added shift) rather than negative hours. */
+function dayLogHours(log){
+  if(!log || !log.checkIn || !log.checkOut) return null;
+  const inMin=parseClockTime(log.checkIn.time), outMin=parseClockTime(log.checkOut.time);
+  if(inMin==null || outMin==null) return null;
+  let diff=outMin-inMin;
+  if(diff<0) diff+=24*60;
+  return diff/60;
+}
+/* Formats fractional hours as "Xh Ym" for display, dropping whichever unit
+   is zero so a whole-hour day reads "8h" instead of "8h 0m". */
+function formatHoursMinutes(hours){
+  const totalMin=Math.round(hours*60);
+  const h=Math.floor(totalMin/60), m=totalMin%60;
+  if(h && m) return `${h}h ${m}m`;
+  if(h) return `${h}h`;
+  return `${m}m`;
+}
+/* Sums every completed (checked in AND out) day log in a list into a running
+   total: total hours worked plus how many days contributed to it. Grows on
+   its own as more days get checked in/out — nothing to recompute by hand. */
+function sumDayLogHours(logs){
+  let total=0, count=0;
+  (logs||[]).forEach(log=>{
+    const h=dayLogHours(log);
+    if(h!=null){ total+=h; count++; }
+  });
+  return {total, count};
+}
 function todaysDayLog(wo){
   return findDayLog(wo, isoToday());
 }
@@ -1741,12 +1813,15 @@ function dayLogsSectionHTML(wo){
   return `<div class="dayLogsList">` + rows.map(({log})=>{
     const inDone = !!log.checkIn;
     const outDone = !!log.checkOut;
+    const hrs = dayLogHours(log);
+    const hrsNote = hrs!=null ? `<span class="schedHoursTag" title="Hours for ${formatDateDisplay(log.date)}">${formatHoursMinutes(hrs)}</span>` : '';
     return `<div class="dayLogRow">
       <div class="dayLogDate">${formatDateDisplay(log.date)}</div>
       <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)"> In${inDone?` (${log.checkIn.time})`:''}</label>
       ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
       <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${wo.id}, '${log.date}', this)"> Out${outDone?` (${log.checkOut.time})`:''}</label>
       ${(isAdmin && outDone) ? `<button class="editLink" onclick="editCheckOutDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
+      ${hrsNote}
     </div>`;
   }).join('') + `</div>`;
 }
@@ -1886,10 +1961,28 @@ function captureSchedFields(){
 }
 let SCHED_LONGPRESS_TIMER=null, SCHED_LONGPRESS_FIRED=false;
 
+/* Picks a maps link based on the device: Apple Maps for iPhone/iPad/Mac
+   (maps.apple.com hands off to the Maps app there), Google Maps for
+   everything else (its own app on Android via the same https:// link, or
+   Google Maps in the browser anywhere the app isn't installed). */
+function directionsUrl(address){
+  const encoded = encodeURIComponent(address || '');
+  const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+  const isApple = /iPad|iPhone|iPod|Macintosh/.test(ua);
+  return isApple
+    ? `https://maps.apple.com/?daddr=${encoded}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
+}
 function scheduleDatesSectionHTML(wo, id){
   const all=(wo.scheduleDates||[]).slice().sort((a,b)=>(a.startDate+a.startTime).localeCompare(b.startDate+b.startTime));
   const presite=all.filter(d=>d.type==='presite');
   const full=all.filter(d=>d.type==='full');
+  // Running total across every scheduled date's day logs — grows on its own
+  // as each day gets checked in and out, right under the date list itself.
+  const {total:grandHours, count:grandDays}=sumDayLogHours(all.flatMap(d=>d.dayLogs||[]));
+  const totalHTML = grandDays
+    ? `<div class="schedHoursTotal">Hours logged: ${formatHoursMinutes(grandHours)} <span class="small">(from ${grandDays} checked-in/out day${grandDays>1?'s':''})</span></div>`
+    : '';
   return `
     <div class="schedSection">
       <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
@@ -1899,6 +1992,7 @@ function scheduleDatesSectionHTML(wo, id){
       ${(!presite.length && !full.length) ? '<div class="small">No dates scheduled yet.</div>' : ''}
       ${presite.length ? `<div class="schedSubHeader">Pre-Site Inspection</div>${presite.map(d=>schedRowHTML(id,d)).join('')}` : ''}
       ${full.length ? `<div class="schedSubHeader">Whole Job</div>${full.map(d=>schedRowHTML(id,d)).join('')}` : ''}
+      ${totalHTML}
     </div>`;
 }
 function schedRowHTML(woId, d){
@@ -1907,10 +2001,14 @@ function schedRowHTML(woId, d){
   // editing that changing the dates could affect logged time.
   const logged=(d.dayLogs||[]).filter(l=>l.checkIn).length;
   const loggedNote = logged ? `<span class="schedLoggedTag" title="This date has logged time">${logged} day${logged>1?'s':''} logged</span>` : '';
+  // Running total of hours actually worked on this date range, built from
+  // whichever of its days already have both a check-in and a check-out.
+  const {total:hoursTotal, count:hoursCount}=sumDayLogHours(d.dayLogs||[]);
+  const hoursNote = hoursCount ? `<span class="schedHoursTag" title="Hours logged from check-in/check-out times">${formatHoursMinutes(hoursTotal)}</span>` : '';
   // An intentional double-booking is flagged so it never looks like an oversight.
   const dblNote = d.overridden ? `<span class="schedDblTag" title="Double-booked over another appointment">double-booked</span>` : '';
   return `<div class="schedRow">
-    <div><b>${range}</b>${loggedNote}${dblNote}<br><span class="small">${formatArrivalWindow(d.startTime)}${repeatLabel(d)}</span></div>
+    <div><b>${range}</b>${loggedNote}${hoursNote}${dblNote}<br><span class="small">${formatArrivalWindow(d.startTime)}${repeatLabel(d)}</span></div>
     <div class="schedRowBtns">
       <button class="tinyEdit" title="Edit this date" aria-label="Edit this scheduled date" onclick="openScheduleEdit(${woId},'${d.id}')">Edit</button>
       <button class="tinyDel" title="Remove" aria-label="Remove this scheduled date" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
@@ -2108,8 +2206,8 @@ function renderScheduleWidget(){
               <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
             </div>
             <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
-            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
-            <div class="field"><label>End Time</label><input type="time" id="schedEndTime" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
+            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
+            <div class="field"><label>End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
             <div class="field"><label>Repeat</label>
               <select id="schedRepeat" onchange="onSchedRepeatChange(this.value)">
                 <option value="none" ${SCHED_REPEAT==='none'?'selected':''}>Does not repeat</option>
@@ -2724,6 +2822,10 @@ function renderWorkOrderModal(id){
     bodyHTML = `
         <div class="woGrid">
           <div class="custPanel">
+            ${wo.customer.address ? `<a class="directionsBtn" href="${directionsUrl(wo.customer.address)}" target="_blank" rel="noopener">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Get Directions
+            </a>` : ''}
             ${scheduleDatesSectionHTML(wo, id)}
             <div class="schedSection">
               <div class="panelTitle">Check In / Check Out</div>
