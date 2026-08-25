@@ -36,6 +36,11 @@
   --f-display:'DM Serif Display',Georgia,'Times New Roman',serif;
   --f-body:'DM Sans','Segoe UI',system-ui,-apple-system,sans-serif;
   --f-data:'DM Mono','SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;
+  /* Base font size for the adjustable text-size control on wide screens.
+     The mobile stylesheet uses --mScale for the same job; both are driven
+     from one setting by applyTextSize(), so the control covers the whole
+     app rather than only phones. */
+  --dScale:16px;
 }
 /* ---- High Contrast mode ----
    Toggled by adding class "hc" to <html>. Overrides the same CSS
@@ -68,9 +73,15 @@ html.hc .field input,html.hc select,html.hc textarea{border:1.5px solid #000;}
 html.hc a,html.hc .editLink,html.hc .adminViewLink{color:#a83e00;}
 *{box-sizing:border-box;}
 body{margin:0;font-family:var(--f-body);background:var(--cream);color:var(--ink);
+  font-size:var(--dScale,16px);line-height:1.5;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-.005em;}
 h1,h2,h3{font-family:var(--f-display);margin:0 0 .3em;color:var(--navy);font-weight:400;letter-spacing:-.01em;}
-button{cursor:pointer;font-family:inherit;}
+button{cursor:pointer;font-family:inherit;font-size:inherit;}
+/* Form controls don't inherit font-size from the page by default, so without
+   this the text-size control would leave every input and button behind on
+   desktop. Class-level em sizes still win over this, so relative sizing is
+   preserved — this only supplies the scalable baseline. */
+input,select,textarea{font-family:inherit;font-size:inherit;}
 .hidden{display:none !important;}
 
 /* ---- LOGIN ----
@@ -373,6 +384,23 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .modalHeadCust.editing .kv{margin-bottom:0;}
 .modalHeadCust .mhName{font-family:var(--f-display);font-size:1.45em;color:var(--navy);font-weight:400;letter-spacing:-.01em;}
 .modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2{font-size:.88em;color:var(--muted);align-self:end;}
+/* Tap-to-call numbers. Marked with the accent and a dotted underline so it's
+   discoverable that they're actionable, without turning every phone number
+   into a loud button. The negative margin keeps the enlarged tap target from
+   shifting the surrounding layout. */
+.telLink{
+  color:var(--orange);text-decoration:none;font-weight:500;
+  border-bottom:1px dotted rgba(232,121,26,.55);
+  padding:2px 1px;margin:-2px -1px;border-radius:3px;
+  transition:color .12s,background .12s;
+}
+.telLink:hover{color:var(--orange2);background:rgba(232,121,26,.09);border-bottom-color:var(--orange2);}
+.telLink:active{background:rgba(232,121,26,.18);}
+html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-weight:700;}
+@media (max-width:900px){
+  /* Bigger, easier target on the device where calling actually happens. */
+  .telLink{display:inline-block;padding:6px 4px;margin:-6px -4px;}
+}
 .modalHeadCust .mhPrimary,.modalHeadCust .mhAlt{font-size:.92em;color:var(--ink);font-family:var(--f-data);font-size:.86em;}
 .modalHeadCust .mhEmail{font-size:.88em;color:var(--muted);}
 .headerActionsWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
@@ -3175,9 +3203,9 @@ function renderWorkOrderModal(id){
           ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
           <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
           <div class="mhAddr1">${esc(addr.line1)}</div>
-          <div class="mhPrimary">${esc(wo.customer.phone)}</div>
+          <div class="mhPrimary">${phoneLink(wo.customer.phone)}</div>
           <div class="mhAddr2">${esc(addr.line2)}</div>
-          <div class="mhAlt">${esc(wo.customer.altPhone)}</div>
+          <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
           <div class="mhEmail">${esc(wo.customer.email)}</div>
         </div>`;
   modal.innerHTML=`
@@ -3216,6 +3244,22 @@ function addressField(key,label,val){
   </div>`;
 }
 /* ---- Phone number formatting: always normalized to (XXX) XXX-XXXX ---- */
+/* Renders a stored phone number as a tap-to-call link. The visible text keeps
+   the formatted "(555) 123-4567" shape while the href carries digits only,
+   which is what dialers expect; a 10-digit number gets +1 so it still dials
+   correctly if the phone is roaming. Clicks and long-presses are kept from
+   bubbling so tapping the number places a call rather than tripping the
+   double-click/long-press "edit customer" handler on the surrounding card. */
+function phoneLink(raw){
+  const shown=(raw||'').trim();
+  if(!shown) return '';
+  const digits=shown.replace(/\D/g,'');
+  if(!digits) return esc(shown);
+  const href='tel:'+(digits.length===10 ? '+1'+digits : digits);
+  return `<a class="telLink" href="${href}" title="Call ${esc(shown)}" aria-label="Call ${esc(shown)}"`
+    + ` onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"`
+    + ` ontouchstart="event.stopPropagation()">${esc(shown)}</a>`;
+}
 function formatPhoneNumber(raw){
   let d=(raw||'').replace(/\D/g,'');
   if(d.length===11 && d[0]==='1') d=d.slice(1);
@@ -4712,7 +4756,7 @@ function openSplit(id, kind){
           <div class="splitLeft">
             <div class="panelTitle">Job Info</div>
             <div class="kv"><b>Customer</b>${esc(wo.customer.name)}</div>
-            <div class="kv"><b>Phone</b>${esc(wo.customer.phone)}</div>
+            <div class="kv"><b>Phone</b>${phoneLink(wo.customer.phone)}</div>
             <div class="kv"><b>Address</b>${esc(wo.customer.address)}</div>
             ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${esc(jd.description)}</div>` : ''}
 
@@ -4909,19 +4953,26 @@ function closeSettingsMenus(){
 
 /* ---- Adjustable text size (mobile) ----
    Five steps — Small / Normal / Large / Extra Large / Extra Extra Large —
-   covering the whole app at once via the --mScale CSS variable, which
-   the mobile stylesheet uses as its base font size. Defaults to the
-   largest size for readability; the Aa button steps it down (and
-   wraps back around) from there. Persisted so it's remembered next
-   visit. */
+   covering the whole app at once: --mScale feeds the mobile stylesheet's
+   base font size and --dScale the desktop one, both set together from a
+   single stored setting. Defaults to the largest size for readability; the
+   Aa button steps it down (and wraps back around) from there. Persisted so
+   it's remembered next visit. */
 var TEXT_SIZES = [15, 18, 21, 25, 29];
+/* Matching desktop baselines. A phone is held close and needs a larger base
+   than a monitor at arm's length, so the two ladders aren't the same numbers —
+   but they step together, one index at a time, from a single stored setting. */
+var TEXT_SIZES_DESKTOP = [14, 16, 18, 21, 24];
 var TEXT_SIZE_NAMES = ['Small', 'Normal', 'Large', 'Extra Large', 'Extra Extra Large'];
 var TEXT_SIZE_BTN_SCALE = [0.75, 0.9, 1.05, 1.2, 1.35];
 var DEFAULT_TEXT_SIZE = TEXT_SIZES[TEXT_SIZES.length-1];
 function applyTextSize(px){
-  document.documentElement.style.setProperty('--mScale', px + 'px');
   var idx = TEXT_SIZES.indexOf(px);
   if(idx<0) idx = 0;
+  // --mScale drives the mobile stylesheet, --dScale the desktop one, so the
+  // control resizes the whole app on every screen rather than phones only.
+  document.documentElement.style.setProperty('--mScale', px + 'px');
+  document.documentElement.style.setProperty('--dScale', TEXT_SIZES_DESKTOP[idx] + 'px');
   var name = TEXT_SIZE_NAMES[idx];
   ['textSizeBtn','loginTextSizeBtn'].forEach(function(id){
     var b = document.getElementById(id);
