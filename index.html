@@ -3593,6 +3593,71 @@ function docRowHTML(wo, d){
       </div>
     </div>`;
 }
+/* Turns a Firebase Storage error code into a plain explanation and the actual
+   fix. The generic "check your Storage rules" message named a likely cause but
+   gave nothing to act on; the code is what distinguishes a rules rejection
+   from a wrong bucket from a blocked network. */
+function docUploadErrorHTML(){
+  if(!LAST_DOC_ERROR) return '';
+  const code=LAST_DOC_ERROR.code||'';
+  const cfg=(typeof getSyncConfig==='function' ? getSyncConfig() : null) || {};
+  const bucket=cfg.storageBucket||'(none set)';
+  // This app signs in with its own PIN, never Firebase Auth, so request.auth
+  // is always null. Firebase's DEFAULT Storage rules require request.auth
+  // != null, which rejects every upload — by far the most common cause here,
+  // and it explains why Firestore sync can work while uploads don't.
+  const openRules=
+`rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}`;
+  let title, body;
+  if(code==='storage/unauthorized' || code==='storage/unauthenticated' || /permission|unauthor/i.test(LAST_DOC_ERROR.msg||'')){
+    title='Firebase Storage rejected the upload (permission denied)';
+    body=`<p style="margin:6px 0;">Firebase's default Storage rules only allow signed-in Firebase users. This portal uses its own PIN login and never signs into Firebase Auth, so every upload is refused — which is why sync works but uploads don't.</p>
+      <p style="margin:6px 0;">In the Firebase console open <b>Build &rsaquo; Storage &rsaquo; Rules</b>, replace what's there with the rules below, and press <b>Publish</b>:</p>
+      <pre id="ghStorageRules" style="background:var(--navy);color:#fff;padding:12px;border-radius:8px;overflow-x:auto;font-family:var(--f-data);font-size:.8em;line-height:1.5;margin:8px 0;">${esc(openRules)}</pre>
+      <button class="btn secondary" onclick="copyStorageRules(this)">Copy these rules</button>
+      <p style="margin:10px 0 0;"><b>Worth knowing:</b> these rules let anyone who learns your bucket URL read or write files. That's the same posture as the Firestore rules this portal already relies on. For a small private crew that's usually an accepted trade-off, but it is a real one.</p>`;
+  } else if(code==='storage/bucket-not-found' || code==='storage/project-not-found' || code==='storage/object-not-found'){
+    title='That storage bucket doesn\u2019t exist';
+    body=`<p style="margin:6px 0;">Uploads are pointed at <b>${esc(bucket)}</b>, which Firebase doesn't recognise. Newer projects use <code>&lt;project-id&gt;.firebasestorage.app</code> while older ones use <code>&lt;project-id&gt;.appspot.com</code>.</p>
+      <p style="margin:6px 0;">Copy the exact <code>storageBucket</code> value from your Firebase console config and paste the full config into the sync settings.</p>
+      <button class="btn secondary" onclick="openSyncModal()">Open Sync Config</button>`;
+  } else if(code==='storage/retry-limit-exceeded' || code==='storage/canceled' || /network|CORS|30s/i.test(LAST_DOC_ERROR.msg||'')){
+    title='The upload never reached Firebase';
+    body=`<p style="margin:6px 0;">This is usually a dropped connection, or an ad-blocker/VPN/company firewall blocking <code>firebasestorage.googleapis.com</code>. Try another network, or switch off any content blocker for this site, then upload again.</p>`;
+  } else {
+    title='The upload was rejected by Firebase';
+    body=`<p style="margin:6px 0;">Check <b>Build &rsaquo; Storage</b> is enabled in your Firebase console, and that its <b>Rules</b> allow writes. The exact error is shown below.</p>`;
+  }
+  return `<div style="background:#fff3e0;border:1px solid #f0c48a;border-radius:var(--radius);padding:14px 16px;margin-top:12px;font-size:.86em;line-height:1.6;">
+    <div style="font-weight:700;color:var(--redb);margin-bottom:4px;">${esc(title)}</div>
+    ${body}
+    <div class="small" style="margin-top:10px;color:var(--muted);word-break:break-word;">
+      <b>File:</b> ${esc(LAST_DOC_ERROR.file||'')}${code?` &nbsp;<b>Code:</b> <code>${esc(code)}</code>`:''}<br>
+      <b>Bucket:</b> <code>${esc(bucket)}</code><br>
+      <b>Firebase said:</b> ${esc(LAST_DOC_ERROR.msg||'')}
+    </div>
+  </div>`;
+}
+function copyStorageRules(btn){
+  const el=document.getElementById('ghStorageRules');
+  if(!el) return;
+  const done=()=>{ const t=btn.textContent; btn.textContent='Copied'; setTimeout(()=>{btn.textContent=t;},1500); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(el.textContent).then(done).catch(()=>toast('Select the rules and copy manually.'));
+  } else {
+    // Older mobile browsers have no async clipboard — fall back to a selection.
+    const r=document.createRange(); r.selectNodeContents(el);
+    const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    try{ document.execCommand('copy'); done(); }catch(e){ toast('Select the rules and copy manually.'); }
+  }
+}
 function docsTabHTML(wo){
   const docs=wo.docs||[];
   const images = docs.filter(isImageDoc);
@@ -3611,7 +3676,8 @@ function docsTabHTML(wo){
     uploaderHTML = `<input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
        <div id="docUploadStatus_${wo.id}" class="small" style="color:var(--orange);font-weight:600;min-height:1.2em;margin-top:4px;"></div>
        <div class="small" style="margin-top:2px;color:#9aa4b2;">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>
-       ${bucketNote}`;
+       ${bucketNote}
+       ${docUploadErrorHTML()}`;
   } else if(syncDb){
     // Sync is connected, so telling them to set up sync would send them in
     // circles — the problem is Storage specifically.
@@ -3664,6 +3730,10 @@ function compressImageToBlob(file){
     reader.readAsDataURL(file);
   });
 }
+/* Details of the most recent failed upload, so the Docs tab can explain the
+   cause instead of the user having to open the browser console. Cleared as
+   soon as an upload succeeds. */
+let LAST_DOC_ERROR=null;
 const DOC_MAX_BYTES = 25*1024*1024; // 25MB per non-image file — generous now that it's real cloud storage
 function withTimeout(promise, ms){
   return Promise.race([
@@ -3719,7 +3789,14 @@ async function handleDocUpload(id, inputEl){
           }, 30000);
           uploadTask.on('state_changed',
             (p)=>{ if(statusEl && p.totalBytes){ statusEl.textContent=`Uploading "${name}"… ${Math.round((p.bytesTransferred/p.totalBytes)*100)}%`; } },
-            (err)=>{ clearTimeout(timer); reject(new Error(`${err.code||'error'}: ${err.message||err}`)); },
+            (err)=>{
+              clearTimeout(timer);
+              // Wrapping in a new Error dropped Firebase's .code, which is the
+              // one field that identifies the cause — carry it across.
+              const wrapped=new Error(`${err.code||'error'}: ${err.message||err}`);
+              wrapped.code=err.code||'';
+              reject(wrapped);
+            },
             ()=>{ clearTimeout(timer); resolve(uploadTask.snapshot); }
           );
         });
@@ -3733,6 +3810,18 @@ async function handleDocUpload(id, inputEl){
         addedCount++;
       }catch(e){
         console.error(e);
+        // The real Firebase error code (storage/unauthorized, storage/unknown,
+        // …) is the only thing that identifies WHY an upload was rejected, and
+        // it was previously visible only in the console. Keep it so the Docs
+        // tab can name the cause and the fix.
+        const rawMsg=(e && e.message) ? String(e.message) : String(e);
+        // Some paths lose the code; it's still recoverable from the message.
+        const codeMatch=rawMsg.match(/storage\/[a-z-]+/i);
+        LAST_DOC_ERROR={
+          code:(e && e.code) ? String(e.code) : (codeMatch ? codeMatch[0] : ''),
+          msg:rawMsg,
+          file:file.name
+        };
         failed.push(file.name);
         if(statusEl) statusEl.textContent='';
       }
@@ -3742,6 +3831,7 @@ async function handleDocUpload(id, inputEl){
     inputEl.disabled=false;
   }
   if(addedCount){
+    LAST_DOC_ERROR=null;
     await purgeStorageIfOverCap();
     saveDB(DB);
     renderWorkOrderModal(id);
@@ -3749,8 +3839,9 @@ async function handleDocUpload(id, inputEl){
   }
   if(failed.length){
     toast(failed.length===1
-      ? `Couldn't upload "${failed[0]}" — check your connection and Firebase Storage rules.`
-      : `${failed.length} files failed to upload — check your connection and Firebase Storage rules.`);
+      ? `Couldn't upload "${failed[0]}" — see the details now shown in the Docs tab.`
+      : `${failed.length} files failed to upload — see the details now shown in the Docs tab.`);
+    renderWorkOrderModal(id);
   }
   inputEl.value='';
 }
