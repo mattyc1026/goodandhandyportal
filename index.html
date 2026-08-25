@@ -345,6 +345,24 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .estDecisionRow{display:flex;gap:18px;margin-top:8px;flex-wrap:wrap;}
 .docsTab{background:var(--paper);}
 .docsTab h4{margin-top:0;}
+/* The upload control was a raw, unstyled browser file input. Given it as a
+   drop target and a real button it reads as part of the app and gives a much
+   larger tap area on a phone. */
+.docsTab input[type="file"]{
+  display:block;width:100%;padding:14px;border:1.5px dashed var(--orange);
+  border-radius:var(--radius);background:rgba(232,121,26,.04);
+  font-size:.88em;color:var(--muted);cursor:pointer;box-sizing:border-box;
+}
+.docsTab input[type="file"]:hover{background:rgba(232,121,26,.09);}
+.docsTab input[type="file"]::file-selector-button{
+  background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);
+  padding:9px 16px;margin-right:12px;font-family:inherit;font-weight:700;
+  font-size:.95em;cursor:pointer;min-height:38px;
+}
+.docsTab input[type="file"]::file-selector-button:hover{background:var(--orange2);}
+.docsTab input[type="file"]:disabled{opacity:.55;cursor:progress;border-style:solid;}
+html.hc .docsTab input[type="file"]{border-color:#000;background:#fff;}
+html.hc .docsTab input[type="file"]::file-selector-button{background:#000;}
 .docRow{
   display:flex;justify-content:space-between;align-items:center;gap:14px;
   background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);
@@ -1078,7 +1096,7 @@ function esc(str){
 /* For values placed inside a JS string literal in an inline handler. */
 function escAttrJs(str){ return esc(String(str==null?'':str)).replace(/\\/g,'&#92;'); }
 const SYNC_CFG_KEY='gh_portal_sync_cfg';
-let syncDb=null, syncStorage=null, syncUnsub=null, applyingRemote=false, syncSaveTimer=null;
+let syncDb=null, syncStorage=null, syncStorageErr='', syncUnsub=null, applyingRemote=false, syncSaveTimer=null;
 function loadDB(){
   let raw=localStorage.getItem(DB_KEY);
   if(raw) return JSON.parse(raw);
@@ -1224,9 +1242,26 @@ function initSync(){
   if(!cfg){ setSyncPill('off'); return; }
   try{
     setSyncPill('connecting');
+    // firebase.storage() throws "No default bucket found" when the pasted
+    // config has no storageBucket — a very easy line to leave out, and the
+    // symptom (uploads unavailable while sync itself works fine) points
+    // nowhere near the cause. Fill in Firebase's own default naming so the
+    // common case just works; docsTabHTML reports the bucket actually in use
+    // so a project on the newer .firebasestorage.app naming can be corrected.
+    if(!cfg.storageBucket && cfg.projectId){
+      cfg.storageBucket = cfg.projectId + '.appspot.com';
+      cfg.__derivedBucket = true;
+    }
     if(!firebase.apps.length){ firebase.initializeApp(cfg); }
     syncDb=firebase.firestore();
-    try{ syncStorage=firebase.storage(); }catch(e){ syncStorage=null; console.warn('Storage unavailable — enable it in the Firebase console to allow doc uploads.'); }
+    try{
+      syncStorage=firebase.storage();
+      syncStorageErr='';
+    }catch(e){
+      syncStorage=null;
+      syncStorageErr=(e && (e.message||e.code)) ? String(e.message||e.code) : 'Firebase Storage could not be initialised.';
+      console.warn('Storage unavailable — enable it in the Firebase console to allow doc uploads.', e);
+    }
     const ref=syncDb.collection('gh_portal').doc('main');
     if(syncUnsub) syncUnsub();
     syncUnsub=ref.onSnapshot(snap=>{
@@ -3564,11 +3599,34 @@ function docsTabHTML(wo){
   const files = docs.filter(d=>!isImageDoc(d));
   const imageRows = images.length ? images.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No images uploaded yet.</div>';
   const fileRows = files.length ? files.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No documents uploaded yet.</div>';
-  const uploaderHTML = syncStorage
-    ? `<input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
+  // Three distinct states, because "no uploader" previously always blamed
+  // Multi-Device Sync — misleading and unactionable when sync is connected
+  // and working, and only Storage is the problem.
+  let uploaderHTML;
+  if(syncStorage){
+    const cfg=(typeof getSyncConfig==='function' ? getSyncConfig() : null) || {};
+    const bucketNote = cfg.__derivedBucket
+      ? `<div class="small" style="margin-top:2px;color:#9aa4b2;">Your sync config had no <code>storageBucket</code>, so uploads are using <b>${esc(cfg.storageBucket||'')}</b>. If uploads fail, copy the exact <code>storageBucket</code> from your Firebase console into the sync config.</div>`
+      : '';
+    uploaderHTML = `<input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
        <div id="docUploadStatus_${wo.id}" class="small" style="color:var(--orange);font-weight:600;min-height:1.2em;margin-top:4px;"></div>
-       <div class="small" style="margin-top:2px;color:#9aa4b2;">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>`
-    : `<div class="small" style="background:#fff3e0;padding:10px;border-radius:8px;">Document uploads need Multi-Device Sync connected first, since files are stored in your Firebase project rather than on this device. <button class="btn secondary" onclick="openSyncModal()">Set up Sync</button></div>`;
+       <div class="small" style="margin-top:2px;color:#9aa4b2;">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>
+       ${bucketNote}`;
+  } else if(syncDb){
+    // Sync is connected, so telling them to set up sync would send them in
+    // circles — the problem is Storage specifically.
+    uploaderHTML = `<div class="small" style="background:#fff3e0;padding:12px;border-radius:8px;line-height:1.6;">
+      <b>Multi-Device Sync is connected, but Firebase Storage isn't available</b>, so uploads are turned off. Usually one of:
+      <ul style="margin:8px 0 8px 18px;padding:0;">
+        <li>Storage hasn't been enabled yet — open the Firebase console and click <b>Build &rsaquo; Storage &rsaquo; Get started</b>.</li>
+        <li>Your sync config is missing its <code>storageBucket</code> line — re-copy the full config from the console.</li>
+      </ul>
+      ${syncStorageErr ? `<div style="color:var(--redb);margin-bottom:8px;"><b>Reported error:</b> ${esc(syncStorageErr)}</div>` : ''}
+      <button class="btn secondary" onclick="openSyncModal()">Review Sync Config</button>
+    </div>`;
+  } else {
+    uploaderHTML = `<div class="small" style="background:#fff3e0;padding:10px;border-radius:8px;">Document uploads need Multi-Device Sync connected first, since files are stored in your Firebase project rather than on this device. <button class="btn secondary" onclick="openSyncModal()">Set up Sync</button></div>`;
+  }
   return `<div class="docsTab">
     <h4>Documents</h4>
     <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. Files are named from the filename automatically — use Rename on any row to change it.</div>
