@@ -19,7 +19,7 @@
   --cream:#e9edf3; --paper:#ffffff; --ink:#141f33; --muted:#5f6e87;
   --line:#dbe2ec; --line-soft:#eaeef4;
   /* Status tints, solid rather than translucent, so stacked colours never
-     muddy each other. Pitched to actually carry across the card — a pale
+     muddy each other. Pitched to actually carry across the card, a pale
      wash disappears against white and the stage stops being readable at a
      glance. High-contrast mode pushes these further still. */
   --red:#ffd9d9; --redb:#c0392b; --red-bold:#ffb3b3;
@@ -60,7 +60,7 @@ html.hc{
   --sh-1:none; --sh-2:none; --sh-3:none; --sh-4:none;
 }
 html.hc body{background:#fff;}
-/* High contrast keeps the status spine — it just makes it heavier, along with
+/* High contrast keeps the status spine, it just makes it heavier, along with
    the surrounding border. Setting only the individual sides leaves the left
    rail intact; a `border-width` shorthand here would flatten it. */
 html.hc .woRow{border-top-width:2px;border-right-width:2px;border-bottom-width:2px;border-left-width:8px;}
@@ -80,13 +80,13 @@ button{cursor:pointer;font-family:inherit;font-size:inherit;}
 /* Form controls don't inherit font-size from the page by default, so without
    this the text-size control would leave every input and button behind on
    desktop. Class-level em sizes still win over this, so relative sizing is
-   preserved — this only supplies the scalable baseline. */
+   preserved, this only supplies the scalable baseline. */
 input,select,textarea{font-family:inherit;font-size:inherit;}
 .hidden{display:none !important;}
 
 /* ---- LOGIN ----
    Deep navy ground with a faint drafting-grid overlay and a warm glow behind
-   the card — the workshop-blueprint idea the rest of the app is built on,
+   the card, the workshop-blueprint idea the rest of the app is built on,
    stated once, at full strength, where there's room for it. */
 #loginScreen{
   min-height:100vh;display:flex;align-items:center;justify-content:center;
@@ -263,7 +263,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
    Each row is a white card with a solid rail down its left edge carrying the
    stage colour, and a tint that fades out over a fixed distance from the rail.
    Bold states get a thicker rail, a deeper tint and a full coloured border, so
-   "waiting on me" reads at a glance against "waiting on someone else" — without
+   "waiting on me" reads at a glance against "waiting on someone else", without
    washing the whole card in colour and drowning the text. */
 .woRow{
   background:var(--paper);border:1px solid var(--line);
@@ -283,7 +283,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 .woRow.st-blue-bold{border-color:var(--blueb);border-left-color:var(--blueb);border-left-width:8px;background:linear-gradient(90deg,var(--blue-bold),var(--paper) 400px);}
 .woRow.st-grey{border-left-color:var(--greyb);background:linear-gradient(90deg,var(--grey),var(--paper) 300px);}
 /* The bold tints are saturated enough that the default muted grey loses
-   contrast against them — darken the supporting text on those rows so a
+   contrast against them, darken the supporting text on those rows so a
    job that still needs action stays the most readable one on the board. */
 .woRow.st-red-bold .woSub, .woRow.st-red-bold .woMeta, .woRow.st-red-bold .woLastNote, .woRow.st-red-bold .woNoteDate,
 .woRow.st-yellow-bold .woSub, .woRow.st-yellow-bold .woMeta, .woRow.st-yellow-bold .woLastNote, .woRow.st-yellow-bold .woNoteDate,
@@ -309,12 +309,12 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
   letter-spacing:.07em;white-space:nowrap;text-transform:uppercase;
   border:1.5px solid transparent;
 }
-/* needs doing — solid */
+/* needs doing, solid */
 .tag.pending{background:var(--redb);color:#fff;}
 .tag.build-est{background:var(--yellowb);color:#fff;}
 .tag.go{background:var(--greenb);color:#fff;}
 .tag.build-inv{background:var(--blueb);color:#fff;}
-/* in flight — outlined */
+/* in flight, outlined */
 .tag.sched{background:var(--red);color:var(--redb);border-color:var(--redb);}
 .tag.awaiting-approval{background:var(--yellow);color:var(--yellowb);border-color:var(--yellowb);}
 .tag.in-prog{background:var(--green);color:var(--greenb);border-color:var(--greenb);}
@@ -437,7 +437,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .woGrid{display:flex;gap:20px;flex-wrap:wrap;}
 .custPanel{flex:1 1 30%;min-width:min(240px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-sizing:border-box;}
 .jobPanel{flex:2 1 60%;min-width:min(300px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-sizing:border-box;}
-/* Section titles get a short orange rule beneath them — the same accent the
+/* Section titles get a short orange rule beneath them, the same accent the
    status spine uses, so labelling and status read as one system. */
 .panelTitle{
   font-size:.7em;text-transform:uppercase;letter-spacing:.12em;color:var(--orange);
@@ -620,7 +620,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 
 /* ---- Check-In / Check-Out (In Progress NAV tab) ----
    A crew currently on site is the single most time-sensitive thing on the
-   board, so it keeps a live pulse — retuned from raw neon to a saturated
+   board, so it keeps a live pulse, retuned from raw neon to a saturated
    emerald that still reads instantly but sits inside the palette. */
 .woRow.checkedInGlow{
   border-color:var(--greenb);border-left-color:var(--greenb);
@@ -650,7 +650,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .woRow.jumpHighlight{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,121,26,.28), var(--sh-2);}
 
 /* =========================================================================
-   RESPONSIVE — TABLET / PHONE (<=900px)
+   RESPONSIVE, TABLET / PHONE (<=900px)
    Redesigned for large touch targets, a fixed thumb-reach bottom nav,
    no hidden/"guess where it is" menus, no pinch-zoom dependence, and
    visible tap feedback so the app feels solid and predictable.
@@ -665,7 +665,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
   button:active,.btn:active,.woRow:active{transform:scale(.97);}
 
   /* Inputs at 16px minimum stop iOS from auto-zooming when a field is
-     tapped — combined with the locked viewport above, the page never
+     tapped, combined with the locked viewport above, the page never
      jumps or zooms unexpectedly. Buttons follow the adjustable scale. */
   input,select,textarea{font-size:max(16px,var(--mScale));}
   button{font-size:var(--mScale);}
@@ -856,7 +856,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
   text-transform:uppercase;letter-spacing:.06em;vertical-align:middle;
 }
 /* Deliberate double-booking, flagged in amber so it reads as "on purpose"
-   rather than "mistake" — it sits next to the logged-time tag on the row. */
+   rather than "mistake", it sits next to the logged-time tag on the row. */
 .schedDblTag{
   display:inline-block;margin-left:8px;padding:3px 8px;border-radius:20px;
   background:var(--yellow);color:var(--yellowb);border:1px solid rgba(165,113,10,.35);font-size:.64em;
@@ -866,7 +866,7 @@ html.hc .tinyEdit{border-color:#000;color:#000;}
 html.hc .schedLoggedTag{background:#fff;color:#000;border:1px solid #000;}
 html.hc .schedDblTag{background:#fff;color:#000;border:1px solid #000;}
 /* Per-date hours tag (schedRowHTML) and the section-wide running total
-   (scheduleDatesSectionHTML) — both built from completed check-in/check-out
+   (scheduleDatesSectionHTML), both built from completed check-in/check-out
    pairs, so they only ever count time that's actually been logged. Set in the
    mono face so figures line up column-wise down a list of dates. */
 .schedHoursTag{
@@ -882,7 +882,7 @@ html.hc .schedDblTag{background:#fff;color:#000;border:1px solid #000;}
 html.hc .schedHoursTag{background:#fff;color:#000;border:1px solid #000;}
 html.hc .schedHoursTotal{border-top:1px solid #000;}
 /* Tap-to-act contact details. The address opens the device's default maps app
-   and the email opens a new message — same treatment as .telLink so all three
+   and the email opens a new message, same treatment as .telLink so all three
    actionable customer fields read alike. Address and email are secondary to
    the phone number, so they inherit the surrounding muted colour and only
    pick up the accent on hover, keeping the header calm. */
@@ -965,7 +965,7 @@ nav.tabs button .count,.schedHoursTag,.priceTag{font-variant-numeric:tabular-num
 ::selection{background:rgba(232,121,26,.24);color:var(--ink);}
 
 /* Text inside a status-tinted card sits on a pale wash rather than a solid
-   colour now, so it keeps its normal weight — but the name still anchors. */
+   colour now, so it keeps its normal weight, but the name still anchors. */
 .woRow .woName{text-wrap:balance;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1176,7 +1176,7 @@ function sortDropdownHTML(){
 }
 /* Follow-up Due filter: shows only work orders whose most recent note has
    a follow-up date that is today or in the past. Clicking one of these
-   doesn't open the work order directly — it jumps to whichever NAV tab
+   doesn't open the work order directly, it jumps to whichever NAV tab
    the job currently lives in (its place in the workflow). */
 function followUpDueList(){
   return DB.workOrders.filter(inWorkOrdersList).filter(woIsFollowUpDue).sort((a,b)=>{
@@ -1243,7 +1243,7 @@ function initSync(){
   try{
     setSyncPill('connecting');
     // firebase.storage() throws "No default bucket found" when the pasted
-    // config has no storageBucket — a very easy line to leave out, and the
+    // config has no storageBucket, a very easy line to leave out, and the
     // symptom (uploads unavailable while sync itself works fine) points
     // nowhere near the cause. Fill in Firebase's own default naming so the
     // common case just works; docsTabHTML reports the bucket actually in use
@@ -1260,7 +1260,7 @@ function initSync(){
     }catch(e){
       syncStorage=null;
       syncStorageErr=(e && (e.message||e.code)) ? String(e.message||e.code) : 'Firebase Storage could not be initialised.';
-      console.warn('Storage unavailable — enable it in the Firebase console to allow doc uploads.', e);
+      console.warn('Storage unavailable. Enable it in the Firebase console to allow doc uploads.', e);
     }
     const ref=syncDb.collection('gh_portal').doc('main');
     if(syncUnsub) syncUnsub();
@@ -1277,19 +1277,19 @@ function initSync(){
           if(CURRENT_USER){ renderTabCounts(); renderMain(); }
         }
       } else {
-        // nothing in the cloud yet — seed it with whatever's on this device
+        // nothing in the cloud yet, seed it with whatever's on this device
         ref.set({db:JSON.stringify(DB), updatedAt:Date.now()});
         setSyncPill('on');
       }
     }, err=>{
       console.error('Sync error', err);
       setSyncPill('off');
-      toast('Sync connection failed — check your Firebase config.');
+      toast('Sync connection failed. Check your Firebase config.');
     });
   }catch(e){
     console.error(e);
     setSyncPill('off');
-    toast('Could not connect sync — check your Firebase config.');
+    toast('Could not connect sync. Check your Firebase config.');
   }
 }
 function pushToCloud(){
@@ -1310,7 +1310,7 @@ function openSyncModal(){
       <div class="modalHead"><h2>Multi-Device Sync</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
       <div class="modalBody">
         <p class="small">Paste your Firebase project's web config to keep this portal in sync across every phone, tablet, and computer in real time. Create a free Firebase project at <b>firebase.google.com</b>, enable <b>Firestore</b>, and copy the config object from Project Settings.</p>
-        <p class="small">Paste it exactly as Firebase shows it — quoted or unquoted keys both work.</p>
+        <p class="small">Paste it exactly as Firebase shows it. Quoted or unquoted keys both work.</p>
         <textarea id="syncCfgInput" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." }'>${cfg?JSON.stringify(cfg,null,2):''}</textarea>
         <div class="errMsg" id="syncErr"></div>
         <div class="btnRow">
@@ -1329,15 +1329,15 @@ function saveSyncConfig(){
     cfg=JSON.parse(raw);
   }catch(e){
     // Firebase's console shows this as a JS object literal (unquoted keys),
-    // not strict JSON — accept that format too.
+    // not strict JSON, accept that format too.
     try{
       cfg=Function('"use strict"; return (' + raw + ');')();
     }catch(e2){
-      err.textContent='Could not read that — paste the full firebaseConfig object, curly braces included.';
+      err.textContent='Could not read that. Paste the full firebaseConfig object, curly braces included.';
       return;
     }
   }
-  if(!cfg || typeof cfg!=='object'){ err.textContent='Could not read that — paste the full firebaseConfig object, curly braces included.'; return; }
+  if(!cfg || typeof cfg!=='object'){ err.textContent='Could not read that. Paste the full firebaseConfig object, curly braces included.'; return; }
   if(!cfg.apiKey || !cfg.projectId){ err.textContent='Config is missing apiKey or projectId.'; return; }
   localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(cfg));
   closeModal();
@@ -1377,7 +1377,7 @@ function normalizeWO(wo){
   if(!Array.isArray(wo.scheduleDates)) wo.scheduleDates=[];
   wo.scheduleDates.forEach(sd=>{
     // Older saved dates predate the repeat field. A prior version of this
-    // field briefly used 'weekdays', which no longer exists as an option —
+    // field briefly used 'weekdays', which no longer exists as an option,
     // 'daily' is the closest fallback so no previously-booked day is lost.
     // Entries that were single-day already (start === end) are 'none'.
     if(!sd.repeat) sd.repeat = (sd.endDate && sd.endDate!==sd.startDate) ? 'daily' : 'none';
@@ -1400,7 +1400,7 @@ function datesInRange(startIso, endIso){
   return out;
 }
 /* Expands a start/repeat-until date range into just the days a job
-   actually occurs on, per its repeat pattern — so a job's scheduled
+   actually occurs on, per its repeat pattern, so a job's scheduled
    start/end TIME (not the whole 24 hours) is all that's ever booked on
    each of those days, and days outside the pattern are skipped entirely
    rather than being blocked off.
@@ -1422,7 +1422,7 @@ function expandRepeatDates(startIso, endIso, repeat){
     }
     return out;
   }
-  return [startIso]; // 'none' (or unset) — a single occurrence
+  return [startIso]; // 'none' (or unset), a single occurrence
 }
 /* Human-readable note describing how an entry repeats, shown next to its
    scheduled time so it's clear only that window is booked each occurrence. */
@@ -1454,8 +1454,8 @@ function normalizeDB(db){
 }
 /* Older records (created before usernames were shown everywhere) may still
    have a name stored as "Firstname L." instead of the "firstnamel" username
-   format. This rewrites every such reference — notes, admin log entries,
-   check-in/out stamps, document uploads — to the correct username, by
+   format. This rewrites every such reference, notes, admin log entries,
+   check-in/out stamps, document uploads, to the correct username, by
    matching the stored first name + last initial against DB.users. Runs
    automatically every time the app loads. */
 function fixLegacyUserDisplayNames(db){
@@ -1592,7 +1592,7 @@ function logout(){
   CURRENT_USER=null;
   localStorage.removeItem(SESSION_KEY);
   closeModal();
-  // The sort preference is a display setting, not session data — clearing it
+  // The sort preference is a display setting, not session data, clearing it
   // on sign-out meant it silently reset every single time.
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -1672,8 +1672,8 @@ function formatFollowUp(dateStr){
 }
 
 /* ---- Flexible follow-up date entry ----
-   Lets someone type a date in whatever style is natural to them —
-   7-30-26, 07/30/2026, 7.30.26, etc. — instead of forcing one exact
+   Lets someone type a date in whatever style is natural to them,
+   7-30-26, 07/30/2026, 7.30.26, etc., instead of forcing one exact
    format, while a calendar-icon button still opens a native date
    picker for anyone who'd rather tap than type. Both paths converge
    on the same ISO (YYYY-MM-DD) string the rest of the app already
@@ -1763,13 +1763,13 @@ function closeTabsMenu(){
 /* Declared with var, not let: renderTabCounts() runs during session restore
    near the top of this script, long before execution reaches this line. A
    function declaration is hoisted and callable early, but a `let` binding is
-   not — it sits in the temporal dead zone until its line executes, so touching
+   not, it sits in the temporal dead zone until its line executes, so touching
    it from that early call threw and aborted every render. `var` hoists with
    the function, so the early call reads 0 and behaves correctly. */
 var LAST_HISTORY_PURGE=0;
 function renderTabCounts(){
   // This used to purge + saveDB() (and therefore push to Firestore) on every
-  // single re-render — several writes per tab switch. Once an hour is plenty
+  // single re-render, several writes per tab switch. Once an hour is plenty
   // for a 6-month retention window.
   if(Date.now()-LAST_HISTORY_PURGE > 3600000){
     LAST_HISTORY_PURGE=Date.now();
@@ -1813,22 +1813,22 @@ function renderMain(){
   } else if(ACTIVE_TAB==='estimates'){
     const build=DB.workOrders.filter(inBuildEstimateList).sort((a,b)=>a.id-b.id);
     const pending=DB.workOrders.filter(inEstimatePendingApprovalList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Estimates</h2><p>Pre-site is complete — build the estimate and get a decision. Approved jobs move to the In Progress tab to be scheduled.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Estimates</h2><p>Pre-site is complete. Build the estimate and get a decision. Approved jobs move to the In Progress tab to be scheduled.</p></div></div>`;
     html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', openMode:'estimate'});
     html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', showEstimateDecision:true});
   } else if(ACTIVE_TAB==='inprogress'){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
     const inProgress=DB.workOrders.filter(inInvoiceInProgressList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>In Progress</h2><p>Estimate approved and job underway — schedule the job, then check in/out as work happens on site.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>In Progress</h2><p>Estimate approved and job underway. Schedule the job, then check in/out as work happens on site.</p></div></div>`;
     html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.'});
     html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', showJobComplete:true, showCheckInOut:true});
   } else if(ACTIVE_TAB==='invoices'){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Invoices</h2><p>Job complete — build and send the invoice.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Invoices</h2><p>Job complete. Build and send the invoice.</p></div></div>`;
     html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', openMode:'invoice'});
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Surveys</h2><p>Invoice complete — awaiting a customer survey. Enter a SURVEY note on a job to move it to Job History.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Surveys</h2><p>Invoice complete. Awaiting a customer survey. Enter a SURVEY note on a job to move it to Job History.</p></div></div>`;
     html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">Nothing awaiting a survey right now.</div>`;
   } else {
     const list=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
@@ -1878,7 +1878,7 @@ function rowHTML(wo, opts){
          <label class="jcCheck"><input type="checkbox" ${todayLog.log.checkIn?'checked disabled':''} onchange="checkInDay(${wo.id}, '${todayLog.log.date}', this)"> In${todayLog.log.checkIn?` (${todayLog.log.checkIn.time})`:''}</label>
          <label class="jcCheck"><input type="checkbox" ${!todayLog.log.checkIn||todayLog.log.checkOut?'disabled':''} ${todayLog.log.checkOut?'checked':''} onchange="checkOutDay(${wo.id}, '${todayLog.log.date}', this)"> Out${todayLog.log.checkOut?` (${todayLog.log.checkOut.time})`:''}</label>
        </div>`
-    : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today — see Job Details for other days.</div>' : '');
+    : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today. See Job Details for other days.</div>' : '');
   return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
     <div class="woMain">
       <div class="woName">${esc(wo.customer.name) || '(No name yet)'}</div>
@@ -1906,11 +1906,11 @@ function confirmJobComplete(id, checkboxEl){
       closeModal();
       renderTabCounts();
       renderMain();
-      toast('Job marked complete — moved to Build Invoice.');
+      toast('Job marked complete. Moved to Build Invoice.');
     }
   });
 }
-/* checkInWO()/checkOutWO() were removed — the job-level check in/out they
+/* checkInWO()/checkOutWO() were removed, the job-level check in/out they
    drove was superseded by the per-day dayLogs flow below, and nothing had
    referenced them since. editCheckInTime()/editCheckOutTime() are kept so
    admins can still correct the legacy stamps on older work orders. */
@@ -1996,8 +1996,8 @@ function allDayLogsSorted(wo){
   out.sort((a,b)=>a.log.date.localeCompare(b.log.date));
   return out;
 }
-/* Parses a "h:mm AM/PM" clock string — the format nowStamp() produces for
-   check-in/check-out stamps — into minutes since midnight. Returns null for
+/* Parses a "h:mm AM/PM" clock string, the format nowStamp() produces for
+   check-in/check-out stamps, into minutes since midnight. Returns null for
    anything that doesn't look like a time (so a hand-edited/blank value never
    gets silently treated as midnight). */
 function parseClockTime(str){
@@ -2008,7 +2008,7 @@ function parseClockTime(str){
   if(/PM/i.test(m[3])) h+=12;
   return h*60+parseInt(m[2],10);
 }
-/* Hours worked for one day's log — null unless it has BOTH a check-in and a
+/* Hours worked for one day's log, null unless it has BOTH a check-in and a
    check-out, so a day that's only half-logged never counts toward a total.
    A check-out clock time earlier than check-in is treated as crossing
    midnight (added shift) rather than negative hours. */
@@ -2031,7 +2031,7 @@ function formatHoursMinutes(hours){
 }
 /* Sums every completed (checked in AND out) day log in a list into a running
    total: total hours worked plus how many days contributed to it. Grows on
-   its own as more days get checked in/out — nothing to recompute by hand. */
+   its own as more days get checked in/out, nothing to recompute by hand. */
 function sumDayLogHours(logs){
   let total=0, count=0;
   (logs||[]).forEach(log=>{
@@ -2058,7 +2058,7 @@ function checkInDay(woId, date, checkboxEl){
       renderTabCounts();
       renderMain();
       if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
-      toast('Checked in — time logged for '+date+'.');
+      toast('Checked in. Time logged for '+date+'.');
     }
   });
 }
@@ -2068,7 +2068,7 @@ function checkOutDay(woId, date, checkboxEl){
   const found=findDayLog(wo, date);
   if(!found || !found.log.checkIn || found.log.checkOut){ return; }
   if(checkboxEl) checkboxEl.checked=false;
-  askYesNo('Confirm you are checking out — leaving the job site for '+date+'?', (yes)=>{
+  askYesNo('Confirm you are checking out, leaving the job site for '+date+'?', (yes)=>{
     if(yes){
       const ts=nowStamp();
       found.log.checkOut={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
@@ -2077,7 +2077,7 @@ function checkOutDay(woId, date, checkboxEl){
       renderTabCounts();
       renderMain();
       if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
-      toast('Checked out — time logged for '+date+'.');
+      toast('Checked out. Time logged for '+date+'.');
     }
   });
 }
@@ -2087,7 +2087,7 @@ function editCheckInDayTime(woId, date){
   if(!found || !found.log.checkIn) return;
   const root=document.getElementById('confirmRoot');
   root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
-    <h3>Edit Check In Time — ${date}</h3>
+    <h3>Edit Check In Time, ${date}</h3>
     <div class="field"><label>Date</label><input type="text" id="editDayCheckInDate" value="${esc(found.log.checkIn.date)}"></div>
     <div class="field"><label>Time</label><input type="text" id="editDayCheckInTimeVal" value="${esc(found.log.checkIn.time)}"></div>
     <div class="btnRow">
@@ -2119,7 +2119,7 @@ function editCheckOutDayTime(woId, date){
   if(!found || !found.log.checkOut) return;
   const root=document.getElementById('confirmRoot');
   root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
-    <h3>Edit Check Out Time — ${date}</h3>
+    <h3>Edit Check Out Time, ${date}</h3>
     <div class="field"><label>Date</label><input type="text" id="editDayCheckOutDate" value="${esc(found.log.checkOut.date)}"></div>
     <div class="field"><label>Time</label><input type="text" id="editDayCheckOutTimeVal" value="${esc(found.log.checkOut.time)}"></div>
     <div class="btnRow">
@@ -2148,7 +2148,7 @@ function saveCheckOutDayTime(woId, date){
 function dayLogsSectionHTML(wo){
   const rows=allDayLogsSorted(wo);
   const isAdmin = !!(CURRENT_USER && CURRENT_USER.isAdmin);
-  if(!rows.length) return '<div class="small">No scheduled days yet — use Schedule Date(s) to add visit dates.</div>';
+  if(!rows.length) return '<div class="small">No scheduled days yet. Use Schedule Date(s) to add visit dates.</div>';
   return `<div class="dayLogsList">` + rows.map(({log})=>{
     const inDone = !!log.checkIn;
     const outDone = !!log.checkOut;
@@ -2172,7 +2172,7 @@ function approveEstimate(id, checkboxEl){
       if(!wo) return;
       wo.estimateApproved=true;
       saveDB(DB);
-      toast('Approved — moved to Schedule Job.');
+      toast('Approved. Moved to Schedule Job.');
       renderTabCounts(); renderMain();
     }
   });
@@ -2192,7 +2192,7 @@ function declineEstimate(id, checkboxEl){
       wo.estimateDeclined=true;
       wo.movedToHistoryAt=Date.now();
       saveDB(DB);
-      toast('Job declined — moved to Job History.');
+      toast('Job declined. Moved to Job History.');
       renderTabCounts(); renderMain();
     }
   });
@@ -2234,7 +2234,7 @@ function runGlobalSearch(){
       || nameParts.some(p=>p.startsWith(q))
       || (address && address.includes(q))
       || (wo.customer.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
-      || idStr.includes(q); // idStr===q was redundant — includes() already covers it
+      || idStr.includes(q); // idStr===q was redundant, includes() already covers it
   }).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   renderSearchResultsModal(raw, results);
 }
@@ -2284,7 +2284,7 @@ let SCHED_STIME='', SCHED_ETIME='';
    date; 'daily' repeats the same start/end time every day through the
    Repeat Until date; 'weekly' repeats on the same day of the week through
    Repeat Until. Either way, only the scheduled time window is booked on
-   each occurrence day — never the full 24 hours. */
+   each occurrence day, never the full 24 hours. */
 let SCHED_REPEAT='none';
 /* When set, the schedule widget is editing that existing saved date instead of
    building a list of new ones. */
@@ -2316,7 +2316,7 @@ function scheduleDatesSectionHTML(wo, id){
   const all=(wo.scheduleDates||[]).slice().sort((a,b)=>(a.startDate+a.startTime).localeCompare(b.startDate+b.startTime));
   const presite=all.filter(d=>d.type==='presite');
   const full=all.filter(d=>d.type==='full');
-  // Running total across every scheduled date's day logs — grows on its own
+  // Running total across every scheduled date's day logs, grows on its own
   // as each day gets checked in and out, right under the date list itself.
   const {total:grandHours, count:grandDays}=sumDayLogHours(all.flatMap(d=>d.dayLogs||[]));
   const totalHTML = grandDays
@@ -2456,7 +2456,7 @@ function applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, ov
       const entry=w && (w.scheduleDates||[]).find(x=>x.id===editedId);
       if(entry){
         downloadICS(w, [entry]);
-        toast('Updated .ics downloaded — opening it will update the existing calendar entry.');
+        toast('Updated .ics downloaded. Opening it will update the existing calendar entry.');
       }
     } else {
       toast('Schedule updated.');
@@ -2487,7 +2487,7 @@ function formatArrivalWindow(hhmm){
   const startAmPm = start.getHours()<12 ? 'AM' : 'PM';
   const endAmPm = end.getHours()<12 ? 'AM' : 'PM';
   // An 11:00 PM start rolls the end hour past midnight, which used to render
-  // as a nonsensical "11-12PM" — show both meridiems when they differ.
+  // as a nonsensical "11-12PM", show both meridiems when they differ.
   return startAmPm===endAmPm
     ? `${startHr}-${endHr}${startAmPm} Arrival`
     : `${startHr}${startAmPm}-${endHr}${endAmPm} Arrival`;
@@ -2531,7 +2531,7 @@ function renderScheduleWidget(){
   <div class="overlay">
     <div class="modal" style="max-width:900px;">
       <div class="modalHead">
-        <h2>${esc(wo.customer.name) || 'Work Order'} — ${SCHED_EDIT_ID?'Edit Scheduled Date':'Schedule Date(s)'}</h2>
+        <h2>${esc(wo.customer.name) || 'Work Order'}, ${SCHED_EDIT_ID?'Edit Scheduled Date':'Schedule Date(s)'}</h2>
         <button class="closeX" aria-label="Close" onclick="cancelScheduleWidget()">&times;</button>
       </div>
       <div class="modalBody">
@@ -2556,7 +2556,7 @@ function renderScheduleWidget(){
             </div>
             ${SCHED_REPEAT!=='none' ? `
             <div class="field"><label>Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
-            <div class="schedRepeatNote">Each ${SCHED_REPEAT==='weekly'?'week':'day'} in the repeat only books the Start Time–End Time window above, not the full day${SCHED_REPEAT==='weekly'?' — always on the same day of the week as the start date':''}.</div>
+            <div class="schedRepeatNote">Each ${SCHED_REPEAT==='weekly'?'week':'day'} in the repeat only books the Start Time–End Time window above, not the full day${SCHED_REPEAT==='weekly'?', always on the same day of the week as the start date':''}.</div>
             ` : ''}
             ${SCHED_EDIT_ID ? '' : `<button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>`}
 
@@ -2566,7 +2566,7 @@ function renderScheduleWidget(){
                 <div class="panelTitle" style="margin-top:16px;">Dates to Add</div>
                 ${SCHED_PENDING.map((p,i)=>`
                   <div class="schedPendingItem">
-                    <span>${p.overridden?'⚠ ':''}${p.type==='presite'?'Pre-Site':'Whole Job'} — ${formatDateDisplay(p.startDate)}${p.multiDay?' – '+formatDateDisplay(p.endDate):''} @ ${formatTime12(p.startTime)}${repeatLabel(p)}</span>
+                    <span>${p.overridden?'⚠ ':''}${p.type==='presite'?'Pre-Site':'Whole Job'}, ${formatDateDisplay(p.startDate)}${p.multiDay?' – '+formatDateDisplay(p.endDate):''} @ ${formatTime12(p.startTime)}${repeatLabel(p)}</span>
                     <button class="tinyDel" onclick="removePendingScheduleDate(${i})">&times;</button>
                   </div>
                 `).join('')}
@@ -2627,7 +2627,7 @@ function buildJobDaysMap(excludeDateId){
   (DB.workOrders||[]).forEach(w=>{
     (w.scheduleDates||[]).forEach(d=>{
       // When editing an existing date, that date must not be treated as a
-      // conflict with itself — otherwise nudging the time by five minutes
+      // conflict with itself, otherwise nudging the time by five minutes
       // would always report a double-booking.
       if(excludeDateId && d.id===excludeDateId) return;
       const info={
@@ -2636,7 +2636,7 @@ function buildJobDaysMap(excludeDateId){
         startTime: d.startTime, endTime: d.endTime
       };
       // Only the days this entry's repeat pattern actually covers are
-      // booked — e.g. a weekly job only occupies one day out of each week.
+      // booked, e.g. a weekly job only occupies one day out of each week.
       expandRepeatDates(d.startDate, d.endDate||d.startDate, d.repeat).forEach(iso=>{
         (map[iso]=map[iso]||[]).push(info);
       });
@@ -2665,7 +2665,7 @@ function pendingDayBookings(iso){
   });
   return out;
 }
-/* Multiple jobs are allowed on the same day — a day is only a real
+/* Multiple jobs are allowed on the same day, a day is only a real
    double-booking if the new start/end time overlaps an existing
    appointment's start/end time on one of the days in range. */
 /* Returns the list of clashing bookings (empty when there are none) so the
@@ -2675,7 +2675,7 @@ function findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDa
   const out=[];
   if(!startDate || !startTime || !endDate || !endTime) return out;
   const map=buildJobDaysMap(excludeDateId);
-  // Only the days this entry's own repeat cycle books are checked — e.g. a
+  // Only the days this entry's own repeat cycle books are checked, e.g. a
   // weekly job never conflicts over the days between its occurrences.
   expandRepeatDates(startDate, endDate, repeat).forEach(iso=>{
     // In edit mode there is no pending list to check against.
@@ -2700,7 +2700,7 @@ function describeConflicts(list){
     if(seen.indexOf(key)!==-1) return;
     seen.push(key);
     const when=c.startTime&&c.endTime ? `${formatTime12(c.startTime)}–${formatTime12(c.endTime)}` : 'time not set';
-    lines.push(`• ${formatDateDisplay(c.date)} — ${c.customer} (${when})`);
+    lines.push(`• ${formatDateDisplay(c.date)}, ${c.customer} (${when})`);
   });
   const shown=lines.slice(0,4).join('\n');
   const more=lines.length>4 ? `\n…and ${lines.length-4} more` : '';
@@ -2731,7 +2731,7 @@ function scheduleCalendarHTML(){
   const todayIso=isoToday();
   const jobDays=buildJobDaysMap(SCHED_EDIT_ID);
   // Which days within the current start/repeat-until selection are actually
-  // booked, per the chosen repeat pattern — the rest (e.g. the 6 of 7 days
+  // booked, per the chosen repeat pattern, the rest (e.g. the 6 of 7 days
   // between weekly occurrences) get hatched out below.
   const includedDays = (SCHED_START && SCHED_END && SCHED_REPEAT!=='none')
     ? expandRepeatDates(SCHED_START, SCHED_END, SCHED_REPEAT) : null;
@@ -2774,7 +2774,7 @@ function scheduleCalendarHTML(){
         ? `onclick="schedDayClick('${iso}')" onpointerdown="schedDayPointerDown('${iso}', this)" onpointerup="schedDayPointerUp()" onpointerleave="schedDayPointerUp()" onpointercancel="schedDayPointerUp()"`
         : `onclick="pickSchedDay('${iso}')"`;
     }
-    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${booked?'Already has a job that day — tap to pick this day, or press and hold for details. You can still schedule here if your time doesn\u2019t conflict.':''}">${day}${popup}</div>`;
+    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${booked?'Already has a job that day. Tap to pick this day, or press and hold for details. You can still schedule here if your time doesn\u2019t conflict.':''}">${day}${popup}</div>`;
   }
 
   return `
@@ -2787,7 +2787,7 @@ function scheduleCalendarHTML(){
       <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
       ${cells}
     </div>
-    <div class="small" style="margin-top:8px;">Shaded days already have a job scheduled — hover on desktop (press and hold on mobile) to see what's booked, or just tap to pick that day. You can still schedule another job the same day as long as the times don't overlap. Click an open date to set the start date; click a later date to set the end date.</div>`;
+    <div class="small" style="margin-top:8px;">Shaded days already have a job scheduled. Hover on desktop (press and hold on mobile) to see what's booked, or just tap to pick that day. You can still schedule another job the same day as long as the times don't overlap. Click an open date to set the start date; click a later date to set the end date.</div>`;
 }
 /* Re-renders only the calendar column, leaving the form fields (and the
    rest of the page) untouched so typing/tapping in the date & time inputs
@@ -2823,7 +2823,7 @@ function schedDayClick(iso){
 function pickSchedDay(iso){
   captureSchedFields();
   if(SCHED_REPEAT==='none'){
-    // No repeat chosen — the calendar just picks a single occurrence day.
+    // No repeat chosen, the calendar just picks a single occurrence day.
     SCHED_START=iso; SCHED_END=iso;
   } else if(!SCHED_START || (SCHED_START && SCHED_END) || iso<=SCHED_START){
     SCHED_START=iso; SCHED_END=null;
@@ -2855,7 +2855,7 @@ function addPendingScheduleDate(){
   if(!startDate || !startTime || !endTime){ toast('Start date, start time, and end time are all required.'); return; }
   if(endDate<startDate){ toast('The repeat must end on or after the start date.'); return; }
   if(endTime<=startTime){ toast('End time must be after the start time.'); return; }
-  // A clash no longer blocks the booking outright — it asks, and records the
+  // A clash no longer blocks the booking outright, it asks, and records the
   // decision on the entry so the double-booking stays visible afterwards.
   withConflictOverride(startDate, startTime, endDate, endTime, null, (overridden)=>{
     const entry={
@@ -2895,7 +2895,7 @@ function finalizeScheduleDates(){
   downloadICS(wo, SCHED_PENDING);
   const doneId=SCHED_WO_ID;
   SCHED_PENDING=[]; SCHED_WO_ID=null;
-  toast('Schedule dates saved — .ics file downloaded. Open it to add to Apple Calendar.');
+  toast('Schedule dates saved. The .ics file downloaded. Open it to add to Apple Calendar.');
   renderWorkOrderModal(doneId);
   renderMain();
 }
@@ -2932,12 +2932,12 @@ function buildICS(wo, entries){
   entries.forEach(e=>{
     const title=`${name} \u30fb ${phone} \u30fb ${formatArrivalWindow(e.startTime)}`;
     const dtStart=icsDateTime(e.startDate, e.startTime);
-    // Every occurrence — including repeats — reuses the start date's own
+    // Every occurrence, including repeats, reuses the start date's own
     // end time, so DTEND never reaches past that same day.
     const dtEnd=icsDateTime(e.startDate, e.endTime);
     let rrule='';
     if(e.repeat && e.repeat!=='none'){
-      // DTSTART here is a floating local time, so UNTIL must be floating too —
+      // DTSTART here is a floating local time, so UNTIL must be floating too,
       // a trailing Z would make this an invalid mixed-form recurrence rule.
       // Each occurrence only spans the Start Time–End Time window on that
       // day (never the full 24 hours).
@@ -3074,8 +3074,8 @@ function splitAddress(rawAddr){
   let parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
   const streetSuffixRe=/^(.*?\b(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Pkwy|Parkway|Hwy|Highway|Trail|Trl|Loop|Sq|Square)\.?)\s+(.+)$/i;
   // Some street names (common in San Diego and elsewhere in California) use a
-  // Spanish street-type word as a PREFIX right after the house number —
-  // e.g. "1234 Caminito Corriente" — instead of a traditional English suffix
+  // Spanish street-type word as a PREFIX right after the house number,
+  // e.g. "1234 Caminito Corriente", instead of a traditional English suffix
   // like "St" or "Ave" at the end. streetSuffixRe never finds a match on
   // those, so without this fallback the city stays stuck on the street line.
   // When it applies, treat the type word plus the next word as the full
@@ -3092,7 +3092,7 @@ function splitAddress(rawAddr){
     return null;
   }
   if(parts.length<=1){
-    // No commas at all — peel a trailing "STATE ZIP" off the end, then split the
+    // No commas at all, peel a trailing "STATE ZIP" off the end, then split the
     // remainder on the street-type word (St/Ave/Rd/etc.) so the city still lands
     // on the same line as state/zip instead of staying stuck to the street.
     let rest=addr, stateZip='';
@@ -3109,7 +3109,7 @@ function splitAddress(rawAddr){
   }
   // Comma-separated address (typed or from autocomplete). Drop a trailing country
   // segment, pull the zip and state off the end, then take the very next
-  // segment after the street as the city — skipping any county in between —
+  // segment after the street as the city, skipping any county in between,
   // so city always ends up paired with state/zip, never with the street.
   if(/^(united states|usa|us|united states of america)$/i.test(parts[parts.length-1])) parts.pop();
   let zip='', state='';
@@ -3126,7 +3126,7 @@ function splitAddress(rawAddr){
   let city=parts.length>1 ? parts[1] : '';
   // If what looks like the "street" segment doesn't actually contain a street-type
   // word, the address was probably typed as "123 Main St City" with no comma
-  // between street and city — try to split that single segment the same way.
+  // between street and city, try to split that single segment the same way.
   if(street && !city){
     const sm=matchStreetEnd(street);
     if(sm){ city=sm.rest; street=sm.street; }
@@ -3146,11 +3146,11 @@ function renderWorkOrderModal(id){
   let bodyHTML;
 
   if(WO_DOCS_VIEW){
-    headerSuffix = ' — Documents';
+    headerSuffix = ', Documents';
     headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleDocsView(${id})">&larr; Docs</button></div>`;
     bodyHTML = docsTabHTML(wo);
   } else if(isAdmin && WO_ADMIN_VIEW){
-    headerSuffix = ' — Admin';
+    headerSuffix = ', Admin';
     headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleAdminView(${id})">&larr; Admin</button></div>`;
     bodyHTML = adminTabHTML(wo);
   } else {
@@ -3169,8 +3169,8 @@ function renderWorkOrderModal(id){
               </div>
               ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
                   <div class="small" style="margin-bottom:4px;"><b>Legacy job-level stamp</b> (from before per-day check-in/out)</div>
-                  <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+' — '+wo.checkIn.by) : '—'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
-                  <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+' — '+wo.checkOut.by) : '—'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
+                  <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+', '+wo.checkIn.by) : 'n/a'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
+                  <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
                 </div>` : ''}
             </div>
           </div>
@@ -3193,7 +3193,7 @@ function renderWorkOrderModal(id){
             const textVal = editingNote ? editingNote.text : (noteDraftFor(id)||'');
             return `
           <div class="noteEntryRow">
-            ${editingNote ? '<div class="small" style="color:var(--orange);font-weight:700;">Editing note — Save Edit to update it, or Cancel to discard changes.</div>' : ''}
+            ${editingNote ? '<div class="small" style="color:var(--orange);font-weight:700;">Editing note. Save Edit to update it, or Cancel to discard changes.</div>' : ''}
             <div class="noteEntryTop">
               <div class="noteFieldGroup">
                 <label for="noteType">Note Type</label>
@@ -3202,7 +3202,7 @@ function renderWorkOrderModal(id){
               <div class="noteFieldGroup">
                 <label for="noteFollowUp">Follow-up date (optional)</label>
                 <div class="dateFieldWrap">
-                  <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional) — type in any common format" autocomplete="off" value="${followUpVal}" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
+                  <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional). Type in any common format" autocomplete="off" value="${followUpVal}" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
                   <div class="calWrap">
                     <button type="button" class="calBtn" tabindex="-1" aria-hidden="true">
                       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3396,7 +3396,7 @@ function saveCustomer(id){
   WO_CUST_EDIT=false;
   renderWorkOrderModal(id);
   renderTabCounts();
-  if(!wasEligible && nowEligible){ toast('Required info complete — job added to Pre-Site Inspections.'); }
+  if(!wasEligible && nowEligible){ toast('Required info complete. Job added to Pre-Site Inspections.'); }
   renderMain();
 }
 function copyToClipboard(text, btn){
@@ -3418,10 +3418,10 @@ function fallbackCopy(text, done){
     document.execCommand('copy');
     ta.remove();
     done();
-  }catch(e){ toast('Copy failed — select the text manually.'); }
+  }catch(e){ toast('Copy failed. Select the text manually.'); }
 }
 /* Copy targets are carried on a data- attribute and read back by a delegated
-   listener, instead of being spliced into an inline onclick string literal —
+   listener, instead of being spliced into an inline onclick string literal,
    an apostrophe or quote in an item name used to break the handler outright. */
 function copyLineRow(displayHTML, copyText){
   return `<div class="lineRow"><span class="lineText">${displayHTML}</span>`+
@@ -3430,7 +3430,7 @@ function copyLineRow(displayHTML, copyText){
 function priceLineRow(entry){
   const item = typeof entry==='string' ? entry : (entry.item||'');
   const price = typeof entry==='string' ? '' : (entry.price||'');
-  const full = price ? (item+' — '+price) : item;
+  const full = price ? (item+', '+price) : item;
   return copyLineRow(`${esc(item)}${price?`<span class="priceTag">${esc(price)}</span>`:''}`, full);
 }
 function plainLineRow(text){
@@ -3555,7 +3555,7 @@ function notesHTML(wo){
   return wo.notes.map((n,idx)=>`
     <div class="noteItem">
       <div class="noteMeta">
-        <span><span class="noteType">${esc(n.type)}</span> — ${esc(n.by)} · ${esc(n.date)} ${esc(n.time)}
+        <span><span class="noteType">${esc(n.type)}</span>, ${esc(n.by)} · ${esc(n.date)} ${esc(n.time)}
           ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
         </span>
         ${CURRENT_USER.isAdmin ? `<span class="noteActions">
@@ -3572,7 +3572,7 @@ function fmtBytes(n){
   if(n<1024*1024) return (n/1024).toFixed(1)+' KB';
   return (n/(1024*1024)).toFixed(1)+' MB';
 }
-const STORAGE_CAP_BYTES = 5*1024*1024*1024; // 5GB — Firebase Storage free-tier ceiling
+const STORAGE_CAP_BYTES = 5*1024*1024*1024; // 5GB, Firebase Storage free-tier ceiling
 function storageUsagePct(){ return Math.min(100, Math.round(((DB.storageUsedBytes||0)/STORAGE_CAP_BYTES)*100)); }
 function isImageDoc(d){
   if(d.type) return d.type.startsWith('image/');
@@ -3604,7 +3604,7 @@ function docUploadErrorHTML(){
   const bucket=cfg.storageBucket||'(none set)';
   // This app signs in with its own PIN, never Firebase Auth, so request.auth
   // is always null. Firebase's DEFAULT Storage rules require request.auth
-  // != null, which rejects every upload — by far the most common cause here,
+  // != null, which rejects every upload, by far the most common cause here,
   // and it explains why Firestore sync can work while uploads don't.
   const openRules=
 `rules_version = '2';
@@ -3618,7 +3618,7 @@ service firebase.storage {
   let title, body;
   if(code==='storage/unauthorized' || code==='storage/unauthenticated' || /permission|unauthor/i.test(LAST_DOC_ERROR.msg||'')){
     title='Firebase Storage rejected the upload (permission denied)';
-    body=`<p style="margin:6px 0;">Firebase's default Storage rules only allow signed-in Firebase users. This portal uses its own PIN login and never signs into Firebase Auth, so every upload is refused — which is why sync works but uploads don't.</p>
+    body=`<p style="margin:6px 0;">Firebase's default Storage rules only allow signed-in Firebase users. This portal uses its own PIN login and never signs into Firebase Auth, so every upload is refused, which is why sync works but uploads don't.</p>
       <p style="margin:6px 0;">In the Firebase console open <b>Build &rsaquo; Storage &rsaquo; Rules</b>, replace what's there with the rules below, and press <b>Publish</b>:</p>
       <pre id="ghStorageRules" style="background:var(--navy);color:#fff;padding:12px;border-radius:8px;overflow-x:auto;font-family:var(--f-data);font-size:.8em;line-height:1.5;margin:8px 0;">${esc(openRules)}</pre>
       <button class="btn secondary" onclick="copyStorageRules(this)">Copy these rules</button>
@@ -3652,7 +3652,7 @@ function copyStorageRules(btn){
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(el.textContent).then(done).catch(()=>toast('Select the rules and copy manually.'));
   } else {
-    // Older mobile browsers have no async clipboard — fall back to a selection.
+    // Older mobile browsers have no async clipboard, fall back to a selection.
     const r=document.createRange(); r.selectNodeContents(el);
     const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
     try{ document.execCommand('copy'); done(); }catch(e){ toast('Select the rules and copy manually.'); }
@@ -3665,7 +3665,7 @@ function docsTabHTML(wo){
   const imageRows = images.length ? images.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No images uploaded yet.</div>';
   const fileRows = files.length ? files.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No documents uploaded yet.</div>';
   // Three distinct states, because "no uploader" previously always blamed
-  // Multi-Device Sync — misleading and unactionable when sync is connected
+  // Multi-Device Sync, misleading and unactionable when sync is connected
   // and working, and only Storage is the problem.
   let uploaderHTML;
   if(syncStorage){
@@ -3680,12 +3680,12 @@ function docsTabHTML(wo){
        ${docUploadErrorHTML()}`;
   } else if(syncDb){
     // Sync is connected, so telling them to set up sync would send them in
-    // circles — the problem is Storage specifically.
+    // circles, the problem is Storage specifically.
     uploaderHTML = `<div class="small" style="background:#fff3e0;padding:12px;border-radius:8px;line-height:1.6;">
       <b>Multi-Device Sync is connected, but Firebase Storage isn't available</b>, so uploads are turned off. Usually one of:
       <ul style="margin:8px 0 8px 18px;padding:0;">
-        <li>Storage hasn't been enabled yet — open the Firebase console and click <b>Build &rsaquo; Storage &rsaquo; Get started</b>.</li>
-        <li>Your sync config is missing its <code>storageBucket</code> line — re-copy the full config from the console.</li>
+        <li>Storage hasn't been enabled yet. Open the Firebase console and click <b>Build &rsaquo; Storage &rsaquo; Get started</b>.</li>
+        <li>Your sync config is missing its <code>storageBucket</code> line. Re-copy the full config from the console.</li>
       </ul>
       ${syncStorageErr ? `<div style="color:var(--redb);margin-bottom:8px;"><b>Reported error:</b> ${esc(syncStorageErr)}</div>` : ''}
       <button class="btn secondary" onclick="openSyncModal()">Review Sync Config</button>
@@ -3695,7 +3695,7 @@ function docsTabHTML(wo){
   }
   return `<div class="docsTab">
     <h4>Documents</h4>
-    <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. Files are named from the filename automatically — use Rename on any row to change it.</div>
+    <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. Files are named from the filename automatically. Use Rename on any row to change it.</div>
     ${uploaderHTML}
     <h4 style="margin-top:18px;">Images${images.length?` (${images.length})`:''}</h4>
     <div class="docList" style="margin-top:8px;">${imageRows}</div>
@@ -3734,7 +3734,7 @@ function compressImageToBlob(file){
    cause instead of the user having to open the browser console. Cleared as
    soon as an upload succeeds. */
 let LAST_DOC_ERROR=null;
-const DOC_MAX_BYTES = 25*1024*1024; // 25MB per non-image file — generous now that it's real cloud storage
+const DOC_MAX_BYTES = 25*1024*1024; // 25MB per non-image file, generous now that it's real cloud storage
 function withTimeout(promise, ms){
   return Promise.race([
     promise,
@@ -3744,7 +3744,7 @@ function withTimeout(promise, ms){
 async function handleDocUpload(id, inputEl){
   const files=Array.from(inputEl.files||[]);
   if(!files.length) return;
-  if(!syncStorage){ toast('Set up Multi-Device Sync first — documents are stored in your Firebase project.'); inputEl.value=''; return; }
+  if(!syncStorage){ toast('Set up Multi-Device Sync first. Documents are stored in your Firebase project.'); inputEl.value=''; return; }
   const wo=getWO(id);
   const oversized=files.filter(f=>f.size>DOC_MAX_BYTES && !f.type.startsWith('image/'));
   if(oversized.length){
@@ -3761,7 +3761,7 @@ async function handleDocUpload(id, inputEl){
     for(const [i,file] of toProcess.entries()){
       // Files are now named automatically from the filename and uploaded
       // straight through. The old flow fired a blocking prompt() per file
-      // before each upload — on a 10-photo batch that meant ten modal
+      // before each upload, on a 10-photo batch that meant ten modal
       // interruptions, and a mis-tapped Cancel silently dropped the file.
       // Renaming is still one tap away on each row afterwards.
       const name=file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim() || file.name;
@@ -3769,7 +3769,7 @@ async function handleDocUpload(id, inputEl){
 
       let blob=file;
       // HEIC/HEIF (common for iPhone camera photos) can't be decoded by <canvas> in most
-      // browsers, which would otherwise hang compression forever — skip straight to raw upload.
+      // browsers, which would otherwise hang compression forever, skip straight to raw upload.
       const isHeic=/heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
       if(file.type.startsWith('image/') && !isHeic){
         try{
@@ -3792,7 +3792,7 @@ async function handleDocUpload(id, inputEl){
             (err)=>{
               clearTimeout(timer);
               // Wrapping in a new Error dropped Firebase's .code, which is the
-              // one field that identifies the cause — carry it across.
+              // one field that identifies the cause, carry it across.
               const wrapped=new Error(`${err.code||'error'}: ${err.message||err}`);
               wrapped.code=err.code||'';
               reject(wrapped);
@@ -3835,12 +3835,12 @@ async function handleDocUpload(id, inputEl){
     await purgeStorageIfOverCap();
     saveDB(DB);
     renderWorkOrderModal(id);
-    toast(addedCount>1 ? `${addedCount} documents uploaded — tap Rename on any row to retitle it.` : 'Document uploaded — tap Rename to retitle it.');
+    toast(addedCount>1 ? `${addedCount} documents uploaded. Tap Rename on any row to retitle it.` : 'Document uploaded. Tap Rename to retitle it.');
   }
   if(failed.length){
     toast(failed.length===1
-      ? `Couldn't upload "${failed[0]}" — see the details now shown in the Docs tab.`
-      : `${failed.length} files failed to upload — see the details now shown in the Docs tab.`);
+      ? `Couldn't upload "${failed[0]}". See the details now shown in the Docs tab.`
+      : `${failed.length} files failed to upload. See the details now shown in the Docs tab.`);
     renderWorkOrderModal(id);
   }
   inputEl.value='';
@@ -3855,14 +3855,14 @@ async function purgeStorageIfOverCap(){
   const purgedNames=[];
   for(const {wo, doc} of flat){
     if((DB.storageUsedBytes||0) < STORAGE_CAP_BYTES) break;
-    try{ await syncStorage.ref(doc.storagePath).delete(); }catch(e){ /* may already be gone — still clean up metadata */ }
+    try{ await syncStorage.ref(doc.storagePath).delete(); }catch(e){ /* may already be gone, still clean up metadata */ }
     wo.docs=wo.docs.filter(d=>d.id!==doc.id);
     DB.storageUsedBytes=Math.max(0, (DB.storageUsedBytes||0)-(doc.size||0));
-    wo.adminLog.unshift({text:`Auto-purged document "${doc.name}" — 5GB storage cap reached.`, by:'System', date:nowStamp().date, time:nowStamp().time});
+    wo.adminLog.unshift({text:`Auto-purged document "${doc.name}". 5GB storage cap reached.`, by:'System', date:nowStamp().date, time:nowStamp().time});
     purgedNames.push(doc.name);
   }
   if(purgedNames.length){
-    toast(`Storage cap reached — auto-purged ${purgedNames.length} oldest document(s) to stay under 5GB.`);
+    toast(`Storage cap reached. Auto-purged ${purgedNames.length} oldest document(s) to stay under 5GB.`);
   }
 }
 function getDoc(wo, docId){ return (wo.docs||[]).find(d=>d.id===docId); }
@@ -3871,12 +3871,12 @@ function viewDoc(id, docId){
   if(!d) return;
   if(d.url){
     const win=window.open(d.url, '_blank', 'noopener');
-    if(!win) toast('Your browser blocked the popup — allow popups for this site to view files.');
+    if(!win) toast('Your browser blocked the popup. Allow popups for this site to view files.');
     return;
   }
   // Legacy local-only doc from before Storage was wired in
   const w=window.open();
-  if(!w){ toast('Your browser blocked the popup — allow popups for this site to view files.'); return; }
+  if(!w){ toast('Your browser blocked the popup. Allow popups for this site to view files.'); return; }
   if((d.type||'').startsWith('image/')){
     w.document.write(`<title>${d.name}</title><body style="margin:0;background:#222;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="${d.dataUrl}" style="max-width:100%;max-height:100vh;"></body>`);
   } else {
@@ -3919,7 +3919,7 @@ function deleteDoc(id, docId){
   askYesNo(`Delete "${d.name||'this file'}"? This cannot be undone.`, async (yes)=>{
     if(!yes) return;
     if(d.url && d.storagePath && syncStorage){
-      try{ await syncStorage.ref(d.storagePath).delete(); }catch(e){ /* already gone — still remove locally */ }
+      try{ await syncStorage.ref(d.storagePath).delete(); }catch(e){ /* already gone, still remove locally */ }
       DB.storageUsedBytes=Math.max(0, (DB.storageUsedBytes||0)-(d.size||0));
     }
     wo.docs=(wo.docs||[]).filter(x=>x.id!==docId);
@@ -3929,7 +3929,7 @@ function deleteDoc(id, docId){
 }
 function adminTabHTML(wo){
   const logHTML = wo.adminLog.length
-    ? wo.adminLog.map(l=>`<div class="adminLogRow">${esc(l.date)} ${esc(l.time)} — <b>${esc(l.by)}</b>: ${esc(l.text)}</div>`).join('')
+    ? wo.adminLog.map(l=>`<div class="adminLogRow">${esc(l.date)} ${esc(l.time)}, <b>${esc(l.by)}</b>: ${esc(l.text)}</div>`).join('')
     : '<div class="small">No admin overrides on this work order.</div>';
   return `<div class="adminTab">
     <h4>Admin Controls</h4>
@@ -3974,7 +3974,7 @@ function adminSetStage(id, target){
     wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
     wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=Date.now();
   }
-  addAdminLog(wo, `Overrode workflow — forced job to stage: ${target}`);
+  addAdminLog(wo, `Overrode workflow, forced job to stage: ${target}`);
   saveDB(DB);
   renderWorkOrderModal(id);
   renderTabCounts(); renderMain();
@@ -4009,7 +4009,7 @@ function submitNote(id){
     if(!followUp){
       followUpEl.classList.add('dateInvalid');
       followUpEl.focus();
-      toast('That follow-up date doesn\'t look right — try MM/DD/YYYY.');
+      toast('That follow-up date doesn\'t look right. Try MM/DD/YYYY.');
       return;
     }
   }
@@ -4032,7 +4032,7 @@ function submitNote(id){
     movedMsg='Moved to Pre-Site Scheduled.';
   } else if(type==='SCHD' && inScheduleJobList(wo)){
     wo.jobScheduled=true;
-    movedMsg='Job scheduled — moved to In Progress.';
+    movedMsg='Job scheduled. Moved to In Progress.';
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
     movedMsg='Moved to Job History.';
@@ -4068,14 +4068,14 @@ function saveNoteEdit(id){
     if(!followUp){
       followUpEl.classList.add('dateInvalid');
       followUpEl.focus();
-      toast('That follow-up date doesn\'t look right — try MM/DD/YYYY.');
+      toast('That follow-up date doesn\'t look right. Try MM/DD/YYYY.');
       return;
     }
   }
   if(!text){
     const ta=document.getElementById('noteText');
     if(ta) ta.focus();
-    toast('A note can\'t be saved empty — delete it instead if that\'s what you want.');
+    toast('A note can\'t be saved empty. Delete it instead if that\'s what you want.');
     return;
   }
   const oldText=n.text;
@@ -4158,11 +4158,11 @@ function toast(msg){
 }
 
 /* =========================================================================
-   PRE-SITE INSPECTION TOOL (local trade-knowledge assistant — no external API)
+   PRE-SITE INSPECTION TOOL (local trade-knowledge assistant, no external API)
 ========================================================================= */
 let PRESITE_STATE=null; // {woId, chat:[], lists:{labor,materials,tools,issues,disclaimers}, stage:'chat'|'review', reviewIdx}
 
-/* ---- Trade knowledge base — San Diego market-rate ranges, labor & materials priced per item ---- */
+/* ---- Trade knowledge base, San Diego market-rate ranges, labor & materials priced per item ---- */
 const TRADE_KB = {
   plumbing:{
     keywords:['plumb','faucet','toilet','sink','drain','pipe','leak','water heater','garbage disposal','shutoff','valve','supply line','hose bib','p-trap','snake the line','clog'],
@@ -4293,7 +4293,7 @@ const TRADE_KB = {
     ],
     materials:[
       {item:'Fan-rated electrical box (if needed)', price:'$12–$25'},
-      {item:'Mounting bracket/hardware (usually included with fan)', price:'—'},
+      {item:'Mounting bracket/hardware (usually included with fan)', price:'n/a'},
       {item:'Wire nuts', price:'$3–$6'}
     ],
     tools:['Voltage tester','Stud finder','Ladder','Screwdriver set'],
@@ -4412,7 +4412,7 @@ const TRADE_KB = {
 };
 const GENERIC_DISCLAIMERS=['This estimate is valid for 30 days from the date issued','Additional work outside this scope requires written approval before proceeding','All prices reflect standard San Diego-area market rates as of the current season and may vary based on site access and material availability'];
 
-/* ---- Specific task library — matches concrete "action + object" phrasing in the notes
+/* ---- Specific task library, matches concrete "action + object" phrasing in the notes
    (e.g. "remove and replace an existing toilet") and produces a precisely-labeled labor
    line item instead of a whole trade's generic checklist. This is what keeps the compiled
    lists focused on what was actually described rather than everything that trade could involve. ---- */
@@ -4552,7 +4552,7 @@ const TASK_OBJECTS = [
   }
 ];
 
-/* ---- Ceiling fan install — flagship "dig deeper" scenario. If the wiring situation isn't
+/* ---- Ceiling fan install, flagship "dig deeper" scenario. If the wiring situation isn't
    already clear from the notes, the assistant asks targeted follow-ups (wire length, access,
    drywall/stud cutting) so the resulting labor/materials/tools reflect the real scope instead
    of a generic guess. ---- */
@@ -4619,7 +4619,7 @@ function addCeilingFanToMerged(merged, ctx){
   if(wiring==='existing'){
     pushUnique(merged.labor, {item:'Install Ceiling Fan (Existing Wiring)', price:'$120–$220'});
     pushUnique(merged.materials, {item:'Fan-rated electrical box (if needed)', price:'$12–$25'});
-    pushUnique(merged.materials, {item:'Mounting bracket/hardware (usually included with fan)', price:'—'});
+    pushUnique(merged.materials, {item:'Mounting bracket/hardware (usually included with fan)', price:'n/a'});
     pushUnique(merged.materials, {item:'Wire nuts', price:'$3–$6'});
     ['Voltage tester','Stud finder','Ladder','Screwdriver set'].forEach(t=>pushUniqueStr(merged.tools,t));
     pushUniqueStr(merged.issues,'Existing electrical box may not be fan-rated and will need to be swapped for safety');
@@ -4661,7 +4661,7 @@ function getSatisfiedTrades(text){
   return set;
 }
 
-/* ---- Clarifying questions per trade — several signals checked per trade so the
+/* ---- Clarifying questions per trade, several signals checked per trade so the
    assistant can pick up on quantities/dimensions phrased in different ways ---- */
 const TRADE_QUESTIONS = {
   plumbing:{test:t=>!/\b(\d+\s*(fixture|faucet|toilet|sink|leak))|(fixture|faucet|toilet|sink)\b/i.test(t), q:'How many fixtures are involved, and which ones (toilet, sink, faucet, etc.)?'},
@@ -4718,7 +4718,7 @@ function renderPresiteModal(){
   modal.innerHTML=`
   <div class="overlay">
     <div class="modal" style="max-width:760px;">
-      <div class="modalHead"><h2>Pre-Site Inspection — ${esc(wo.customer.name)}</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
+      <div class="modalHead"><h2>Pre-Site Inspection, ${esc(wo.customer.name)}</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
       <div class="modalBody" id="presiteBody"></div>
     </div>
   </div>`;
@@ -4729,7 +4729,7 @@ function renderPresiteBody(){
   const wo=getWO(PRESITE_STATE.woId);
   if(PRESITE_STATE.stage==='chat'){
     body.innerHTML=`
-      <p class="small">Describe the job below in your own words. The assistant looks for specific tasks (e.g. "remove and replace an existing toilet," "install a ceiling fan") and turns each one into a precisely-labeled labor line item — rather than dumping a whole trade's generic checklist. When a task's scope genuinely depends on site conditions (like whether a new ceiling fan circuit needs new wiring), it will ask a couple of targeted follow-up questions before compiling, so nothing important gets missed. Runs entirely on this device — no internet call required.</p>
+      <p class="small">Describe the job below in your own words. The assistant looks for specific tasks (e.g. "remove and replace an existing toilet," "install a ceiling fan") and turns each one into a precisely-labeled labor line item, rather than dumping a whole trade's generic checklist. When a task's scope genuinely depends on site conditions (like whether a new ceiling fan circuit needs new wiring), it will ask a couple of targeted follow-up questions before compiling, so nothing important gets missed. Runs entirely on this device. No internet call required.</p>
       <div class="aiPanel">
         <h4>Pre-Site Assistant</h4>
         <div class="chatLog" id="chatLog">${renderChatLog()}</div>
@@ -4745,7 +4745,7 @@ function renderPresiteBody(){
     const isPriced = key==='labor' || key==='materials';
     const items=PRESITE_STATE.lists[key]||[];
     body.innerHTML=`
-      <p class="small">Step ${PRESITE_STATE.reviewIdx+1} of ${PRESITE_STATE.reviewOrder.length} — review, edit, add, or remove items.${isPriced?' Prices reflect standard San Diego-area market rates and can be adjusted.':''}</p>
+      <p class="small">Step ${PRESITE_STATE.reviewIdx+1} of ${PRESITE_STATE.reviewOrder.length}. Review, edit, add, or remove items.${isPriced?' Prices reflect standard San Diego-area market rates and can be adjusted.':''}</p>
       <div class="listEditor">
         <h5>${labels[key]}</h5>
         <div id="editRows">${items.map((it,i)=>{
@@ -4803,7 +4803,7 @@ function sendPresiteChat(){
   } else if(next && next.type==='legacy'){
     PRESITE_STATE.chat.push({role:'ai', text:next.text});
   } else {
-    PRESITE_STATE.chat.push({role:'ai', text:'Got what I need — click "Compile Lists Now" below when you\'re ready.'});
+    PRESITE_STATE.chat.push({role:'ai', text:'Got what I need. Click "Compile Lists Now" below when you\'re ready.'});
   }
   renderPresiteBody();
 }
@@ -4851,7 +4851,7 @@ function generatePresiteLists(){
   });
 
   GENERIC_DISCLAIMERS.forEach(d=>{ if(!merged.disclaimers.includes(d)) merged.disclaimers.push(d); });
-  toast('Lists compiled from the specific tasks described — review each list below.');
+  toast('Lists compiled from the specific tasks described. Review each list below.');
   PRESITE_STATE.lists=merged;
   PRESITE_STATE.stage='review';
   PRESITE_STATE.reviewIdx=0;
@@ -4913,7 +4913,7 @@ function finishPresite(){
   PRESITE_STATE=null;
   closeModal();
   renderTabCounts(); renderMain();
-  toast('Pre-site inspection saved — job moved to Estimates.');
+  toast('Pre-site inspection saved. Job moved to Estimates.');
 }
 
 /* =========================================================================
@@ -4932,7 +4932,7 @@ function openSplit(id, kind){
   <div class="overlay">
     <div class="modal" style="max-width:1400px;">
       <div class="modalHead">
-        <h2>${esc(wo.customer.name)} — ${kind==='estimate'?'Estimate':'Invoice'} Builder</h2>
+        <h2>${esc(wo.customer.name)}, ${kind==='estimate'?'Estimate':'Invoice'} Builder</h2>
         <button class="closeX" onclick="closeSplit('${kind}',${id})">&times;</button>
       </div>
       <div class="modalBody">
@@ -4956,7 +4956,7 @@ function openSplit(id, kind){
             <div class="panelTitle" style="margin-top:16px;">Disclaimers</div>
             <div class="laborPick">${(jd.disclaimers&&jd.disclaimers.length) ? jd.disclaimers.map(plainLineRow).join('') : '<div class="small">None on file.</div>'}</div>
 
-            <p class="small" style="margin-top:12px;">Click the ⧉ icon next to any line to copy it, then paste into the builder on the right. It opens in its own tab when you click Generate/Print — close this window when you're done to record the result.</p>
+            <p class="small" style="margin-top:12px;">Click the ⧉ icon next to any line to copy it, then paste into the builder on the right. It opens in its own tab when you click Generate/Print. Close this window when you're done to record the result.</p>
           </div>
           <div class="splitRight">
             <iframe src="${url}" title="${kind} builder" onload="sendJobDataToBuilder(this, ${id}, '${kind}')"></iframe>
@@ -4976,10 +4976,10 @@ function closeSplit(kind, id){
       const wo=getWO(id);
       if(!wo){ closeModal(); return; }
       if(kind==='estimate'){
-        if(yes){ wo.estimateDone=true; toast('Estimate saved — moved to Pending Approval.'); }
+        if(yes){ wo.estimateDone=true; toast('Estimate saved. Moved to Pending Approval.'); }
         saveDB(DB); closeModal(); renderTabCounts(); renderMain();
       } else {
-        if(yes){ wo.invoiceDone=true; toast('Invoice complete — moved to Surveys.'); }
+        if(yes){ wo.invoiceDone=true; toast('Invoice complete. Moved to Surveys.'); }
         saveDB(DB); closeModal(); renderTabCounts(); renderMain();
       }
     }
@@ -5011,10 +5011,10 @@ function answerYesNo(val){
 /* =========================================================================
    AUTOFILL: push pre-site job data into the estimate/invoice builder iframe.
    The builder app (separate site) must add a message listener that receives
-   this payload and populates its own fields — while keeping every field
+   this payload and populates its own fields, while keeping every field
    editable (set .value, never disabled/readonly) until Generate is clicked.
 ========================================================================= */
-/* Parse a price string like "$8–$15", "$120", "TBD", "included in job labor", "—"
+/* Parse a price string like "$8–$15", "$120", "TBD", "included in job labor", "n/a"
    into a [low, high] numeric range. Non-numeric entries return null and are
    excluded from the materials total (their cost is unknown/non-billed). */
 function parsePriceRange(str){
@@ -5026,9 +5026,9 @@ function parsePriceRange(str){
   if(nums && nums.length){
     nums = nums.map(n=>n.replace(/[$\s]/g,''));
   } else {
-    // No currency symbol at all (e.g. "120" or "TBD") — fall back to a leading
+    // No currency symbol at all (e.g. "120" or "TBD"), fall back to a leading
     // bare number only, never numbers embedded in trailing unit text.
-    const m = String(str).match(/^\s*([\d,]+(?:\.\d+)?)\s*(?:[-–—to]+\s*([\d,]+(?:\.\d+)?))?/);
+    const m = String(str).match(/^\s*([\d,]+(?:\.\d+)?)\s*(?:[-–to]+\s*([\d,]+(?:\.\d+)?))?/);
     if(!m) return null;
     nums = [m[1]]; if(m[2]) nums.push(m[2]);
   }
@@ -5038,7 +5038,7 @@ function parsePriceRange(str){
 }
 
 /* California statewide base sales tax rate. Local district add-ons vary by
-   jurisdiction and aren't accounted for here — this uses the base rate. */
+   jurisdiction and aren't accounted for here, this uses the base rate. */
 const CA_SALES_TAX_RATE = 0.0725;
 
 /* Sum every priced material into a single low/high range, then combine three
@@ -5090,7 +5090,7 @@ function sendJobDataToBuilder(iframeEl, id, kind){
     iframeEl.contentWindow.postMessage({source:'gh_portal', type:'clear_estimate', workOrderId:wo.id}, '*');
     setTimeout(()=>{
       try{ iframeEl.contentWindow.postMessage(payload, '*'); }catch(e){}
-      // The estimate/invoice builder is one unified app with tabs — tell it
+      // The estimate/invoice builder is one unified app with tabs, tell it
       // which tab to land on so opening "Invoice" doesn't leave the visitor
       // sitting on the Estimate tab.
       if(kind==='invoice'){
@@ -5136,7 +5136,7 @@ function closeSettingsMenus(){
 }
 
 /* ---- Adjustable text size (mobile) ----
-   Five steps — Small / Normal / Large / Extra Large / Extra Extra Large —
+   Five steps, Small / Normal / Large / Extra Large / Extra Extra Large,
    covering the whole app at once: --mScale feeds the mobile stylesheet's
    base font size and --dScale the desktop one, both set together from a
    single stored setting. Defaults to the largest size for readability; the
@@ -5144,7 +5144,7 @@ function closeSettingsMenus(){
    it's remembered next visit. */
 var TEXT_SIZES = [15, 18, 21, 25, 29];
 /* Matching desktop baselines. A phone is held close and needs a larger base
-   than a monitor at arm's length, so the two ladders aren't the same numbers —
+   than a monitor at arm's length, so the two ladders aren't the same numbers,
    but they step together, one index at a time, from a single stored setting. */
 var TEXT_SIZES_DESKTOP = [14, 16, 18, 21, 24];
 var TEXT_SIZE_NAMES = ['Small', 'Normal', 'Large', 'Extra Large', 'Extra Extra Large'];
