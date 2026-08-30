@@ -3069,7 +3069,7 @@ function extractUnit(str){
 }
 function splitAddress(rawAddr){
   const trimmedRaw=(rawAddr||'').trim();
-  if(!trimmedRaw) return {line1:'', line2:''};
+  if(!trimmedRaw) return {line1:'', line2:'', street:'', unit:'', city:'', state:'', zip:''};
   const {rest:addr, unit}=extractUnit(trimmedRaw);
   let parts=addr.split(',').map(s=>s.trim()).filter(Boolean);
   const streetSuffixRe=/^(.*?\b(?:St|Street|Ave|Avenue|Rd|Road|Dr|Drive|Ln|Lane|Blvd|Boulevard|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Pkwy|Parkway|Hwy|Highway|Trail|Trl|Loop|Sq|Square)\.?)\s+(.+)$/i;
@@ -3105,7 +3105,13 @@ function splitAddress(rawAddr){
     let street=rest, city='';
     if(sm){ street=sm.street; city=sm.rest; }
     const line2=[city, stateZip].filter(Boolean).join(', ');
-    return {line1: unit ? [street, unit].filter(Boolean).join(' ') : street, line2};
+    const szParts=stateZip ? stateZip.split(/\s+/) : [];
+    return {
+      line1: unit ? [street, unit].filter(Boolean).join(' ') : street,
+      line2,
+      street: street||'', unit: unit||'', city: city||'',
+      state: szParts[0]||'', zip: szParts[1]||''
+    };
   }
   // Comma-separated address (typed or from autocomplete). Drop a trailing country
   // segment, pull the zip and state off the end, then take the very next
@@ -3133,7 +3139,12 @@ function splitAddress(rawAddr){
   }
   const line2=[city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   const line1Base=street || addr;
-  return {line1: unit ? [line1Base, unit].filter(Boolean).join(' ') : line1Base, line2};
+  return {
+    line1: unit ? [line1Base, unit].filter(Boolean).join(' ') : line1Base,
+    line2,
+    street: line1Base||'', unit: unit||'', city: city||'',
+    state: state||'', zip: zip||''
+  };
 }
 function renderWorkOrderModal(id){
   const wo=getWO(id);
@@ -5072,12 +5083,32 @@ function sendJobDataToBuilder(iframeEl, id, kind){
   const jd=wo.jobDetails||{};
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const addr = splitAddress(wo.customer.address||'');
   const payload={
     source:'gh_portal',
     type:'presite_data',
     workOrderId:wo.id,
     date: dateStr,
-    customer:{ name:wo.customer.name, phone:wo.customer.phone, address:wo.customer.address },
+    customer:{
+      name:wo.customer.name,
+      phone:wo.customer.phone,
+      altPhone:wo.customer.altPhone||'',
+      // The builder's Bill To block has its own email field. It was never
+      // populated because the payload simply didn't carry one.
+      email:wo.customer.email||'',
+      // Full single-line address is still sent for any builder field that
+      // wants it whole, but the parsed pieces are sent alongside it so the
+      // builder can drop street / city / state / zip into separate inputs
+      // instead of dumping everything onto line 1.
+      address:wo.customer.address,
+      addressLine1:addr.line1,
+      addressLine2:addr.line2,
+      street:addr.street,
+      unit:addr.unit,
+      city:addr.city,
+      state:addr.state,
+      zip:addr.zip
+    },
     description: jd.description||'',
     labor: jd.labor||[],
     materials: buildMaterialsLineItem(jd.materials),
