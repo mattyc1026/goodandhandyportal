@@ -3447,11 +3447,28 @@ function priceLineRow(entry){
 function plainLineRow(text){
   return copyLineRow(esc(text), String(text||''));
 }
+/* Pre-site summary block: totals, readiness and what was waved off, so the
+   estimator can see the inspector's intent without reading the whole scope. */
+function presiteSummaryHTML(jd){
+  const p=jd.presite; if(!p) return '';
+  const t=p.totals||{}; const r=p.readiness||{};
+  const money=n=>'$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const colors={ready:'#1d6b34',caution:'#8a6100',risk:'#9b2226'};
+  return `<div style="margin-top:12px;border:1px solid #dfe4ec;border-radius:8px;padding:10px 12px;background:#fbfcfe">
+    <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#7a8699;font-weight:700;margin-bottom:6px">From the pre-site</div>
+    <div class="small">Labor ${money(t.labor)} &nbsp;|&nbsp; Materials ${money(t.materialsBilled)} (cost ${money(t.materialsCost)} + ${t.markupPct||0}% markup ${money(t.markupAmount)} + tax ${money(t.tax)}) &nbsp;|&nbsp; <b>Total ${money(t.grandTotal)}</b></div>
+    ${r.message?`<div class="small" style="margin-top:6px;color:${colors[r.level]||'#5b6675'};font-weight:600">${esc(r.message)}</div>`:''}
+    ${(r.open&&r.open.length)?`<div class="small" style="margin-top:4px">Open items: ${r.open.map(esc).join('; ')}</div>`:''}
+    ${(p.wavedOff&&p.wavedOff.length)?`<div class="small" style="margin-top:6px">Waved off at walkthrough: ${p.wavedOff.map(w=>esc(w.item)).join('; ')}</div>`:''}
+    ${p.transcript?`<details style="margin-top:6px"><summary class="small">Walkthrough recording notes</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(p.transcript)}</div></details>`:''}
+  </div>`;
+}
 function jobListsHTML(wo){
   const jd=wo.jobDetails;
   const hasAny = (jd.description && jd.description.trim())
     || (jd.labor&&jd.labor.length) || (jd.materials&&jd.materials.length)
-    || (jd.tools&&jd.tools.length) || (jd.issues&&jd.issues.length) || (jd.disclaimers&&jd.disclaimers.length);
+    || (jd.tools&&jd.tools.length) || (jd.issues&&jd.issues.length) || (jd.disclaimers&&jd.disclaimers.length)
+    || (jd.exclusions&&jd.exclusions.length);
   if(!hasAny){
     return '<div class="small">No job details yet. Select "Edit job details" to add them, or complete a pre-site inspection.</div>';
   }
@@ -3470,8 +3487,10 @@ function jobListsHTML(wo){
     <div class="expandLinks">
       <details><summary>Required Tools (${(jd.tools||[]).length})</summary>${(jd.tools||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
       <details><summary>Potential Issues (${(jd.issues||[]).length})</summary>${(jd.issues||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
+      <details><summary>Exclusions (${(jd.exclusions||[]).length})</summary>${(jd.exclusions||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
       <details><summary>Disclaimers (${(jd.disclaimers||[]).length})</summary>${(jd.disclaimers||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-    </div>`;
+    </div>
+    ${presiteSummaryHTML(jd)}`;
 }
 
 /* ---- Job Details: edit mode ---- */
@@ -3484,7 +3503,8 @@ function openJobDetailsEdit(id){
     materials: (src.materials||[]).map(e=>typeof e==='string'?{item:e,price:''}:{item:e.item||'',price:e.price||''}),
     tools: (src.tools||[]).slice(),
     issues: (src.issues||[]).slice(),
-    disclaimers: (src.disclaimers||[]).slice()
+    disclaimers: (src.disclaimers||[]).slice(),
+    exclusions: (src.exclusions||[]).slice()
   };
   WO_JOB_EDIT=true;
   renderWorkOrderModal(id);
@@ -4169,762 +4189,1511 @@ function toast(msg){
 }
 
 /* =========================================================================
-   PRE-SITE INSPECTION TOOL (local trade-knowledge assistant, no external API)
-========================================================================= */
-let PRESITE_STATE=null; // {woId, chat:[], lists:{labor,materials,tools,issues,disclaimers}, stage:'chat'|'review', reviewIdx}
+   PRE-SITE INSPECTION TOOL v2
+   Structured component catalog + deterministic rule engine.
+   No free-text parsing, no external API. Runs entirely on this device.
 
-/* ---- Trade knowledge base, San Diego market-rate ranges, labor & materials priced per item ---- */
-const TRADE_KB = {
-  plumbing:{
-    keywords:['plumb','faucet','toilet','sink','drain','pipe','leak','water heater','garbage disposal','shutoff','valve','supply line','hose bib','p-trap','snake the line','clog'],
-    labor:[
-      {item:'Diagnose and locate source of issue', price:'$85–$150'},
-      {item:'Shut off and drain relevant water supply lines', price:'included in job labor'},
-      {item:'Remove and dispose of old fixture/component', price:'$60–$110'},
-      {item:'Install and set new fixture/component', price:'$150–$375 per fixture'},
-      {item:'Snake or clear a clogged drain line', price:'$125–$275'},
-      {item:'Test for leaks under pressure and confirm proper operation', price:'included in job labor'}
+   Flow:  Start (job type + year built)
+       -> Pick components (multi-select, filtered by job type)
+       -> Per-component question chains (components may spawn more components)
+       -> "Anything else?" loop back to the picker
+       -> Cross-component rules, then Review/edit, then Save to work order
+
+   Output written to wo.jobDetails:
+       labor[]       {item, qty, unit, price}   unit = $/EA, price = extended
+       materials[]   {item, qty, unit, price}   internal only, never printed
+       tools[]       strings
+       issues[]      strings
+       disclaimers[] strings
+       exclusions[]  strings
+       presite       {answers, totals, readiness, yearBuilt, jobType}
+========================================================================= */
+let PRESITE_STATE=null;
+
+/* ---------- Editable rate table. Seeded with San Diego area numbers. ----- */
+const DEFAULT_RATES = {
+  /* mobilization / general */
+  mobilize:            {label:'Job setup, floor protection and masking',            price:85,   unit:'job'},
+  haul:                {label:'Debris haul-away and disposal',                      price:145,  unit:'load'},
+  cleanup:             {label:'Final cleanup of work area',                         price:75,   unit:'job'},
+  furniture:           {label:'Move and replace furniture / clear work area',       price:95,   unit:'room'},
+  diag:                {label:'Diagnose and trace source of issue',                 price:125,  unit:'ea'},
+  trip:                {label:'Additional trip charge',                             price:85,   unit:'ea'},
+
+  /* demo */
+  demo_shower:         {label:'Demo existing shower enclosure',                     price:575,  unit:'ea'},
+  demo_tub:            {label:'Demo and remove existing tub',                       price:485,  unit:'ea'},
+  demo_floor:          {label:'Demo and remove existing floor covering',            price:2.75, unit:'sq ft'},
+  demo_vanity:         {label:'Remove existing vanity and countertop',              price:185,  unit:'ea'},
+  demo_cabinet:        {label:'Remove existing cabinetry',                          price:45,   unit:'lin ft'},
+  demo_counter:        {label:'Remove existing countertop',                         price:22,   unit:'lin ft'},
+  demo_tile_wall:      {label:'Demo existing wall tile',                            price:4.25, unit:'sq ft'},
+  demo_fence:          {label:'Demo and remove existing fence section',             price:9,    unit:'lin ft'},
+  demo_deck:           {label:'Remove damaged decking boards',                      price:7.5,  unit:'lin ft'},
+
+  /* plumbing */
+  toilet_set:          {label:'Set new toilet, wax ring and supply line',           price:185,  unit:'ea'},
+  toilet_pull:         {label:'Pull and reset existing toilet',                     price:145,  unit:'ea'},
+  toilet_remove:       {label:'Remove and dispose of existing toilet',              price:85,   unit:'ea'},
+  faucet_set:          {label:'Install and set new faucet',                         price:165,  unit:'ea'},
+  faucet_remove:       {label:'Remove existing faucet',                             price:65,   unit:'ea'},
+  sink_set:            {label:'Install and set new sink',                           price:195,  unit:'ea'},
+  sink_remove:         {label:'Remove existing sink',                               price:75,   unit:'ea'},
+  angle_stop:          {label:'Replace angle stop valve',                           price:85,   unit:'ea'},
+  supply_line:         {label:'Replace supply line',                                price:45,   unit:'ea'},
+  drain_clear:         {label:'Clear clogged drain line',                           price:185,  unit:'ea'},
+  ptrap:               {label:'Replace P-trap and drain assembly',                  price:125,  unit:'ea'},
+  disposal_set:        {label:'Install garbage disposal',                           price:195,  unit:'ea'},
+  disposal_remove:     {label:'Remove existing garbage disposal',                   price:65,   unit:'ea'},
+  shower_valve:        {label:'Replace shower valve body',                          price:425,  unit:'ea'},
+  shower_trim:         {label:'Install shower valve trim kit',                      price:145,  unit:'ea'},
+  tub_set:             {label:'Set new tub, level and secure',                      price:685,  unit:'ea'},
+  shower_pan:          {label:'Build and set shower pan',                           price:850,  unit:'ea'},
+  drain_rough:         {label:'Rough in / relocate drain line',                     price:485,  unit:'ea'},
+  supply_rough:        {label:'Rough in / relocate water supply lines',             price:425,  unit:'ea'},
+  hose_bib:            {label:'Replace exterior hose bib',                          price:165,  unit:'ea'},
+  water_heater:        {label:'Remove and replace water heater',                    price:825,  unit:'ea'},
+  dishwasher_set:      {label:'Install dishwasher, connect supply and drain',       price:245,  unit:'ea'},
+  washer_hookup:       {label:'Connect washer to supply and drain',                 price:145,  unit:'ea'},
+
+  /* waterproofing and tile */
+  backer_board:        {label:'Install cement backer board',                        price:3.85, unit:'sq ft'},
+  waterproof:          {label:'Apply waterproofing membrane, two coats',            price:2.65, unit:'sq ft'},
+  tile_wall_set:       {label:'Set wall tile',                                      price:13.5, unit:'sq ft'},
+  tile_floor_set:      {label:'Set floor tile',                                     price:11.5, unit:'sq ft'},
+  tile_grout:          {label:'Grout, clean and seal tile',                         price:3.25, unit:'sq ft'},
+  niche_build:         {label:'Frame, waterproof and tile shower niche',            price:325,  unit:'ea'},
+  curb_build:          {label:'Build and waterproof shower curb',                   price:285,  unit:'ea'},
+  schluter:            {label:'Install edge trim and transitions',                  price:9.5,  unit:'lin ft'},
+  shower_door_set:     {label:'Install shower door / enclosure',                    price:385,  unit:'ea'},
+
+  /* flooring */
+  floor_prep:          {label:'Prep, level and clean subfloor',                     price:2.25, unit:'sq ft'},
+  floor_lvp:           {label:'Install luxury vinyl plank flooring',                price:4.25, unit:'sq ft'},
+  floor_laminate:      {label:'Install laminate flooring',                          price:4.0,  unit:'sq ft'},
+  floor_underlay:      {label:'Install underlayment',                               price:0.85, unit:'sq ft'},
+  baseboard_set:       {label:'Install baseboard, caulk and finish',                price:6.5,  unit:'lin ft'},
+  baseboard_remove:    {label:'Remove existing baseboard',                          price:1.75, unit:'lin ft'},
+  transition:          {label:'Install transition strip',                           price:45,   unit:'ea'},
+
+  /* drywall and paint */
+  drywall_patch:       {label:'Cut, patch and tape drywall opening',                price:14.5, unit:'sq ft'},
+  drywall_texture:     {label:'Match and apply wall texture',                       price:4.5,  unit:'sq ft'},
+  drywall_hang:        {label:'Hang new drywall',                                   price:3.85, unit:'sq ft'},
+  paint_patch:         {label:'Prime and paint patched area',                       price:3.75, unit:'sq ft'},
+  paint_wall:          {label:'Paint walls, two coats',                             price:2.15, unit:'sq ft'},
+  paint_ceiling:       {label:'Paint ceiling, two coats',                           price:1.95, unit:'sq ft'},
+  paint_trim:          {label:'Paint trim and baseboard',                           price:3.5,  unit:'lin ft'},
+  paint_door_ea:       {label:'Paint door, both sides',                             price:125,  unit:'ea'},
+  paint_cabinet:       {label:'Prep, prime and spray cabinet doors and boxes',      price:145,  unit:'ea'},
+  paint_ext:           {label:'Paint exterior surface, two coats',                  price:2.85, unit:'sq ft'},
+  popcorn_scrape:      {label:'Scrape popcorn ceiling and skim smooth',             price:5.5,  unit:'sq ft'},
+
+  /* electrical */
+  outlet_swap:         {label:'Replace outlet or switch',                           price:75,   unit:'ea'},
+  outlet_new:          {label:'Install new outlet on existing circuit',             price:185,  unit:'ea'},
+  gfci_set:            {label:'Install GFCI outlet',                                price:125,  unit:'ea'},
+  light_set:           {label:'Install light fixture',                              price:165,  unit:'ea'},
+  recessed_set:        {label:'Install recessed can light',                         price:195,  unit:'ea'},
+  fan_existing:        {label:'Install ceiling fan on existing wiring',             price:185,  unit:'ea'},
+  fan_new:             {label:'Install ceiling fan with new wiring',                price:385,  unit:'ea'},
+  fan_rated_box:       {label:'Replace box with fan-rated box',                     price:95,   unit:'ea'},
+  wire_run_open:       {label:'Run new wiring, open or accessible path',            price:6.5,  unit:'lin ft'},
+  wire_run_closed:     {label:'Fish new wiring through finished walls',             price:12,   unit:'lin ft'},
+  circuit_new:         {label:'Add new circuit and breaker at panel',               price:485,  unit:'ea'},
+  switch_new:          {label:'Install new switch and switch leg',                  price:185,  unit:'ea'},
+  exhaust_fan:         {label:'Install bath exhaust fan and vent to exterior',      price:425,  unit:'ea'},
+  elec_diag:           {label:'Diagnose electrical fault and test circuit',         price:145,  unit:'ea'},
+
+  /* carpentry, doors, exterior */
+  door_slab:           {label:'Install door slab, mortise hinges and bore',         price:265,  unit:'ea'},
+  door_prehung:        {label:'Install prehung door, shim, level and case',         price:425,  unit:'ea'},
+  door_remove:         {label:'Remove existing door',                               price:75,   unit:'ea'},
+  door_hardware:       {label:'Install door hardware',                              price:85,   unit:'ea'},
+  screen_door:         {label:'Install screen or storm door',                       price:285,  unit:'ea'},
+  slider_repair:       {label:'Repair sliding door track and rollers',              price:325,  unit:'ea'},
+  fence_build:         {label:'Build new fence section, posts and pickets',         price:38,   unit:'lin ft'},
+  fence_repair:        {label:'Repair fence section',                               price:22,   unit:'lin ft'},
+  post_set:            {label:'Set fence post in concrete',                         price:145,  unit:'ea'},
+  gate_build:          {label:'Build and hang new gate',                            price:485,  unit:'ea'},
+  gate_repair:         {label:'Repair and re-hang existing gate',                   price:225,  unit:'ea'},
+  deck_board:          {label:'Replace decking boards',                             price:11,   unit:'lin ft'},
+  railing_set:         {label:'Install railing',                                    price:48,   unit:'lin ft'},
+  stain_apply:         {label:'Sand and apply stain or sealer',                     price:2.25, unit:'sq ft'},
+  gutter_clean:        {label:'Clean gutters and downspouts',                       price:4.5,  unit:'lin ft'},
+  pressure_wash:       {label:'Pressure wash surface',                              price:0.55, unit:'sq ft'},
+
+  /* mounting and misc */
+  tv_mount:            {label:'Mount TV to wall, locate studs and level',           price:225,  unit:'ea'},
+  tv_conceal:          {label:'Conceal cables in wall with recessed plate',         price:165,  unit:'ea'},
+  shelf_set:           {label:'Install shelving, anchored and leveled',             price:125,  unit:'ea'},
+  blinds_set:          {label:'Install window blinds or shades',                    price:85,   unit:'ea'},
+  grab_bar:            {label:'Install grab bar into blocking or stud',             price:125,  unit:'ea'},
+  mirror_set:          {label:'Install mirror or medicine cabinet',                 price:145,  unit:'ea'},
+  vanity_set:          {label:'Set vanity, level, secure and caulk',                price:385,  unit:'ea'},
+  counter_set:         {label:'Set countertop, level and secure',                   price:38,   unit:'lin ft'},
+  backsplash_set:      {label:'Install backsplash tile',                            price:16,   unit:'sq ft'},
+  appliance_set:       {label:'Uncrate, place and level appliance',                 price:165,  unit:'ea'},
+  otr_micro:           {label:'Install over-the-range microwave and vent',          price:265,  unit:'ea'},
+  caulk_seal:          {label:'Remove old caulk, clean and re-seal',                price:9,    unit:'lin ft'},
+  weatherstrip:        {label:'Install weatherstripping and door sweep',            price:95,   unit:'ea'},
+  handy_hour:          {label:'General handyman labor',                             price:95,   unit:'hour'}
+};
+function getRates(){
+  if(!DB.rates) DB.rates={};
+  const out={};
+  Object.keys(DEFAULT_RATES).forEach(k=>{
+    out[k]={...DEFAULT_RATES[k], price: (DB.rates[k]!==undefined && DB.rates[k]!=='') ? Number(DB.rates[k]) : DEFAULT_RATES[k].price};
+  });
+  return out;
+}
+function setRate(key,val){
+  if(!DB.rates) DB.rates={};
+  DB.rates[key]= (val===''||val===null||isNaN(Number(val))) ? '' : Number(val);
+  saveDB(DB);
+}
+
+/* ---------- Year built buckets, drive the automatic disclaimer stack ------ */
+const YEAR_BUCKETS = [
+  {key:'pre1950',  label:'Before 1950'},
+  {key:'1950_1977',label:'1950 to 1977'},
+  {key:'1978_1989',label:'1978 to 1989'},
+  {key:'1990_plus',label:'1990 or newer'},
+  {key:'unknown',  label:'Not sure'}
+];
+const YEAR_RULES = {
+  pre1950:{
+    issues:[
+      'Pre-1950 homes commonly have galvanized supply piping that can crumble or seize when disturbed',
+      'Knob-and-tube or cloth-insulated wiring may be present and is not safe to extend from',
+      'Framing is often non-standard dimension lumber with irregular stud spacing',
+      'Plaster and lath may be present instead of drywall, which changes patch method and cost'
     ],
-    materials:[
-      {item:'Supply lines (pair)', price:'$12–$25'},
-      {item:'Shutoff valve', price:'$18–$45 each'},
-      {item:"Plumber's putty / pipe sealant", price:'$6–$12'},
-      {item:'Standard toilet (mid-grade)', price:'$180–$350'},
-      {item:'Kitchen/bath faucet (mid-grade)', price:'$110–$320'},
-      {item:'Garbage disposal unit', price:'$120–$280'}
-    ],
-    tools:['Basin wrench','Pipe wrench','Adjustable wrench set','Bucket / wet-vac for water catch','Plumber\'s tape / drain snake'],
-    issues:['Corroded or seized fittings may require additional cutting/replacement','Older shutoff valves may fail to fully close, requiring a main water shutoff','Concealed pipe damage behind the wall/floor may be discovered once opened up','Low water pressure elsewhere in the home may point to a larger supply-line issue'],
-    disclaimers:['Estimate assumes standard residential fixtures and access; permit and inspection fees, if required by the jurisdiction, are additional','Any water damage found from a pre-existing leak is outside the scope of this estimate']
+    disclaimers:[
+      'This home predates 1978. Federal law presumes lead-based paint may be present. Any disturbance of painted surfaces is performed with standard dust containment. Certified lead abatement is not included and would be performed by a licensed abatement contractor.',
+      'Materials installed before 1990 may contain asbestos, including floor tile, mastic, popcorn ceiling texture and pipe wrap. No suspect material will be disturbed until it has been tested or removed by a qualified abatement contractor.',
+      'Concealed conditions typical of homes of this age, including deteriorated piping, outdated wiring, and non-standard framing, are not included in this estimate and will be brought to your attention before any additional work proceeds.'
+    ]
   },
-  electrical:{
-    keywords:['electric','outlet','gfci','breaker','panel','wiring','switch','light fixture','recessed light','circuit','afci','sub panel','can lights'],
-    labor:[
-      {item:'Turn off power at breaker and verify de-energized with tester', price:'included in job labor'},
-      {item:'Remove existing device/fixture', price:'$45–$85'},
-      {item:'Install and wire new outlet or switch', price:'$95–$175 each'},
-      {item:'Install and wire GFCI/AFCI protected device', price:'$135–$225 each'},
-      {item:'Install light fixture or recessed can', price:'$120–$300 each'},
-      {item:'Restore power and test operation', price:'included in job labor'}
+  '1950_1977':{
+    issues:[
+      'Galvanized supply lines are common in this era and may be corroded at connections',
+      'Original electrical may lack a ground conductor, which limits grounded and GFCI options',
+      'Cast iron drain lines may be present and can be brittle at joints'
     ],
-    materials:[
-      {item:'Standard outlet/switch', price:'$4–$12 each'},
-      {item:'GFCI/AFCI device', price:'$18–$35 each'},
-      {item:'Wire nuts and electrical tape', price:'$5–$10'},
-      {item:'Cover plate', price:'$2–$8 each'},
-      {item:'Light fixture (customer-selected, mid-grade)', price:'$60–$250'},
-      {item:'14/2 or 12/2 romex (per 50 ft)', price:'$35–$65'}
-    ],
-    tools:['Voltage tester','Wire strippers','Screwdriver set','Fish tape (if running new wire)'],
-    issues:['Existing wiring may not meet current code and could require upgrading','Panel may not have available capacity for additional circuits','Older homes may have aluminum or knob-and-tube wiring requiring special handling'],
-    disclaimers:['Work performed to local code; permit/inspection by others unless otherwise stated','Any pre-existing wiring defects discovered during the work are outside the original scope and will be communicated before proceeding']
+    disclaimers:[
+      'This home predates 1978. Federal law presumes lead-based paint may be present. Any disturbance of painted surfaces is performed with standard dust containment. Certified lead abatement is not included and would be performed by a licensed abatement contractor.',
+      'Materials installed before 1990 may contain asbestos, including floor tile, mastic, popcorn ceiling texture and pipe wrap. No suspect material will be disturbed until it has been tested or removed by a qualified abatement contractor.',
+      'Concealed conditions typical of homes of this age are not included in this estimate and will be brought to your attention before any additional work proceeds.'
+    ]
   },
-  tile:{
-    keywords:['tile','grout','backsplash','shower surround','flooring tile','regrout','tiling'],
-    labor:[
-      {item:'Prep and level substrate', price:'$3–$6 per sq ft'},
-      {item:'Layout tile pattern and dry-fit', price:'included in job labor'},
-      {item:'Set tile with appropriate mortar/adhesive', price:'$7–$14 per sq ft'},
-      {item:'Grout, clean, and seal joints', price:'$2–$4 per sq ft'}
+  '1978_1989':{
+    issues:[
+      'Polybutylene supply piping was used in some homes of this era and is prone to failure when disturbed',
+      'Aluminum branch wiring may be present at outlets and switches and requires approved connectors'
     ],
-    materials:[
-      {item:'Tile (customer-selected, mid-grade)', price:'$3–$12 per sq ft'},
-      {item:'Thinset mortar', price:'$18–$28 per bag'},
-      {item:'Grout', price:'$15–$30 per bag'},
-      {item:'Spacers/grout sealer', price:'$15–$35'},
-      {item:'Backer board (if needed)', price:'$1.50–$3 per sq ft'}
-    ],
-    tools:['Wet tile saw','Notched trowel','Grout float','Level','Tile spacers'],
-    issues:['Uneven or damaged substrate may require additional leveling/repair work','Older tile removal may reveal water damage beneath','Discontinued tile patterns may limit patch/match options'],
-    disclaimers:['Estimate is based on the approximate square footage provided; a material overage of 10-15% is standard for cuts and waste','Tile, grout color, and pattern selections to be confirmed by customer before ordering']
+    disclaimers:[
+      'Materials installed before 1990 may contain asbestos, including floor tile, mastic, popcorn ceiling texture and pipe wrap. No suspect material will be disturbed until it has been tested or removed by a qualified abatement contractor.'
+    ]
   },
-  carpentry:{
-    keywords:['carpentry','trim','baseboard','door','deck','framing','shelf','shelving','cabinet','molding','crown molding','handrail'],
-    labor:[
-      {item:'Measure and cut materials to spec', price:'included in job labor'},
-      {item:'Install and fasten trim/baseboard', price:'$3–$6 per linear ft'},
-      {item:'Hang and adjust an interior door', price:'$150–$300'},
-      {item:'Build and install shelving/cabinetry', price:'$65–$95 per hour'},
-      {item:'Fill, sand, and prep for finish', price:'included in job labor'}
-    ],
-    materials:[
-      {item:'Trim/baseboard stock (per linear ft)', price:'$1.50–$4'},
-      {item:'Interior door slab (mid-grade)', price:'$110–$280'},
-      {item:'Fasteners (screws/nails)', price:'$8–$15'},
-      {item:'Wood filler / construction adhesive', price:'$8–$14'}
-    ],
-    tools:['Miter saw','Drill/driver','Level','Stud finder','Nail gun'],
-    issues:['Out-of-square walls/openings common in older homes may require scribing and extra fitting time','Hidden rot or pest damage may be found once old material is removed'],
-    disclaimers:['Estimate assumes standard dimensional lumber/trim; custom millwork is quoted separately','Paint or stain finish, if desired, is quoted separately unless included above']
-  },
-  painting:{
-    keywords:['paint','repaint','painting','stain the','wall color','exterior paint','interior paint'],
-    labor:[
-      {item:'Prep surfaces: patch, sand, and clean', price:'$0.40–$0.80 per sq ft'},
-      {item:'Mask and protect trim, floors, and fixtures', price:'included in job labor'},
-      {item:'Apply primer where needed', price:'$0.35–$0.60 per sq ft'},
-      {item:'Apply finish coats (labor only, per room)', price:'$300–$800 per room'}
-    ],
-    materials:[
-      {item:'Primer (per gallon)', price:'$25–$45'},
-      {item:'Paint, mid-grade (per gallon)', price:'$35–$65'},
-      {item:"Painter's tape / drop cloths", price:'$15–$30'},
-      {item:'Caulk for gaps/seams', price:'$5–$9 per tube'}
-    ],
-    tools:['Rollers and brushes','Extension pole','Ladder','Drop cloths','Sander'],
-    issues:['Existing surface damage (cracking, peeling) may require more extensive prep than anticipated','Homes built before 1978 may require lead-safe practices per EPA RRP rule if surfaces are disturbed'],
-    disclaimers:['Estimate assumes standard drywall/trim in serviceable condition; extensive repair needed before painting is quoted separately','Two-coat finish assumed unless otherwise noted; deep or accent colors may require a third coat']
-  },
-  fencing:{
-    keywords:['fence','fencing','gate'],
-    labor:[
-      {item:'Layout and mark post locations', price:'included in job labor'},
-      {item:'Dig and set posts in concrete', price:'$35–$60 per post'},
-      {item:'Install rails and fence panels/pickets', price:'$18–$35 per linear ft'},
-      {item:'Hang and adjust gate(s)', price:'$150–$350 per gate'}
-    ],
-    materials:[
-      {item:'Fence post', price:'$18–$40 each'},
-      {item:'Rails and pickets/panels (per linear ft)', price:'$12–$28'},
-      {item:'Concrete mix (per post)', price:'$8–$14'},
-      {item:'Post caps', price:'$3–$8 each'},
-      {item:'Gate hardware kit', price:'$25–$70'}
-    ],
-    tools:['Post hole digger / auger','Level','String line','Circular saw','Drill/driver'],
-    issues:['Underground utility lines must be located (call 811) before digging, which may affect post placement','Property line/HOA setback requirements should be confirmed before installation','Rocky or root-heavy soil can slow post-hole digging significantly'],
-    disclaimers:['Estimate assumes standard soil conditions; rock excavation, if encountered, is billed as an additional item','Customer is responsible for confirming property lines; company is not liable for boundary disputes']
-  },
-  ceiling_fan:{
-    keywords:['ceiling fan','fan install'],
-    labor:[
-      {item:'Turn off power and remove existing fixture/fan', price:'$50–$85'},
-      {item:'Verify/install fan-rated electrical box', price:'$65–$120'},
-      {item:'Mount and wire new ceiling fan', price:'$120–$220 per fan'},
-      {item:'Balance fan and test all speeds/functions', price:'included in job labor'}
-    ],
-    materials:[
-      {item:'Fan-rated electrical box (if needed)', price:'$12–$25'},
-      {item:'Mounting bracket/hardware (usually included with fan)', price:'n/a'},
-      {item:'Wire nuts', price:'$3–$6'}
-    ],
-    tools:['Voltage tester','Stud finder','Ladder','Screwdriver set'],
-    issues:['Existing electrical box may not be fan-rated and will need to be swapped for safety','Ceiling height/vaulted ceilings may require a fan downrod extension'],
-    disclaimers:['Estimate assumes a standard flat ceiling under 10 ft with existing wiring in place; vaulted ceilings or new circuit runs are quoted separately']
-  },
-  drywall:{
-    keywords:['drywall','sheetrock','patch the wall','hole in the wall','ceiling repair','drywall repair'],
-    labor:[
-      {item:'Cut out damaged area and square the opening', price:'included in job labor'},
-      {item:'Install backing/support as needed', price:'$40–$85'},
-      {item:'Set new drywall patch', price:'$2–$4 per sq ft'},
-      {item:'Tape, mud, and sand to a smooth finish', price:'$2–$5 per sq ft'}
-    ],
-    materials:[
-      {item:'Drywall patch/sheet', price:'$14–$22 per 4x8 sheet'},
-      {item:'Joint compound', price:'$14–$22 per bucket'},
-      {item:'Drywall tape', price:'$4–$8'},
-      {item:'Screws / corner bead', price:'$8–$15'}
-    ],
-    tools:['Drywall saw','Taping knives','Sanding sponge/pole sander','Drill/driver'],
-    issues:['Damage may extend behind the visible area (water/pest related) and require a larger repair','Texture matching to surrounding wall may require additional time'],
-    disclaimers:['Estimate does not include paint/finish coat unless noted separately','Texture match is done to best professional ability but may not be a perfect match under raking light']
-  },
-  appliance:{
-    keywords:['appliance','dishwasher','garbage disposal','washer','dryer','refrigerator','oven','range','microwave'],
-    labor:[
-      {item:'Diagnose reported issue', price:'$75–$120 (often credited toward repair)'},
-      {item:'Disconnect and remove appliance if needed for access', price:'$45–$90'},
-      {item:'Install/repair/replace component', price:'$120–$320'},
-      {item:'Reconnect and test full appliance function', price:'included in job labor'}
-    ],
-    materials:[
-      {item:'Replacement part as diagnosed', price:'$40–$220 depending on part'},
-      {item:'Supply line/connector kit (if applicable)', price:'$15–$35'}
-    ],
-    tools:['Multimeter','Appliance dolly','Basic hand tool set','Level'],
-    issues:['Diagnosis may reveal the issue is a different/additional part than initially assumed','Older appliances may have discontinued parts requiring a compatible substitute or full replacement recommendation'],
-    disclaimers:['Diagnostic time is required before a final parts price can be confirmed','Manufacturer warranty coverage, if any, should be verified by customer before repair proceeds']
-  },
-  irrigation:{
-    keywords:['irrigation','sprinkler','drip line','sprinkler head','irrigation valve'],
-    labor:[
-      {item:'Locate and test existing zones/valves', price:'$85–$150'},
-      {item:'Repair or replace damaged heads/lines', price:'$15–$35 per head'},
-      {item:'Replace a valve', price:'$120–$220 per valve'},
-      {item:'Adjust coverage and run-times', price:'included in job labor'}
-    ],
-    materials:[
-      {item:'Sprinkler head / drip emitter', price:'$4–$12 each'},
-      {item:'PVC pipe and fittings', price:'$1–$3 per linear ft'},
-      {item:'Valve (if replacement needed)', price:'$18–$45 each'}
-    ],
-    tools:['Shovel','PVC cutter','Pipe glue/primer','Multimeter (valve diagnostics)'],
-    issues:['Root intrusion or old/brittle PVC found during repair may require additional line replacement','Existing controller programming may need to be redone after zone changes'],
-    disclaimers:['Estimate assumes standard residential irrigation components; well/pump systems are quoted separately']
-  },
-  hvac_light:{
-    keywords:['thermostat','vent','air filter','ductless mini split','hvac','ac unit not','furnace filter','register'],
-    labor:[
-      {item:'Diagnose reported HVAC-adjacent issue', price:'$85–$150'},
-      {item:'Replace/install thermostat', price:'$100–$225'},
-      {item:'Clean or replace vents/registers', price:'$40–$90 each'}
-    ],
-    materials:[
-      {item:'Smart or standard thermostat (customer-selected)', price:'$100–$280'},
-      {item:'Vent/register cover', price:'$10–$30 each'}
-    ],
-    tools:['Voltage tester','Screwdriver set','Vacuum for duct cleaning'],
-    issues:['Root HVAC issues (compressor, refrigerant, ductwork) are outside light-handyman scope and may require a licensed HVAC contractor referral'],
-    disclaimers:['This estimate covers accessory/light HVAC work only; refrigerant and system-level repairs require a licensed HVAC contractor']
-  },
-  gutters:{
-    keywords:['gutter','downspout','roof runoff'],
-    labor:[
-      {item:'Clean and flush existing gutters', price:'$1–$2 per linear ft'},
-      {item:'Repair or reseal gutter seams', price:'$8–$15 per linear ft'},
-      {item:'Install new gutter section/downspout', price:'$9–$18 per linear ft'}
-    ],
-    materials:[
-      {item:'Gutter section (per linear ft)', price:'$6–$12'},
-      {item:'Downspout (per section)', price:'$20–$45'},
-      {item:'Sealant/fasteners', price:'$10–$20'}
-    ],
-    tools:['Ladder','Gutter scoop','Sealant gun','Level'],
-    issues:['Fascia board rot found behind old gutters may require carpentry repair before reinstalling'],
-    disclaimers:['Estimate assumes standard single-story gutter access; multi-story or steep-roof access may require additional equipment and cost']
-  },
-  pressure_washing:{
-    keywords:['pressure wash','power wash','driveway clean','exterior clean'],
-    labor:[
-      {item:'Pressure wash driveway/walkway/patio', price:'$0.20–$0.45 per sq ft'},
-      {item:'Pressure wash exterior siding/fencing', price:'$0.30–$0.60 per sq ft'}
-    ],
-    materials:[
-      {item:'Cleaning solution/degreaser', price:'$20–$45'}
-    ],
-    tools:['Pressure washer','Surface cleaner attachment','Ladder for elevated areas'],
-    issues:['Older or already-degraded concrete/wood surfaces can be further worn by high-pressure cleaning; a lower-pressure approach may be recommended'],
-    disclaimers:['Estimate assumes standard residential surfaces; oil stains and heavy buildup may require additional treatment time']
-  },
-  general:{
-    keywords:[],
-    labor:[
-      {item:'Perform on-site assessment of the reported issue', price:'$75–$125'},
-      {item:'Complete requested repair/installation per scope', price:'quoted after assessment'},
-      {item:'Clean up work area and haul away debris', price:'included in job labor'}
-    ],
-    materials:[
-      {item:'Materials as required by scope, to be confirmed on-site', price:'TBD'}
-    ],
-    tools:['General hand tool kit','Ladder','Drop cloths/floor protection'],
-    issues:['Full scope may not be apparent until on-site access is possible'],
-    disclaimers:['Estimate is based on the information provided; final pricing may be adjusted after on-site inspection if conditions differ']
+  '1990_plus':{ issues:[], disclaimers:[] },
+  unknown:{
+    issues:['Age of the home was not confirmed, so era-specific conditions such as outdated wiring, galvanized piping or asbestos-containing materials cannot be ruled out'],
+    disclaimers:['The age of the structure was not confirmed at the time of this estimate. If materials that predate 1990 are encountered, work in that area will stop until the material is tested or handled by a qualified abatement contractor.']
   }
 };
-const GENERIC_DISCLAIMERS=['This estimate is valid for 30 days from the date issued','Additional work outside this scope requires written approval before proceeding','All prices reflect standard San Diego-area market rates as of the current season and may vary based on site access and material availability'];
 
-/* ---- Specific task library, matches concrete "action + object" phrasing in the notes
-   (e.g. "remove and replace an existing toilet") and produces a precisely-labeled labor
-   line item instead of a whole trade's generic checklist. This is what keeps the compiled
-   lists focused on what was actually described rather than everything that trade could involve. ---- */
-function pushUnique(arr, entry){ if(!arr.some(e=>e.item===entry.item)) arr.push(entry); }
-function pushUniqueStr(arr, val){ if(!arr.includes(val)) arr.push(val); }
-function splitClauses(text){
-  return (text||'').split(/[,.;\n]|\band then\b|\balso\b/i).map(s=>s.trim()).filter(Boolean);
-}
-function detectActionForClause(clause){
-  if(/\b(remove\s*(and|\/)?\s*replace|remove and install|swap out|swap the|swap a|replace the|replace an?|replace)\b/i.test(clause)) return 'replace';
-  if(/\b(repair|fix|unclog|patch up|patch)\b/i.test(clause)) return 'repair';
-  if(/\b(install|add|put in|hang|mount)\b/i.test(clause)) return 'install';
-  return 'service';
-}
-function detectActionObject(text, objRe){
-  const clauses=splitClauses(text);
-  for(const c of clauses){
-    if(objRe.test(c)) return {action:detectActionForClause(c), clause:c};
-  }
-  return null;
-}
-function taskLabel(taskDef, action){
-  switch(action){
-    case 'replace': return `Remove/Replace Existing ${taskDef.label}`;
-    case 'install': return `Install New ${taskDef.label}`;
-    case 'repair': return `Repair ${taskDef.label}`;
-    default: return `Diagnose and Address ${taskDef.label} Issue`;
-  }
-}
-function addTaskToMerged(merged, taskDef, action){
-  const label=taskLabel(taskDef, action);
-  const price=(taskDef.prices && taskDef.prices[action]) || (taskDef.prices && taskDef.prices.service) || '';
-  pushUnique(merged.labor, {item:label, price});
-  (taskDef.materials||[]).forEach(entry=>pushUnique(merged.materials, entry));
-  (taskDef.tools||[]).forEach(t=>pushUniqueStr(merged.tools, t));
-  (taskDef.issues||[]).forEach(i=>pushUniqueStr(merged.issues, i));
-  (taskDef.disclaimers||[]).forEach(d=>pushUniqueStr(merged.disclaimers, d));
-}
+/* ---------- Always-on boilerplate ---------------------------------------- */
+const BASE_DISCLAIMERS = [
+  'This estimate is based on conditions visible and accessible at the time of the walkthrough. Concealed conditions discovered once work is underway are not included and will be communicated to you, in writing, before any additional work proceeds.',
+  'Pricing is valid for 30 days from the date of this estimate. Material pricing is subject to change based on supplier availability at the time of purchase.',
+  'Where required by the jurisdiction, permit and inspection fees are the responsibility of the homeowner and are not included in this estimate unless expressly stated.',
+  'Exact color, grain, sheen and texture matching to existing finishes cannot be guaranteed. Where a match is required, a sample will be provided for your approval before full application.'
+];
+const BASE_EXCLUSIONS = [
+  'Permit fees, plan check fees and inspection fees',
+  'Repair of pre-existing damage outside the described work area',
+  'Mold, asbestos or lead abatement of any kind',
+  'Structural, engineering or foundation work',
+  'Relocation or protection of homeowner belongings not specifically listed above'
+];
+const BASE_TOOLS = ['Drop cloths and surface protection','Shop vacuum','Cordless drill and driver set','Level','Tape measure','Utility knife'];
 
-const TASK_OBJECTS = [
-  { id:'toilet', trade:'plumbing', re:/\btoilet(s)?\b/i, label:'Toilet',
-    prices:{replace:'$220–$375', install:'$260–$420', repair:'$110–$200', service:'$140–$250'},
-    materials:[{item:'Wax ring with flange',price:'$8–$15'},{item:'Toilet bolts/cap kit',price:'$6–$12'},{item:'Braided toilet supply line',price:'$10–$18'},{item:'Toilet (customer-selected, mid-grade)',price:'$180–$350'}],
-    tools:['Adjustable wrench','Putty knife','Bucket/wet-vac for residual water','Level'],
-    issues:['Old wax ring may have leaked, requiring subfloor inspection/repair','Shutoff valve may be seized and need replacement before installation']
-  },
-  { id:'faucet', trade:'plumbing', re:/\bfaucet(s)?\b/i, label:'Faucet',
-    prices:{replace:'$150–$300', install:'$150–$320', repair:'$90–$175', service:'$100–$180'},
-    materials:[{item:'Supply lines (pair)',price:'$12–$25'},{item:"Plumber's putty/sealant",price:'$6–$12'},{item:'Faucet (customer-selected, mid-grade)',price:'$110–$320'}],
-    tools:['Basin wrench','Adjustable wrench','Bucket'],
-    issues:['Corroded shutoff valves may need replacement before the new faucet can be installed']
-  },
-  { id:'disposal', trade:'plumbing', re:/\b(garbage )?disposal(s)?\b/i, label:'Garbage Disposal',
-    prices:{replace:'$180–$320', install:'$200–$350', repair:'$110–$200', service:'$120–$220'},
-    materials:[{item:'Garbage disposal unit (customer-selected, mid-grade)',price:'$120–$280'},{item:'Disposal mounting/connector kit',price:'$10–$20'}],
-    tools:['Adjustable wrench','Screwdriver set','Bucket'],
-    issues:['Existing plumbing/electrical connections under the sink may not match the new unit and require adapting']
-  },
-  { id:'water_heater', trade:'plumbing', re:/\bwater heater(s)?\b/i, label:'Water Heater',
-    prices:{replace:'$1200–$2200', install:'$1300–$2400', repair:'$180–$400', service:'$150–$300'},
-    materials:[{item:'Water heater (customer-selected, standard tank)',price:'$900–$1800'},{item:'Supply/expansion fittings',price:'$30–$70'},{item:'Venting/flue materials (if needed)',price:'$40–$120'}],
-    tools:['Pipe wrench set','Tubing cutter','Multimeter (for electric units)'],
-    issues:['Existing venting or gas line may not meet current code and could require upgrading','Permit and inspection are typically required for water heater replacement']
-  },
-  { id:'dishwasher', trade:'appliance', re:/\bdishwasher(s)?\b/i, label:'Dishwasher',
-    prices:{replace:'$220–$400', install:'$220–$420', repair:'$130–$250', service:'$120–$220'},
-    materials:[{item:'Dishwasher supply/drain kit',price:'$20–$40'},{item:'Dishwasher (customer-selected, mid-grade)',price:'$450–$900'}],
-    tools:['Adjustable wrench','Screwdriver set','Level'],
-    issues:["Existing cabinet opening or connections may not match the new unit's dimensions"]
-  },
-  { id:'sink', trade:'plumbing', re:/\bsink(s)?\b/i, label:'Sink',
-    prices:{replace:'$220–$400', install:'$250–$450', repair:'$110–$200', service:'$120–$220'},
-    materials:[{item:'Sink basin (customer-selected, mid-grade)',price:'$150–$400'},{item:'P-trap and drain assembly',price:'$15–$30'},{item:'Silicone sealant/mounting clips',price:'$8–$15'}],
-    tools:['Basin wrench','Adjustable wrench','Bucket','Caulk gun'],
-    issues:['Countertop cutout may need adjustment to fit a differently-sized new sink']
-  },
-  { id:'gfci', trade:'electrical', re:/\bgfci\b/i, label:'GFCI Outlet',
-    prices:{replace:'$135–$225', install:'$135–$225', repair:'$85–$150', service:'$85–$150'},
-    materials:[{item:'GFCI device',price:'$18–$35 each'},{item:'Cover plate',price:'$2–$8 each'},{item:'Wire nuts',price:'$3–$6'}],
-    tools:['Voltage tester','Wire strippers','Screwdriver set'],
-    issues:['Downstream outlets protected by this GFCI may also need to be tested/updated']
-  },
-  { id:'outlet', trade:'electrical', re:/\boutlet(s)?\b/i, label:'Outlet', skipIfMatched:['gfci'],
-    prices:{replace:'$95–$175', install:'$95–$175', repair:'$70–$120', service:'$75–$130'},
-    materials:[{item:'Standard outlet',price:'$4–$12 each'},{item:'Cover plate',price:'$2–$8 each'},{item:'Wire nuts',price:'$3–$6'}],
-    tools:['Voltage tester','Wire strippers','Screwdriver set'],
-    issues:['Existing wiring may not meet current code and could require upgrading']
-  },
-  { id:'switch', trade:'electrical', re:/\b(light )?switch(es)?\b/i, label:'Switch',
-    prices:{replace:'$95–$165', install:'$95–$175', repair:'$70–$120', service:'$75–$130'},
-    materials:[{item:'Standard switch',price:'$4–$12 each'},{item:'Cover plate',price:'$2–$8 each'},{item:'Wire nuts',price:'$3–$6'}],
-    tools:['Voltage tester','Wire strippers','Screwdriver set'],
-    issues:['Multi-way (3-way/4-way) switch setups may require additional wiring verification']
-  },
-  { id:'light_fixture', trade:'electrical', re:/\blight fixture(s)?\b/i, label:'Light Fixture',
-    prices:{replace:'$120–$280', install:'$120–$300', repair:'$90–$175', service:'$90–$160'},
-    materials:[{item:'Light fixture (customer-selected, mid-grade)',price:'$60–$250'},{item:'Wire nuts',price:'$3–$6'},{item:'Mounting hardware (if not included)',price:'$5–$15'}],
-    tools:['Voltage tester','Ladder','Screwdriver set'],
-    issues:['Existing electrical box may not support the weight/style of the new fixture']
-  },
-  { id:'recessed_light', trade:'electrical', re:/\brecessed (can )?light(s|ing)?\b/i, label:'Recessed Light',
-    prices:{replace:'$130–$260 each', install:'$150–$300 each', repair:'$90–$160 each', service:'$90–$160 each'},
-    materials:[{item:'Recessed light/can kit',price:'$25–$60 each'},{item:'Wire nuts',price:'$3–$6'}],
-    tools:['Voltage tester','Ladder','Drywall saw (if new can location)','Screwdriver set'],
-    issues:['Cutting a new ceiling opening may reveal joists/obstructions requiring the layout to shift']
-  },
-  { id:'thermostat', trade:'hvac_light', re:/\bthermostat(s)?\b/i, label:'Thermostat',
-    prices:{replace:'$100–$225', install:'$100–$225', repair:'$85–$150', service:'$85–$150'},
-    materials:[{item:'Smart or standard thermostat (customer-selected)',price:'$100–$280'}],
-    tools:['Voltage tester','Screwdriver set'],
-    issues:['Existing low-voltage wiring may not have enough conductors for a smart thermostat (may need a C-wire adapter)']
-  },
-  { id:'interior_door', trade:'carpentry', re:/\binterior door(s)?\b/i, label:'Interior Door',
-    prices:{replace:'$180–$320', install:'$150–$300', repair:'$90–$180', service:'$90–$160'},
-    materials:[{item:'Interior door slab (mid-grade)',price:'$110–$280'},{item:'Hinges and hardware',price:'$15–$40'},{item:'Shims/fasteners',price:'$5–$10'}],
-    tools:['Miter saw','Drill/driver','Level','Chisel set'],
-    issues:['Out-of-square door openings common in older homes may require additional scribing/fitting time']
-  },
-  { id:'exterior_door', trade:'carpentry', re:/\bexterior door(s)?\b/i, label:'Exterior Door',
-    prices:{replace:'$350–$700', install:'$300–$650', repair:'$120–$250', service:'$120–$220'},
-    materials:[{item:'Exterior door slab (mid-grade)',price:'$250–$650'},{item:'Weatherstripping/threshold kit',price:'$20–$45'},{item:'Hinges and hardware',price:'$20–$50'}],
-    tools:['Miter saw','Drill/driver','Level','Caulk gun'],
-    issues:['Existing rough opening may have water damage or be out of level, requiring additional framing repair']
-  },
-  { id:'drywall_patch', trade:'drywall', re:/\bdrywall\b/i, label:'Drywall Patch',
-    excludeIf:(text)=>isCeilingFanInstall(text),
-    prices:{replace:'$180–$350', install:'$180–$350', repair:'$150–$300', service:'$120–$250'},
-    materials:[{item:'Drywall patch/sheet',price:'$14–$22 per 4x8 sheet'},{item:'Joint compound',price:'$14–$22 per bucket'},{item:'Drywall tape',price:'$4–$8'}],
-    tools:['Drywall saw','Taping knives','Sanding sponge/pole sander'],
-    issues:['Damage may extend behind the visible area (water/pest related) and require a larger repair','Texture matching to surrounding wall may require additional time']
-  },
-  { id:'fence_panel', trade:'fencing', re:/\bfence (panel|section|post)(s)?\b/i, label:'Fence Panel',
-    prices:{replace:'$220–$450 per panel', install:'$220–$450 per panel', repair:'$120–$250 per panel', service:'$120–$220'},
-    materials:[{item:'Fence post',price:'$18–$40 each'},{item:'Rails and pickets/panels (per linear ft)',price:'$12–$28'},{item:'Concrete mix (per post)',price:'$8–$14'}],
-    tools:['Post hole digger / auger','Level','Circular saw','Drill/driver'],
-    issues:['Underground utility lines must be located (call 811) before digging, which may affect post placement']
-  }
+/* ---------- The 12 job type presets shown on the first screen ------------ */
+const JOB_PRESETS = [
+  {id:'bath',      label:'Bathroom remodel or repair',   tags:['bath']},
+  {id:'kitchen',   label:'Kitchen remodel or repair',    tags:['kitchen']},
+  {id:'plumbing',  label:'Plumbing repair',              tags:['plumbing']},
+  {id:'electrical',label:'Electrical repair',            tags:['electrical']},
+  {id:'drywall',   label:'Drywall repair',               tags:['drywall']},
+  {id:'painting',  label:'Painting',                     tags:['paint']},
+  {id:'flooring',  label:'Flooring',                     tags:['floor']},
+  {id:'doors',     label:'Doors and windows',            tags:['door']},
+  {id:'appliance', label:'Appliance install',            tags:['appliance']},
+  {id:'fence',     label:'Fence and gate',               tags:['fence']},
+  {id:'exterior',  label:'Deck, patio and exterior',     tags:['exterior']},
+  {id:'general',   label:'General repairs and mounting', tags:['general']}
 ];
 
-/* ---- Ceiling fan install, flagship "dig deeper" scenario. If the wiring situation isn't
-   already clear from the notes, the assistant asks targeted follow-ups (wire length, access,
-   drywall/stud cutting) so the resulting labor/materials/tools reflect the real scope instead
-   of a generic guess. ---- */
-function isCeilingFanInstall(text){
-  return /ceiling fan/i.test(text) && /\b(install|hang|put up|add|mount)\b/i.test(text);
-}
-const CEILING_FAN_QUESTIONS = {
-  wiringStatus:{
-    text:'Is there existing wiring already run to the fan location, or will new wiring need to be installed?',
-    parse(a){ const t=a.toLowerCase();
-      if(/no existing|not existing|no wiring|not wired|no power|\bnone\b|need(s)? new|\bnew\b/.test(t)) return 'new';
-      if(/exist|already|there'?s power|has power|current wiring/.test(t)) return 'existing';
-      return null; }
-  },
-  wireLength:{
-    text:'About how many feet of new wiring will need to be run to reach a power source?',
-    parse(a){ const m=a.match(/(\d+)/); return m?m[1]:null; }
-  },
-  access:{
-    text:'Is there attic or crawlspace access to run the wire, or is the space finished/closed off?',
-    parse(a){ const t=a.toLowerCase();
-      if(/no attic|no crawlspace|not accessible|inaccessible|finished (ceiling|space|attic)|sealed|closed off|no access/.test(t)) return 'inaccessible';
-      if(/attic|crawlspace|accessible|open access|can access/.test(t)) return 'accessible';
-      return null; }
-  },
-  cutting:{
-    text:'Will running this wire require cutting into drywall and/or drilling through studs?',
-    parse(a){ const t=a.toLowerCase().trim();
-      if(/^no\b|^n\b|not needed|not required|won'?t need|without cutting|no cutting|no drilling/.test(t)) return false;
-      if(/^yes\b|^y\b|will need|cutting|drilling/.test(t)) return true;
-      return null; }
-  }
+/* ---------- Question helper shorthands ----------------------------------- */
+const Q = {
+  num:  (key,label,unit,def)=>({key,label,type:'number',unit:unit||'',default:def===undefined?1:def}),
+  sel:  (key,label,options,risk)=>({key,label,type:'select',options,risk:risk||null}),
+  yn:   (key,label,risk)=>({key,label,type:'select',options:['Yes','No','Unsure'],risk:risk||null}),
+  txt:  (key,label)=>({key,label,type:'text'})
 };
-function nextCeilingFanQuestionKey(){
-  const ctx=PRESITE_STATE.ctx;
-  const text=combinedText();
-  if(ctx.wiringStatus===undefined){
-    const t=text.toLowerCase();
-    if(/no existing wiring|new wiring|needs? (a )?new circuit|not (currently )?wired|no power (there|at that location)/.test(t)) ctx.wiringStatus='new';
-    else if(/existing wiring|already wired|wiring (is )?already (there|in place)|power (is )?already there/.test(t)) ctx.wiringStatus='existing';
-  }
-  if(ctx.wiringStatus===undefined) return PRESITE_STATE.askedKeys.includes('wiringStatus') ? null : 'wiringStatus';
-  if(ctx.wiringStatus==='new'){
-    if(ctx.wireLength===undefined){
-      const m=text.match(/(\d+)\s*(ft|feet|foot|')\b/i);
-      if(m) ctx.wireLength=m[1];
-    }
-    if(ctx.wireLength===undefined) return PRESITE_STATE.askedKeys.includes('wireLength') ? null : 'wireLength';
-    if(ctx.access===undefined){
-      if(/no attic access|no crawlspace access|finished ceiling|sealed|closed off|inaccessible/i.test(text)) ctx.access='inaccessible';
-      else if(/attic access|crawlspace access|\bcan access\b|\baccessible\b/i.test(text)) ctx.access='accessible';
-    }
-    if(ctx.access===undefined) return PRESITE_STATE.askedKeys.includes('access') ? null : 'access';
-    if(ctx.cutting===undefined){
-      if(/no cutting|won'?t need to cut|without cutting|no drywall cutting/i.test(text)) ctx.cutting=false;
-      else if(/cutting( into)? drywall|drill(ing)? through studs|open(ing)? up the (wall|ceiling)/i.test(text)) ctx.cutting=true;
-    }
-    if(ctx.cutting===undefined) return PRESITE_STATE.askedKeys.includes('cutting') ? null : 'cutting';
-  }
-  return null;
+const UNSURE = v => v==='Unsure' || v==='Not sure' || v==='Unknown';
+
+/* =========================================================================
+   THE DEPENDENCY MAP
+   Each item is written the way the inspector would say it out loud.
+   `deps` is the list of work that rides along with it. This is the part
+   that stops the estimator from missing a step.
+========================================================================= */
+const PS_ITEMS = {
+
+/* ---------------- BATHROOM ---------------------------------------------- */
+bath_floor:{label:'New floor, bathroom', tags:['bath','floor'],
+  qty:{label:'Floor area', unit:'sq ft', def:40},
+  deps:['toilet_pull','baseboard','transition','subfloor_check','haul'],
+  labor:a=>[['demo_floor',a.qty],['floor_prep',a.qty],['floor_lvp',a.qty]],
+  mats:a=>[['LVP flooring incl. 10% waste',Math.ceil(a.qty*1.1),3.85],['Floor leveler / patch',1,38],['Adhesive or underlayment',Math.ceil(a.qty),0.65]],
+  tools:['Flooring cutter','Pry bar','Knee pads','Oscillating multi-tool'],
+  issues:['Subfloor damage from prior toilet or tub leaks is common and is not visible until the old flooring is removed','Existing flooring may be layered over an older material that also has to come up']},
+
+toilet_pull:{label:'Pull and reset existing toilet', tags:['bath','plumbing'],
+  qty:{label:'Toilets', unit:'ea', def:1},
+  deps:['angle_stop_check'],
+  labor:a=>[['toilet_pull',a.qty]],
+  mats:a=>[['Wax ring',a.qty,8],['Closet bolts',a.qty,6],['Supply line',a.qty,14]],
+  tools:['Closet wrench','Bucket and sponge'],
+  issues:['Closet flange may be corroded, cracked or set below the new finished floor height and require repair or a flange extender','Older toilets can crack at the horn when pulled and may not be reusable']},
+
+toilet_new:{label:'New toilet', tags:['bath','plumbing'],
+  qty:{label:'Toilets', unit:'ea', def:1},
+  deps:['toilet_haul','angle_stop_check'],
+  labor:a=>[['toilet_remove',a.qty],['toilet_set',a.qty]],
+  mats:a=>[['Toilet, mid grade',a.qty,265],['Wax ring',a.qty,8],['Closet bolts',a.qty,6],['Supply line',a.qty,14]],
+  tools:['Closet wrench','Bucket and sponge'],
+  issues:['Closet flange condition is unknown until the old unit is pulled','Rough-in dimension must be confirmed before the new unit is purchased']},
+
+toilet_haul:{label:'Haul away old toilet', tags:['bath'], qty:null,
+  labor:a=>[['haul',1]], mats:a=>[]},
+
+angle_stop_check:{label:'Angle stops, replace if seized', tags:['bath','kitchen','plumbing'],
+  qty:{label:'Stops', unit:'ea', def:1},
+  ask:'Are the existing angle stops working?', askOpts:['They work','Seized or leaking','Could not test'],
+  labor:a=>(a.ask==='They work'?[]:[['angle_stop',a.qty]]),
+  mats:a=>(a.ask==='They work'?[]:[['Angle stop valve',a.qty,22]]),
+  issues:a=>(a.ask==='They work'?[]:['Existing angle stops do not fully close, which means the water will need to be shut off at the main during the work']),
+  excl:a=>(a.ask==='Could not test'?['Replacement of angle stops or supply valves if existing valves fail to close']:[])},
+
+shower_new:{label:'New shower', tags:['bath'],
+  qty:{label:'Wall and floor area to waterproof', unit:'sq ft', def:110},
+  deps:['shower_demo','shower_valve_q','shower_door','shower_niche','exhaust_fan','drywall_patch','haul'],
+  labor:a=>[['backer_board',a.qty],['waterproof',a.qty],['tile_wall_set',a.qty],['tile_grout',a.qty],['shower_pan',1],['curb_build',1]],
+  mats:a=>[['Cement backer board 3x5 sheet',Math.ceil(a.qty/15),16],['Waterproofing membrane (RedGard or equal)',Math.ceil(a.qty/100),72],['Backer board screws',1,24],['Alkali resistant seam tape',Math.ceil(a.qty/50),18],['Thinset mortar 50lb',Math.ceil(a.qty/40),22],['Grout',Math.ceil(a.qty/60),28],['Tile incl. 15% waste',Math.ceil(a.qty*1.15),7],['Shower pan liner or foam pan kit',1,185],['Silicone and grout sealer',1,32]],
+  tools:['Wet saw','Notched trowels','Grout float','Level','Mixing paddle'],
+  issues:['Wall framing behind the old enclosure is frequently found to be water damaged or rotted and is not visible until demo','Existing drain location may not align with the new pan and could require re-plumbing','Studs are often out of plane and require shimming before backer board goes on'],
+  disc:['Waterproofing is installed to manufacturer specification and flood tested before tile is set. Tile and grout are water resistant, not waterproof.']},
+
+shower_demo:{label:'Demo existing shower or tub enclosure', tags:['bath'], qty:null,
+  ask:'What is there now?', askOpts:['Tub and shower combo','Tile shower','Fiberglass insert','Nothing, new build'],
+  labor:a=>(a.ask==='Nothing, new build'?[]:[[a.ask==='Tub and shower combo'?'demo_tub':'demo_shower',1],['haul',1]]),
+  mats:a=>[['Plastic sheeting and dust containment',1,35]],
+  issues:['Demo is the point at which concealed water damage, rot and mold are typically discovered']},
+
+shower_valve_q:{label:'Shower valve', tags:['bath','plumbing'], qty:null,
+  ask:'Is the valve being replaced?', askOpts:['Yes, new valve','No, reuse existing','Trim only','Not sure'],
+  labor:a=>(a.ask==='Yes, new valve'?[['shower_valve',1],['shower_trim',1]]:a.ask==='Trim only'?[['shower_trim',1]]:[]),
+  mats:a=>(a.ask==='Yes, new valve'?[['Pressure balance valve body',1,145],['Trim kit',1,185],['Copper and fittings',1,65]]:a.ask==='Trim only'?[['Trim kit',1,185]]:[]),
+  issues:a=>(a.ask==='Yes, new valve'?['Access from behind the wall may be required, which means opening drywall in the adjacent room']:[]),
+  excl:a=>(a.ask==='Not sure'?['Replacement of the shower valve body if the existing valve is found to be failed or incompatible with the new trim']:[])},
+
+shower_niche:{label:'Shower niche', tags:['bath'],
+  qty:{label:'Niches', unit:'ea', def:1},
+  labor:a=>[['niche_build',a.qty]],
+  mats:a=>[['Preformed niche',a.qty,58],['Trim and edge profile',a.qty,26]],
+  issues:['Niche placement is limited by stud bays and by any plumbing or wiring in the wall']},
+
+shower_door:{label:'Shower door or enclosure', tags:['bath'],
+  qty:{label:'Doors', unit:'ea', def:1},
+  labor:a=>[['shower_door_set',a.qty]],
+  mats:a=>[['Shower door or enclosure',a.qty,585],['Silicone and anchors',a.qty,24]],
+  issues:['Framed openings are rarely square and out-of-plumb walls can require a custom or adjustable enclosure'],
+  disc:['Glass enclosures are ordered after final tile is set so the opening can be measured accurately. Lead time on glass is typically two to three weeks.']},
+
+tub_new:{label:'New tub', tags:['bath'],
+  qty:{label:'Tubs', unit:'ea', def:1},
+  deps:['shower_demo','shower_valve_q','tub_surround','drywall_patch','haul'],
+  labor:a=>[['tub_set',a.qty]],
+  mats:a=>[['Tub unit',a.qty,585],['Tub drain and overflow kit',a.qty,68],['Mortar bed',a.qty,22],['Framing lumber',1,45]],
+  tools:['Level','Reciprocating saw','Framing square'],
+  issues:['New tub may not match the existing rough opening and can require framing modification','Tub must often be brought in before doors or trim go on, which affects sequencing']},
+
+tub_surround:{label:'Tub surround, tile', tags:['bath'],
+  qty:{label:'Surround area', unit:'sq ft', def:90},
+  labor:a=>[['backer_board',a.qty],['waterproof',a.qty],['tile_wall_set',a.qty],['tile_grout',a.qty]],
+  mats:a=>[['Cement backer board 3x5 sheet',Math.ceil(a.qty/15),16],['Waterproofing membrane',Math.ceil(a.qty/100),72],['Thinset mortar 50lb',Math.ceil(a.qty/40),22],['Grout',Math.ceil(a.qty/60),28],['Tile incl. 15% waste',Math.ceil(a.qty*1.15),7]],
+  tools:['Wet saw','Notched trowels','Grout float']},
+
+vanity_new:{label:'New vanity', tags:['bath'],
+  qty:{label:'Vanities', unit:'ea', def:1},
+  deps:['vanity_demo','sink_faucet','angle_stop_check','drywall_patch','mirror_set_i','haul'],
+  labor:a=>[['vanity_set',a.qty]],
+  mats:a=>[['Vanity cabinet',a.qty,585],['Vanity top',a.qty,325],['Mounting hardware and shims',a.qty,18],['Caulk',a.qty,9]],
+  tools:['Level','Stud finder','Jigsaw'],
+  issues:['Wall behind the old vanity is usually unfinished or damaged and needs patch and paint before the new unit goes in','Existing supply and drain locations may not line up with the new cabinet and can require re-plumbing']},
+
+vanity_demo:{label:'Remove existing vanity and top', tags:['bath'], qty:null,
+  labor:a=>[['demo_vanity',1],['haul',1]], mats:a=>[]},
+
+sink_faucet:{label:'New sink and faucet', tags:['bath','kitchen','plumbing'],
+  qty:{label:'Fixtures', unit:'ea', def:1},
+  deps:['angle_stop_check'],
+  labor:a=>[['sink_remove',a.qty],['sink_set',a.qty],['faucet_set',a.qty],['ptrap',a.qty]],
+  mats:a=>[['Sink',a.qty,165],['Faucet',a.qty,185],['P-trap assembly',a.qty,28],['Supply lines pair',a.qty,22],['Plumber putty and silicone',1,14]],
+  tools:['Basin wrench','Channel locks','Bucket'],
+  issues:['Existing drain height may not match the new sink and can require adjusting the trap arm']},
+
+faucet_only:{label:'New faucet only', tags:['bath','kitchen','plumbing'],
+  qty:{label:'Faucets', unit:'ea', def:1},
+  deps:['angle_stop_check'],
+  labor:a=>[['faucet_remove',a.qty],['faucet_set',a.qty]],
+  mats:a=>[['Faucet',a.qty,185],['Supply lines pair',a.qty,22],['Plumber putty',1,9]],
+  tools:['Basin wrench'],
+  issues:['Hole count on the existing sink must match the new faucet or a deck plate is needed']},
+
+exhaust_fan:{label:'Bath exhaust fan', tags:['bath','electrical'],
+  qty:{label:'Fans', unit:'ea', def:1},
+  deps:['drywall_patch','attic_access'],
+  labor:a=>[['exhaust_fan',a.qty]],
+  mats:a=>[['Exhaust fan unit',a.qty,145],['Flex duct and roof or wall cap',a.qty,58],['Wire and connectors',a.qty,24]],
+  tools:['Drywall saw','Ladder','Voltage tester'],
+  issues:['Venting must terminate outside the building, not into the attic. An existing fan venting into the attic will need a new duct run and exterior cap.','Roof or siding penetration may be required if no exterior termination exists']},
+
+mirror_set_i:{label:'Mirror or medicine cabinet', tags:['bath'],
+  qty:{label:'Units', unit:'ea', def:1},
+  labor:a=>[['mirror_set',a.qty]],
+  mats:a=>[['Mirror or medicine cabinet',a.qty,185],['Anchors and hardware',a.qty,14]]},
+
+grab_bar_i:{label:'Grab bars', tags:['bath','general'],
+  qty:{label:'Bars', unit:'ea', def:1},
+  labor:a=>[['grab_bar',a.qty]],
+  mats:a=>[['Grab bar',a.qty,42],['Heavy duty anchors',a.qty,18]],
+  issues:['Grab bars must anchor into framing or solid blocking. If no blocking exists, the wall has to be opened to add it.']}
+};
+
+/* ---------------- KITCHEN ------------------------------------------------ */
+Object.assign(PS_ITEMS,{
+kitchen_floor:{label:'New floor, kitchen', tags:['kitchen','floor'],
+  qty:{label:'Floor area', unit:'sq ft', def:180},
+  deps:['appliance_pull','baseboard','transition','subfloor_check','toe_kick','haul'],
+  labor:a=>[['demo_floor',a.qty],['floor_prep',a.qty],['floor_lvp',a.qty]],
+  mats:a=>[['LVP flooring incl. 10% waste',Math.ceil(a.qty*1.1),3.85],['Floor leveler',2,38],['Underlayment',Math.ceil(a.qty),0.65]],
+  tools:['Flooring cutter','Pry bar','Appliance dolly'],
+  issues:['Dishwasher and refrigerator must be pulled out and reset, and old flooring often runs under the dishwasher which affects height on reinstall','Subfloor damage under the dishwasher and sink base is common']},
+
+appliance_pull:{label:'Pull and reset appliances', tags:['kitchen'],
+  qty:{label:'Appliances', unit:'ea', def:2},
+  labor:a=>[['appliance_set',a.qty]],
+  mats:a=>[['Supply and drain connectors',a.qty,22]],
+  issues:['Shutoff valves behind appliances are often corroded and may fail when the appliance is disconnected','Flooring thickness change can prevent a dishwasher from sliding back under the counter']},
+
+toe_kick:{label:'Cabinet toe kick, cut or trim', tags:['kitchen'], qty:null,
+  labor:a=>[['handy_hour',2]],
+  mats:a=>[['Toe kick trim and finish',1,45]],
+  issues:['New flooring thickness may require the cabinet toe kick to be trimmed or a quarter round added']},
+
+kitchen_sink:{label:'New kitchen sink and faucet', tags:['kitchen','plumbing'],
+  qty:{label:'Sinks', unit:'ea', def:1},
+  deps:['angle_stop_check','disposal_i','counter_cut'],
+  labor:a=>[['sink_remove',a.qty],['sink_set',a.qty],['faucet_set',a.qty],['ptrap',a.qty]],
+  mats:a=>[['Kitchen sink',a.qty,325],['Kitchen faucet',a.qty,245],['Basket strainer',a.qty,32],['P-trap and drain assembly',a.qty,42],['Supply lines',a.qty,24],['Silicone',1,12]],
+  tools:['Basin wrench','Jigsaw','Channel locks'],
+  issues:['Swapping between drop-in and undermount styles usually requires countertop modification','Sink base cabinet floor is frequently water damaged from prior leaks']},
+
+counter_cut:{label:'Countertop cutout modification', tags:['kitchen'], qty:null,
+  ask:'Does the countertop need to be cut or modified?', askOpts:['No','Yes','Not sure'],
+  labor:a=>(a.ask==='Yes'?[['handy_hour',3]]:[]),
+  mats:a=>(a.ask==='Yes'?[['Blades and sealant',1,45]]:[]),
+  excl:a=>(a.ask!=='No'?['Countertop modification, repair or replacement if the existing top cannot accept the new fixture']:[]),
+  issues:a=>(a.ask==='Yes'?['Cutting stone or solid surface countertop carries a risk of chipping or cracking that cannot be fully eliminated']:[])},
+
+disposal_i:{label:'Garbage disposal', tags:['kitchen','plumbing'],
+  qty:{label:'Units', unit:'ea', def:1},
+  ask:'New or existing?', askOpts:['New unit','Reinstall existing','None'],
+  labor:a=>(a.ask==='None'?[]:[['disposal_remove',a.qty],['disposal_set',a.qty]]),
+  mats:a=>(a.ask==='New unit'?[['Garbage disposal unit',a.qty,185],['Mounting and discharge kit',a.qty,28]]:a.ask==='Reinstall existing'?[['Mounting gasket kit',a.qty,18]]:[]),
+  issues:['Existing dishwasher drain connection at the disposal must be checked for a knockout plug']},
+
+dishwasher_i:{label:'Dishwasher install', tags:['kitchen','appliance'],
+  qty:{label:'Units', unit:'ea', def:1},
+  deps:['angle_stop_check'],
+  labor:a=>[['dishwasher_set',a.qty]],
+  mats:a=>[['Dishwasher install kit, supply and drain',a.qty,45],['Air gap or high loop hardware',a.qty,22]],
+  issues:['Existing opening may not match the new unit dimensions','A dedicated electrical connection may not be present and could require an outlet or hardwire']},
+
+backsplash_i:{label:'Backsplash tile', tags:['kitchen'],
+  qty:{label:'Backsplash area', unit:'sq ft', def:35},
+  deps:['outlet_ext'],
+  labor:a=>[['backsplash_set',a.qty],['tile_grout',a.qty]],
+  mats:a=>[['Backsplash tile incl. 15% waste',Math.ceil(a.qty*1.15),9],['Thinset',Math.ceil(a.qty/40),22],['Grout',1,28],['Edge trim',Math.ceil(a.qty/4),8],['Caulk',1,12]],
+  tools:['Wet saw','Notched trowel','Grout float'],
+  issues:['Outlets and switches in the backsplash area need spacers and longer screws to sit flush with the new tile face']},
+
+outlet_ext:{label:'Extend outlets for tile depth', tags:['kitchen','electrical'],
+  qty:{label:'Devices', unit:'ea', def:3},
+  labor:a=>[['outlet_swap',a.qty]],
+  mats:a=>[['Box extenders and spacers',a.qty,9],['Screws',1,8]]},
+
+cabinet_paint:{label:'Paint or refinish cabinets', tags:['kitchen','paint'],
+  qty:{label:'Doors and drawer fronts', unit:'ea', def:24},
+  deps:['cabinet_hardware'],
+  labor:a=>[['paint_cabinet',a.qty]],
+  mats:a=>[['Primer and cabinet enamel',Math.ceil(a.qty/12),95],['Sandpaper, degreaser, masking',1,85],['Sprayer supplies',1,45]],
+  tools:['Sprayer','Sanding block','Drying racks'],
+  issues:['Thermofoil and laminate fronts do not accept paint reliably and may need to be replaced instead','Cabinets are unusable for several days while doors are off and curing'],
+  disc:['Cabinet refinishing is a multi-day process. Doors are removed, sprayed offsite or in a contained area, and cure before rehanging. Kitchen use is limited during that period.']},
+
+cabinet_hardware:{label:'Cabinet hardware', tags:['kitchen'],
+  qty:{label:'Pulls and knobs', unit:'ea', def:24},
+  labor:a=>[['handy_hour',Math.max(1,Math.ceil(a.qty/12))]],
+  mats:a=>[['Hardware',a.qty,6]],
+  issues:['New hardware with different hole spacing requires filling and re-drilling existing holes']},
+
+otr_micro_i:{label:'Over the range microwave', tags:['kitchen','appliance'],
+  qty:{label:'Units', unit:'ea', def:1},
+  labor:a=>[['otr_micro',a.qty]],
+  mats:a=>[['Mounting plate and hardware',a.qty,28],['Vent transition',a.qty,35]],
+  issues:['Existing vent configuration, recirculating versus ducted, must be confirmed','Cabinet above may need modification for the vent and cord']}
+});
+
+/* ---------------- FLOORING, GENERAL -------------------------------------- */
+Object.assign(PS_ITEMS,{
+floor_room:{label:'New floor, room', tags:['floor'],
+  qty:{label:'Floor area', unit:'sq ft', def:200},
+  deps:['baseboard','transition','subfloor_check','furniture_move','door_undercut','haul'],
+  labor:a=>[['demo_floor',a.qty],['floor_prep',a.qty],['floor_lvp',a.qty]],
+  mats:a=>[['Flooring incl. 10% waste',Math.ceil(a.qty*1.1),3.85],['Underlayment',Math.ceil(a.qty),0.65],['Floor leveler',2,38]],
+  tools:['Flooring cutter','Pry bar','Tapping block'],
+  issues:['Subfloor flatness is unknown until the existing covering is removed and may require additional leveling','Existing flooring may be glued down or layered, which increases removal time']},
+
+floor_tile_room:{label:'New tile floor', tags:['floor','bath','kitchen'],
+  qty:{label:'Floor area', unit:'sq ft', def:120},
+  deps:['baseboard','transition','subfloor_check','door_undercut','haul'],
+  labor:a=>[['demo_floor',a.qty],['floor_prep',a.qty],['backer_board',a.qty],['tile_floor_set',a.qty],['tile_grout',a.qty]],
+  mats:a=>[['Tile incl. 15% waste',Math.ceil(a.qty*1.15),6],['Backer board 3x5 sheet',Math.ceil(a.qty/15),16],['Thinset 50lb',Math.ceil(a.qty/40),22],['Grout',Math.ceil(a.qty/60),28],['Seam tape and screws',1,32],['Sealer',1,26]],
+  tools:['Wet saw','Notched trowel','Grout float','Level'],
+  issues:['Tile adds height at doorways and transitions and may require undercutting door jambs','Subfloor deflection must be checked. Insufficient stiffness leads to cracked grout and tile.']},
+
+subfloor_check:{label:'Subfloor condition', tags:['floor'], qty:null,
+  ask:'Subfloor condition?', askOpts:['Solid, no visible issues','Soft spots or damage present','Cannot tell until removal'], risk:'high',
+  labor:a=>(a.ask==='Soft spots or damage present'?[['handy_hour',4]]:[]),
+  mats:a=>(a.ask==='Soft spots or damage present'?[['Subfloor sheathing and fasteners',2,58]]:[]),
+  issues:['Subfloor damage is the most common hidden cost in a flooring job and cannot be fully assessed until the existing covering is removed'],
+  excl:a=>(a.ask!=='Solid, no visible issues'?['Subfloor repair or replacement beyond what is listed above, including joist repair']:[]),
+  disc:a=>(a.ask==='Cannot tell until removal'?['Subfloor condition could not be verified during the walkthrough. If damage is found once the existing flooring is removed, work will stop and a written change order will be provided before repair begins.']:[])},
+
+baseboard:{label:'Baseboard, remove and reinstall or replace', tags:['floor','paint'],
+  qty:{label:'Linear feet', unit:'lin ft', def:60},
+  ask:'Reuse or new?', askOpts:['Remove and reinstall existing','New baseboard','Leave in place, shoe molding only'],
+  deps:['paint_trim_i'],
+  labor:a=>(a.ask==='Leave in place, shoe molding only'?[['baseboard_set',a.qty]]:[['baseboard_remove',a.qty],['baseboard_set',a.qty]]),
+  mats:a=>(a.ask==='New baseboard'?[['Baseboard material',Math.ceil(a.qty*1.1),2.85],['Caulk, filler, fasteners',1,45]]:[['Shoe molding',Math.ceil(a.qty*1.1),1.35],['Caulk, filler, fasteners',1,38]]),
+  tools:['Miter saw','Brad nailer','Caulk gun'],
+  issues:['Existing baseboard often breaks on removal, especially if it has been painted in place multiple times']},
+
+transition:{label:'Transition strips at doorways', tags:['floor'],
+  qty:{label:'Transitions', unit:'ea', def:2},
+  labor:a=>[['transition',a.qty]],
+  mats:a=>[['Transition strip',a.qty,28]],
+  issues:['Height difference between the new floor and the adjoining floor determines the transition type and may not be known until demo']},
+
+door_undercut:{label:'Undercut door jambs and casing', tags:['floor'], qty:null,
+  labor:a=>[['handy_hour',1]],
+  mats:a=>[],
+  issues:['Interior doors may need to be trimmed at the bottom if the new floor is thicker than the old one']},
+
+furniture_move:{label:'Move furniture and clear the room', tags:['floor','paint'],
+  qty:{label:'Rooms', unit:'room', def:1},
+  ask:'Who clears the room?', askOpts:['We do it','Customer clears it before we arrive'],
+  labor:a=>(a.ask==='We do it'?[['furniture',a.qty]]:[]),
+  mats:a=>[],
+  excl:a=>(a.ask!=='We do it'?['Moving, protecting or storing homeowner furniture and belongings. The work area must be cleared before our arrival.']:[])},
+
+haul:{label:'Debris haul away and disposal', tags:['floor','bath','kitchen','general'],
+  qty:{label:'Loads', unit:'load', def:1},
+  labor:a=>[['haul',a.qty]], mats:a=>[]}
+});
+
+/* ---------------- ELECTRICAL --------------------------------------------- */
+Object.assign(PS_ITEMS,{
+outlet_repair:{label:'Outlets not working, repair', tags:['electrical'],
+  qty:{label:'Outlets', unit:'ea', def:3},
+  ask:'Existing wiring present and reachable?', askOpts:['Yes','No, new run needed','Unsure'], risk:'high',
+  deps:['wall_open','elec_panel_check'],
+  labor:a=>{const l=[['elec_diag',1],['outlet_swap',a.qty]]; if(a.ask==='No, new run needed') l.push(['wire_run_closed',25]); return l;},
+  mats:a=>{const m=[['Outlet and cover plate',a.qty,7],['Wire nuts and staples',1,14]]; if(a.ask==='No, new run needed') m.push(['14/2 Romex, 25 ft',1,32]); return m;},
+  tools:['Voltage tester','Wire strippers','Fish tape','Circuit tracer'],
+  issues:['A dead outlet can be caused by a tripped GFCI upstream, a failed device, a loose back-stab connection, or an open in the circuit. The cause is not known until the circuit is traced.','Older wiring may have no ground conductor, which limits replacement options'],
+  excl:a=>(a.ask!=='Yes'?['Rewiring, new circuits or panel work beyond the devices listed above, if the fault is found to be upstream in the circuit']:[]),
+  disc:a=>(a.ask==='Unsure'?['The condition and routing of the existing wiring could not be verified during the walkthrough. If the fault is found to be in the wiring rather than the devices, a written change order will be provided before additional work begins.']:[])},
+
+outlet_new:{label:'New outlets', tags:['electrical'],
+  qty:{label:'Outlets', unit:'ea', def:1},
+  ask:'Power source available nearby?', askOpts:['Yes, tie into existing circuit','No, new circuit needed','Unsure'], risk:'high',
+  deps:['wall_open','elec_panel_check'],
+  labor:a=>{const l=[['outlet_new',a.qty]]; if(a.ask==='No, new circuit needed') l.push(['circuit_new',1]); return l;},
+  mats:a=>[['Outlet, box and cover plate',a.qty,18],['Romex wire',1,45],['Wire nuts and staples',1,14]],
+  tools:['Voltage tester','Fish tape','Drywall saw','Stud finder'],
+  issues:['Panel may not have space or capacity for an additional circuit']},
+
+switch_light:{label:'Light fixture, replace', tags:['electrical'],
+  qty:{label:'Fixtures', unit:'ea', def:1},
+  deps:['drywall_patch'],
+  labor:a=>[['light_set',a.qty]],
+  mats:a=>[['Light fixture',a.qty,145],['Wire nuts and mounting hardware',a.qty,12]],
+  tools:['Voltage tester','Ladder'],
+  issues:['Existing box may not be rated for the weight of the new fixture','New fixture may not cover the paint or texture shadow left by the old one, which can require patch and paint']},
+
+recessed_lights:{label:'Recessed can lights', tags:['electrical'],
+  qty:{label:'Cans', unit:'ea', def:4},
+  deps:['attic_access','drywall_patch','switch_new_i'],
+  labor:a=>[['recessed_set',a.qty]],
+  mats:a=>[['Recessed LED fixture',a.qty,32],['Romex wire',1,68],['Connectors and clips',a.qty,6]],
+  tools:['Hole saw','Fish tape','Voltage tester','Stud finder'],
+  issues:['Ceiling joists, HVAC ducts and existing plumbing can force fixture locations to shift from the planned layout','Insulation contact rating must be confirmed if the attic is insulated']},
+
+ceiling_fan_i:{label:'Ceiling fan install', tags:['electrical'],
+  qty:{label:'Fans', unit:'ea', def:1},
+  ask:'Wiring at the location?', askOpts:['Existing wiring in place','No wiring, new run needed','Unsure'], risk:'high',
+  deps:['wall_open','attic_access','switch_new_i','drywall_patch'],
+  labor:a=>(a.ask==='Existing wiring in place'?[['fan_existing',a.qty],['fan_rated_box',a.qty]]:[['fan_new',a.qty],['fan_rated_box',a.qty]]),
+  mats:a=>{const m=[['Fan rated box',a.qty,22],['Wire nuts and hardware',a.qty,12]]; if(a.ask!=='Existing wiring in place') m.push(['14/2 Romex',1,58],['Wall switch',a.qty,12]); return m;},
+  tools:['Voltage tester','Stud finder','Fish tape','Ladder'],
+  issues:['Existing ceiling box is frequently not fan rated and must be replaced for safety','Vaulted or high ceilings may require a downrod extension and additional access equipment'],
+  excl:a=>(a.ask==='Unsure'?['New circuit or panel work if existing wiring is found to be absent or unusable']:[])},
+
+gfci_i:{label:'GFCI outlet', tags:['electrical'],
+  qty:{label:'Devices', unit:'ea', def:1},
+  labor:a=>[['gfci_set',a.qty]],
+  mats:a=>[['GFCI outlet and plate',a.qty,32]],
+  issues:['Older circuits without a ground can be protected by a GFCI but must be labeled as no equipment ground']},
+
+switch_new_i:{label:'New switch and switch leg', tags:['electrical'],
+  qty:{label:'Switches', unit:'ea', def:1},
+  deps:['wall_open'],
+  labor:a=>[['switch_new',a.qty]],
+  mats:a=>[['Switch, box and plate',a.qty,18],['Romex wire',1,38]]},
+
+elec_panel_check:{label:'Panel capacity', tags:['electrical'], qty:null,
+  ask:'Panel space available?', askOpts:['Yes, open breaker spaces','No, panel is full','Did not check'], risk:'high',
+  labor:a=>[],
+  mats:a=>(a.ask==='Yes, open breaker spaces'?[['Breaker',1,28]]:[]),
+  issues:['A full panel means a tandem breaker, a subpanel or a panel upgrade may be required, none of which are included here'],
+  excl:['Panel upgrades, subpanel installation and service changes'],
+  disc:a=>(a.ask==='Did not check'?['Electrical panel capacity was not verified during the walkthrough. If the panel cannot accept an additional circuit, that work would be quoted separately.']:[])},
+
+attic_access:{label:'Attic or crawlspace access', tags:['electrical','general'], qty:null,
+  ask:'Is there usable access above or below?', askOpts:['Yes, accessible','No, finished or sealed','Not sure'], risk:'high',
+  labor:a=>(a.ask==='No, finished or sealed'?[['handy_hour',2]]:[]),
+  mats:a=>[],
+  issues:['Without attic or crawlspace access, wiring has to be fished through finished walls and ceilings, which requires additional openings'],
+  excl:a=>(a.ask!=='Yes, accessible'?['Additional drywall openings beyond those listed, if the wire path cannot be reached as expected']:[])}
+});
+
+/* ---------------- DRYWALL AND PAINT -------------------------------------- */
+Object.assign(PS_ITEMS,{
+wall_open:{label:'Wall or ceiling has to be opened', tags:['drywall','electrical'], qty:null,
+  ask:'Will drywall need to be opened?', askOpts:['Yes','No','Not sure'],
+  deps:['drywall_patch'],
+  labor:a=>[], mats:a=>[],
+  issues:a=>(a.ask==='Yes'?['Opening a wall can expose plumbing, wiring or ducting that was not visible and may require re-routing']:[])},
+
+drywall_patch:{label:'Drywall patch and texture', tags:['drywall'],
+  qty:{label:'Patch area', unit:'sq ft', def:18},
+  deps:['paint_patch_i'],
+  labor:a=>[['drywall_patch',a.qty],['drywall_texture',a.qty]],
+  mats:a=>[['Drywall sheet',Math.max(1,Math.ceil(a.qty/32)),18],['Joint compound',Math.max(1,Math.ceil(a.qty/40)),22],['Mesh tape and corner bead',1,18],['Texture spray',Math.max(1,Math.ceil(a.qty/50)),16],['Sandpaper and plastic',1,24]],
+  tools:['Drywall saw','Taping knives','Sanding pole','Mud pan'],
+  issues:['Texture matching on existing walls is approximate. Adjacent areas sometimes have to be blended to hide the repair.'],
+  disc:['Texture and paint on a patched area are blended to the nearest natural break. An exact invisible match to an aged finish cannot be guaranteed. Painting the full wall or full room produces the most uniform result.']},
+
+paint_patch_i:{label:'Prime and paint patched area', tags:['drywall','paint'],
+  qty:{label:'Area to paint', unit:'sq ft', def:18},
+  ask:'How far does the paint go?', askOpts:['Patch area only','Full wall','Full room'],
+  labor:a=>[['paint_patch',a.ask==='Full room'?a.qty*4:a.ask==='Full wall'?a.qty*2:a.qty]],
+  mats:a=>[['Primer and paint',1,68]],
+  issues:['Paint on an aged wall has faded and will not match new paint exactly, even from the original can'],
+  disc:a=>(a.ask==='Patch area only'?['Painting the patch area only will likely leave a visible difference in sheen and color against the surrounding aged paint. Painting corner to corner is recommended for a uniform result.']:[])},
+
+popcorn_i:{label:'Popcorn ceiling removal', tags:['drywall','paint'],
+  qty:{label:'Ceiling area', unit:'sq ft', def:200},
+  deps:['furniture_move','paint_ceiling_i','haul'],
+  labor:a=>[['popcorn_scrape',a.qty]],
+  mats:a=>[['Plastic sheeting and masking',1,85],['Joint compound',Math.ceil(a.qty/60),22],['Primer',Math.ceil(a.qty/300),52]],
+  tools:['Scraper','Sanding pole','Plastic and tape','Sprayer'],
+  issues:['Ceiling texture applied before 1990 may contain asbestos and must be tested before any scraping begins'],
+  disc:['No ceiling texture will be disturbed until a sample has been tested for asbestos, or until the homeowner provides documentation that it has already been tested. Testing and any required abatement are not included in this estimate.']},
+
+paint_room_i:{label:'Paint room, interior', tags:['paint'],
+  qty:{label:'Wall area', unit:'sq ft', def:400},
+  deps:['furniture_move','paint_ceiling_i','paint_trim_i','drywall_patch'],
+  labor:a=>[['mobilize',1],['paint_wall',a.qty]],
+  mats:a=>[['Paint, two coats',Math.ceil(a.qty/350),58],['Primer',1,48],['Masking, plastic, rollers',1,75]],
+  tools:['Rollers and brushes','Extension pole','Masking tape and plastic','Ladder'],
+  issues:['Existing wall damage, nail holes and previous repairs are not visible until furniture and wall hangings are removed'],
+  disc:['Color match to an existing finish cannot be guaranteed. A sample will be applied for approval before full application where matching is required.']},
+
+paint_ceiling_i:{label:'Paint ceiling', tags:['paint'],
+  qty:{label:'Ceiling area', unit:'sq ft', def:200},
+  labor:a=>[['paint_ceiling',a.qty]],
+  mats:a=>[['Ceiling paint',Math.ceil(a.qty/350),52]]},
+
+paint_trim_i:{label:'Paint trim, doors and baseboard', tags:['paint'],
+  qty:{label:'Linear feet of trim', unit:'lin ft', def:60},
+  labor:a=>[['paint_trim',a.qty]],
+  mats:a=>[['Trim enamel',1,62],['Caulk and filler',1,28]]},
+
+paint_ext_i:{label:'Exterior painting', tags:['paint','exterior'],
+  qty:{label:'Surface area', unit:'sq ft', def:800},
+  deps:['pressure_wash_i','caulk_i'],
+  labor:a=>[['paint_ext',a.qty]],
+  mats:a=>[['Exterior paint',Math.ceil(a.qty/300),68],['Primer',Math.ceil(a.qty/400),58],['Masking and plastic',1,95]],
+  tools:['Sprayer','Ladder','Scrapers'],
+  issues:['Peeling, chalking or failing existing paint requires scraping and priming, and the extent is not fully known until washing is done','Dry rot at trim and fascia is commonly found once the surface is cleaned'],
+  disc:['Exterior coatings are applied per manufacturer specification for temperature and humidity. Work may be rescheduled for weather.']}
+});
+
+/* ---------------- PLUMBING, DOORS, EXTERIOR, GENERAL --------------------- */
+Object.assign(PS_ITEMS,{
+drain_clear_i:{label:'Clogged drain', tags:['plumbing'],
+  qty:{label:'Drains', unit:'ea', def:1},
+  ask:'How far does the clog appear to be?', askOpts:['Local to the fixture','Main line suspected','Unknown'], risk:'high',
+  labor:a=>[['drain_clear',a.qty]],
+  mats:a=>[['Drain cleaning supplies',1,25]],
+  tools:['Drain snake','Bucket','Wet vac'],
+  issues:['A clog that returns quickly usually indicates a larger problem in the line such as roots, a belly or a collapsed section, which snaking will not solve'],
+  excl:['Camera inspection, hydro jetting, root removal and any excavation or main line repair'],
+  disc:a=>(a.ask!=='Local to the fixture'?['Drain clearing is billed as an attempt, not a guaranteed result. If the line cannot be cleared or the obstruction is found to be structural, further diagnosis by a drain specialist will be recommended.']:[])},
+
+leak_diag_i:{label:'Leak, find and repair', tags:['plumbing'],
+  qty:{label:'Locations', unit:'ea', def:1},
+  deps:['wall_open','water_damage_check'],
+  labor:a=>[['diag',a.qty],['handy_hour',2]],
+  mats:a=>[['Fittings and repair materials',1,85]],
+  tools:['Pipe wrench','Moisture meter','Bucket'],
+  issues:['The visible point of a leak is often not the source. Water travels along framing before it appears.'],
+  excl:['Repair of water damaged framing, drywall, insulation or flooring beyond what is listed above','Mold remediation of any kind']},
+
+water_damage_check:{label:'Water damage present', tags:['plumbing','general'], qty:null,
+  ask:'Is there visible water damage or staining?', askOpts:['No','Yes','Suspected but not confirmed'], risk:'high',
+  labor:a=>[], mats:a=>[],
+  issues:a=>(a.ask==='No'?[]:['Water damaged materials may extend well past the visible staining and the full extent is not known until the area is opened']),
+  excl:a=>(a.ask==='No'?[]:['Mold testing, remediation or abatement','Replacement of water damaged framing, insulation or subfloor beyond what is listed above']),
+  disc:a=>(a.ask==='No'?[]:['Visible moisture or staining was noted at the walkthrough. If mold or structural damage is found, work in that area will stop and a qualified remediation contractor should be engaged before we continue.'])},
+
+water_heater_i:{label:'Water heater replacement', tags:['plumbing'],
+  qty:{label:'Units', unit:'ea', def:1},
+  deps:['haul'],
+  labor:a=>[['water_heater',a.qty]],
+  mats:a=>[['Water heater unit',a.qty,825],['Flex connectors and fittings',a.qty,85],['T&P discharge pipe',a.qty,32],['Seismic straps',a.qty,28],['Drip pan',a.qty,35]],
+  tools:['Pipe wrench','Appliance dolly','Torch or press tool'],
+  issues:['Current code requirements for seismic strapping, expansion tank, drip pan, discharge routing and combustion air often exceed what is currently installed','Existing gas or electrical connection may not meet current requirements'],
+  disc:['Water heater replacement is subject to permit and inspection in most jurisdictions. Permit fees are the responsibility of the homeowner.']},
+
+hose_bib_i:{label:'Exterior hose bib', tags:['plumbing','exterior'],
+  qty:{label:'Bibs', unit:'ea', def:1},
+  labor:a=>[['hose_bib',a.qty]],
+  mats:a=>[['Hose bib',a.qty,32],['Fittings and sealant',a.qty,22]],
+  issues:['The connection behind the exterior wall may not be accessible without opening the interior wall']},
+
+door_interior:{label:'Interior door', tags:['door'],
+  qty:{label:'Doors', unit:'ea', def:1},
+  ask:'Slab or prehung?', askOpts:['Slab only','Prehung with new jamb','Not sure'],
+  deps:['door_hardware_i','paint_door_i','haul'],
+  labor:a=>(a.ask==='Prehung with new jamb'?[['door_remove',a.qty],['door_prehung',a.qty]]:[['door_remove',a.qty],['door_slab',a.qty]]),
+  mats:a=>(a.ask==='Prehung with new jamb'?[['Prehung door unit',a.qty,225],['Casing and shims',a.qty,45],['Caulk and fasteners',1,22]]:[['Door slab',a.qty,145],['Hinges',a.qty,18]]),
+  tools:['Chisel set','Router or hinge jig','Level','Door bore kit'],
+  issues:['Existing openings are frequently out of square, which affects how the new door hangs and closes','Old jambs are often painted many times over and hinge mortises may not align with a new slab']},
+
+door_hardware_i:{label:'Door hardware', tags:['door'],
+  qty:{label:'Sets', unit:'ea', def:1},
+  labor:a=>[['door_hardware',a.qty]],
+  mats:a=>[['Knob or lever set',a.qty,45],['Strike plate and screws',a.qty,8]]},
+
+paint_door_i:{label:'Paint door', tags:['door','paint'],
+  qty:{label:'Doors', unit:'ea', def:1},
+  labor:a=>[['paint_door_ea',a.qty]],
+  mats:a=>[['Door enamel',1,48]]},
+
+slider_i:{label:'Sliding door repair', tags:['door'],
+  qty:{label:'Doors', unit:'ea', def:1},
+  labor:a=>[['slider_repair',a.qty]],
+  mats:a=>[['Roller assemblies',a.qty,48],['Track and hardware',a.qty,65]],
+  issues:['Bent or worn tracks may not be repairable and can require replacing the full door unit']},
+
+screen_door_i:{label:'Screen or storm door', tags:['door'],
+  qty:{label:'Doors', unit:'ea', def:1},
+  labor:a=>[['screen_door',a.qty]],
+  mats:a=>[['Screen or storm door',a.qty,225],['Hardware and closer',a.qty,45]]},
+
+weatherstrip_i:{label:'Weatherstripping and door sweep', tags:['door','general'],
+  qty:{label:'Doors', unit:'ea', def:1},
+  labor:a=>[['weatherstrip',a.qty]],
+  mats:a=>[['Weatherstrip and sweep',a.qty,32]]},
+
+fence_repair_i:{label:'Fence repair', tags:['fence','exterior'],
+  qty:{label:'Linear feet', unit:'lin ft', def:20},
+  deps:['post_set_i','haul','property_line'],
+  labor:a=>[['demo_fence',a.qty],['fence_repair',a.qty]],
+  mats:a=>[['Pickets and rails',Math.ceil(a.qty*1.1),9],['Fasteners',1,32]],
+  tools:['Post hole digger','Circular saw','Level','Impact driver'],
+  issues:['Adjacent posts are commonly rotted at grade even when they look sound from above','Existing fence height and style may no longer be permitted under current setback or HOA rules']},
+
+fence_new_i:{label:'New fence', tags:['fence','exterior'],
+  qty:{label:'Linear feet', unit:'lin ft', def:50},
+  deps:['post_set_i','gate_i','haul','property_line','utility_locate'],
+  labor:a=>[['demo_fence',a.qty],['fence_build',a.qty]],
+  mats:a=>[['Posts',Math.ceil(a.qty/8),22],['Rails and pickets',Math.ceil(a.qty*1.1),12],['Concrete bags',Math.ceil(a.qty/8)*2,7],['Fasteners and hardware',1,85]],
+  tools:['Post hole digger','Circular saw','String line','Level'],
+  issues:['Rock, roots or hardpan can slow post hole digging considerably','Grade changes along the run affect panel layout and post height']},
+
+post_set_i:{label:'Set fence posts', tags:['fence'],
+  qty:{label:'Posts', unit:'ea', def:3},
+  labor:a=>[['post_set',a.qty]],
+  mats:a=>[['Post',a.qty,22],['Concrete bags',a.qty*2,7]]},
+
+gate_i:{label:'Gate', tags:['fence'],
+  qty:{label:'Gates', unit:'ea', def:1},
+  ask:'New or repair?', askOpts:['New gate','Repair existing'],
+  labor:a=>(a.ask==='New gate'?[['gate_build',a.qty]]:[['gate_repair',a.qty]]),
+  mats:a=>(a.ask==='New gate'?[['Gate hardware kit',a.qty,85],['Lumber',a.qty,95]]:[['Hinges and latch',a.qty,55]]),
+  issues:['Gates sag over time. A gate that closes now may not close after adjacent posts are reset.']},
+
+property_line:{label:'Property line confirmed', tags:['fence','exterior'], qty:null,
+  ask:'Is the property line confirmed?', askOpts:['Yes, confirmed by owner','No','Not sure'], risk:'high',
+  labor:a=>[], mats:a=>[],
+  issues:['Fence placement disputes with neighbors are common when the line has not been surveyed'],
+  excl:['Survey work and resolution of any property line or neighbor dispute'],
+  disc:a=>(a.ask==='Yes, confirmed by owner'?[]:['Fence location will be set based on the homeowner\'s direction. We do not survey property lines and are not responsible for placement disputes or for relocation if the line is later found to differ.'])},
+
+utility_locate:{label:'Utility locate before digging', tags:['fence','exterior'], qty:null,
+  labor:a=>[], mats:a=>[],
+  issues:['Underground utilities, irrigation lines and low voltage wiring are frequently found in fence post locations'],
+  disc:['A utility locate must be requested before any digging. Damage to unmarked private lines such as irrigation, low voltage lighting or pool plumbing is not our responsibility.']},
+
+deck_repair_i:{label:'Deck board repair', tags:['exterior'],
+  qty:{label:'Linear feet', unit:'lin ft', def:40},
+  deps:['stain_i','haul'],
+  labor:a=>[['demo_deck',a.qty],['deck_board',a.qty]],
+  mats:a=>[['Decking boards',Math.ceil(a.qty*1.1),4.5],['Fasteners',1,45]],
+  issues:['Damage in the visible boards usually means the joists below have deterioration as well, which is not known until boards are pulled'],
+  excl:['Joist, beam, post or footing repair and any structural work']},
+
+railing_i:{label:'Railing', tags:['exterior'],
+  qty:{label:'Linear feet', unit:'lin ft', def:20},
+  labor:a=>[['railing_set',a.qty]],
+  mats:a=>[['Railing material',Math.ceil(a.qty*1.1),18],['Hardware',1,65]],
+  issues:['Railing height and baluster spacing are code regulated and existing railings often do not comply']},
+
+stain_i:{label:'Stain or seal', tags:['exterior'],
+  qty:{label:'Area', unit:'sq ft', def:200},
+  deps:['pressure_wash_i'],
+  labor:a=>[['stain_apply',a.qty]],
+  mats:a=>[['Stain or sealer',Math.ceil(a.qty/250),58],['Sandpaper and applicators',1,45]]},
+
+pressure_wash_i:{label:'Pressure washing', tags:['exterior','general'],
+  qty:{label:'Area', unit:'sq ft', def:400},
+  labor:a=>[['pressure_wash',a.qty]],
+  mats:a=>[['Cleaning solution',1,35]],
+  tools:['Pressure washer','Surface cleaner'],
+  issues:['Pressure washing can lift failing paint, damage soft wood or force water behind siding. Pressure is adjusted to the surface but some surface change is possible.']},
+
+gutter_i:{label:'Gutter cleaning', tags:['exterior'],
+  qty:{label:'Linear feet', unit:'lin ft', def:120},
+  labor:a=>[['gutter_clean',a.qty]],
+  mats:a=>[],
+  tools:['Ladder','Gutter scoop','Hose'],
+  issues:['Rusted or loose gutter sections and rotted fascia are often found once debris is cleared']},
+
+caulk_i:{label:'Caulking and sealing', tags:['general','exterior'],
+  qty:{label:'Linear feet', unit:'lin ft', def:30},
+  labor:a=>[['caulk_seal',a.qty]],
+  mats:a=>[['Caulk',Math.ceil(a.qty/25),9]]},
+
+tv_mount_i:{label:'TV mount', tags:['general'],
+  qty:{label:'TVs', unit:'ea', def:1},
+  ask:'Conceal the cables in the wall?', askOpts:['Yes','No, leave exposed'],
+  deps:['outlet_new'],
+  labor:a=>(a.ask==='Yes'?[['tv_mount',a.qty],['tv_conceal',a.qty]]:[['tv_mount',a.qty]]),
+  mats:a=>{const m=[['Mount and hardware',a.qty,95]]; if(a.ask==='Yes') m.push(['Recessed plate and in-wall rated cable',a.qty,68]); return m;},
+  tools:['Stud finder','Level','Drill'],
+  issues:['Mounting into brick, tile, plaster or metal stud requires different anchors and additional time','Concealing power cable inside a wall requires an in-wall rated solution, not a standard extension cord']},
+
+shelf_i:{label:'Shelving install', tags:['general'],
+  qty:{label:'Shelves', unit:'ea', def:2},
+  labor:a=>[['shelf_set',a.qty]],
+  mats:a=>[['Shelf and brackets',a.qty,58],['Anchors',a.qty,12]]},
+
+blinds_i:{label:'Blinds or shades', tags:['general'],
+  qty:{label:'Windows', unit:'ea', def:3},
+  labor:a=>[['blinds_set',a.qty]],
+  mats:a=>[['Mounting hardware',a.qty,12]],
+  issues:['Inside mount requires the window opening to be square and deep enough for the hardware']},
+
+washer_dryer_i:{label:'Washer and dryer hookup', tags:['appliance'],
+  qty:{label:'Units', unit:'ea', def:2},
+  labor:a=>[['washer_hookup',1],['appliance_set',a.qty]],
+  mats:a=>[['Supply hoses',1,38],['Dryer vent kit',1,32]],
+  issues:['Dryer vent runs that are too long or crushed are a fire hazard and often need replacement','Gas dryers require a shutoff and flexible connector in serviceable condition']},
+
+range_i:{label:'Range or oven install', tags:['appliance'],
+  qty:{label:'Units', unit:'ea', def:1},
+  labor:a=>[['appliance_set',a.qty]],
+  mats:a=>[['Gas connector or power cord',a.qty,55],['Anti-tip bracket',a.qty,22]],
+  issues:['Anti-tip bracket is required and is frequently missing on existing installations','Gas shutoff valves behind ranges are often seized']},
+
+general_hourly:{label:'General handyman labor, hourly', tags:['general'],
+  qty:{label:'Hours', unit:'hour', def:4},
+  labor:a=>[['handy_hour',a.qty]],
+  mats:a=>[['Miscellaneous materials',1,85]]},
+
+custom_item:{label:'Something else, describe it', tags:['general','bath','kitchen','plumbing','electrical','drywall','paint','floor','door','appliance','fence','exterior'],
+  qty:{label:'Hours estimated', unit:'hour', def:2},
+  note:true,
+  labor:a=>[['handy_hour',a.qty]],
+  mats:a=>[],
+  issues:['This item was entered manually at the walkthrough. Confirm scope, materials and pricing before the estimate goes out.']}
+});
+
+/* ---------- Keyword index, used only to SUGGEST items from a voice
+     transcript. It never decides scope on its own. ---------------------- */
+const PS_KEYWORDS = {
+  bath_floor:['bathroom floor','bath floor','floor in the bathroom'],
+  kitchen_floor:['kitchen floor','floor in the kitchen'],
+  floor_room:['new floor','flooring','lvp','vinyl plank','laminate','carpet'],
+  floor_tile_room:['tile floor','tile the floor'],
+  toilet_new:['new toilet','replace the toilet','toilet replacement'],
+  toilet_pull:['pull the toilet','reset the toilet'],
+  shower_new:['new shower','shower remodel','redgard','shower pan','tile shower'],
+  tub_new:['new tub','bathtub','tub replacement'],
+  vanity_new:['vanity'],
+  sink_faucet:['new sink','sink and faucet'],
+  faucet_only:['faucet'],
+  exhaust_fan:['exhaust fan','bath fan','vent fan'],
+  mirror_set_i:['mirror','medicine cabinet'],
+  grab_bar_i:['grab bar'],
+  kitchen_sink:['kitchen sink'],
+  disposal_i:['disposal','garbage disposal'],
+  dishwasher_i:['dishwasher'],
+  backsplash_i:['backsplash'],
+  cabinet_paint:['paint the cabinets','cabinet refinish'],
+  otr_micro_i:['microwave','over the range'],
+  outlet_repair:['outlet not working','outlets not working','dead outlet','fix the outlets'],
+  outlet_new:['new outlet','add an outlet','more outlets'],
+  switch_light:['light fixture','new light','replace the light'],
+  recessed_lights:['recessed','can lights','canned lighting'],
+  ceiling_fan_i:['ceiling fan'],
+  gfci_i:['gfci','ground fault'],
+  drywall_patch:['drywall','patch','hole in the wall','texture'],
+  popcorn_i:['popcorn'],
+  paint_room_i:['paint the room','interior paint','painting'],
+  paint_ext_i:['exterior paint','paint the outside'],
+  drain_clear_i:['clog','clogged','drain','snake'],
+  leak_diag_i:['leak','leaking','dripping'],
+  water_heater_i:['water heater'],
+  hose_bib_i:['hose bib','spigot'],
+  door_interior:['door','prehung','door slab'],
+  slider_i:['sliding door','slider'],
+  screen_door_i:['screen door','storm door'],
+  fence_repair_i:['fence repair','fix the fence'],
+  fence_new_i:['new fence','fence install'],
+  gate_i:['gate'],
+  deck_repair_i:['deck'],
+  railing_i:['railing','handrail'],
+  stain_i:['stain','seal the deck'],
+  pressure_wash_i:['pressure wash','power wash'],
+  gutter_i:['gutter'],
+  tv_mount_i:['tv mount','mount the tv','television'],
+  shelf_i:['shelf','shelves','shelving'],
+  blinds_i:['blinds','shades'],
+  washer_dryer_i:['washer','dryer'],
+  range_i:['range','oven','stove'],
+  water_damage_check:['water damage','stain on the ceiling','mold','soft spot'],
+  subfloor_check:['subfloor','soft floor'],
+  baseboard:['baseboard','base board'],
+  general_hourly:['punch list','odds and ends','misc']
+};
+
+/* ---------- Engine helpers ---------------------------------------------- */
+let PS_UID=1;
+function psVal(v,a){ return typeof v==='function' ? (v(a)||[]) : (v||[]); }
+function psItem(id){ return PS_ITEMS[id]; }
+function psAddToScope(itemId, source, parentUid){
+  const def=psItem(itemId); if(!def) return null;
+  const row={uid:PS_UID++, itemId, source:source||'picked', parentUid:parentUid||null,
+    ans:{qty: def.qty? def.qty.def : null, ask: def.askOpts? null : null, note:''}};
+  PRESITE_STATE.scope.push(row);
+  return row;
 }
-function addCeilingFanToMerged(merged, ctx){
-  const wiring = ctx.wiringStatus || 'existing';
-  if(wiring==='existing'){
-    pushUnique(merged.labor, {item:'Install Ceiling Fan (Existing Wiring)', price:'$120–$220'});
-    pushUnique(merged.materials, {item:'Fan-rated electrical box (if needed)', price:'$12–$25'});
-    pushUnique(merged.materials, {item:'Mounting bracket/hardware (usually included with fan)', price:'n/a'});
-    pushUnique(merged.materials, {item:'Wire nuts', price:'$3–$6'});
-    ['Voltage tester','Stud finder','Ladder','Screwdriver set'].forEach(t=>pushUniqueStr(merged.tools,t));
-    pushUniqueStr(merged.issues,'Existing electrical box may not be fan-rated and will need to be swapped for safety');
-    pushUniqueStr(merged.issues,'Ceiling height/vaulted ceilings may require a fan downrod extension');
-  } else {
-    const feet = ctx.wireLength ? parseInt(ctx.wireLength,10) : null;
-    const accessible = ctx.access==='accessible';
-    const cutting = ctx.cutting===true || (ctx.cutting===undefined && ctx.access==='inaccessible');
-    const laborRange = accessible ? '$285–$450' : '$400–$650';
-    pushUnique(merged.labor, {item:'Install Ceiling Fan (New Wiring)', price:laborRange});
-    pushUnique(merged.labor, {item:'Run new electrical wiring to fan location'+(feet?` (~${feet} ft)`:''), price: accessible ? '$4–$7 per linear ft' : '$8–$14 per linear ft'});
-    if(cutting){
-      pushUnique(merged.labor, {item:'Cut and patch drywall for wire access', price:'$150–$350'});
-      pushUnique(merged.materials, {item:'Drywall patch materials (mud, tape, patch)', price:'$25–$50'});
-      pushUniqueStr(merged.tools,'Drywall saw');
-    }
-    const wireFeet = feet ? Math.ceil(feet*1.15) : null;
-    pushUnique(merged.materials, {item:'14/2 Romex wire'+(wireFeet?` (~${wireFeet} ft incl. waste)`:''), price:'$0.70–$1.10 per ft'});
-    pushUnique(merged.materials, {item:'Fan-rated electrical box', price:'$12–$25'});
-    pushUnique(merged.materials, {item:'Wire nuts / electrical tape', price:'$5–$10'});
-    pushUnique(merged.materials, {item:'Wall switch/switch leg (if not already present)', price:'$4–$12'});
-    ['Voltage tester','Fish tape','Stud finder','Wire strippers','Ladder'].forEach(t=>pushUniqueStr(merged.tools,t));
-    if(!accessible){
-      pushUniqueStr(merged.issues,'Fishing wire through closed/finished spaces may require additional drywall openings not fully accounted for here');
-    }
-    pushUniqueStr(merged.issues,'Panel may not have available capacity for an additional circuit');
-    pushUniqueStr(merged.issues,'Older homes may have non-standard framing that complicates running new wire');
-  }
+function psInScope(itemId){ return PRESITE_STATE.scope.some(r=>r.itemId===itemId); }
+function psDismissed(itemId){ return PRESITE_STATE.dismissed.some(d=>d.itemId===itemId); }
+function psRemoveFromScope(uid){
+  PRESITE_STATE.scope = PRESITE_STATE.scope.filter(r=>r.uid!==uid && r.parentUid!==uid);
 }
-function getSatisfiedTrades(text){
-  const set=new Set();
-  const matchedTaskIds=new Set();
-  TASK_OBJECTS.forEach(taskDef=>{
-    if(taskDef.skipIfMatched && taskDef.skipIfMatched.some(id=>matchedTaskIds.has(id))) return;
-    if(taskDef.excludeIf && taskDef.excludeIf(text)) return;
-    if(detectActionObject(text, taskDef.re)){ matchedTaskIds.add(taskDef.id); set.add(taskDef.trade); }
+
+/* Open dependency prompts: deps of things in scope that are neither already
+   in scope nor explicitly waved off. This is the omission catcher. */
+function psOpenPrompts(){
+  const out=[];
+  PRESITE_STATE.scope.forEach(row=>{
+    const def=psItem(row.itemId);
+    (def.deps||[]).forEach(depId=>{
+      if(psInScope(depId) || psDismissed(depId)) return;
+      if(out.some(o=>o.itemId===depId)) return;
+      out.push({itemId:depId, parentUid:row.uid, parentLabel:def.label});
+    });
   });
-  if(isCeilingFanInstall(text)){ set.add('ceiling_fan'); set.add('electrical'); set.add('drywall'); }
-  return set;
+  return out;
 }
 
-/* ---- Clarifying questions per trade, several signals checked per trade so the
-   assistant can pick up on quantities/dimensions phrased in different ways ---- */
-const TRADE_QUESTIONS = {
-  plumbing:{test:t=>!/\b(\d+\s*(fixture|faucet|toilet|sink|leak))|(fixture|faucet|toilet|sink)\b/i.test(t), q:'How many fixtures are involved, and which ones (toilet, sink, faucet, etc.)?'},
-  electrical:{test:t=>!/\b\d+\s*(outlet|switch|light|fixture|circuit)/i.test(t), q:'About how many outlets, switches, or fixtures are involved?'},
-  tile:{test:t=>!/\d+\s*(sq ?ft|square feet|sf)\b/i.test(t), q:'About how many square feet of tile area are we covering?'},
-  carpentry:{test:t=>!/\d+\s*(ft|feet|linear|door|shelf|shelves)\b/i.test(t), q:'What are the approximate dimensions or quantities involved (linear feet, number of doors/shelves, etc.)?'},
-  fencing:{test:t=>!/\d+\s*(ft|feet|linear)\b/i.test(t), q:'About how many linear feet of fence are we installing or repairing?'},
-  drywall:{test:t=>!/\d+\s*(sq ?ft|square feet|sf|inch|foot|feet)\b/i.test(t), q:'About how large is the damaged/patch area (rough dimensions)?'},
-  painting:{test:t=>!/\b(\d+\s*room|bedroom|bathroom|kitchen|living room|exterior|interior|whole house)\b/i.test(t), q:'Which room(s) or areas need to be painted, interior or exterior?'},
-  ceiling_fan:{test:t=>!/\b\d+\s*(fan|fans)\b/i.test(t), q:'How many ceiling fans are being installed?'},
-  irrigation:{test:t=>!/\b\d+\s*(zone|zones|head|heads)\b/i.test(t), q:'How many zones or sprinkler heads are affected?'},
-  gutters:{test:t=>!/\d+\s*(ft|feet|linear|stor(y|ies))\b/i.test(t), q:'About how many linear feet of gutter, and is the home single or multi-story?'},
-  appliance:{test:t=>!/\b(dishwasher|washer|dryer|refrigerator|oven|range|microwave|disposal)\b/i.test(t), q:'Which specific appliance and brand/model, if known?'}
-};
-
-function detectTrades(text){
-  const t=(text||'').toLowerCase();
-  const hits=Object.keys(TRADE_KB).filter(k=>k!=='general' && TRADE_KB[k].keywords.some(kw=>t.includes(kw)));
-  return hits.length ? hits : ['general'];
-}
-function combinedText(){
-  const wo=getWO(PRESITE_STATE.woId);
-  const chatText=PRESITE_STATE.chat.filter(m=>m.role==='user').map(m=>m.text).join(' ');
-  return (wo.jobDetails.description||'') + ' ' + chatText;
-}
-function determineNextQuestion(){
-  const text=combinedText();
-  if(isCeilingFanInstall(text)){
-    const key=nextCeilingFanQuestionKey();
-    if(key) return {type:'structured', key};
-  }
-  const satisfied=getSatisfiedTrades(text);
-  const trades=detectTrades(text).filter(t=>!satisfied.has(t));
-  for(const trade of trades){
-    const q=TRADE_QUESTIONS[trade];
-    if(q && q.test(text) && !PRESITE_STATE.askedQuestions.includes(trade)){
-      PRESITE_STATE.askedQuestions.push(trade);
-      return {type:'legacy', text:q.q};
+/* Readiness: how much of this scope is still unknown. */
+function psReadiness(){
+  let high=0, low=0; const open=[];
+  PRESITE_STATE.scope.forEach(row=>{
+    const def=psItem(row.itemId);
+    if(def.askOpts && (row.ans.ask===null || row.ans.ask===undefined)){
+      (def.risk||def.riskQ)?high++:low++; open.push(def.label+': question unanswered');
+    } else if(def.askOpts && /unsure|not sure|unknown|did not check|cannot tell|suspected/i.test(String(row.ans.ask))){
+      if(def.risk==='high'){ high++; open.push(def.label+': '+row.ans.ask); } else { low++; open.push(def.label+': '+row.ans.ask); }
     }
-  }
-  return null;
+    if(def.qty && (!row.ans.qty || Number(row.ans.qty)<=0)){ high++; open.push(def.label+': quantity missing'); }
+  });
+  const openPrompts=psOpenPrompts().length;
+  let level='ready', msg='Scope looks complete. Safe to build a fixed price estimate.';
+  if(high>0 || openPrompts>2){ level='caution'; msg='Some unknowns remain. Review them before quoting a fixed price.'; }
+  if(high>=3){ level='risk'; msg='Too many unknowns for a firm fixed price. Consider time and materials, an allowance, or a paid diagnostic visit.'; }
+  return {level, msg, high, low, open, openPrompts};
+}
+
+/* ---------- Compile everything the estimator needs ---------------------- */
+function psCompile(){
+  const rates=getRates();
+  const labor=[], mats=[], tools=[], issues=[], disc=[], excl=[];
+  const pushL=(rateKey,qty)=>{
+    const r=rates[rateKey]; if(!r) return;
+    const q=Math.max(0,Number(qty)||0); if(q<=0) return;
+    const found=labor.find(x=>x.rateKey===rateKey);
+    if(found){ found.qty=Number(found.qty)+q; found.price='$'+(found.qty*found.unit).toFixed(2); return; }
+    labor.push({item:r.label, qty:q, unit:r.price, price:'$'+(q*r.price).toFixed(2), rateKey, per:r.unit});
+  };
+  const pushM=(name,qty,cost)=>{
+    const q=Math.max(0,Number(qty)||0); if(q<=0) return;
+    const found=mats.find(x=>x.item===name);
+    if(found){ found.qty=Number(found.qty)+q; found.price='$'+(found.qty*found.unit).toFixed(2); return; }
+    mats.push({item:name, qty:q, unit:Number(cost)||0, price:'$'+(q*(Number(cost)||0)).toFixed(2)});
+  };
+  const pushS=(arr,v)=>{ (v||[]).forEach(s=>{ if(s && !arr.includes(s)) arr.push(s); }); };
+
+  PRESITE_STATE.scope.forEach(row=>{
+    const def=psItem(row.itemId); const a={...row.ans, qty:Number(row.ans.qty)||0};
+    psVal(def.labor,a).forEach(([k,q])=>pushL(k,q));
+    psVal(def.mats,a).forEach(([n,q,c])=>pushM(n,q,c));
+    pushS(tools, psVal(def.tools,a));
+    pushS(issues, psVal(def.issues,a));
+    pushS(disc, psVal(def.disc,a));
+    pushS(excl, psVal(def.excl,a));
+  });
+
+  /* Year-of-build stack */
+  const yr=YEAR_RULES[PRESITE_STATE.yearBuilt]||YEAR_RULES.unknown;
+  pushS(issues, yr.issues); pushS(disc, yr.disclaimers);
+
+  /* Always-on */
+  pushS(tools, BASE_TOOLS);
+  pushS(disc, BASE_DISCLAIMERS);
+  pushS(excl, BASE_EXCLUSIONS);
+
+  /* Things the inspector explicitly waved off become exclusions so the
+     estimator sees them instead of never hearing about them. */
+  PRESITE_STATE.dismissed.forEach(d=>{
+    const l=psItem(d.itemId); if(!l) return;
+    const line='Not included: '+l.label+'. Waved off at the walkthrough'+(d.parentLabel?' ('+d.parentLabel+')':'')+'.';
+    if(!excl.includes(line)) excl.push(line);
+  });
+
+  /* Job setup and cleanup, once, if there is any real scope */
+  if(labor.length){ pushL('mobilize',1); pushL('cleanup',1); }
+
+  return {labor, materials:mats, tools, issues, disclaimers:disc, exclusions:excl};
+}
+
+function psTotals(lists){
+  const laborTotal = lists.labor.reduce((s,l)=>s+(Number(l.qty)||0)*(Number(l.unit)||0),0);
+  const matsRaw    = lists.materials.reduce((s,m)=>s+(Number(m.qty)||0)*(Number(m.unit)||0),0);
+  const markup     = Number(PRESITE_STATE.markup)||20;
+  const taxRate    = Number(PRESITE_STATE.taxRate)||0;
+  /* Markup and tax are BOTH calculated off the raw material cost, then the
+     three figures are added together. Tax is not charged on the markup. */
+  const markupAmt  = matsRaw*(markup/100);
+  const tax        = matsRaw*(taxRate/100);
+  const matsBilled = matsRaw + markupAmt + tax;
+  return {laborTotal, matsRaw, markup, markupAmt, taxRate, tax, matsBilled, grand: laborTotal+matsBilled};
+}
+function psMoney(n){ return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+/* =========================================================================
+   UI
+========================================================================= */
+const PS_CSS = `
+.psWrap{display:flex;flex-direction:column;gap:14px}
+.psBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.psStep{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#7a8699;font-weight:700}
+.psCard{border:1px solid #dfe4ec;border-radius:10px;padding:12px;background:#fff}
+.psCard h4{margin:0 0 8px;font-size:15px}
+.psGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.psTile{border:1px solid #d7dde7;border-radius:10px;padding:14px 12px;background:#fbfcfe;cursor:pointer;font-weight:600;font-size:14px;text-align:left;line-height:1.3}
+.psTile:hover{border-color:#2f6fed;background:#f2f6ff}
+.psTile.on{border-color:#2f6fed;background:#e9f0ff}
+.psChip{display:inline-flex;align-items:center;gap:6px;border:1px solid #d7dde7;border-radius:20px;padding:7px 13px;background:#fbfcfe;cursor:pointer;font-size:13px;margin:0 6px 6px 0}
+.psChip:hover{border-color:#2f6fed}
+.psChip.on{border-color:#2f6fed;background:#e9f0ff;font-weight:600}
+.psScopeRow{border:1px solid #dfe4ec;border-left:3px solid #2f6fed;border-radius:8px;padding:11px 12px;margin-bottom:9px;background:#fff}
+.psScopeRow.dep{border-left-color:#8b96a8;margin-left:18px}
+.psScopeHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.psScopeHead b{font-size:14px}
+.psFieldRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.psFieldRow label{font-size:12px;color:#5b6675;font-weight:600}
+.psFieldRow input,.psFieldRow select{border:1px solid #cfd6e0;border-radius:6px;padding:6px 8px;font-size:13px}
+.psPrompt{border:1px dashed #e0a63a;background:#fffaf0;border-radius:8px;padding:10px 12px;margin:0 0 8px 18px}
+.psPrompt .why{font-size:12px;color:#7a6633;margin-top:3px}
+.psPromptBtns{display:flex;gap:6px;margin-top:8px}
+.psMini{border:1px solid #cfd6e0;background:#fff;border-radius:6px;padding:5px 11px;font-size:12.5px;cursor:pointer;font-weight:600}
+.psMini.add{border-color:#2f6fed;color:#2f6fed}
+.psMini.no{color:#7a8699}
+.psX{border:none;background:none;color:#a0a9b8;cursor:pointer;font-size:16px;padding:0 4px}
+.psReady{border-radius:8px;padding:10px 12px;font-size:13px;font-weight:600}
+.psReady.ready{background:#e8f6ec;color:#1d6b34;border:1px solid #b7e0c3}
+.psReady.caution{background:#fff6e5;color:#8a6100;border:1px solid #f0d59b}
+.psReady.risk{background:#fdeaea;color:#9b2226;border:1px solid #f2bdbd}
+.psTotals{display:flex;gap:16px;flex-wrap:wrap;background:#f5f7fb;border-radius:8px;padding:12px}
+.psTotals div{font-size:13px}
+.psTotals b{display:block;font-size:17px;margin-top:2px}
+.psRec{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.psDot{width:11px;height:11px;border-radius:50%;background:#c8ced8}
+.psDot.live{background:#d94040;animation:psPulse 1s infinite}
+@keyframes psPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.psTrans{border:1px solid #dfe4ec;border-radius:8px;padding:10px;min-height:90px;font-size:13.5px;line-height:1.5;background:#fbfcfe;white-space:pre-wrap}
+.psSub{font-size:12.5px;color:#6b7688;line-height:1.5}
+.psSecTitle{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#7a8699;font-weight:700;margin:14px 0 6px}
+`;
+function psInjectCSS(){
+  if(document.getElementById('psCSS')) return;
+  const s=document.createElement('style'); s.id='psCSS'; s.textContent=PS_CSS; document.head.appendChild(s);
 }
 
 function openPresiteTool(woId){
-  const wo=getWO(woId);
-  PRESITE_STATE={woId, chat:[], lists:null, stage:'chat', reviewIdx:0, askedQuestions:[],
-    ctx:{}, askedKeys:[], awaitingKey:null,
-    reviewOrder:['labor','materials','tools','issues','disclaimers']};
+  psInjectCSS();
+  PRESITE_STATE={
+    woId, stage:'start', mode:null,
+    yearBuilt:null, jobType:null,
+    scope:[], dismissed:[],
+    transcript:'', audioURL:null, recording:false,
+    markup:20, taxRate:7.75,
+    lists:null, editIdx:0
+  };
+  PS_UID=1;
   renderPresiteModal();
 }
 function renderPresiteModal(){
   const wo=getWO(PRESITE_STATE.woId);
-  const modal=document.getElementById('modalRoot');
-  modal.innerHTML=`
+  document.getElementById('modalRoot').innerHTML=`
   <div class="overlay">
-    <div class="modal" style="max-width:760px;">
+    <div class="modal" style="max-width:840px;">
       <div class="modalHead"><h2>Pre-Site Inspection, ${esc(wo.customer.name)}</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
       <div class="modalBody" id="presiteBody"></div>
     </div>
   </div>`;
   renderPresiteBody();
 }
+
 function renderPresiteBody(){
-  const body=document.getElementById('presiteBody');
-  const wo=getWO(PRESITE_STATE.woId);
-  if(PRESITE_STATE.stage==='chat'){
-    body.innerHTML=`
-      <p class="small">Describe the job below in your own words. The assistant looks for specific tasks (e.g. "remove and replace an existing toilet," "install a ceiling fan") and turns each one into a precisely-labeled labor line item, rather than dumping a whole trade's generic checklist. When a task's scope genuinely depends on site conditions (like whether a new ceiling fan circuit needs new wiring), it will ask a couple of targeted follow-up questions before compiling, so nothing important gets missed. Runs entirely on this device. No internet call required.</p>
-      <div class="aiPanel">
-        <h4>Pre-Site Assistant</h4>
-        <div class="chatLog" id="chatLog">${renderChatLog()}</div>
-        <div class="aiInputRow">
-          <input id="chatInput" placeholder="e.g. We will need to remove and replace an existing toilet, and install a ceiling fan with new wiring..." onkeydown="if(event.key==='Enter')sendPresiteChat()">
-          <button class="btn" onclick="sendPresiteChat()">Send</button>
-        </div>
-        <div style="margin-top:10px;"><button class="btn" onclick="generatePresiteLists()">Compile Lists Now</button></div>
-      </div>`;
-  } else if(PRESITE_STATE.stage==='review'){
-    const key=PRESITE_STATE.reviewOrder[PRESITE_STATE.reviewIdx];
-    const labels={labor:'Labor Line Items',materials:'Materials',tools:'Required Tools',issues:'Potential Unforeseen Issues',disclaimers:'Disclaimers'};
-    const isPriced = key==='labor' || key==='materials';
-    const items=PRESITE_STATE.lists[key]||[];
-    body.innerHTML=`
-      <p class="small">Step ${PRESITE_STATE.reviewIdx+1} of ${PRESITE_STATE.reviewOrder.length}. Review, edit, add, or remove items.${isPriced?' Prices reflect standard San Diego-area market rates and can be adjusted.':''}</p>
-      <div class="listEditor">
-        <h5>${labels[key]}</h5>
-        <div id="editRows">${items.map((it,i)=>{
-          if(isPriced){
-            ensurePricedFields(it);
-            const itemVal=esc(it.item);
-            const qtyVal=esc(it.qty);
-            const unitVal=esc(it.unit);
-            const totalVal=(parseFloat(it.qty)||0)*(parseFloat(it.unit)||0);
-            return `<div class="editRow">
-              <input value="${itemVal}" placeholder="Item" style="flex:2" onchange="updatePresiteItem('${key}',${i},this.value,'item')">
-              <input type="number" min="0" step="1" value="${qtyVal}" placeholder="Qty" style="flex:0 0 55px" onchange="updatePresiteItem('${key}',${i},this.value,'qty')">
-              <input type="number" min="0" step="0.01" value="${unitVal}" placeholder="$/EA" style="flex:0 0 80px" onchange="updatePresiteItem('${key}',${i},this.value,'unit')">
-              <input value="$${totalVal.toFixed(2)}" placeholder="Total" style="flex:0 0 90px;background:#f2f4f8;font-weight:600;" readonly>
-              <button onclick="removePresiteItem('${key}',${i})">✕</button>
-            </div>`;
-          }
-          return `<div class="editRow"><input value="${esc(it)}" onchange="updatePresiteItem('${key}',${i},this.value)"><button onclick="removePresiteItem('${key}',${i})">✕</button></div>`;
-        }).join('')}
-        </div>
-        <button class="btn secondary" onclick="addPresiteItem('${key}')" style="margin-top:6px;">+ Add Item</button>
+  const S=PRESITE_STATE, body=document.getElementById('presiteBody');
+  if(!body) return;
+  if(S.stage==='start')  return body.innerHTML=psStartHTML();
+  if(S.stage==='voice')  return body.innerHTML=psVoiceHTML();
+  if(S.stage==='pick')   return body.innerHTML=psPickHTML();
+  if(S.stage==='scope')  return body.innerHTML=psScopeHTML();
+  if(S.stage==='review') return body.innerHTML=psReviewHTML();
+  if(S.stage==='rates')  return body.innerHTML=psRatesHTML();
+}
+
+/* ---------- Stage: start ------------------------------------------------- */
+function psStartHTML(){
+  const S=PRESITE_STATE;
+  return `<div class="psWrap">
+    <div class="psStep">Step 1 of 4, how are you capturing this</div>
+    <div class="psGrid">
+      <button class="psTile" onclick="psSetMode('tap')"><div style="font-size:15px">Tap through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Pick what the customer wants. The tool prompts you with everything that rides along.</div></button>
+      <button class="psTile" onclick="psSetMode('voice')"><div style="font-size:15px">Talk through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Record the walkthrough out loud. The recording is saved and the tool suggests items from it.</div></button>
+    </div>
+    <div class="psCard">
+      <h4>Roughly how old is the house?</h4>
+      <div class="psSub" style="margin-bottom:8px">This drives the lead, asbestos and old-wiring language automatically. It is the only background question the tool asks.</div>
+      <div>${YEAR_BUCKETS.map(b=>`<span class="psChip ${S.yearBuilt===b.key?'on':''}" onclick="psSetYear('${b.key}')">${b.label}</span>`).join('')}</div>
+    </div>
+    <div class="psSub">Rates, markup and tax are set under <a href="#" onclick="psGo('rates');return false;">rate settings</a>. They carry over to every job.</div>
+  </div>`;
+}
+function psSetYear(k){ PRESITE_STATE.yearBuilt=k; renderPresiteBody(); }
+function psSetMode(m){
+  if(!PRESITE_STATE.yearBuilt){ toast('Pick the age of the house first.'); return; }
+  PRESITE_STATE.mode=m;
+  PRESITE_STATE.stage = m==='voice' ? 'voice' : 'pick';
+  renderPresiteBody();
+}
+function psGo(stage){ PRESITE_STATE.stage=stage; renderPresiteBody(); }
+
+/* ---------- Stage: voice ------------------------------------------------- */
+let PS_REC=null, PS_SR=null, PS_CHUNKS=[];
+function psSpeechSupported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
+function psVoiceHTML(){
+  const S=PRESITE_STATE;
+  const sup=psSpeechSupported();
+  return `<div class="psWrap">
+    <div class="psStep">Step 2 of 4, talk through the job</div>
+    <div class="psCard">
+      <div class="psRec">
+        <span class="psDot ${S.recording?'live':''}"></span>
+        <button class="btn ${S.recording?'secondary':''}" onclick="${S.recording?'psStopRec()':'psStartRec()'}">${S.recording?'Stop recording':'Start recording'}</button>
+        ${S.audioURL?`<audio controls src="${S.audioURL}" style="height:34px"></audio><a class="psMini" href="${S.audioURL}" download="walkthrough.webm">Download</a>`:''}
       </div>
-      <div class="btnRow" style="margin-top:16px;">
-        ${PRESITE_STATE.reviewIdx>0 ? '<button class="btn secondary" onclick="presiteReviewBack()">Back</button>' : ''}
-        <button class="btn" onclick="presiteReviewNext()">${PRESITE_STATE.reviewIdx===PRESITE_STATE.reviewOrder.length-1 ? 'Finish & Save to Work Order' : 'Next List'}</button>
-      </div>`;
-  }
+      <div class="psSub" style="margin-top:8px">${sup
+        ? 'Live transcription is available in this browser. Speak normally, name the rooms, and say the numbers out loud.'
+        : 'This browser does not support live transcription, which is normal on iPhone and iPad. The audio still records and saves to the job, and you can type or correct the notes below.'}</div>
+    </div>
+    <div class="psCard">
+      <h4>Walkthrough notes</h4>
+      <div class="psSub" style="margin-bottom:6px">This is saved word for word to the work order. Edit freely.</div>
+      <textarea id="psTrans" class="psTrans" style="width:100%;border:1px solid #dfe4ec" rows="7"
+        oninput="PRESITE_STATE.transcript=this.value">${esc(S.transcript)}</textarea>
+    </div>
+    <div class="btnRow">
+      <button class="btn secondary" onclick="psGo('start')">Back</button>
+      <button class="btn" onclick="psScanTranscript()">Suggest items from these notes</button>
+      <button class="btn secondary" onclick="psGo('pick')">Skip, pick items myself</button>
+    </div>
+  </div>`;
 }
-function renderChatLog(){
-  if(!PRESITE_STATE.chat.length) return '<div class="small" style="color:#c8d2e0">No messages yet.</div>';
-  return PRESITE_STATE.chat.map(m=>`<div class="chatMsg ${m.role}"><b>${m.role==='user'?'You':'Assistant'}:</b> ${esc(m.text)}</div>`).join('');
-}
-function sendPresiteChat(){
-  const input=document.getElementById('chatInput');
-  const msg=input.value.trim();
-  if(!msg) return;
-  PRESITE_STATE.chat.push({role:'user', text:msg});
-  input.value='';
-
-  // If we just asked a structured follow-up (e.g. ceiling fan wiring details), parse this reply as its answer
-  if(PRESITE_STATE.awaitingKey){
-    const qd=CEILING_FAN_QUESTIONS[PRESITE_STATE.awaitingKey];
-    if(qd){
-      const parsed=qd.parse(msg);
-      if(parsed!==null && parsed!==undefined) PRESITE_STATE.ctx[PRESITE_STATE.awaitingKey]=parsed;
+function psStartRec(){
+  const S=PRESITE_STATE;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('This browser cannot access the microphone.'); return; }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    PS_CHUNKS=[];
+    try{ PS_REC=new MediaRecorder(stream); }catch(e){ toast('Recording is not supported here.'); return; }
+    PS_REC.ondataavailable=e=>{ if(e.data && e.data.size) PS_CHUNKS.push(e.data); };
+    PS_REC.onstop=()=>{
+      const blob=new Blob(PS_CHUNKS,{type:PS_REC.mimeType||'audio/webm'});
+      PRESITE_STATE.audioURL=URL.createObjectURL(blob);
+      stream.getTracks().forEach(t=>t.stop());
+      renderPresiteBody();
+    };
+    PS_REC.start();
+    S.recording=true;
+    if(psSpeechSupported()){
+      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      PS_SR=new SR(); PS_SR.continuous=true; PS_SR.interimResults=false; PS_SR.lang='en-US';
+      PS_SR.onresult=e=>{
+        let add='';
+        for(let i=e.resultIndex;i<e.results.length;i++){ if(e.results[i].isFinal) add+=e.results[i][0].transcript+' '; }
+        if(add){
+          PRESITE_STATE.transcript=(PRESITE_STATE.transcript+' '+add).trim();
+          const ta=document.getElementById('psTrans'); if(ta) ta.value=PRESITE_STATE.transcript;
+        }
+      };
+      PS_SR.onerror=()=>{};
+      PS_SR.onend=()=>{ if(PRESITE_STATE.recording){ try{PS_SR.start();}catch(e){} } };
+      try{ PS_SR.start(); }catch(e){}
     }
-    PRESITE_STATE.awaitingKey=null;
-  }
-
-  const next=determineNextQuestion();
-  if(next && next.type==='structured'){
-    PRESITE_STATE.askedKeys.push(next.key);
-    PRESITE_STATE.awaitingKey=next.key;
-    PRESITE_STATE.chat.push({role:'ai', text:CEILING_FAN_QUESTIONS[next.key].text});
-  } else if(next && next.type==='legacy'){
-    PRESITE_STATE.chat.push({role:'ai', text:next.text});
-  } else {
-    PRESITE_STATE.chat.push({role:'ai', text:'Got what I need. Click "Compile Lists Now" below when you\'re ready.'});
-  }
-  renderPresiteBody();
-}
-function generatePresiteLists(){
-  const text=combinedText();
-  const merged={labor:[],materials:[],tools:[],issues:[],disclaimers:[]};
-  const satisfiedTrades=new Set();
-  const matchedTaskIds=new Set();
-
-  // 1. Specific "action + object" tasks described in the notes (e.g. "remove and replace a toilet")
-  TASK_OBJECTS.forEach(taskDef=>{
-    if(taskDef.skipIfMatched && taskDef.skipIfMatched.some(id=>matchedTaskIds.has(id))) return;
-    if(taskDef.excludeIf && taskDef.excludeIf(text)) return;
-    const match=detectActionObject(text, taskDef.re);
-    if(match){
-      matchedTaskIds.add(taskDef.id);
-      addTaskToMerged(merged, taskDef, match.action);
-      satisfiedTrades.add(taskDef.trade);
-    }
-  });
-
-  // 2. Ceiling fan install, using any wiring details gathered through clarifying questions
-  if(isCeilingFanInstall(text)){
-    addCeilingFanToMerged(merged, PRESITE_STATE.ctx);
-    satisfiedTrades.add('ceiling_fan');
-    satisfiedTrades.add('electrical'); // fan wiring already produces its own precise electrical items
-    satisfiedTrades.add('drywall'); // any drywall cutting is already covered by the fan-specific line item above
-  }
-
-  // 3. Broad trade-level fallback only for trades not already covered by a specific task above,
-  //    so the compiled list stays focused on what was actually described.
-  const detected=detectTrades(text);
-  const broadTrades=detected.filter(t=>t!=='general' && !satisfiedTrades.has(t));
-  if(merged.labor.length===0 && broadTrades.length===0 && detected.includes('general')){
-    broadTrades.push('general');
-  }
-  broadTrades.forEach(trade=>{
-    const kb=TRADE_KB[trade];
-    ['labor','materials'].forEach(k=>{
-      kb[k].forEach(entry=>{ if(!merged[k].some(e=>e.item===entry.item)) merged[k].push({item:entry.item, price:entry.price}); });
-    });
-    ['tools','issues','disclaimers'].forEach(k=>{
-      kb[k].forEach(item=>{ if(!merged[k].includes(item)) merged[k].push(item); });
-    });
-  });
-
-  GENERIC_DISCLAIMERS.forEach(d=>{ if(!merged.disclaimers.includes(d)) merged.disclaimers.push(d); });
-  toast('Lists compiled from the specific tasks described. Review each list below.');
-  PRESITE_STATE.lists=merged;
-  PRESITE_STATE.stage='review';
-  PRESITE_STATE.reviewIdx=0;
-  renderPresiteBody();
-}
-// For a priced (labor/materials) item compiled from the trade knowledge base,
-// which only carries a suggested price range string, seed a starting Qty (1)
-// and $/EA (the average of that range) so the Total box has something
-// sensible to show before the user adjusts it.
-function ensurePricedFields(item){
-  if(item.qty===undefined || item.qty===null || item.qty==='') item.qty=1;
-  if(item.unit===undefined || item.unit===null || item.unit===''){
-    // Uses the same currency-aware parser as the estimate totals, so unit
-    // seeding can't be thrown off by numbers inside a unit description.
-    const range=parsePriceRange(item.price);
-    item.unit = range ? Math.round(((range[0]+range[1])/2)*100)/100 : 0;
-  }
-}
-function updatePresiteItem(key,i,val,field){
-  if(field){
-    const item=PRESITE_STATE.lists[key][i];
-    item[field]=val;
-    if(field==='qty' || field==='unit'){
-      const q=parseFloat(item.qty)||0;
-      const u=parseFloat(item.unit)||0;
-      item.price='$'+(q*u).toFixed(2);
-    }
-  }
-  else { PRESITE_STATE.lists[key][i]=val; }
-  renderPresiteBody();
-}
-function removePresiteItem(key,i){ PRESITE_STATE.lists[key].splice(i,1); renderPresiteBody(); }
-function addPresiteItem(key){
-  const isPriced = key==='labor' || key==='materials';
-  PRESITE_STATE.lists[key].push(isPriced ? {item:'', qty:1, unit:0, price:'$0.00'} : '');
-  renderPresiteBody();
-}
-function presiteReviewBack(){ PRESITE_STATE.reviewIdx--; renderPresiteBody(); }
-function presiteReviewNext(){
-  if(PRESITE_STATE.reviewIdx < PRESITE_STATE.reviewOrder.length-1){
-    PRESITE_STATE.reviewIdx++;
     renderPresiteBody();
-  } else {
-    finishPresite();
-  }
+  }).catch(()=>toast('Microphone permission was denied.'));
 }
-function finishPresite(){
-  const wo=getWO(PRESITE_STATE.woId);
-  const userDescription = PRESITE_STATE.chat.filter(m=>m.role==='user').map(m=>m.text).join(' ');
-  wo.jobDetails.description = userDescription || wo.jobDetails.description || '';
-  wo.jobDetails.labor=PRESITE_STATE.lists.labor.filter(x=>x.item && x.item.trim());
-  wo.jobDetails.materials=PRESITE_STATE.lists.materials.filter(x=>x.item && x.item.trim());
-  wo.jobDetails.tools=PRESITE_STATE.lists.tools.filter(x=>x.trim());
-  wo.jobDetails.issues=PRESITE_STATE.lists.issues.filter(x=>x.trim());
-  wo.jobDetails.disclaimers=PRESITE_STATE.lists.disclaimers.filter(x=>x.trim());
-  addNote(wo, 'PRESITE', 'Pre-Site Inspection complete.');
+function psStopRec(){
+  PRESITE_STATE.recording=false;
+  try{ if(PS_SR){ PS_SR.onend=null; PS_SR.stop(); } }catch(e){}
+  try{ if(PS_REC && PS_REC.state!=='inactive') PS_REC.stop(); }catch(e){}
+  renderPresiteBody();
+}
+function psScanTranscript(){
+  const t=(PRESITE_STATE.transcript||'').toLowerCase();
+  if(!t.trim()){ toast('Nothing recorded or typed yet.'); return; }
+  let hits=0;
+  Object.keys(PS_KEYWORDS).forEach(id=>{
+    if(psInScope(id)) return;
+    if(PS_KEYWORDS[id].some(k=>t.includes(k))){ psAddToScope(id,'voice'); hits++; }
+  });
+  /* pull numbers out only as a starting quantity, never as scope */
+  PRESITE_STATE.stage='scope';
+  renderPresiteBody();
+  toast(hits? hits+' item'+(hits===1?'':'s')+' suggested. Confirm, correct or remove each one.' : 'No items matched. Add them from the picker.');
+}
+
+/* ---------- Stage: pick -------------------------------------------------- */
+function psPickHTML(){
+  const S=PRESITE_STATE;
+  if(!S.jobType){
+    return `<div class="psWrap">
+      <div class="psStep">Step 2 of 4, what does the customer want done</div>
+      <div class="psGrid">${JOB_PRESETS.map(p=>`<button class="psTile" onclick="psSetJobType('${p.id}')">${p.label}</button>`).join('')}</div>
+      <div class="btnRow"><button class="btn secondary" onclick="psGo('start')">Back</button></div>
+    </div>`;
+  }
+  const preset=JOB_PRESETS.find(p=>p.id===S.jobType);
+  const ids=Object.keys(PS_ITEMS).filter(id=>{
+    const it=PS_ITEMS[id];
+    return (it.tags||[]).some(t=>preset.tags.includes(t)) && !it.internalOnly;
+  });
+  return `<div class="psWrap">
+    <div class="psStep">Step 2 of 4, ${esc(preset.label)}</div>
+    <div class="psCard">
+      <h4>What is included?</h4>
+      <div class="psSub" style="margin-bottom:9px">Tap everything the customer is asking for. You will not need to list the supporting work, the tool prompts you for that next.</div>
+      <div>${ids.map(id=>`<span class="psChip ${psInScope(id)?'on':''}" onclick="psTogglePick('${id}')">${esc(PS_ITEMS[id].label)}</span>`).join('')}</div>
+    </div>
+    <div class="btnRow">
+      <button class="btn secondary" onclick="PRESITE_STATE.jobType=null;renderPresiteBody()">Different category</button>
+      <button class="btn" onclick="psGo('scope')">Continue${PRESITE_STATE.scope.length?' ('+PRESITE_STATE.scope.length+' selected)':''}</button>
+    </div>
+  </div>`;
+}
+function psSetJobType(id){ PRESITE_STATE.jobType=id; renderPresiteBody(); }
+function psTogglePick(id){
+  const row=PRESITE_STATE.scope.find(r=>r.itemId===id);
+  if(row) psRemoveFromScope(row.uid); else psAddToScope(id,'picked');
+  renderPresiteBody();
+}
+
+/* ---------- Stage: scope, the dependency prompts ------------------------- */
+function psScopeHTML(){
+  const S=PRESITE_STATE;
+  const rd=psReadiness();
+  const prompts=psOpenPrompts();
+  const rows=S.scope.map(row=>{
+    const def=psItem(row.itemId);
+    const isDep=row.source==='dep';
+    const kids=prompts.filter(p=>p.parentUid===row.uid);
+    return `<div class="psScopeRow ${isDep?'dep':''}">
+      <div class="psScopeHead">
+        <b>${esc(def.label)}</b>
+        <button class="psX" title="Remove" onclick="psDropRow(${row.uid})">&times;</button>
+      </div>
+      <div class="psFieldRow">
+        ${def.qty?`<label>${esc(def.qty.label)}</label>
+          <input type="number" min="0" step="any" style="width:90px" value="${row.ans.qty===null?'':esc(row.ans.qty)}"
+            onchange="psSetAns(${row.uid},'qty',this.value)">
+          <span class="psSub">${esc(def.qty.unit)}</span>`:''}
+        ${def.askOpts?`<label style="margin-left:6px">${esc(def.ask)}</label>
+          <select onchange="psSetAns(${row.uid},'ask',this.value)">
+            <option value="">Choose...</option>
+            ${def.askOpts.map(o=>`<option ${row.ans.ask===o?'selected':''}>${esc(o)}</option>`).join('')}
+          </select>`:''}
+      </div>
+      ${def.note?`<div class="psFieldRow"><input style="flex:1;min-width:240px" placeholder="Describe it" value="${esc(row.ans.note||'')}" onchange="psSetAns(${row.uid},'note',this.value)"></div>`:''}
+      ${kids.map(k=>psPromptHTML(k)).join('')}
+    </div>`;
+  }).join('');
+
+  const orphan=prompts.filter(p=>!S.scope.some(r=>r.uid===p.parentUid));
+  return `<div class="psWrap">
+    <div class="psStep">Step 3 of 4, confirm the scope</div>
+    <div class="psReady ${rd.level}">${esc(rd.msg)}</div>
+    ${prompts.length?`<div class="psSub">The dashed boxes are work that normally comes with what you selected. Add it or wave it off. Anything you wave off is written down as an exclusion so the estimator sees it.</div>`:''}
+    <div>${rows||'<div class="psSub">Nothing in scope yet.</div>'}</div>
+    ${orphan.map(k=>psPromptHTML(k)).join('')}
+    <div class="btnRow">
+      <button class="btn secondary" onclick="PRESITE_STATE.jobType=null;psGo('pick')">Anything else? Add more</button>
+      <button class="btn" onclick="psBuild()">Build the list</button>
+    </div>
+  </div>`;
+}
+function psPromptHTML(p){
+  const def=psItem(p.itemId);
+  return `<div class="psPrompt">
+    <div><b>Comes with this:</b> ${esc(def.label)}</div>
+    ${def.deps&&def.deps.length?`<div class="why">Adding it will prompt for what comes with it too.</div>`:''}
+    <div class="psPromptBtns">
+      <button class="psMini add" onclick="psAcceptDep('${p.itemId}',${p.parentUid})">Add it</button>
+      <button class="psMini no" onclick="psDismissDep('${p.itemId}','${esc(p.parentLabel).replace(/'/g,"\\'")}')">Not needed</button>
+    </div>
+  </div>`;
+}
+function psAcceptDep(itemId,parentUid){ psAddToScope(itemId,'dep',parentUid); renderPresiteBody(); }
+function psDismissDep(itemId,parentLabel){
+  PRESITE_STATE.dismissed.push({itemId,parentLabel});
+  renderPresiteBody();
+}
+function psDropRow(uid){ psRemoveFromScope(uid); renderPresiteBody(); }
+function psSetAns(uid,field,val){
+  const row=PRESITE_STATE.scope.find(r=>r.uid===uid); if(!row) return;
+  row.ans[field] = (field==='qty') ? (val===''?null:Number(val)) : val;
+  renderPresiteBody();
+}
+function psBuild(){
+  if(!PRESITE_STATE.scope.length){ toast('Add at least one item first.'); return; }
+  PRESITE_STATE.lists=psCompile();
+  PRESITE_STATE.stage='review';
+  renderPresiteBody();
+}
+
+/* ---------- Stage: review ------------------------------------------------ */
+function psReviewHTML(){
+  const S=PRESITE_STATE, L=S.lists, T=psTotals(L), rd=psReadiness();
+  const priced=(key,title,note)=>`
+    <div class="psSecTitle">${title}</div>
+    ${note?`<div class="psSub" style="margin-bottom:6px">${note}</div>`:''}
+    <div>${L[key].map((it,i)=>`<div class="editRow">
+      <input value="${esc(it.item)}" style="flex:2" onchange="psEditLine('${key}',${i},'item',this.value)">
+      <input type="number" step="any" value="${esc(it.qty)}" style="flex:0 0 70px" onchange="psEditLine('${key}',${i},'qty',this.value)">
+      <input type="number" step="0.01" value="${esc(it.unit)}" style="flex:0 0 85px" onchange="psEditLine('${key}',${i},'unit',this.value)">
+      <input value="${esc(it.price)}" style="flex:0 0 90px;background:#f2f4f8;font-weight:600" readonly>
+      <button onclick="psDelLine('${key}',${i})">&times;</button>
+    </div>`).join('')||'<div class="psSub">None.</div>'}</div>
+    <button class="btn secondary" style="margin-top:6px" onclick="psAddLine('${key}')">+ Add line</button>`;
+  const plain=(key,title,note)=>`
+    <div class="psSecTitle">${title}</div>
+    ${note?`<div class="psSub" style="margin-bottom:6px">${note}</div>`:''}
+    <div>${L[key].map((it,i)=>`<div class="editRow">
+      <input value="${esc(it)}" onchange="psEditPlain('${key}',${i},this.value)">
+      <button onclick="psDelLine('${key}',${i})">&times;</button>
+    </div>`).join('')||'<div class="psSub">None.</div>'}</div>
+    <button class="btn secondary" style="margin-top:6px" onclick="psAddLine('${key}')">+ Add line</button>`;
+
+  return `<div class="psWrap">
+    <div class="psStep">Step 4 of 4, review and save</div>
+    <div class="psReady ${rd.level}">${esc(rd.msg)}${rd.open.length?'<div style="font-weight:400;margin-top:6px;font-size:12.5px">'+rd.open.map(esc).join('<br>')+'</div>':''}</div>
+    <div class="psTotals">
+      <div>Labor<b>${psMoney(T.laborTotal)}</b></div>
+      <div>Materials at cost<b>${psMoney(T.matsRaw)}</b></div>
+      <div>Markup ${T.markup}% of cost<b>${psMoney(T.markupAmt)}</b></div>
+      <div>Tax ${T.taxRate}% of cost<b>${psMoney(T.tax)}</b></div>
+      <div>Materials billed<b>${psMoney(T.matsBilled)}</b></div>
+      <div>Estimate total<b>${psMoney(T.grand)}</b></div>
+    </div>
+    <div class="psFieldRow">
+      <label>Materials markup %</label><input type="number" step="any" style="width:80px" value="${S.markup}" onchange="PRESITE_STATE.markup=Number(this.value);renderPresiteBody()">
+      <label>Sales tax %</label><input type="number" step="any" style="width:80px" value="${S.taxRate}" onchange="PRESITE_STATE.taxRate=Number(this.value);renderPresiteBody()">
+      <button class="psMini" onclick="psGo('rates')">Edit labor rates</button>
+    </div>
+    ${priced('labor','Labor line items','These print on the estimate as scope wording. The customer sees one labor total, not each price.')}
+    ${priced('materials','Materials, internal only','These never print. Only the marked-up materials total goes on the estimate.')}
+    ${plain('tools','Tools to load')}
+    ${plain('issues','Potential issues')}
+    ${plain('exclusions','Exclusions, what is not included')}
+    ${plain('disclaimers','Disclaimers')}
+    <div class="btnRow" style="margin-top:16px">
+      <button class="btn secondary" onclick="psGo('scope')">Back to scope</button>
+      <button class="btn" onclick="psFinish()">Save to work order</button>
+    </div>
+  </div>`;
+}
+function psRecalcLine(key,i){
+  const it=PRESITE_STATE.lists[key][i];
+  if(it && typeof it==='object'){ it.price='$'+(((Number(it.qty)||0)*(Number(it.unit)||0)).toFixed(2)); }
+}
+function psEditLine(key,i,field,val){
+  const it=PRESITE_STATE.lists[key][i]; if(!it) return;
+  it[field]= (field==='item') ? val : Number(val);
+  psRecalcLine(key,i); renderPresiteBody();
+}
+function psEditPlain(key,i,val){ PRESITE_STATE.lists[key][i]=val; }
+function psDelLine(key,i){ PRESITE_STATE.lists[key].splice(i,1); renderPresiteBody(); }
+function psAddLine(key){
+  const priced = key==='labor'||key==='materials';
+  PRESITE_STATE.lists[key].push(priced?{item:'',qty:1,unit:0,price:'$0.00'}:'');
+  renderPresiteBody();
+}
+
+/* ---------- Stage: rate settings ---------------------------------------- */
+function psRatesHTML(){
+  const rates=getRates();
+  const keys=Object.keys(rates);
+  return `<div class="psWrap">
+    <div class="psStep">Rate settings</div>
+    <div class="psSub">These are your fixed prices. Edit any of them and the change sticks for every future job on this device. Blank resets to the default.</div>
+    <div style="max-height:460px;overflow:auto;margin-top:8px">
+      ${keys.map(k=>`<div class="editRow">
+        <input value="${esc(rates[k].label)}" style="flex:2" readonly>
+        <input type="number" step="0.01" style="flex:0 0 95px" value="${esc(rates[k].price)}" onchange="setRate('${k}',this.value);toast('Rate saved.')">
+        <input value="per ${esc(rates[k].unit)}" style="flex:0 0 95px;background:#f2f4f8" readonly>
+      </div>`).join('')}
+    </div>
+    <div class="btnRow"><button class="btn" onclick="psGo(PRESITE_STATE.lists?'review':'start')">Done</button></div>
+  </div>`;
+}
+
+/* ---------- Save back to the work order ---------------------------------- */
+function psFinish(){
+  const S=PRESITE_STATE, wo=getWO(S.woId), L=S.lists, T=psTotals(L), rd=psReadiness();
+  const jd=wo.jobDetails;
+
+  const scopeText = S.scope.map(r=>{
+    const d=psItem(r.itemId);
+    const bits=[d.label];
+    if(d.qty && r.ans.qty) bits.push(r.ans.qty+' '+d.qty.unit);
+    if(d.askOpts && r.ans.ask) bits.push(r.ans.ask);
+    if(r.ans.note) bits.push(r.ans.note);
+    return bits.join(', ');
+  }).join('\n');
+
+  jd.description = [
+    scopeText,
+    S.transcript ? '\nWalkthrough notes:\n'+S.transcript : ''
+  ].filter(Boolean).join('\n').trim() || jd.description || '';
+
+  jd.labor       = L.labor.filter(x=>x.item && x.item.trim());
+  jd.materials   = L.materials.filter(x=>x.item && x.item.trim());
+  jd.tools       = L.tools.filter(x=>String(x).trim());
+  jd.issues      = L.issues.filter(x=>String(x).trim());
+  jd.disclaimers = L.disclaimers.filter(x=>String(x).trim());
+  jd.exclusions  = L.exclusions.filter(x=>String(x).trim());
+
+  jd.presite = {
+    capturedAt: new Date().toISOString(),
+    mode: S.mode,
+    yearBuilt: S.yearBuilt,
+    jobType: S.jobType,
+    transcript: S.transcript || '',
+    scope: S.scope.map(r=>({item:psItem(r.itemId).label, itemId:r.itemId, ...r.ans, source:r.source})),
+    wavedOff: S.dismissed.map(d=>({item:(psItem(d.itemId)||{}).label||d.itemId, from:d.parentLabel})),
+    readiness: {level:rd.level, message:rd.msg, open:rd.open},
+    totals: {
+      labor: Math.round(T.laborTotal*100)/100,
+      materialsCost: Math.round(T.matsRaw*100)/100,
+      markupPct: T.markup,
+      markupAmount: Math.round(T.markupAmt*100)/100,
+      taxPct: T.taxRate,
+      tax: Math.round(T.tax*100)/100,
+      materialsBilled: Math.round(T.matsBilled*100)/100,
+      grandTotal: Math.round(T.grand*100)/100
+    }
+  };
+
+  const lines=[
+    'Pre-site inspection complete.',
+    'Labor '+psMoney(T.laborTotal)+', materials '+psMoney(T.matsBilled)+' (cost '+psMoney(T.matsRaw)+' plus '+T.markup+'% markup '+psMoney(T.markupAmt)+' plus tax '+psMoney(T.tax)+'). Total '+psMoney(T.grand)+'.',
+    'Readiness: '+rd.level+'. '+rd.msg
+  ];
+  if(S.dismissed.length) lines.push('Waved off at walkthrough: '+S.dismissed.map(d=>(psItem(d.itemId)||{}).label||d.itemId).join('; ')+'.');
+  addNote(wo,'PRESITE', lines.join(' '));
+
   wo.presiteDone=true;
   saveDB(DB);
   PRESITE_STATE=null;
   closeModal();
   renderTabCounts(); renderMain();
-  toast('Pre-site inspection saved. Job moved to Estimates.');
+  toast('Pre-site saved. Job moved to Estimates.');
 }
 
 /* =========================================================================
@@ -4963,6 +5732,9 @@ function openSplit(id, kind){
 
             <div class="panelTitle" style="margin-top:16px;">Potential Unforeseen Issues</div>
             <div class="laborPick">${(jd.issues&&jd.issues.length) ? jd.issues.map(plainLineRow).join('') : '<div class="small">None on file.</div>'}</div>
+
+            <div class="panelTitle" style="margin-top:16px;">Exclusions</div>
+            <div class="laborPick">${(jd.exclusions&&jd.exclusions.length) ? jd.exclusions.map(plainLineRow).join('') : '<div class="small">None on file.</div>'}</div>
 
             <div class="panelTitle" style="margin-top:16px;">Disclaimers</div>
             <div class="laborPick">${(jd.disclaimers&&jd.disclaimers.length) ? jd.disclaimers.map(plainLineRow).join('') : '<div class="small">None on file.</div>'}</div>
@@ -5057,23 +5829,32 @@ const CA_SALES_TAX_RATE = 0.0725;
    (waste/overage/handling) on that sum, and CA sales tax calculated on the
    raw materials sum (before the markup is added). Returns one combined line
    item labeled "Materials" instead of the individual entries. */
-function buildMaterialsLineItem(materials){
+function buildMaterialsLineItem(materials, presite){
+  const fmt = n => '$' + n.toFixed(2).replace(/\.00$/,'');
+  /* Pre-site v2 already computed this exactly: cost, then markup, then tax on
+     the marked-up figure. Prefer it over re-deriving from price strings. */
+  if(presite && presite.totals && presite.totals.materialsBilled!==undefined){
+    /* materialsBilled already equals cost + markup + tax. */
+    return [{ item:'Materials', price: fmt(Number(presite.totals.materialsBilled)||0) }];
+  }
+  /* Fallback for older work orders. Sum qty x unit where available, otherwise
+     fall back to parsing the price string. */
   let lowSum=0, highSum=0, any=false;
   (materials||[]).forEach(m=>{
+    if(m && m.qty!==undefined && m.unit!==undefined && !isNaN(Number(m.unit))){
+      const v=(Number(m.qty)||0)*(Number(m.unit)||0);
+      if(v>0){ any=true; lowSum+=v; highSum+=v; return; }
+    }
     const range = parsePriceRange(m && m.price);
     if(range){ any=true; lowSum+=range[0]; highSum+=range[1]; }
   });
   if(!any) return [];
-  const markupLow = lowSum * 0.2;
-  const markupHigh = highSum * 0.2;
-  const taxLow = lowSum * CA_SALES_TAX_RATE;
-  const taxHigh = highSum * CA_SALES_TAX_RATE;
-  const lowFinal = lowSum + markupLow + taxLow;
-  const highFinal = highSum + markupHigh + taxHigh;
-  const fmt = n => '$' + n.toFixed(2).replace(/\.00$/,'');
+  /* Markup and tax are both taken off the raw cost, then added to it. */
+  const lowFinal   = lowSum  * (1 + 0.2 + CA_SALES_TAX_RATE);
+  const highFinal  = highSum * (1 + 0.2 + CA_SALES_TAX_RATE);
   const price = (Math.round(lowFinal*100)===Math.round(highFinal*100))
     ? fmt(lowFinal)
-    : `${fmt(lowFinal)}–${fmt(highFinal)}`;
+    : `${fmt(lowFinal)}\u2013${fmt(highFinal)}`;
   return [{ item:'Materials', price }];
 }
 
@@ -5111,9 +5892,11 @@ function sendJobDataToBuilder(iframeEl, id, kind){
     },
     description: jd.description||'',
     labor: jd.labor||[],
-    materials: buildMaterialsLineItem(jd.materials),
+    materials: buildMaterialsLineItem(jd.materials, jd.presite),
     issues: jd.issues||[],
-    disclaimers: jd.disclaimers||[]
+    exclusions: jd.exclusions||[],
+    disclaimers: jd.disclaimers||[],
+    totals: (jd.presite && jd.presite.totals) || null
   };
   try{
     // Tell the builder to wipe any prior estimate before this work order's
