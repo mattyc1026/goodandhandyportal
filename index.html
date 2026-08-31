@@ -196,6 +196,16 @@ header.top .brand span{color:var(--orange);}
   font-size:1.15em;line-height:1;transition:background .15s;
 }
 .settingsBtn:hover{background:rgba(255,255,255,.18);}
+/* Inline SVG gear instead of the U+2699 character. The character has both a
+   plain and an emoji presentation, so the icon changed appearance depending on
+   the device and font. This renders identically everywhere and inherits the
+   button's color, including in high-contrast mode. */
+.gearIcon{
+  width:19px;height:19px;display:block;
+  fill:none;stroke:currentColor;stroke-width:1.6;
+  stroke-linejoin:round;stroke-linecap:round;
+  pointer-events:none;
+}
 .settingsMenu{
   display:none;position:absolute;top:calc(100% + 10px);right:0;
   background:var(--paper);color:var(--ink);border:1px solid var(--line);
@@ -674,6 +684,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
      The gear-icon button and its dropdown (text size + high contrast)
      stay a comfortable tap size on mobile too. */
   .settingsBtn{min-width:40px;min-height:40px;}
+  .gearIcon{width:22px;height:22px;}
   .settingsMenu{min-width:210px;}
 
   /* ---- header ---- */
@@ -982,7 +993,7 @@ nav.tabs button .count,.schedHoursTag,.priceTag{font-variant-numeric:tabular-num
     <div style="text-align:center;margin-bottom:18px;">
       <button class="syncPill off" id="loginSyncPill" onclick="openSyncModal()" style="border-color:var(--navy);color:var(--navy);">Sync: Off</button>
       <div class="settingsWrap" style="display:inline-block;margin-left:6px;">
-        <button class="settingsBtn" id="loginSettingsBtn" onclick="toggleSettingsMenu('loginSettingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false" style="border-color:var(--navy);color:var(--navy);">&#9881;</button>
+        <button class="settingsBtn" id="loginSettingsBtn" onclick="toggleSettingsMenu('loginSettingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false" style="border-color:var(--navy);color:var(--navy);"><svg class="gearIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.50 4.96 L10.05 2.81 A9.40 9.40 0 0 1 13.95 2.81 L13.50 4.96 A7.20 7.20 0 0 1 15.92 5.96 L17.12 4.12 A9.40 9.40 0 0 1 19.88 6.88 L18.04 8.08 A7.20 7.20 0 0 1 19.04 10.50 L21.19 10.05 A9.40 9.40 0 0 1 21.19 13.95 L19.04 13.50 A7.20 7.20 0 0 1 18.04 15.92 L19.88 17.12 A9.40 9.40 0 0 1 17.12 19.88 L15.92 18.04 A7.20 7.20 0 0 1 13.50 19.04 L13.95 21.19 A9.40 9.40 0 0 1 10.05 21.19 L10.50 19.04 A7.20 7.20 0 0 1 8.08 18.04 L6.88 19.88 A9.40 9.40 0 0 1 4.12 17.12 L5.96 15.92 A7.20 7.20 0 0 1 4.96 13.50 L2.81 13.95 A9.40 9.40 0 0 1 2.81 10.05 L4.96 10.50 A7.20 7.20 0 0 1 5.96 8.08 L4.12 6.88 A9.40 9.40 0 0 1 6.88 4.12 L8.08 5.96 A7.20 7.20 0 0 1 10.50 4.96 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
         <div class="settingsMenu" id="loginSettingsMenu">
           <div class="settingsRow">
             <span>Text Size</span>
@@ -1034,7 +1045,7 @@ nav.tabs button .count,.schedHoursTag,.priceTag{font-variant-numeric:tabular-num
       <span id="whoami"></span>
       <span id="adminPill" class="adminPill hidden">ADMIN</span>
       <div class="settingsWrap">
-        <button class="settingsBtn" id="settingsBtn" onclick="toggleSettingsMenu('settingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false">&#9881;</button>
+        <button class="settingsBtn" id="settingsBtn" onclick="toggleSettingsMenu('settingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false"><svg class="gearIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.50 4.96 L10.05 2.81 A9.40 9.40 0 0 1 13.95 2.81 L13.50 4.96 A7.20 7.20 0 0 1 15.92 5.96 L17.12 4.12 A9.40 9.40 0 0 1 19.88 6.88 L18.04 8.08 A7.20 7.20 0 0 1 19.04 10.50 L21.19 10.05 A9.40 9.40 0 0 1 21.19 13.95 L19.04 13.50 A7.20 7.20 0 0 1 18.04 15.92 L19.88 17.12 A9.40 9.40 0 0 1 17.12 19.88 L15.92 18.04 A7.20 7.20 0 0 1 13.50 19.04 L13.95 21.19 A9.40 9.40 0 0 1 10.05 21.19 L10.50 19.04 A7.20 7.20 0 0 1 8.08 18.04 L6.88 19.88 A9.40 9.40 0 0 1 4.12 17.12 L5.96 15.92 A7.20 7.20 0 0 1 4.96 13.50 L2.81 13.95 A9.40 9.40 0 0 1 2.81 10.05 L4.96 10.50 A7.20 7.20 0 0 1 5.96 8.08 L4.12 6.88 A9.40 9.40 0 0 1 6.88 4.12 L8.08 5.96 A7.20 7.20 0 0 1 10.50 4.96 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
         <div class="settingsMenu" id="settingsMenu">
           <div class="settingsRow">
             <span>Text Size</span>
@@ -4410,13 +4421,11 @@ const BASE_DISCLAIMERS = [
   'Where required by the jurisdiction, permit and inspection fees are the responsibility of the homeowner and are not included in this estimate unless expressly stated.',
   'Exact color, grain, sheen and texture matching to existing finishes cannot be guaranteed. Where a match is required, a sample will be provided for your approval before full application.'
 ];
-const BASE_EXCLUSIONS = [
-  'Permit fees, plan check fees and inspection fees',
-  'Repair of pre-existing damage outside the described work area',
-  'Mold, asbestos or lead abatement of any kind',
-  'Structural, engineering or foundation work',
-  'Relocation or protection of homeowner belongings not specifically listed above'
-];
+/* Intentionally empty. Exclusions are generated only from the specific
+   scope: what an item's rules produce, and what the inspector waved off
+   at the walkthrough. Generic boilerplate exclusions were removed because
+   they did not apply to the work actually being performed. */
+const BASE_EXCLUSIONS = [];
 const BASE_TOOLS = ['Drop cloths and surface protection','Shop vacuum','Cordless drill and driver set','Level','Tape measure','Utility knife'];
 
 /* ---------- The 12 job type presets shown on the first screen ------------ */
@@ -5858,6 +5867,50 @@ function buildMaterialsLineItem(materials, presite){
   return [{ item:'Materials', price }];
 }
 
+/* Labor for the estimate builder.
+   Every detail line goes over with hideDetails set, so the builder checks
+   its "hide qty, unit price & subtotal" box and the customer sees the scope
+   wording only. One visible summary line carrying the sum is appended last,
+   so it lands immediately before the Materials line. */
+function buildLaborLineItems(labor){
+  const lines=(labor||[]).filter(l=>l && (l.item||'').trim());
+  if(!lines.length) return [];
+  const fmt = n => '$' + (Number(n)||0).toFixed(2);
+  let total=0;
+  const out=lines.map(l=>{
+    const qty=Number(l.qty)||0, unit=Number(l.unit)||0;
+    let sub=qty*unit;
+    if(!sub){
+      const r=parsePriceRange(l.price);
+      if(r) sub=(r[0]+r[1])/2;
+    }
+    total+=sub;
+    /* Detail lines carry the scope wording and the quantity, but no money.
+       The builder sums every line it receives, so pricing the detail lines
+       AND the summary line would double the labor total. The real per-line
+       rates stay in the portal, which is where they get edited. */
+    return {
+      item: l.item,
+      qty: qty||1,
+      unitPrice: 0,
+      price: fmt(0),
+      subtotal: fmt(0),
+      hideDetails: true,      // check "hide qty, unit price & subtotal"
+      hideQty: true, hideUnitPrice: true, hideSubtotal: true,
+      internalRate: unit,     // kept for reference, ignored by the builder
+      internalSubtotal: sub
+    };
+  });
+  out.push({
+    item:'Labor',
+    qty:1, unitPrice:total,
+    price: fmt(total), subtotal: fmt(total),
+    hideDetails:false,
+    hideQty:false, hideUnitPrice:false, hideSubtotal:false,
+    isSummary:true
+  });
+  return out;
+}
 function sendJobDataToBuilder(iframeEl, id, kind){
   const wo=getWO(id);
   if(!wo) return;
@@ -5891,7 +5944,8 @@ function sendJobDataToBuilder(iframeEl, id, kind){
       zip:addr.zip
     },
     description: jd.description||'',
-    labor: jd.labor||[],
+    labor: buildLaborLineItems(jd.labor),
+    laborDetail: jd.labor||[],
     materials: buildMaterialsLineItem(jd.materials, jd.presite),
     issues: jd.issues||[],
     exclusions: jd.exclusions||[],
