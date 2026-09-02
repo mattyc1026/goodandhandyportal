@@ -41,6 +41,25 @@
      from one setting by applyTextSize(), so the control covers the whole
      app rather than only phones. */
   --dScale:16px;
+
+  /* ---- MOTION SYSTEM ----
+     One place to tune the whole app's feel. The curves are the ones iOS
+     uses: --e-spring is the sheet-presentation curve (fast off the mark,
+     long soft settle), --e-out is the standard decelerate, and --e-bounce
+     overshoots slightly for things that should feel physical when tapped.
+     Durations are named by role, not by number, so a global retune is a
+     three-line edit rather than a search across the stylesheet. */
+  --e-spring:cubic-bezier(.32,.72,0,1);
+  --e-out:cubic-bezier(.22,1,.36,1);
+  --e-bounce:cubic-bezier(.34,1.56,.64,1);
+  --e-in:cubic-bezier(.4,0,1,1);
+  --t-press:.14s; --t-fast:.2s; --t-med:.32s; --t-sheet:.42s;
+
+  /* Live-on-site neon. Deliberately outside the status palette: the job
+     progression greens (--green / --greenb) mean "this stage of the
+     lifecycle", while this means "a human is physically on the job right
+     now", so it must not read as another shade of the same thing. */
+  --neon:#00ff7a; --neon-rail:#00e36c; --neon-rgb:0,255,122;
 }
 /* ---- High Contrast mode ----
    Toggled by adding class "hc" to <html>. Overrides the same CSS
@@ -57,6 +76,8 @@ html.hc{
   --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
+  /* High contrast trades the glow for a heavy, unambiguous green rail. */
+  --neon:#005c2a; --neon-rail:#005c2a; --neon-rgb:0,92,42;
   --sh-1:none; --sh-2:none; --sh-3:none; --sh-4:none;
 }
 html.hc body{background:#fff;}
@@ -633,13 +654,18 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
    board, so it keeps a live pulse, retuned from raw neon to a saturated
    emerald that still reads instantly but sits inside the palette. */
 .woRow.checkedInGlow{
-  border-color:var(--greenb);border-left-color:var(--greenb);
-  box-shadow:0 0 0 2px rgba(31,138,85,.5), 0 0 18px 2px rgba(31,138,85,.35), var(--sh-2);
-  animation:checkedInPulse 2.4s ease-in-out infinite;
+  border-color:var(--neon-rail);border-left-color:var(--neon-rail);
+  box-shadow:0 0 0 2px rgba(var(--neon-rgb),.55), 0 0 20px 3px rgba(var(--neon-rgb),.45), var(--sh-2);
+  animation:checkedInPulse 2.2s ease-in-out infinite;
 }
 @keyframes checkedInPulse{
-  0%,100%{box-shadow:0 0 0 2px rgba(31,138,85,.5), 0 0 16px 2px rgba(31,138,85,.28), var(--sh-2);}
-  50%{box-shadow:0 0 0 3px rgba(31,138,85,.68), 0 0 26px 6px rgba(31,138,85,.45), var(--sh-2);}
+  0%,100%{box-shadow:0 0 0 2px rgba(var(--neon-rgb),.5), 0 0 16px 2px rgba(var(--neon-rgb),.34), var(--sh-2);}
+  50%{box-shadow:0 0 0 3px rgba(var(--neon-rgb),.95), 0 0 34px 9px rgba(var(--neon-rgb),.7), var(--sh-2);}
+}
+/* High contrast: keep the meaning, drop the glow. */
+html.hc .woRow.checkedInGlow{
+  border-color:var(--neon-rail);border-left-color:var(--neon-rail);
+  border-left-width:10px;box-shadow:none;animation:none;
 }
 .checkInOutRow{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px;}
 .checkInOutRow .jcCheck{white-space:nowrap;}
@@ -978,6 +1004,224 @@ nav.tabs button .count,.schedHoursTag,.priceTag{font-variant-numeric:tabular-num
 /* Text inside a status-tinted card sits on a pale wash rather than a solid
    colour now, so it keeps its normal weight, but the name still anchors. */
 .woRow .woName{text-wrap:balance;}
+
+/* =========================================================================
+   MOTION LAYER
+   Everything below is feel, not information. It is deliberately kept in one
+   block at the end of the stylesheet so it overrides the flat transitions
+   declared earlier without having to edit them one by one, and so the whole
+   thing can be lifted out again in a single cut if it ever gets in the way.
+
+   The rule the whole layer follows: motion tracks the user's finger and
+   settles, it never plays a little movie at them. Presses respond within a
+   frame or two (--t-press), surfaces arrive on the spring curve, and
+   anything looping is a status signal rather than decoration.
+
+   The prefers-reduced-motion block further up already neutralises every
+   animation and transition globally with !important, so this whole layer is
+   automatically switched off for anyone who has asked for that.
+========================================================================= */
+
+/* Smooth programmatic scrolling (anchor jumps, scrollIntoView on the tab
+   bar) without touching the explicit behavior:'auto' calls in the script. */
+html{scroll-behavior:smooth;}
+
+/* ---- Universal press feedback ----
+   Previously only phones got a tap response. A pointer press should feel the
+   same on every device: the surface takes the press, then springs back. */
+button,.btn,.woRow,.jcCheck,.docRow,.newWoBtn,.tag,.textSizeBtn,.hcToggleBtn,
+.syncPill,.editLink,.copyIcon,.closeX,.schedTypeToggle button,.headerTabs button{
+  transition:
+    transform var(--t-press) var(--e-out),
+    box-shadow var(--t-fast) var(--e-out),
+    background var(--t-fast) var(--e-out),
+    border-color var(--t-fast) var(--e-out),
+    color var(--t-fast) var(--e-out),
+    opacity var(--t-fast) var(--e-out);
+  -webkit-tap-highlight-color:transparent;
+}
+button:active,.btn:active,.newWoBtn:active,.textSizeBtn:active,
+.hcToggleBtn:active,.syncPill:active,.schedTypeToggle button:active,
+.headerTabs button:active{transform:scale(.955);}
+.jcCheck:active,.docRow:active{transform:scale(.975);}
+.closeX:active,.copyIcon:active,.editLink:active{transform:scale(.88);}
+/* Row press is gentler than a button's: it's a big surface, so the same
+   scale factor would read as the whole list lurching. */
+.woRow:active{transform:scale(.988);box-shadow:var(--sh-1);}
+.woRow:hover{transform:translateY(-2px);box-shadow:var(--sh-2);}
+/* A pressed row that is also hovered must not fight itself. */
+.woRow:hover:active{transform:translateY(-1px) scale(.99);}
+
+/* Checkboxes get a physical dip on press so tapping "Job Complete" or a
+   check-in box confirms itself before the re-render lands. */
+input[type="checkbox"]{transition:transform var(--t-press) var(--e-bounce);}
+input[type="checkbox"]:active{transform:scale(.84);}
+
+/* ---- Inputs ----
+   Focus rings ease in rather than snapping, which is most of the difference
+   between a form that feels native and one that feels like a web page. */
+.field input,.field select,.field textarea,input,select,textarea{
+  transition:border-color var(--t-fast) var(--e-out),
+             box-shadow var(--t-fast) var(--e-out),
+             background var(--t-fast) var(--e-out);
+}
+
+/* ---- Modals: iOS sheet presentation ----
+   Card rises and scales up on the spring curve while the scrim blurs in
+   behind it, then reverses on dismissal. closeModal() hands the outgoing
+   node to #modalGhost so the exit can play while modalRoot is already free
+   for whatever opens next. */
+.overlay,.confirmBox{
+  animation:scrimIn var(--t-med) var(--e-out) both;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+.modal{animation:sheetIn var(--t-sheet) var(--e-spring) both;transform-origin:50% 0;}
+.confirmCard{animation:cardIn var(--t-med) var(--e-spring) both;}
+@keyframes scrimIn{
+  from{opacity:0;-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);}
+  to{opacity:1;}
+}
+@keyframes sheetIn{
+  from{opacity:0;transform:translateY(26px) scale(.965);}
+  to{opacity:1;transform:none;}
+}
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(14px) scale(.94);}
+  to{opacity:1;transform:none;}
+}
+/* An open modal that re-renders itself in place must not replay its
+   entrance. .noAnim is stamped on by the observer below whenever content is
+   swapped into a modalRoot that was already showing something. */
+.overlay.noAnim,.overlay.noAnim .modal{animation:none;}
+
+/* Dismissal. Shorter than the entrance: getting out of the way should never
+   feel like it is being performed at you. */
+#modalGhost:empty{display:none;}
+#modalGhost>*{pointer-events:none !important;z-index:98 !important;}
+.overlay.closing,.confirmBox.closing{animation:scrimOut .2s var(--e-in) both;}
+.overlay.closing .modal{animation:sheetOut .22s var(--e-in) both;}
+.confirmBox.closing .confirmCard{animation:cardOut .18s var(--e-in) both;}
+@keyframes scrimOut{from{opacity:1;}to{opacity:0;}}
+@keyframes sheetOut{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(18px) scale(.975);}}
+@keyframes cardOut{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(8px) scale(.95);}}
+@media (max-width:900px){
+  /* Full-height modals are sheets on a phone, so they come up from the
+     bottom edge the way a native sheet does. */
+  .modal{animation:sheetUpMobile var(--t-sheet) var(--e-spring) both;transform-origin:50% 100%;}
+  .overlay.closing .modal{animation:sheetDownMobile .24s var(--e-in) both;}
+  @keyframes sheetUpMobile{from{transform:translateY(100%);}to{transform:none;}}
+  @keyframes sheetDownMobile{from{transform:none;}to{transform:translateY(100%);}}
+}
+
+/* ---- List entrance ----
+   Rows cascade in when the board changes underneath you (a tab switch, a
+   login), so the eye is led down the new list instead of having a wall of
+   cards replaced in one frame. The stagger class is applied by renderMain()
+   only on those transitions, never on the incidental re-render after a
+   checkbox, which would otherwise make the list twitch on every tap.
+
+   fill-mode is `backwards`, not `both`: `both` would pin the end-state
+   transform permanently and kill the hover lift on every row. */
+@keyframes rowIn{
+  from{opacity:0;transform:translateY(16px) scale(.985);}
+  to{opacity:1;transform:none;}
+}
+#mainArea.stagger .listHeader,
+#mainArea.stagger .newWoBtn{animation:rowIn var(--t-med) var(--e-out) backwards;}
+#mainArea.stagger .subListHeader,
+#mainArea.stagger .emptyState{animation:rowIn .38s var(--e-out) backwards;}
+#mainArea.stagger .woRow{
+  animation:rowIn .44s var(--e-out) backwards;
+  animation-delay:calc(var(--i,0) * 26ms);
+}
+/* A checked-in row still has to keep pulsing while it arrives, so it runs
+   both animations rather than letting the entrance replace the status one. */
+#mainArea.stagger .woRow.checkedInGlow{
+  animation:rowIn .44s var(--e-out) backwards, checkedInPulse 2.2s ease-in-out infinite;
+  animation-delay:calc(var(--i,0) * 26ms), 0s;
+}
+
+/* ---- Tab bar ----
+   Desktop gets a sliding underline that grows from the centre instead of a
+   border colour flicking on; mobile gets the pill scaling in behind the
+   active item. */
+nav.tabs button{position:relative;transition:color var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out);}
+nav.tabs button.active{border-bottom-color:transparent;}
+nav.tabs button::after{
+  content:'';position:absolute;left:14px;right:14px;bottom:0;height:3px;
+  background:var(--orange);border-radius:3px 3px 0 0;
+  transform:scaleX(0);transform-origin:50% 50%;
+  transition:transform var(--t-med) var(--e-spring);
+}
+nav.tabs button.active::after{transform:scaleX(1);}
+nav.tabs button .count{transition:background var(--t-fast) var(--e-out),transform var(--t-fast) var(--e-bounce);}
+/* Count badges bump when the number actually changes, so work moving between
+   tabs is noticeable without a notification. */
+.count.bump{animation:countBump .42s var(--e-bounce);}
+@keyframes countBump{
+  0%{transform:scale(1);}
+  35%{transform:scale(1.32);}
+  100%{transform:scale(1);}
+}
+@media (max-width:900px){
+  nav.tabs#tabsNav button::after{display:none;}
+  nav.tabs#tabsNav button{transition:color var(--t-fast) var(--e-out),background var(--t-med) var(--e-spring);}
+  nav.tabs#tabsNav button:active{transform:scale(.93);}
+  nav.tabs#tabsNav button.active{animation:tabPop .34s var(--e-bounce);}
+  @keyframes tabPop{0%{transform:scale(.9);}60%{transform:scale(1.04);}100%{transform:scale(1);}}
+}
+
+/* ---- Settings menu ----
+   Was display:none/block, which pops. Now it scales out of the gear it came
+   from. visibility is transitioned with a delay so the hidden menu is still
+   removed from the tab order once it has faded. */
+.settingsMenu{
+  display:block;opacity:0;visibility:hidden;pointer-events:none;
+  transform:translateY(-8px) scale(.96);transform-origin:top right;
+  transition:opacity var(--t-fast) var(--e-out),
+             transform var(--t-med) var(--e-spring),
+             visibility 0s linear var(--t-med);
+}
+.settingsMenu.open{
+  opacity:1;visibility:visible;pointer-events:auto;transform:none;
+  transition:opacity var(--t-fast) var(--e-out),
+             transform var(--t-med) var(--e-spring),
+             visibility 0s;
+}
+
+/* ---- Toasts ----
+   Spring up from the bottom edge, fall away on the way out. The script sets
+   the exit transform inline, so the transition below is what carries it. */
+.toastItem{
+  animation:toastIn var(--t-med) var(--e-spring);
+  transition:opacity var(--t-fast) var(--e-in),transform var(--t-fast) var(--e-in);
+}
+@keyframes toastIn{
+  from{opacity:0;transform:translateY(20px) scale(.94);}
+  to{opacity:1;transform:none;}
+}
+
+/* ---- Disclosure and small surfaces ---- */
+.expandLinks details[open] > *:not(summary){animation:rowIn .28s var(--e-out) backwards;}
+.addrSuggest{animation:rowIn .2s var(--e-out) backwards;}
+.followupBadge,.woRow .tag{transition:transform var(--t-fast) var(--e-bounce);}
+
+@media (max-width:900px){
+  /* Touch wants a slightly deeper press than a mouse does, since there is no
+     cursor or hover state to confirm the target was hit. */
+  button:active,.btn:active,.newWoBtn:active{transform:scale(.965);}
+  .woRow:active{transform:scale(.975);}
+}
+/* High contrast keeps its flat, glow-free checked-in row even mid-cascade. */
+html.hc #mainArea.stagger .woRow.checkedInGlow{
+  animation:rowIn .44s var(--e-out) backwards;
+  animation-delay:calc(var(--i,0) * 26ms);
+}
+
+/* Composited hints. Only on the surfaces that actually move, since a
+   blanket will-change costs memory on a long board. */
+.modal,.confirmCard,.toastItem,.settingsMenu{will-change:transform,opacity;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -1089,6 +1333,10 @@ nav.tabs button .count,.schedHoursTag,.priceTag{font-variant-numeric:tabular-num
 </div>
 
 <div id="modalRoot"></div>
+<!-- Holds a dismissed modal for the length of its exit animation, so
+     modalRoot itself is free the instant closeModal() returns and anything
+     opening straight afterwards is never wiped by the outgoing node. -->
+<div id="modalGhost" aria-hidden="true"></div>
 <div id="confirmRoot"></div>
 
 <script>
@@ -1578,6 +1826,7 @@ function loginAs(username){
   localStorage.setItem(SESSION_KEY, JSON.stringify({username:u.username, ts:Date.now()}));
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
+  STAGGER_NEXT_RENDER=true;
   document.getElementById('whoami').textContent=CURRENT_USER.displayName;
   document.getElementById('adminPill').classList.toggle('hidden', !u.isAdmin);
   switchTab('workorders');
@@ -1745,7 +1994,13 @@ function applyFollowUpFromNative(){
 /* =========================================================================
    RENDER: TABS / LISTS
 ========================================================================= */
+/* Set for exactly one render, by the things that genuinely replace the whole
+   board (a tab switch, a login). renderMain() consumes and clears it. Without
+   this gate the cascade would replay after every checkbox tap, since those
+   re-render the full list too. */
+var STAGGER_NEXT_RENDER=false;
 function switchTab(tab){
+  if(tab!==ACTIVE_TAB) STAGGER_NEXT_RENDER=true;
   ACTIVE_TAB=tab;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   const activeBtn = document.querySelector('nav.tabs button[data-tab="'+tab+'"]');
@@ -1786,12 +2041,29 @@ function renderTabCounts(){
     LAST_HISTORY_PURGE=Date.now();
     if(purgeOldHistory(DB)) saveDB(DB);
   }
-  document.getElementById('cnt-workorders').textContent = DB.workOrders.filter(inWorkOrdersList).length;
-  document.getElementById('cnt-presite').textContent = DB.workOrders.filter(inPresiteList).length;
-  document.getElementById('cnt-estimates').textContent = DB.workOrders.filter(wo=>inEstimatesList(wo) && !inScheduleJobList(wo)).length;
-  document.getElementById('cnt-inprogress').textContent = DB.workOrders.filter(wo=>inScheduleJobList(wo) || inInvoiceInProgressList(wo)).length;
-  document.getElementById('cnt-invoices').textContent = DB.workOrders.filter(wo=>inInvoicesList(wo) && !inInvoiceInProgressList(wo)).length;
-  document.getElementById('cnt-surveys').textContent = DB.workOrders.filter(inSurveysList).length;
+  setCount('cnt-workorders', DB.workOrders.filter(inWorkOrdersList).length);
+  setCount('cnt-presite', DB.workOrders.filter(inPresiteList).length);
+  setCount('cnt-estimates', DB.workOrders.filter(wo=>inEstimatesList(wo) && !inScheduleJobList(wo)).length);
+  setCount('cnt-inprogress', DB.workOrders.filter(wo=>inScheduleJobList(wo) || inInvoiceInProgressList(wo)).length);
+  setCount('cnt-invoices', DB.workOrders.filter(wo=>inInvoicesList(wo) && !inInvoiceInProgressList(wo)).length);
+  setCount('cnt-surveys', DB.workOrders.filter(inSurveysList).length);
+}
+/* Writes a tab count and bumps the badge only when the number actually moved,
+   so a job arriving in Estimates announces itself while a routine re-render
+   stays still. The first paint is silent: the badge starts empty, and every
+   count changing at once on load would be noise, not signal. */
+function setCount(id, n){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const prev=el.textContent;
+  const next=String(n);
+  if(prev===next) return;
+  el.textContent=next;
+  if(prev==='' || reducedMotion()) return;
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+  setTimeout(()=>el.classList.remove('bump'), 460);
 }
 function subGroupHTML(label, list, opts){
   opts=opts||{};
@@ -1847,6 +2119,25 @@ function renderMain(){
     html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No completed jobs on file yet.</div>`;
   }
   main.innerHTML=html;
+  applyListMotion(main);
+}
+/* Runs the entrance cascade on a freshly rendered board. Each row carries its
+   own index as --i, which the stylesheet turns into a delay; the index is
+   capped so a hundred-row history doesn't end with rows arriving three
+   seconds late. The class is removed once the longest delay has elapsed so it
+   is never left sitting on the element for the next render to inherit. */
+var LIST_MOTION_TIMER=null;
+function applyListMotion(main){
+  if(!STAGGER_NEXT_RENDER) return;
+  STAGGER_NEXT_RENDER=false;
+  if(reducedMotion()) return;
+  const rows=main.querySelectorAll('.woRow');
+  rows.forEach((el,i)=>el.style.setProperty('--i', Math.min(i,12)));
+  main.classList.remove('stagger');
+  void main.offsetWidth;            // restart the animations on a re-render
+  main.classList.add('stagger');
+  clearTimeout(LIST_MOTION_TIMER);
+  LIST_MOTION_TIMER=setTimeout(()=>main.classList.remove('stagger'), 900);
 }
 function mostRecentNote(wo){
   return (wo.notes && wo.notes.length) ? wo.notes[0] : null;
@@ -4161,8 +4452,46 @@ function adminDeleteWorkOrder(id){
   });
 }
 
+/* True when the OS/browser is set to reduce motion. Checked at call time
+   rather than cached, because the setting can be changed while the app is
+   open and the app is long-lived on a work phone. */
+function reducedMotion(){
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+/* Hands the outgoing modal to #modalGhost so its exit animation can play out
+   after modalRoot has already been emptied. IDs are stripped on the way over:
+   for the ~220ms the ghost is alive it would otherwise be a second element in
+   the document answering to the same id as anything the next modal renders. */
+function ghostOutModal(root){
+  if(reducedMotion()) return;
+  const ghost=document.getElementById('modalGhost');
+  if(!ghost || !root.firstElementChild) return;
+  ghost.innerHTML='';
+  while(root.firstElementChild) ghost.appendChild(root.firstElementChild);
+  ghost.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+  [...ghost.children].forEach(el=>el.classList.add('closing'));
+  const token=(ghost.dataset.token=String(Date.now()+Math.random()));
+  setTimeout(()=>{ if(ghost.dataset.token===token) ghost.innerHTML=''; }, 260);
+}
+/* True while a modal is on screen. Read by the observer below to tell a fresh
+   presentation from an in-place re-render. closeModal() clears it
+   synchronously so a close-then-immediately-open still animates. */
+var MODAL_PRESENTED=false;
+(function watchModalRoot(){
+  const root=document.getElementById('modalRoot');
+  if(!root || !window.MutationObserver) return;
+  new MutationObserver(()=>{
+    const child=root.firstElementChild;
+    if(!child){ MODAL_PRESENTED=false; return; }
+    if(MODAL_PRESENTED) child.classList.add('noAnim');
+    else MODAL_PRESENTED=true;
+  }).observe(root, {childList:true});
+})();
 function closeModal(){
-  document.getElementById('modalRoot').innerHTML='';
+  const root=document.getElementById('modalRoot');
+  MODAL_PRESENTED=false;
+  ghostOutModal(root);
+  root.innerHTML='';
   detachHeaderCustOutsideClickHandler();
   hideAddressSuggestions();
   WO_JOB_EDIT=false; JD_EDIT=null; WO_EDIT_NOTE_IDX=null;
@@ -4194,8 +4523,8 @@ function toast(msg){
   c.appendChild(t);
   setTimeout(()=>{
     t.style.opacity='0';
-    t.style.transform='translateY(6px)';
-    setTimeout(()=>t.remove(), 220);
+    t.style.transform='translateY(14px) scale(.96)';
+    setTimeout(()=>t.remove(), 240);
   }, 3200);
 }
 
