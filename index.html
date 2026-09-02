@@ -486,6 +486,17 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:#000;}
 }
 .modalHead h2{margin:0;font-size:1.3em;}
 .modalHeadCust{display:grid;grid-template-columns:auto auto;column-gap:34px;row-gap:3px;align-content:start;cursor:pointer;}
+/* Every cell is placed explicitly rather than left to auto-placement. The two
+   columns read down as name/phone/alt and address1/address2/email, so the
+   markup can keep the address lines adjacent to each other. Auto-placement
+   forced the DOM to alternate columns, which meant dragging to select the
+   address swept up the phone number sitting between the two lines. */
+.modalHeadCust .mhName   {grid-column:1;grid-row:1;}
+.modalHeadCust .mhPrimary{grid-column:1;grid-row:2;}
+.modalHeadCust .mhAlt    {grid-column:1;grid-row:3;}
+.modalHeadCust .mhAddr1  {grid-column:2;grid-row:1;}
+.modalHeadCust .mhAddr2  {grid-column:2;grid-row:2;}
+.modalHeadCust .mhEmail  {grid-column:2;grid-row:3;}
 .modalHeadCust.editing{display:flex;flex-direction:column;gap:6px;width:360px;max-width:100%;cursor:default;}
 .modalHeadCust.editing .kv{margin-bottom:0;}
 .modalHeadCust .mhName{font-family:var(--f-display);font-size:1.45em;color:var(--navy);font-weight:400;letter-spacing:-.01em;}
@@ -889,17 +900,10 @@ html.hc .woRow.checkedInGlow{
   .modalHeadCust{grid-template-columns:1fr;column-gap:0;}
   .modalHeadCust.editing{width:100%;}
   .modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2{align-self:auto;}
-  /* Reflow order for single-column mobile/tablet stacking: name, primary phone,
-     alt phone, address line 1, address line 2, then email. The desktop 2-column
-     grid relies on DOM order (name/addr1, phone/addr2, alt/email) to line up
-     side-by-side, so we override with explicit order here instead of reordering
-     the markup itself. */
-  .modalHeadCust .mhName{order:1;}
-  .modalHeadCust .mhPrimary{order:2;}
-  .modalHeadCust .mhAlt{order:3;}
-  .modalHeadCust .mhAddr1{order:4;}
-  .modalHeadCust .mhAddr2{order:5;}
-  .modalHeadCust .mhEmail{order:6;}
+  /* Single column on mobile/tablet: release the explicit desktop placement and
+     let the cells stack in DOM order, which is already name, primary phone,
+     alt phone, address line 1, address line 2, email. */
+  .modalHeadCust > div{grid-column:1;grid-row:auto;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
   .modalBody{padding:16px;font-size:1em;flex:1;}
@@ -3876,6 +3880,18 @@ let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO
 /* Which Job Details sub-lists are folded shut, keyed by list name. Survives the
    modal re-renders that add/remove item trigger; cleared when edit mode opens. */
 let JD_COLLAPSED={};
+/* Same idea for the read-only work order face. renderWorkOrderModal() redraws
+   the whole panel whenever anything changes (a schedule box ticked, a note
+   added, a check-in stamped), and a <details> element only knows it is open
+   for as long as that element exists. Without this the redraw would snap every
+   list back to its default and undo whatever the user had just set up.
+   Cleared when the work order closes, so each one opens predictably. */
+let WO_LIST_OPEN={};
+const JOB_LIST_DEFAULT_OPEN={labor:true, materials:true, tools:false, issues:false, exclusions:false, disclaimers:false};
+function jobListOpen(key){
+  return WO_LIST_OPEN[key]===undefined ? !!JOB_LIST_DEFAULT_OPEN[key] : WO_LIST_OPEN[key];
+}
+function rememberJobList(key, el){ WO_LIST_OPEN[key]=el.open; }
 
 function openWorkOrder(id){
   const wo=getWO(id);
@@ -3885,6 +3901,7 @@ function openWorkOrder(id){
   WO_JOB_EDIT = false;
   JD_EDIT = null;
   WO_DOCS_VIEW = false;
+  WO_LIST_OPEN = {};
   renderWorkOrderModal(id);
   if(WO_CUST_EDIT){ attachHeaderCustOutsideClickHandler(id); }
 }
@@ -4141,10 +4158,10 @@ function renderWorkOrderModal(id){
           ondblclick="startHeaderCustEdit(${id})"
           ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
           <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
-          <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1)}</div>
           <div class="mhPrimary">${phoneLink(wo.customer.phone)}</div>
-          <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
           <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
+          <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1)}</div>
+          <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
           <div class="mhEmail">${emailLink(wo.customer.email)}</div>
         </div>`;
   modal.innerHTML=`
@@ -4388,20 +4405,20 @@ function jobListsHTML(wo){
     ${jd.description ? `<div class="descParagraph">${esc(jd.description)}</div>` : ''}
     ${presiteScopeHTML(jd)}
     <div class="sideBySide">
-      <details open>
+      <details ${jobListOpen('labor')?'open':''} ontoggle="rememberJobList('labor',this)">
         <summary>Labor Line Items (${(jd.labor||[]).length})</summary>
         ${(jd.labor&&jd.labor.length) ? jd.labor.map(priceLineRow).join('') : '<div class="small">None</div>'}
       </details>
-      <details open>
+      <details ${jobListOpen('materials')?'open':''} ontoggle="rememberJobList('materials',this)">
         <summary>Materials (${(jd.materials||[]).length})</summary>
         ${(jd.materials&&jd.materials.length) ? jd.materials.map(priceLineRow).join('') : '<div class="small">None</div>'}
       </details>
     </div>
     <div class="expandLinks">
-      <details><summary>Required Tools (${(jd.tools||[]).length})</summary>${(jd.tools||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-      <details><summary>Potential Issues (${(jd.issues||[]).length})</summary>${(jd.issues||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-      <details><summary>Exclusions (${(jd.exclusions||[]).length})</summary>${(jd.exclusions||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-      <details><summary>Disclaimers (${(jd.disclaimers||[]).length})</summary>${(jd.disclaimers||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
+      <details ${jobListOpen('tools')?'open':''} ontoggle="rememberJobList('tools',this)"><summary>Required Tools (${(jd.tools||[]).length})</summary>${(jd.tools||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
+      <details ${jobListOpen('issues')?'open':''} ontoggle="rememberJobList('issues',this)"><summary>Potential Issues (${(jd.issues||[]).length})</summary>${(jd.issues||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
+      <details ${jobListOpen('exclusions')?'open':''} ontoggle="rememberJobList('exclusions',this)"><summary>Exclusions (${(jd.exclusions||[]).length})</summary>${(jd.exclusions||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
+      <details ${jobListOpen('disclaimers')?'open':''} ontoggle="rememberJobList('disclaimers',this)"><summary>Disclaimers (${(jd.disclaimers||[]).length})</summary>${(jd.disclaimers||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
     </div>
     ${presiteSummaryHTML(jd)}`;
 }
@@ -5169,6 +5186,7 @@ function closeModal(){
   hideAddressSuggestions();
   WO_JOB_EDIT=false; JD_EDIT=null; WO_EDIT_NOTE_IDX=null;
   WO_CUST_EDIT=false; WO_ADMIN_VIEW=false; WO_DOCS_VIEW=false;
+  WO_LIST_OPEN={};
   PRESITE_STATE=null;
   SCHED_WO_ID=null; SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
 }
