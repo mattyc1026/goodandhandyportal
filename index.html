@@ -1588,6 +1588,33 @@ html.dark .skelWrap::after{
   .docThumb,.docIconBox{width:64px;height:64px;}
 }
 
+/* ---- DATE PICKER HIT AREA ----
+   The follow-up field works by floating a transparent <input type="date">
+   over the calendar button. The assumption was that clicking anywhere on
+   that input opens the picker. It does not: Chrome, Safari and Firefox all
+   open the picker only from the input's own calendar-indicator region, a
+   small box at the right-hand edge. Every other pixel just focuses the
+   (invisible, zero-opacity) date segments and appears to do nothing, which
+   is exactly the "some parts work, some don't" behaviour.
+
+   The fix is to stop relying on the native hit area at all: the indicator is
+   removed and showPicker() is called from our own click handler, so the
+   whole button is one predictable target. Browsers too old for showPicker
+   get .no-showpicker on <html>, where the indicator is instead stretched to
+   fill the control so the native hit area covers the whole button. */
+.calNativeOverlay::-webkit-calendar-picker-indicator{display:none;}
+html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
+  display:block;position:absolute;inset:0;
+  width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;
+}
+/* The button is the thing that looks clickable, so it should also report as
+   clickable. It stays pointer-events:none, the overlay above it takes the
+   click, but the cursor now matches on the whole wrap. */
+.dateFieldWrap .calWrap{cursor:pointer;}
+.dateFieldWrap .calWrap:focus-within .calBtn{
+  background:var(--line-soft);border-color:var(--orange);color:var(--orange);
+}
+
 /* ---- PRINT ----
    The app is a screen tool, but estimates, invoices and job details all get
    printed or PDF'd for customers. Everything that is chrome comes off, the
@@ -2478,6 +2505,28 @@ function syncNativeFromText(){
   if(!nativeEl || !textEl) return;
   const current = parseFlexibleDate(textEl.value.trim());
   nativeEl.value = current || '';
+}
+/* Opens the native date picker for the follow-up field.
+
+   showPicker() is the only reliable cross-browser way to do this on demand;
+   clicking a date input does NOT open the picker except on its own small
+   calendar-indicator region, which is why parts of the control appeared
+   dead. The indicator is hidden in CSS, so this handler is the single path
+   in and there is no chance of the native region and this both firing.
+
+   It must be called from a real user gesture or it throws NotAllowedError,
+   which is why it hangs off the click rather than being called after a
+   render. The catch covers that and any browser that has the method but
+   refuses the call; focus() is the old behaviour and is no worse than
+   before. */
+function openFollowUpPicker(){
+  const nativeEl=document.getElementById('noteFollowUpNative');
+  if(!nativeEl) return;
+  syncNativeFromText();   // seed with whatever is already typed
+  if(typeof nativeEl.showPicker==='function'){
+    try{ nativeEl.showPicker(); return; }catch(e){ /* fall through to focus */ }
+  }
+  try{ nativeEl.focus(); }catch(e){}
 }
 function applyFollowUpFromNative(){
   const nativeEl=document.getElementById('noteFollowUpNative');
@@ -4025,7 +4074,7 @@ function renderWorkOrderModal(id){
                 <label for="noteFollowUp">Follow-up date (optional)</label>
                 <div class="dateFieldWrap">
                   <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional). Type in any common format" autocomplete="off" value="${followUpVal}" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
-                  <div class="calWrap">
+                  <div class="calWrap" onclick="openFollowUpPicker()">
                     <button type="button" class="calBtn" tabindex="-1" aria-hidden="true">
                       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="5" width="18" height="16" rx="2"></rect>
@@ -6947,6 +6996,14 @@ function toggleDarkMode(){
   applyDarkMode(!on);
 }
 applyDarkMode(localStorage.getItem(DARK_KEY) === '1');
+
+/* Browsers without HTMLInputElement.showPicker (Safari before 16, Firefox
+   before 101) can't be driven programmatically, so they fall back to the
+   native calendar-indicator hit area, which the stylesheet stretches to
+   cover the whole button once this class is set. */
+if(typeof HTMLInputElement==='undefined' || !('showPicker' in HTMLInputElement.prototype)){
+  document.documentElement.classList.add('no-showpicker');
+}
 
 /* ---- Header elevation on scroll ----
    The top slab is flat until there is something underneath it, then it picks
