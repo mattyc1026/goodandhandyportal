@@ -648,6 +648,23 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .aiInputRow input{flex:1;padding:10px;border-radius:var(--radius-sm);border:none;font-family:inherit;}
 .listEditor{background:var(--paper);color:var(--ink);border-radius:var(--radius-sm);padding:14px;margin-top:10px;}
 .listEditor h5{margin:0 0 10px;color:var(--navy);font-size:.72em;text-transform:uppercase;letter-spacing:.09em;}
+/* Job Details edit mode: each sub-list gets a header that doubles as a
+   collapse control, so a long labor list can be folded away while working on
+   materials. The chevron reuses the same --chev mask as the work order rows
+   rather than a text glyph, so it keeps its weight in any font. */
+.jdToggle{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 10px;padding:0;
+  background:none;border:none;color:inherit;font-family:inherit;text-align:left;cursor:pointer;}
+.jdToggle h5{margin:0;flex:1;}
+.jdToggle .jdChev{width:10px;height:10px;flex:none;background-color:var(--navy);
+  -webkit-mask:var(--chev) center/contain no-repeat;mask:var(--chev) center/contain no-repeat;
+  transform:rotate(90deg);transition:transform .18s ease;}
+.jdToggle.collapsed .jdChev{transform:rotate(0deg);}
+.jdToggle.collapsed{margin-bottom:0;}
+.jdToggle .jdCount{flex:none;font-size:.72em;font-weight:700;color:var(--navy);opacity:.55;}
+.jdToggle:focus-visible{outline:2px solid var(--navy);outline-offset:3px;border-radius:4px;}
+@media (prefers-reduced-motion: reduce){
+  .jdToggle .jdChev{transition:none;}
+}
 .editRow{display:flex;gap:6px;margin-bottom:6px;}
 .editRow input{flex:1;padding:8px 10px;border-radius:6px;border:1.5px solid var(--line);font-family:inherit;}
 .editRow button{background:var(--redb);color:#fff;border:none;border-radius:6px;padding:0 12px;font-family:inherit;font-weight:700;}
@@ -2140,8 +2157,8 @@ const NOTE_TYPES=['NOTE','L/M','WCB','SCHD PRESITE','SCHD','RESCHD','PRESITE','S
 /* Ensure work orders created before this feature set have the newer fields. */
 function normalizeWO(wo){
   if(!wo.customer || typeof wo.customer!=='object') wo.customer={name:'',phone:'',altPhone:'',email:'',address:''};
-  if(!wo.jobDetails || typeof wo.jobDetails!=='object') wo.jobDetails={description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]};
-  ['labor','materials','tools','issues','disclaimers'].forEach(k=>{ if(!Array.isArray(wo.jobDetails[k])) wo.jobDetails[k]=[]; });
+  if(!wo.jobDetails || typeof wo.jobDetails!=='object') wo.jobDetails={description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]};
+  ['labor','materials','tools','issues','exclusions','disclaimers'].forEach(k=>{ if(!Array.isArray(wo.jobDetails[k])) wo.jobDetails[k]=[]; });
   if(typeof wo.jobDetails.description!=='string') wo.jobDetails.description='';
   (wo.scheduleDates||[]).forEach(d=>{ if(d.overridden===undefined) d.overridden=false; });
   if(!Array.isArray(wo.notes)) wo.notes=[];
@@ -3066,7 +3083,7 @@ function openNewWorkOrder(){
   const wo={
     id, createdAt:Date.now(),
     customer:{name:'',phone:'',altPhone:'',email:'',address:''},
-    jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], disclaimers:[]},
+    jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
     presiteScheduled:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
@@ -3849,6 +3866,9 @@ function downloadICS(wo, entries){
 ========================================================================= */
 function getWO(id){ return DB.workOrders.find(w=>w.id===id); }
 let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false, WO_EDIT_NOTE_IDX=null;
+/* Which Job Details sub-lists are folded shut, keyed by list name. Survives the
+   modal re-renders that add/remove item trigger; cleared when edit mode opens. */
+let JD_COLLAPSED={};
 
 function openWorkOrder(id){
   const wo=getWO(id);
@@ -4307,6 +4327,32 @@ function priceLineRow(entry){
 function plainLineRow(text){
   return copyLineRow(esc(text), String(text||''));
 }
+/* Pre-site scope block. Sits under the job description and above the labor
+   lists, which is where the walkthrough wording used to end up back when it
+   was pasted into the description itself. Older work orders were saved before
+   scopeText existed, so their wording is rebuilt from the structured scope
+   entries rather than showing nothing. */
+function psScopeLines(p){
+  if(!p) return [];
+  if(p.scopeText && p.scopeText.trim()) return p.scopeText.split('\n').filter(l=>l.trim());
+  return (p.scope||[]).map(r=>{
+    const bits=[r.item];
+    if(r.qty) bits.push(String(r.qty));
+    if(r.ask) bits.push(r.ask);
+    if(r.note) bits.push(r.note);
+    return bits.filter(Boolean).join(', ');
+  }).filter(l=>l.trim());
+}
+function presiteScopeHTML(jd){
+  const p=jd.presite; if(!p) return '';
+  const lines=psScopeLines(p);
+  if(!lines.length && !p.transcript) return '';
+  return `<div style="margin:10px 0 4px;">
+    <h4 style="font-size:.82em;color:var(--navy);margin:6px 0;">Pre-Site Scope</h4>
+    ${lines.length ? lines.map(plainLineRow).join('') : '<div class="small">No scope captured.</div>'}
+    ${p.transcript?`<details style="margin-top:6px"><summary class="small">Walkthrough notes</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(p.transcript)}</div></details>`:''}
+  </div>`;
+}
 /* Pre-site summary block: totals, readiness and what was waved off, so the
    estimator can see the inspector's intent without reading the whole scope. */
 function presiteSummaryHTML(jd){
@@ -4320,7 +4366,6 @@ function presiteSummaryHTML(jd){
     ${r.message?`<div class="small" style="margin-top:6px;color:${colors[r.level]||'#5b6675'};font-weight:600">${esc(r.message)}</div>`:''}
     ${(r.open&&r.open.length)?`<div class="small" style="margin-top:4px">Open items: ${r.open.map(esc).join('; ')}</div>`:''}
     ${(p.wavedOff&&p.wavedOff.length)?`<div class="small" style="margin-top:6px">Waved off at walkthrough: ${p.wavedOff.map(w=>esc(w.item)).join('; ')}</div>`:''}
-    ${p.transcript?`<details style="margin-top:6px"><summary class="small">Walkthrough recording notes</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(p.transcript)}</div></details>`:''}
   </div>`;
 }
 function jobListsHTML(wo){
@@ -4328,12 +4373,13 @@ function jobListsHTML(wo){
   const hasAny = (jd.description && jd.description.trim())
     || (jd.labor&&jd.labor.length) || (jd.materials&&jd.materials.length)
     || (jd.tools&&jd.tools.length) || (jd.issues&&jd.issues.length) || (jd.disclaimers&&jd.disclaimers.length)
-    || (jd.exclusions&&jd.exclusions.length);
+    || (jd.exclusions&&jd.exclusions.length) || !!jd.presite;
   if(!hasAny){
     return '<div class="small">No job details yet. Select "Edit job details" to add them, or complete a pre-site inspection.</div>';
   }
   return `
     ${jd.description ? `<div class="descParagraph">${esc(jd.description)}</div>` : ''}
+    ${presiteScopeHTML(jd)}
     <div class="sideBySide">
       <div>
         <h4 style="font-size:.82em;color:var(--navy);margin:6px 0;">Labor Line Items</h4>
@@ -4357,15 +4403,21 @@ function jobListsHTML(wo){
 function openJobDetailsEdit(id){
   const wo=getWO(id);
   const src=wo.jobDetails||{};
+  /* Spread the original line rather than rebuilding it from item + price. The
+     pre-site wizard also stores qty and unit on each labor/material line, and
+     the estimate and invoice builders compute from those whenever they exist.
+     Rebuilding the line dropped them, so opening this form on a wizard-built
+     job and saving quietly flattened its pricing breakdown. */
   JD_EDIT={
     description: src.description||'',
-    labor: (src.labor||[]).map(e=>typeof e==='string'?{item:e,price:''}:{item:e.item||'',price:e.price||''}),
-    materials: (src.materials||[]).map(e=>typeof e==='string'?{item:e,price:''}:{item:e.item||'',price:e.price||''}),
+    labor: (src.labor||[]).map(e=>typeof e==='string'?{item:e,price:''}:{...e, item:e.item||'', price:e.price||''}),
+    materials: (src.materials||[]).map(e=>typeof e==='string'?{item:e,price:''}:{...e, item:e.item||'', price:e.price||''}),
     tools: (src.tools||[]).slice(),
     issues: (src.issues||[]).slice(),
     disclaimers: (src.disclaimers||[]).slice(),
     exclusions: (src.exclusions||[]).slice()
   };
+  JD_COLLAPSED={};
   WO_JOB_EDIT=true;
   renderWorkOrderModal(id);
 }
@@ -4378,13 +4430,20 @@ function saveJobDetailsEdit(id){
   const wo=getWO(id);
   const descEl=document.getElementById('jdDescription');
   JD_EDIT.description = descEl ? descEl.value.trim() : JD_EDIT.description;
+  /* Merge over the existing object rather than replacing it. The edit form only
+     covers the lists it renders, but jobDetails also carries the pre-site
+     wizard's `presite` block (answers, totals, readiness) that nothing here
+     touches. Assigning a freshly built object would silently delete it, and
+     the walkthrough summary would vanish the first time anyone saved this form. */
   const cleaned={
+    ...(wo.jobDetails||{}),
     description: JD_EDIT.description,
     labor: JD_EDIT.labor.filter(e=>e.item && e.item.trim()),
     materials: JD_EDIT.materials.filter(e=>e.item && e.item.trim()),
     tools: JD_EDIT.tools.filter(t=>t && t.trim()),
     issues: JD_EDIT.issues.filter(t=>t && t.trim()),
-    disclaimers: JD_EDIT.disclaimers.filter(t=>t && t.trim())
+    disclaimers: JD_EDIT.disclaimers.filter(t=>t && t.trim()),
+    exclusions: (JD_EDIT.exclusions||[]).filter(t=>t && t.trim())
   };
   wo.jobDetails=cleaned;
   saveDB(DB);
@@ -4396,7 +4455,16 @@ function saveJobDetailsEdit(id){
 }
 function updateJDItem(key, idx, val, field){
   if(!JD_EDIT) return;
-  if(field){ JD_EDIT[key][idx][field]=val; } else { JD_EDIT[key][idx]=val; }
+  if(field){
+    const line=JD_EDIT[key][idx];
+    if(!line) return;
+    line[field]=val;
+    /* A hand-typed price has to win over the wizard's qty x unit, because both
+       builders multiply those two whenever they are present and only parse the
+       price string as a fallback. Leaving them attached would show the new
+       number in the portal while the customer still saw the old one. */
+    if(field==='price' && line.qty!==undefined){ delete line.qty; delete line.unit; }
+  } else { JD_EDIT[key][idx]=val; }
 }
 function removeJDItem(id, key, idx){
   JD_EDIT[key].splice(idx,1);
@@ -4418,11 +4486,36 @@ function jdEditSection(id, key, label, isPriced){
     const val=esc(it);
     return `<div class="editRow"><input value="${val}" onchange="updateJDItem('${key}',${i},this.value)"><button onclick="removeJDItem(${id},'${key}',${i})">✕</button></div>`;
   }).join('') || '<div class="small">None yet.</div>';
+  const collapsed = !!JD_COLLAPSED[key];
   return `<div class="listEditor" style="margin-top:10px;">
-    <h5>${label}</h5>
-    <div>${rows}</div>
-    <button class="btn secondary" onclick="addJDItem(${id},'${key}')" style="margin-top:6px;">+ Add Item</button>
+    <button type="button" class="jdToggle${collapsed?' collapsed':''}" id="jdTog-${key}"
+      aria-expanded="${collapsed?'false':'true'}" aria-controls="jdBody-${key}"
+      onclick="toggleJDSection('${key}')">
+      <span class="jdChev" aria-hidden="true"></span>
+      <h5>${label}</h5>
+      <span class="jdCount">${items.length}</span>
+    </button>
+    <div id="jdBody-${key}"${collapsed?' hidden':''}>
+      <div>${rows}</div>
+      <button class="btn secondary" onclick="addJDItem(${id},'${key}')" style="margin-top:6px;">+ Add Item</button>
+    </div>
   </div>`;
+}
+/* Collapsed state lives outside the DOM because renderWorkOrderModal() rebuilds
+   the whole edit form on every add/remove, which would otherwise re-open every
+   section the user had just folded away. The toggle itself only touches the two
+   elements it owns, so folding a section does not re-render the modal or throw
+   away the caret position in whatever field is being typed in. */
+function toggleJDSection(key){
+  const collapsed = !JD_COLLAPSED[key];
+  JD_COLLAPSED[key] = collapsed;
+  const btn=document.getElementById('jdTog-'+key);
+  const body=document.getElementById('jdBody-'+key);
+  if(btn){
+    btn.classList.toggle('collapsed', collapsed);
+    btn.setAttribute('aria-expanded', collapsed?'false':'true');
+  }
+  if(body) body.hidden=collapsed;
 }
 function jobDetailsEditHTML(id){
   if(!JD_EDIT) return '';
@@ -4435,6 +4528,7 @@ function jobDetailsEditHTML(id){
     ${jdEditSection(id,'materials','Materials', true)}
     ${jdEditSection(id,'tools','Required Tools', false)}
     ${jdEditSection(id,'issues','Potential Unforeseen Issues', false)}
+    ${jdEditSection(id,'exclusions','Exclusions', false)}
     ${jdEditSection(id,'disclaimers','Disclaimers', false)}
     <div class="btnRow" style="margin-top:12px;">
       <button class="btn" onclick="saveJobDetailsEdit(${id})">Save Job Details</button>
@@ -6557,10 +6651,10 @@ function psFinish(){
     return bits.join(', ');
   }).join('\n');
 
-  jd.description = [
-    scopeText,
-    S.transcript ? '\nWalkthrough notes:\n'+S.transcript : ''
-  ].filter(Boolean).join('\n').trim() || jd.description || '';
+  /* The generated scope wording used to be written straight into
+     jd.description, which meant finishing a walkthrough silently erased
+     whatever the office had typed there. It lives on the presite record now
+     and renders as its own section, so the two no longer compete. */
 
   jd.labor       = L.labor.filter(x=>x.item && x.item.trim());
   jd.materials   = L.materials.filter(x=>x.item && x.item.trim());
@@ -6575,6 +6669,7 @@ function psFinish(){
     yearBuilt: S.yearBuilt,
     jobType: S.jobType,
     transcript: S.transcript || '',
+    scopeText: scopeText,
     scope: S.scope.map(r=>({item:psItem(r.itemId).label, itemId:r.itemId, ...r.ans, source:r.source})),
     wavedOff: S.dismissed.map(d=>({item:(psItem(d.itemId)||{}).label||d.itemId, from:d.parentLabel})),
     readiness: {level:rd.level, message:rd.msg, open:rd.open},
@@ -6633,6 +6728,7 @@ function openSplit(id, kind){
             <div class="kv"><b>Phone</b>${phoneLink(wo.customer.phone)}</div>
             <div class="kv"><b>Address</b>${addressLink(wo.customer.address)}</div>
             ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${esc(jd.description)}</div>` : ''}
+            ${presiteScopeHTML(jd)}
 
             <div class="panelTitle" style="margin-top:16px;">Labor Line Items</div>
             <div class="laborPick">${(jd.labor&&jd.labor.length) ? jd.labor.map(priceLineRow).join('') : '<div class="small">No labor items on file.</div>'}</div>
@@ -6844,7 +6940,11 @@ function sendJobDataToBuilder(iframeEl, id, kind){
       state:addr.state,
       zip:addr.zip
     },
-    description: jd.description||'',
+    /* The builder's description field used to receive the walkthrough wording
+       because the pre-site wrote it into jd.description. Now that the two are
+       stored separately, send both, typed description first, so the generated
+       document reads the same as it did before. */
+    description: [jd.description||'', psScopeLines(jd.presite).join('\n')].filter(s=>s.trim()).join('\n\n'),
     labor: buildLaborLineItems(jd.labor),
     laborDetail: jd.labor||[],
     materials: buildMaterialsLineItem(jd.materials, jd.presite),
