@@ -688,12 +688,17 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .copyIcon{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 4px;font-size:.95em;flex-shrink:0;border-radius:4px;}
 .copyIcon:hover{color:var(--orange);background:var(--cream);}
 .sideBySide{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
-.sideBySide>div{flex:1;min-width:220px;}
+.sideBySide>div,.sideBySide>details{flex:1;min-width:220px;}
+/* Labor and materials are disclosures now, same as the tools/issues group, so
+   the selectors are shared rather than duplicated. They start open because
+   they are the lists people actually come to the work order to read. */
+.expandLinks details,.sideBySide>details{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 13px;}
+.expandLinks summary,.sideBySide>details>summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:.78em;text-transform:uppercase;letter-spacing:.06em;}
+.sideBySide>details>summary{margin-bottom:2px;}
 .descParagraph{background:var(--paper);border-radius:var(--radius-sm);padding:13px 15px;font-size:.88em;line-height:1.6;margin-bottom:6px;border:1px solid var(--line);}
 .expandLinks{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
-.expandLinks details{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 13px;flex:1;min-width:180px;}
-.expandLinks summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:.78em;text-transform:uppercase;letter-spacing:.06em;}
-.expandLinks .lineRow{font-size:.82em;}
+.expandLinks details{flex:1;min-width:180px;}
+.expandLinks .lineRow,.sideBySide>details .lineRow{font-size:.82em;}
 .custDisplay .kv{display:flex;justify-content:space-between;align-items:baseline;}
 .editLink{background:none;border:none;color:var(--orange);font-weight:700;font-size:.78em;cursor:pointer;padding:8px 4px;min-height:36px;font-family:inherit;text-transform:uppercase;letter-spacing:.06em;}
 .editLink:hover{color:var(--orange2);text-decoration:underline;}
@@ -1279,7 +1284,8 @@ nav.tabs button .count{margin-left:0;transition:background var(--t-fast) var(--e
 }
 
 /* ---- Disclosure and small surfaces ---- */
-.expandLinks details[open] > *:not(summary){animation:rowIn .28s var(--e-out) backwards;}
+.expandLinks details[open] > *:not(summary),
+.sideBySide>details[open] > *:not(summary){animation:rowIn .28s var(--e-out) backwards;}
 .addrSuggest{animation:rowIn .2s var(--e-out) backwards;}
 .followupBadge,.woRow .tag{transition:transform var(--t-fast) var(--e-bounce);}
 
@@ -1669,8 +1675,9 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   .custPanel,.jobPanel,.descParagraph,.listEditor{background:#fff !important;border:1px solid #bbb !important;}
   .tag{border:1px solid #333 !important;background:#fff !important;color:#000 !important;}
   a{text-decoration:none;color:#000;}
-  .expandLinks details{display:block !important;}
-  .expandLinks details > *:not(summary){display:block !important;}
+  .expandLinks details,.sideBySide>details{display:block !important;}
+  .expandLinks details > *:not(summary),
+  .sideBySide>details > *:not(summary){display:block !important;}
   .emptyState{border:1px solid #bbb !important;}
   .subListHeader{break-after:avoid;page-break-after:avoid;}
 }
@@ -4381,14 +4388,14 @@ function jobListsHTML(wo){
     ${jd.description ? `<div class="descParagraph">${esc(jd.description)}</div>` : ''}
     ${presiteScopeHTML(jd)}
     <div class="sideBySide">
-      <div>
-        <h4 style="font-size:.82em;color:var(--navy);margin:6px 0;">Labor Line Items</h4>
+      <details open>
+        <summary>Labor Line Items (${(jd.labor||[]).length})</summary>
         ${(jd.labor&&jd.labor.length) ? jd.labor.map(priceLineRow).join('') : '<div class="small">None</div>'}
-      </div>
-      <div>
-        <h4 style="font-size:.82em;color:var(--navy);margin:6px 0;">Materials</h4>
+      </details>
+      <details open>
+        <summary>Materials (${(jd.materials||[]).length})</summary>
         ${(jd.materials&&jd.materials.length) ? jd.materials.map(priceLineRow).join('') : '<div class="small">None</div>'}
-      </div>
+      </details>
     </div>
     <div class="expandLinks">
       <details><summary>Required Tools (${(jd.tools||[]).length})</summary>${(jd.tools||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
