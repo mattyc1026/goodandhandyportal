@@ -60,6 +60,53 @@
      lifecycle", while this means "a human is physically on the job right
      now", so it must not read as another shade of the same thing. */
   --neon:#00ff7a; --neon-rail:#00e36c; --neon-rgb:0,255,122;
+
+  /* ---- Surface depth ----
+     Three named levels, so a panel never has to guess which grey it is.
+     0 is the page itself, 1 is a card lifted off it, 2 is a well recessed
+     back into a card. The rule the stylesheet follows below: a surface gets
+     a fill OR a border, never both, because doing both is what makes nested
+     panels turn to mud. */
+  --s0:var(--cream);      /* page ground */
+  --s1:var(--paper);      /* card on the page */
+  --s2:var(--cream);      /* recessed panel inside a card */
+
+  /* Blueprint grid behind the app. Kept at the very edge of visibility on
+     purpose: it should register as paper texture, not as a drawing. */
+  --grid-line:rgba(15,38,71,.030); --grid-size:56px;
+
+  /* Icon stroke weight, one number for the whole set. */
+  --ic-stroke:1.7;
+}
+
+/* ---- DARK MODE ----
+   Toggled by adding class "dark" to <html>, the same mechanism as high
+   contrast, driven from the settings menu and persisted. Everything below is
+   a variable override, so the entire app re-themes without a single
+   component needing a dark-specific rule; the handful of exceptions after
+   this block are places where the original hard-coded a colour (#fff text on
+   a coloured pill, the header gradient) and so can't follow a variable.
+
+   Note --navy inverts meaning here: in light mode it is the dark heading
+   ink, in dark mode it is the light heading ink. Everything reading it as
+   "heading colour" keeps working; the few places reading it as "dark
+   background" are corrected underneath. */
+html.dark{
+  color-scheme:dark;            /* native date pickers, scrollbars, form UI */
+  --navy:#dbe5f5; --navy2:#16233a;
+  --orange:#ff9a45; --orange2:#ffb572;
+  --cream:#0e1522; --paper:#161f30; --ink:#e7edf7; --muted:#94a3bb;
+  --line:#2b3a54; --line-soft:#1f2c42;
+  --red:#38202a; --redb:#ff8f7d; --red-bold:#4b2733;
+  --yellow:#372f19; --yellowb:#f3c65c; --yellow-bold:#4a3f1e;
+  --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
+  --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
+  --grey:#1b2536; --greyb:#93a3ba;
+  --grid-line:rgba(180,205,245,.035);
+  --sh-1:0 1px 2px rgba(0,0,0,.4);
+  --sh-2:0 2px 6px rgba(0,0,0,.44), 0 8px 20px rgba(0,0,0,.34);
+  --sh-3:0 10px 26px rgba(0,0,0,.5), 0 24px 56px rgba(0,0,0,.44);
+  --sh-4:0 26px 80px rgba(0,0,0,.7);
 }
 /* ---- High Contrast mode ----
    Toggled by adding class "hc" to <html>. Overrides the same CSS
@@ -93,7 +140,17 @@ html.hc .tag{border:1px solid #000;}
 html.hc .field input,html.hc select,html.hc textarea{border:1.5px solid #000;}
 html.hc a,html.hc .editLink,html.hc .adminViewLink{color:#a83e00;}
 *{box-sizing:border-box;}
-body{margin:0;font-family:var(--f-body);background:var(--cream);color:var(--ink);
+/* The blueprint grid from the login screen, carried through the whole app at
+   a fraction of the strength. background-attachment:fixed keeps it still
+   while the board scrolls, so it reads as the paper the app is printed on
+   rather than as content. */
+body{margin:0;font-family:var(--f-body);color:var(--ink);
+  background-color:var(--cream);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:var(--grid-size) var(--grid-size);
+  background-attachment:fixed;
   font-size:var(--dScale,16px);line-height:1.5;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-.005em;}
 h1,h2,h3{font-family:var(--f-display);margin:0 0 .3em;color:var(--navy);font-weight:400;letter-spacing:-.01em;}
@@ -1155,7 +1212,9 @@ nav.tabs button::after{
   transition:transform var(--t-med) var(--e-spring);
 }
 nav.tabs button.active::after{transform:scaleX(1);}
-nav.tabs button .count{transition:background var(--t-fast) var(--e-out),transform var(--t-fast) var(--e-bounce);}
+/* The tab button is now a flex row with its own gap, so the count's old
+   left margin would double the spacing. */
+nav.tabs button .count{margin-left:0;transition:background var(--t-fast) var(--e-out),transform var(--t-fast) var(--e-bounce);}
 /* Count badges bump when the number actually changes, so work moving between
    tabs is noticeable without a notification. */
 .count.bump{animation:countBump .42s var(--e-bounce);}
@@ -1222,12 +1281,395 @@ html.hc #mainArea.stagger .woRow.checkedInGlow{
 /* Composited hints. Only on the surfaces that actually move, since a
    blanket will-change costs memory on a long board. */
 .modal,.confirmCard,.toastItem,.settingsMenu{will-change:transform,opacity;}
+
+/* =========================================================================
+   VISUAL DESIGN LAYER
+   Row spine, surface depth, the unified header slab, icons, empty states,
+   skeletons, dark-mode corrections and print. Kept together at the end for
+   the same reason as the motion layer: one block to read, one block to pull.
+========================================================================= */
+
+/* ---- Dark mode corrections ----
+   Everywhere the original hard-coded #fff or a fixed navy, because at the
+   time there was only ever one theme. */
+html.dark body{background-color:var(--cream);}
+html.dark header.top{background:linear-gradient(180deg,#16233a,#101a2b);}
+html.dark nav.tabs{background:#101a2b;}
+html.dark .globalSearchBar{background:#101a2b;}
+html.dark #loginScreen{
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(232,121,26,.16), transparent 60%),
+    linear-gradient(165deg,#111d31 0%,#0b1424 45%,#070e19 100%);
+}
+/* Solid status pills carry white text in light mode; in dark the pill colour
+   is the bright one, so the text has to flip to the dark ground instead. */
+html.dark .tag.pending,html.dark .tag.build-est,
+html.dark .tag.go,html.dark .tag.build-inv{color:#0e1522;}
+html.dark .subListHeader .count{background:var(--navy2);color:var(--ink);}
+html.dark .toastItem{background:#22304a;color:var(--ink);}
+html.dark .btn{color:#121a29;}
+html.dark .btn.secondary:hover{background:var(--navy2);color:var(--ink);border-color:var(--navy2);}
+html.dark .syncPill.on{color:#0e1522;}
+html.dark .woRow.st-red-bold .followupBadge,html.dark .woRow.st-yellow-bold .followupBadge,
+html.dark .woRow.st-green-bold .followupBadge,html.dark .woRow.st-blue-bold .followupBadge{
+  background:rgba(0,0,0,.34);
+}
+html.dark .woNoteDate{color:#8493ab;}
+/* The remaining places that paint a navy chip or tooltip and set #fff text on
+   it. In dark mode --navy is the light heading ink, so each of these needs
+   the pair flipped rather than inherited. */
+html.dark nav.tabs#tabsNav button .count,
+html.dark .schedCalDay.selStart,html.dark .schedCalDay.selEnd,
+html.dark .schedDayPopup,html.dark .schedTypeToggle button.active,
+html.dark .tinyEdit:hover{background:var(--navy2);color:var(--ink);border-color:var(--navy2);}
+html.dark #ghStorageRules{background:#0a111d !important;color:var(--ink) !important;}
+html.dark *{scrollbar-color:#3a4a66 transparent;}
+html.dark ::-webkit-scrollbar-thumb{background:#3a4a66;border-color:var(--paper);}
+html.dark .modalHeadCust .mhName{color:var(--navy);}
+/* High contrast wins outright if somehow both are set. */
+html.hc.dark{color-scheme:light;}
+html.hc body{background-image:none;}
+
+/* ---- WORK ORDER ROW, redesigned ----
+   Three changes, all aimed at the same thing: making one row scan as a
+   headline with supporting detail rather than seven items of equal weight.
+
+   1. The status rail is a pseudo-element inset from the edge, not a
+      border-left. A 5px border on a 12px radius bends around the corner and
+      tapers off, which looks broken at close range; a floating capsule with
+      its own radius stays crisp and lets the card corner stay round.
+   2. The tint fades over a PERCENTAGE of the row, not a fixed 300px. The
+      pixel value meant the same code produced a small smear on a wide
+      desktop row and a full wash across a phone card.
+   3. The customer name moves to the display serif. It is the thing the eye
+      actually hunts for down a list, and it was previously the same weight
+      as everything around it. */
+.woRow{
+  position:relative;overflow:hidden;
+  border:1px solid var(--line);border-left:1px solid var(--line);
+  padding-left:26px;
+  background-color:var(--paper);
+}
+.woRow::before{
+  content:'';position:absolute;left:8px;top:10px;bottom:10px;width:4px;
+  border-radius:4px;background:var(--line);
+  transition:width var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out);
+}
+.woRow.st-red::before{background:var(--redb);}
+.woRow.st-yellow::before{background:var(--yellowb);}
+.woRow.st-green::before{background:var(--greenb);}
+.woRow.st-blue::before{background:var(--blueb);}
+.woRow.st-grey::before{background:var(--greyb);}
+.woRow.st-red-bold::before{background:var(--redb);width:6px;}
+.woRow.st-yellow-bold::before{background:var(--yellowb);width:6px;}
+.woRow.st-green-bold::before{background:var(--greenb);width:6px;}
+.woRow.st-blue-bold::before{background:var(--blueb);width:6px;}
+/* Proportional tint. Bold states run the wash further and start it heavier,
+   which is what keeps "waiting on me" distinct from "waiting on them". */
+.woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 42%);}
+.woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 42%);}
+.woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 42%);}
+.woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 42%);}
+.woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 42%);}
+.woRow.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 58%);border-color:var(--redb);}
+.woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 58%);border-color:var(--yellowb);}
+.woRow.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 58%);border-color:var(--greenb);}
+.woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 58%);border-color:var(--blueb);}
+/* The neon rail wins over the stage colour: a crew on site outranks whatever
+   lifecycle stage the job happens to be sitting in. */
+.woRow.checkedInGlow{border-left:1px solid var(--neon-rail);}
+.woRow.checkedInGlow::before{background:var(--neon-rail);width:6px;box-shadow:0 0 12px rgba(var(--neon-rgb),.9);}
+
+/* The old border-left rail is fully retired. Several earlier rules still set
+   border-left-width (8px on bold states, 6px on mobile, 12px in high
+   contrast) and would otherwise leave a fat coloured edge sitting alongside
+   the new capsule. Everything is reset to the plain 1px card edge here; the
+   stage colour now lives on ::before and nowhere else. */
+.woRow,
+.woRow.st-red-bold,.woRow.st-yellow-bold,.woRow.st-green-bold,.woRow.st-blue-bold,
+html.hc .woRow,
+html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,
+html.hc .woRow.st-green-bold,html.hc .woRow.st-blue-bold{border-left-width:1px;}
+
+/* Editorial hierarchy: serif headline, quiet secondary line, meta stacked in
+   its own right-hand column instead of strung out along the same baseline. */
+.woRow .woName{
+  font-family:var(--f-display);font-weight:400;font-size:1.22em;
+  line-height:1.25;letter-spacing:-.005em;color:var(--navy);
+}
+.woRow .woSub{font-size:.84em;line-height:1.45;}
+.woRow .woMeta{
+  flex-direction:column;align-items:flex-end;gap:9px;
+  flex:0 0 auto;text-align:right;padding-left:18px;
+}
+.woRow .woMeta > span{opacity:.85;}
+.woRow .woMain{flex:1 1 auto;gap:5px;}
+html.hc .woRow{border-left-width:1px;}
+html.hc .woRow::before{width:7px;}
+html.hc .woRow.st-red-bold::before,html.hc .woRow.st-yellow-bold::before,
+html.hc .woRow.st-green-bold::before,html.hc .woRow.st-blue-bold::before{width:11px;}
+html.hc .woRow.checkedInGlow{border-left-width:1px;}
+html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
+
+@media (max-width:900px){
+  /* On a phone the row is a stacked card, so the meta column goes back to a
+     wrapping row along the bottom and the tint gets more room to breathe. */
+  .woRow{padding-left:26px;border-left-width:1px;}
+  .woRow .woMeta{flex-direction:row;align-items:center;text-align:left;padding-left:0;flex-wrap:wrap;}
+  .woRow .woName{font-size:1.35em;}
+  .woRow.st-red,.woRow.st-yellow,.woRow.st-green,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
+  .woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 72%);}
+  .woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 72%);}
+  .woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 72%);}
+  .woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 72%);}
+  .woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 72%);}
+  .woRow.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 88%);}
+  .woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 88%);}
+  .woRow.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 88%);}
+  .woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 88%);}
+  /* Replace the rotated single-guillemet with a real chevron. The old one was
+     a text glyph flipped 180 degrees, which rendered at a different weight
+     and vertical offset in every font it landed in. */
+  .woRow::after{
+    content:'';border:none;width:9px;height:16px;margin-top:-8px;opacity:.32;
+    background-color:currentColor;
+    -webkit-mask:var(--chev) center/contain no-repeat;
+    mask:var(--chev) center/contain no-repeat;
+  }
+}
+:root{
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E");
+}
+
+/* ---- SURFACE DEPTH ----
+   One rule, applied consistently: a surface gets a fill or a border, never
+   both. Top-level cards sit on the page ground, so they need a border to
+   define an edge. Panels nested inside a card are already contained by it,
+   so the border is redundant and the fill alone reads as recessed. This is
+   what stops the work order modal turning into four stacked greys. */
+.custPanel,.jobPanel{border:none;background:var(--s2);}
+.docRow,.dayLogRow{border:none;background:var(--s2);}
+.custPanel .docRow,.jobPanel .docRow,
+.custPanel .dayLogRow,.jobPanel .dayLogRow{background:var(--paper);}
+.descParagraph,.listEditor,.expandLinks details,.checkStampBox{
+  background:transparent;border:1px solid var(--line);
+}
+/* The one deliberate exception: an editable field well should read as a
+   hole in the card, not another card on top of it. */
+.custPanel .field input,.jobPanel .field input,
+.custPanel textarea,.jobPanel textarea,
+.custPanel select,.jobPanel select{background:var(--paper);}
+
+/* ---- HEADER: one slab ----
+   Header, search and tab bar were three separate bands in two similar
+   navies with a white strip between them, which read as an accident. They
+   are now a single continuous slab, with the search field cut into it
+   rather than sitting on its own white shelf. */
+.globalSearchBar{
+  background:var(--navy);border-bottom:none;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset;
+}
+.globalSearchBar input{
+  background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.16);color:#fff;
+}
+.globalSearchBar input::placeholder{color:rgba(255,255,255,.5);}
+.globalSearchBar input:focus{
+  background:rgba(255,255,255,.15);border-color:var(--orange);
+  box-shadow:0 0 0 3px rgba(232,121,26,.28);color:#fff;
+}
+.globalSearchBar .btn.secondary{
+  color:#fff;border-color:rgba(255,255,255,.24);background:transparent;
+}
+.globalSearchBar .btn.secondary:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4);color:#fff;}
+nav.tabs{background:var(--navy);}
+header.top{background:linear-gradient(180deg,#16345f,var(--navy));box-shadow:none;}
+/* Elevation appears only once there is content scrolled under it, the way a
+   native large-title bar does, instead of a permanent drop shadow. */
+.tabsBarWrap{transition:box-shadow var(--t-med) var(--e-out);}
+body.scrolled .tabsBarWrap{box-shadow:0 6px 20px rgba(6,17,35,.22);}
+html.hc .globalSearchBar{background:#000;border-bottom:2px solid #fff;}
+html.hc .globalSearchBar input{background:#fff;color:#000;border-color:#fff;}
+html.hc .globalSearchBar input::placeholder{color:#444;}
+html.hc nav.tabs{background:#000;}
+html.hc .globalSearchBar .btn.secondary{border-color:#fff;color:#fff;}
+@media (max-width:900px){
+  /* The tab bar is a fixed bottom bar on phones and is its own light
+     surface there, so the slab treatment stops at the search field. */
+  nav.tabs#tabsNav{background:var(--paper);}
+  body.scrolled .tabsBarWrap{box-shadow:0 -4px 24px rgba(15,38,71,.18);}
+}
+
+/* ---- ICONS ----
+   One stroke set, one weight, sized in em so it tracks the text-size
+   control. currentColor throughout, so an icon is always the colour of the
+   thing it sits in and needs no per-context rule. */
+.ic{
+  width:1.15em;height:1.15em;flex:0 0 auto;display:inline-block;vertical-align:-.18em;
+  fill:none;stroke:currentColor;stroke-width:var(--ic-stroke);
+  stroke-linecap:round;stroke-linejoin:round;pointer-events:none;
+}
+.ic.lg{width:1.7em;height:1.7em;}
+.ic.xl{width:2.6em;height:2.6em;stroke-width:1.3;}
+.jcCheck .ic,.docName .ic,.telLink .ic{opacity:.75;}
+nav.tabs button{display:inline-flex;align-items:center;gap:8px;}
+nav.tabs button .ic{opacity:.75;transition:opacity var(--t-fast) var(--e-out),transform var(--t-med) var(--e-spring);}
+nav.tabs button.active .ic{opacity:1;transform:scale(1.06);}
+@media (max-width:900px){
+  /* Stacked icon over label. The labels are clamped down to .68em at the
+     narrow end and are genuinely hard to read; the icon carries the meaning
+     and the label confirms it. */
+  nav.tabs#tabsNav button .ic{width:1.5em;height:1.5em;opacity:.8;}
+  nav.tabs#tabsNav button.active .ic{opacity:1;}
+}
+.btn .ic{margin-right:7px;vertical-align:-.16em;}
+.docActions .btn .ic{margin-right:5px;}
+
+/* ---- EMPTY STATES ----
+   Was a dashed box with a sentence in it. Now it has a subject and, where
+   there is something to do about it, a way to do it. */
+.emptyState{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  padding:52px 24px;border-style:solid;border-color:var(--line);
+  background:var(--paper);
+}
+.emptyState .ic{opacity:.28;}
+.emptyState .emptyMsg{max-width:34ch;line-height:1.55;}
+.emptyState .btn{margin-top:4px;}
+
+/* ---- SKELETONS ----
+   Shown while the first Firestore snapshot is still in flight, so the board
+   arrives as content filling in rather than blank space snapping to full.
+   The shimmer is a moving gradient rather than an opacity pulse, which reads
+   as loading instead of as an error blinking. */
+.skelRow{
+  position:relative;overflow:hidden;background:var(--paper);
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:15px 18px 15px 26px;margin-bottom:10px;box-shadow:var(--sh-1);
+}
+.skelRow::before{
+  content:'';position:absolute;left:8px;top:10px;bottom:10px;width:4px;
+  border-radius:4px;background:var(--line);
+}
+.skelLine{height:11px;border-radius:6px;background:var(--line-soft);margin-bottom:9px;}
+.skelLine.w40{width:40%;height:15px;}
+.skelLine.w70{width:70%;}
+.skelLine.w25{width:25%;margin-bottom:0;}
+.skelWrap{position:relative;overflow:hidden;}
+.skelWrap::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.55) 50%,transparent 80%);
+  transform:translateX(-100%);
+  animation:shimmer 1.5s var(--e-out) infinite;
+}
+html.dark .skelWrap::after{
+  background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.07) 50%,transparent 80%);
+}
+@keyframes shimmer{to{transform:translateX(100%);}}
+
+/* ---- DOCUMENT THUMBNAILS ----
+   An uploaded photo now shows the photo. This is the single cheapest way to
+   make the app feel like it is holding real work rather than a list of
+   filenames. */
+.docThumb{
+  width:56px;height:56px;flex:0 0 auto;border-radius:var(--radius-sm);
+  object-fit:cover;background:var(--cream);border:1px solid var(--line);
+  cursor:pointer;transition:transform var(--t-fast) var(--e-out);
+}
+.docThumb:hover{transform:scale(1.05);}
+.docIconBox{
+  width:56px;height:56px;flex:0 0 auto;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--cream);color:var(--muted);border:1px solid var(--line);
+}
+.docRow{align-items:center;}
+.docLead{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 auto;}
+@media (max-width:900px){
+  .docLead{width:100%;}
+  .docThumb,.docIconBox{width:64px;height:64px;}
+}
+
+/* ---- PRINT ----
+   The app is a screen tool, but estimates, invoices and job details all get
+   printed or PDF'd for customers. Everything that is chrome comes off, the
+   modal stops being an overlay and becomes the page, and rows are kept from
+   splitting across a page break. */
+@media print{
+  @page{margin:14mm;}
+  html,body{background:#fff !important;background-image:none !important;color:#000;}
+  header.top,.globalSearchBar,.tabsBarWrap,nav.tabs,#toastStack,#modalGhost,
+  .newWoBtn,.closeX,.headerTabs,.settingsWrap,.syncPill,.logoutBtn,
+  .sortWrap,.editLink,.adminViewLink,.copyIcon,.docActions,.btnRow,
+  .checkInOutRow,.estDecisionRow,.jcCheck{display:none !important;}
+  /* An open modal becomes the printed page. Without this the scrim prints as
+     a full-bleed grey block and the sheet is clipped to the viewport. */
+  .overlay,.confirmBox{
+    position:static !important;background:none !important;padding:0 !important;
+    display:block !important;overflow:visible !important;
+    -webkit-backdrop-filter:none !important;backdrop-filter:none !important;
+  }
+  .modal,.confirmCard{
+    max-width:100% !important;width:100% !important;box-shadow:none !important;
+    border-radius:0 !important;animation:none !important;min-height:0 !important;
+  }
+  .modalBody,.modalHead{position:static !important;padding:0 0 10px !important;}
+  /* When a modal is open, the board behind it should not print as well. */
+  body:has(#modalRoot > *) #appScreen{display:none !important;}
+  main{padding:0 !important;max-width:none !important;}
+  .woRow,.docRow,.dayLogRow,.lineRow,.custPanel,.jobPanel,.schedRow{
+    break-inside:avoid;page-break-inside:avoid;
+    box-shadow:none !important;
+  }
+  .woRow{border:1px solid #999 !important;background:#fff !important;margin-bottom:6px;}
+  .woRow::before{background:#333 !important;}
+  .woRow::after{display:none !important;}
+  .custPanel,.jobPanel,.descParagraph,.listEditor{background:#fff !important;border:1px solid #bbb !important;}
+  .tag{border:1px solid #333 !important;background:#fff !important;color:#000 !important;}
+  a{text-decoration:none;color:#000;}
+  .expandLinks details{display:block !important;}
+  .expandLinks details > *:not(summary){display:block !important;}
+  .emptyState{border:1px solid #bbb !important;}
+  .subListHeader{break-after:avoid;page-break-after:avoid;}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
+
+<!-- ============ ICON SET ============
+     One inline sprite, referenced everywhere via <use href="#i-name">. Inline
+     rather than an icon font or a CDN set for three reasons: the app is a
+     single file served from GitHub Pages and must not gain a network
+     dependency, the strokes inherit currentColor so an icon is automatically
+     the right colour in light, dark and high-contrast mode, and one symbol
+     definition is reused by every instance instead of the markup repeating a
+     path each time. All drawn on the same 24x24 grid at the same weight
+     (--ic-stroke) so they sit together as a set. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.9-5.3-2.8-5.3 2.8 1-5.9L5.5 9.7l5.9-.9z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3h3l1.5 4-2 1.4a12 12 0 0 0 5.5 5.5l1.4-2 4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 4.6 5.2 2 2 0 0 1 6.6 3z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 16l-5-5L6 20"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L20 8l-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+  <symbol id="i-login" viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M4 12h11"/><path d="M11 8l4 4-4 4"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M9 12h11"/><path d="M16 8l4 4-4 4"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13h4l2 3h4l2-3h4"/><path d="M4 13l2.5-8h11L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
+  <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/></symbol>
+</defs></svg>
 
 <!-- ============ LOGIN / SIGNUP ============ -->
 <div id="loginScreen">
@@ -1242,6 +1684,12 @@ html.hc #mainArea.stagger .woRow.checkedInGlow{
           <div class="settingsRow">
             <span>Text Size</span>
             <button class="textSizeBtn" id="loginTextSizeBtn" onclick="cycleTextSize()" title="Adjust text size">Aa</button>
+          </div>
+          <div class="settingsRow">
+            <span>Dark Mode</span>
+            <button class="hcToggleBtn" id="loginDarkBtn" onclick="toggleDarkMode()" title="Toggle dark mode" aria-pressed="false">
+              <svg class="ic" aria-hidden="true" style="width:20px;height:20px;"><use href="#i-moon"/></svg>
+            </button>
           </div>
           <div class="settingsRow">
             <span>High Contrast</span>
@@ -1296,6 +1744,12 @@ html.hc #mainArea.stagger .woRow.checkedInGlow{
             <button class="textSizeBtn" id="textSizeBtn" onclick="cycleTextSize()" title="Adjust text size">Aa</button>
           </div>
           <div class="settingsRow">
+            <span>Dark Mode</span>
+            <button class="hcToggleBtn" id="darkBtn" onclick="toggleDarkMode()" title="Toggle dark mode" aria-pressed="false">
+              <svg class="ic" aria-hidden="true" style="width:20px;height:20px;"><use href="#i-moon"/></svg>
+            </button>
+          </div>
+          <div class="settingsRow">
             <span>High Contrast</span>
             <button class="hcToggleBtn" id="contrastBtn" onclick="toggleHighContrast()" title="Toggle high contrast" aria-pressed="false">
               <svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">
@@ -1320,13 +1774,13 @@ html.hc #mainArea.stagger .woRow.checkedInGlow{
       <span id="currentTabLabel">Work Orders</span>
     </button>
     <nav class="tabs" id="tabsNav">
-      <button data-tab="workorders" onclick="switchTab('workorders')">Work Orders <span class="count" id="cnt-workorders">0</span></button>
-      <button data-tab="presite" onclick="switchTab('presite')">Pre-Site Inspections <span class="count" id="cnt-presite">0</span></button>
-      <button data-tab="estimates" onclick="switchTab('estimates')">Estimates <span class="count" id="cnt-estimates">0</span></button>
-      <button data-tab="inprogress" onclick="switchTab('inprogress')">In Progress <span class="count" id="cnt-inprogress">0</span></button>
-      <button data-tab="invoices" onclick="switchTab('invoices')">Invoices <span class="count" id="cnt-invoices">0</span></button>
-      <button data-tab="surveys" onclick="switchTab('surveys')">Surveys <span class="count" id="cnt-surveys">0</span></button>
-      <button data-tab="jobhistory" onclick="switchTab('jobhistory')">Job History</button>
+      <button data-tab="workorders" onclick="switchTab('workorders')"><svg class="ic" aria-hidden="true"><use href="#i-clipboard"/></svg>Work Orders <span class="count" id="cnt-workorders">0</span></button>
+      <button data-tab="presite" onclick="switchTab('presite')"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>Pre-Site Inspections <span class="count" id="cnt-presite">0</span></button>
+      <button data-tab="estimates" onclick="switchTab('estimates')"><svg class="ic" aria-hidden="true"><use href="#i-file-text"/></svg>Estimates <span class="count" id="cnt-estimates">0</span></button>
+      <button data-tab="inprogress" onclick="switchTab('inprogress')"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg>In Progress <span class="count" id="cnt-inprogress">0</span></button>
+      <button data-tab="invoices" onclick="switchTab('invoices')"><svg class="ic" aria-hidden="true"><use href="#i-receipt"/></svg>Invoices <span class="count" id="cnt-invoices">0</span></button>
+      <button data-tab="surveys" onclick="switchTab('surveys')"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg>Surveys <span class="count" id="cnt-surveys">0</span></button>
+      <button data-tab="jobhistory" onclick="switchTab('jobhistory')"><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg>Job History</button>
     </nav>
   </div>
   <main id="mainArea"></main>
@@ -1349,6 +1803,38 @@ const DB_KEY='gh_portal_db_v1';
    Previously most render paths interpolated raw values, so a customer name,
    address, or note containing & < > " ' would corrupt the surrounding markup
    (and in the worst case inject arbitrary HTML). */
+/* Renders one icon from the inline sprite at the top of <body>. Everything
+   that needs an icon goes through here rather than pasting an <svg> into a
+   template, so the set stays consistent and swapping an icon is a one-line
+   change. */
+function icon(name, cls){
+  return `<svg class="ic${cls?' '+cls:''}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+}
+/* An empty state should say what is missing and, when there is something to
+   be done about it, offer the way to do it. The bare sentence-in-a-dashed-box
+   version gave the user a dead end. */
+function emptyStateHTML(text, opts){
+  opts=opts||{};
+  return `<div class="emptyState"${opts.style?` style="${opts.style}"`:''}>
+    ${icon(opts.icon||'inbox','xl')}
+    <div class="emptyMsg">${text}</div>
+    ${opts.action||''}
+  </div>`;
+}
+/* Placeholder rows shown while the first cloud snapshot is still in flight.
+   Sized to match a real .woRow so the board does not jump when the data
+   lands. */
+function skeletonHTML(n){
+  let out='';
+  for(let i=0;i<(n||4);i++){
+    out+=`<div class="skelRow skelWrap">
+      <div class="skelLine w40"></div>
+      <div class="skelLine w70"></div>
+      <div class="skelLine w25"></div>
+    </div>`;
+  }
+  return out;
+}
 function esc(str){
   return String(str==null?'':str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -1356,6 +1842,10 @@ function esc(str){
 function escAttrJs(str){ return esc(String(str==null?'':str)).replace(/\\/g,'&#92;'); }
 const SYNC_CFG_KEY='gh_portal_sync_cfg';
 let syncDb=null, syncStorage=null, syncStorageErr='', syncUnsub=null, applyingRemote=false, syncSaveTimer=null;
+/* True from the moment a sync connection is opened until the first snapshot
+   (or an error) comes back. renderMain() shows skeleton rows while it is set
+   and the local board is still empty. */
+var SYNC_LOADING=false;
 function loadDB(){
   let raw=localStorage.getItem(DB_KEY);
   if(raw) return JSON.parse(raw);
@@ -1522,8 +2012,11 @@ function initSync(){
       console.warn('Storage unavailable. Enable it in the Firebase console to allow doc uploads.', e);
     }
     const ref=syncDb.collection('gh_portal').doc('main');
+    SYNC_LOADING=true;
+    if(CURRENT_USER && typeof renderMain==='function') renderMain();
     if(syncUnsub) syncUnsub();
     syncUnsub=ref.onSnapshot(snap=>{
+      SYNC_LOADING=false;
       if(snap.exists){
         const remote=snap.data().db;
         if(remote){
@@ -1541,11 +2034,14 @@ function initSync(){
         setSyncPill('on');
       }
     }, err=>{
+      SYNC_LOADING=false;
       console.error('Sync error', err);
       setSyncPill('off');
+      if(CURRENT_USER && typeof renderMain==='function') renderMain();
       toast('Sync connection failed. Check your Firebase config.');
     });
   }catch(e){
+    SYNC_LOADING=false;
     console.error(e);
     setSyncPill('off');
     toast('Could not connect sync. Check your Firebase config.');
@@ -2069,7 +2565,8 @@ function subGroupHTML(label, list, opts){
   opts=opts||{};
   let inner;
   if(list.length===0){
-    inner=`<div class="emptyState" style="margin:0 0 18px;">${opts.emptyText||'Nothing here right now.'}</div>`;
+    inner=emptyStateHTML(opts.emptyText||'Nothing here right now.',
+      {icon:opts.emptyIcon, action:opts.emptyAction, style:'margin:0 0 18px;'});
   } else {
     inner='<div>'+list.map(wo=>rowHTML(wo, opts)).join('')+'</div>';
   }
@@ -2077,46 +2574,58 @@ function subGroupHTML(label, list, opts){
 }
 function renderMain(){
   const main=document.getElementById('mainArea');
+  /* First load with sync on: the board is genuinely empty because the
+     snapshot has not arrived yet, not because there is no work. Showing the
+     real empty state here would be a lie for a second or two. */
+  if(SYNC_LOADING && !DB.workOrders.length){
+    main.innerHTML=`<div class="listHeader"><div><h2>Loading</h2>`
+      +`<p>Fetching the latest board from sync.</p></div></div>`+skeletonHTML(4);
+    return;
+  }
   let html='';
   if(ACTIVE_TAB==='workorders'){
     const dueList = followUpDueList();
     const list = sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
     html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>All active jobs. Highlight shows overall progress.</p></div>${sortDropdownHTML()}</div>`;
-    html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">+ Create New Work Order</button>`;
+    html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}Create New Work Order</button>`;
     if(dueList.length){
       html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
     }
-    html+=subGroupHTML('All Work Orders', list, {emptyText:'No work orders yet. Create the first one above.'});
+    html+=subGroupHTML('All Work Orders', list, {
+      emptyText:'No work orders yet.', emptyIcon:'clipboard',
+      emptyAction:`<button class="btn" onclick="openNewWorkOrder()">${icon('plus')}Create the first one</button>`});
   } else if(ACTIVE_TAB==='presite'){
     const incomplete=DB.workOrders.filter(inPresiteIncompleteList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inPresiteScheduledList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Pre-Site Inspections</h2><p>Jobs with customer info on file, awaiting a completed pre-site inspection.</p></div></div>`;
-    html+=subGroupHTML('Pre-Site Incomplete', incomplete, {emptyText:'Nothing waiting to be scheduled right now.'});
-    html+=subGroupHTML('Pre-Site Scheduled', scheduled, {emptyText:'Nothing currently scheduled.'});
+    html+=subGroupHTML('Pre-Site Incomplete', incomplete, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'search'});
+    html+=subGroupHTML('Pre-Site Scheduled', scheduled, {emptyText:'Nothing currently scheduled.', emptyIcon:'search'});
   } else if(ACTIVE_TAB==='estimates'){
     const build=DB.workOrders.filter(inBuildEstimateList).sort((a,b)=>a.id-b.id);
     const pending=DB.workOrders.filter(inEstimatePendingApprovalList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Estimates</h2><p>Pre-site is complete. Build the estimate and get a decision. Approved jobs move to the In Progress tab to be scheduled.</p></div></div>`;
-    html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', openMode:'estimate'});
-    html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', showEstimateDecision:true});
+    html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', emptyIcon:'file-text', openMode:'estimate'});
+    html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', emptyIcon:'file-text', showEstimateDecision:true});
   } else if(ACTIVE_TAB==='inprogress'){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
     const inProgress=DB.workOrders.filter(inInvoiceInProgressList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>In Progress</h2><p>Estimate approved and job underway. Schedule the job, then check in/out as work happens on site.</p></div></div>`;
-    html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.'});
-    html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', showJobComplete:true, showCheckInOut:true});
+    html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'activity'});
+    html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', emptyIcon:'activity', showJobComplete:true, showCheckInOut:true});
   } else if(ACTIVE_TAB==='invoices'){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Invoices</h2><p>Job complete. Build and send the invoice.</p></div></div>`;
-    html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', openMode:'invoice'});
+    html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', emptyIcon:'receipt', openMode:'invoice'});
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Surveys</h2><p>Invoice complete. Awaiting a customer survey. Enter a SURVEY note on a job to move it to Job History.</p></div></div>`;
-    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">Nothing awaiting a survey right now.</div>`;
+    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>'
+      : emptyStateHTML('Nothing awaiting a survey right now.', {icon:'star'});
   } else {
     const list=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
     html+=`<div class="listHeader"><div><h2>Job History</h2><p>Completed jobs are kept here for 2 years, then automatically removed.</p></div></div>`;
-    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>' : `<div class="emptyState">No completed jobs on file yet.</div>`;
+    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>'
+      : emptyStateHTML('No completed jobs on file yet.', {icon:'archive'});
   }
   main.innerHTML=html;
   applyListMotion(main);
@@ -2177,8 +2686,8 @@ function rowHTML(wo, opts){
     : '';
   const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? `<div class="checkInOutRow" onclick="event.stopPropagation()">
-         <label class="jcCheck"><input type="checkbox" ${todayLog.log.checkIn?'checked disabled':''} onchange="checkInDay(${wo.id}, '${todayLog.log.date}', this)"> In${todayLog.log.checkIn?` (${todayLog.log.checkIn.time})`:''}</label>
-         <label class="jcCheck"><input type="checkbox" ${!todayLog.log.checkIn||todayLog.log.checkOut?'disabled':''} ${todayLog.log.checkOut?'checked':''} onchange="checkOutDay(${wo.id}, '${todayLog.log.date}', this)"> Out${todayLog.log.checkOut?` (${todayLog.log.checkOut.time})`:''}</label>
+         <label class="jcCheck"><input type="checkbox" ${todayLog.log.checkIn?'checked disabled':''} onchange="checkInDay(${wo.id}, '${todayLog.log.date}', this)">${icon('login')} In${todayLog.log.checkIn?` (${todayLog.log.checkIn.time})`:''}</label>
+         <label class="jcCheck"><input type="checkbox" ${!todayLog.log.checkIn||todayLog.log.checkOut?'disabled':''} ${todayLog.log.checkOut?'checked':''} onchange="checkOutDay(${wo.id}, '${todayLog.log.date}', this)">${icon('logout')} Out${todayLog.log.checkOut?` (${todayLog.log.checkOut.time})`:''}</label>
        </div>`
     : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today. See Job Details for other days.</div>' : '');
   return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
@@ -2193,7 +2702,7 @@ function rowHTML(wo, opts){
       ${statusTag(wo)}
       ${followUpBadge}
       ${jobCompleteCheckbox}
-      <span>${esc(wo.customer.address)}</span>
+      <span>${wo.customer.address?icon('map-pin')+' ':''}${esc(wo.customer.address)}</span>
     </div>
   </div>`;
 }
@@ -2458,7 +2967,7 @@ function dayLogsSectionHTML(wo){
     const hrsNote = hrs!=null ? `<span class="schedHoursTag" title="Hours for ${formatDateDisplay(log.date)}">${formatHoursMinutes(hrs)}</span>` : '';
     return `<div class="dayLogRow">
       <div class="dayLogDate">${formatDateDisplay(log.date)}</div>
-      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)"> In${inDone?` (${log.checkIn.time})`:''}</label>
+      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)">${icon('login')} In${inDone?` (${log.checkIn.time})`:''}</label>
       ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
       <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${wo.id}, '${log.date}', this)"> Out${outDone?` (${log.checkOut.time})`:''}</label>
       ${(isAdmin && outDone) ? `<button class="editLink" onclick="editCheckOutDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
@@ -3612,7 +4121,7 @@ function phoneLink(raw){
   const href='tel:'+(digits.length===10 ? '+1'+digits : digits);
   return `<a class="telLink" href="${href}" title="Call ${esc(shown)}" aria-label="Call ${esc(shown)}"`
     + ` onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"`
-    + ` ontouchstart="event.stopPropagation()">${esc(shown)}</a>`;
+    + ` ontouchstart="event.stopPropagation()">${icon('phone')}${esc(shown)}</a>`;
 }
 /* Renders an address as a tap-to-navigate link, opening the device's default
    maps app (Apple Maps on iOS/macOS, Google Maps elsewhere) via directionsUrl.
@@ -3912,17 +4421,29 @@ function isImageDoc(d){
   return /\.(jpe?g|png|gif|webp|heic|heif|bmp|svg)$/i.test(d.name||'');
 }
 function docRowHTML(wo, d){
+  /* An uploaded photo shows the photo. Only when it has a real Storage URL:
+     a local-only doc has no source to point at, so it falls back to the
+     icon rather than rendering a broken image. The thumbnail is clickable
+     for the same action as the View button, which is what anyone will try
+     first. */
+  const isImg=isImageDoc(d);
+  const lead = (isImg && d.url)
+    ? `<img class="docThumb" src="${esc(d.url)}" alt="" loading="lazy" decoding="async" onclick="viewDoc(${wo.id},'${d.id}')" title="View ${esc(d.name||'image')}">`
+    : `<div class="docIconBox">${icon(isImg?'image':'file','lg')}</div>`;
   return `
     <div class="docRow">
-      <div class="docInfo">
-        <span class="docName">${esc(d.name||'Untitled')}</span>
-        <span class="small">${esc(d.uploadedBy)} · ${esc(d.date)} ${d.size?('· '+fmtBytes(d.size)):''}${!d.url?' · local only (not synced)':''}</span>
+      <div class="docLead">
+        ${lead}
+        <div class="docInfo">
+          <span class="docName">${esc(d.name||'Untitled')}</span>
+          <span class="small">${esc(d.uploadedBy)} · ${esc(d.date)} ${d.size?('· '+fmtBytes(d.size)):''}${!d.url?' · local only (not synced)':''}</span>
+        </div>
       </div>
       <div class="docActions">
-        <button class="btn secondary" onclick="viewDoc(${wo.id},'${d.id}')">View</button>
-        <button class="btn secondary" onclick="downloadDoc(${wo.id},'${d.id}')">Download</button>
-        <button class="btn secondary" onclick="renameDoc(${wo.id},'${d.id}')">Rename</button>
-        <button class="btn danger" onclick="deleteDoc(${wo.id},'${d.id}')">Delete</button>
+        <button class="btn secondary" onclick="viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
+        <button class="btn secondary" onclick="downloadDoc(${wo.id},'${d.id}')">${icon('download')}Download</button>
+        <button class="btn secondary" onclick="renameDoc(${wo.id},'${d.id}')">${icon('pencil')}Rename</button>
+        <button class="btn danger" onclick="deleteDoc(${wo.id},'${d.id}')">${icon('trash')}Delete</button>
       </div>
     </div>`;
 }
@@ -3995,8 +4516,10 @@ function docsTabHTML(wo){
   const docs=wo.docs||[];
   const images = docs.filter(isImageDoc);
   const files = docs.filter(d=>!isImageDoc(d));
-  const imageRows = images.length ? images.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No images uploaded yet.</div>';
-  const fileRows = files.length ? files.map(d=>docRowHTML(wo,d)).join('') : '<div class="small">No documents uploaded yet.</div>';
+  const imageRows = images.length ? images.map(d=>docRowHTML(wo,d)).join('')
+    : emptyStateHTML('No images uploaded yet.', {icon:'image', style:'padding:30px 18px;'});
+  const fileRows = files.length ? files.map(d=>docRowHTML(wo,d)).join('')
+    : emptyStateHTML('No documents uploaded yet.', {icon:'folder', style:'padding:30px 18px;'});
   // Three distinct states, because "no uploader" previously always blamed
   // Multi-Device Sync, misleading and unactionable when sync is connected
   // and working, and only Storage is the problem.
@@ -6393,6 +6916,50 @@ function toggleHighContrast(){
   applyHighContrast(next);
 }
 applyHighContrast(localStorage.getItem(HC_KEY) === '1');
+
+/* ---- Dark mode ----
+   Manual only, by design: this is a work tool used in trucks, garages and
+   customer kitchens, and a phone flipping the whole board to dark because
+   the sun went down mid-job is worse than the user deciding once. Same
+   mechanism as high contrast, a class on <html> that the stylesheet's
+   variable overrides hang off, so nothing else in the app needs to know. */
+var DARK_KEY = 'gh_dark_mode';
+function applyDarkMode(on){
+  document.documentElement.classList.toggle('dark', !!on);
+  ['darkBtn','loginDarkBtn'].forEach(function(id){
+    var b = document.getElementById(id);
+    if(b) b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  /* Keeps the phone's own status bar and browser chrome in step with the
+     app, which is most of what makes a dark web app stop looking like a
+     bright page in a dark frame. */
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if(!meta){
+    meta = document.createElement('meta');
+    meta.setAttribute('name','theme-color');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', on ? '#101a2b' : '#0f2647');
+}
+function toggleDarkMode(){
+  var on = document.documentElement.classList.contains('dark');
+  localStorage.setItem(DARK_KEY, on ? '0' : '1');
+  applyDarkMode(!on);
+}
+applyDarkMode(localStorage.getItem(DARK_KEY) === '1');
+
+/* ---- Header elevation on scroll ----
+   The top slab is flat until there is something underneath it, then it picks
+   up a shadow, the way a native large-title bar does. Passive listener and a
+   class toggle only, so it costs nothing on a long board. */
+(function trackScrollElevation(){
+  var apply = function(){
+    document.body.classList.toggle('scrolled', window.scrollY > 4);
+  };
+  window.addEventListener('scroll', apply, {passive:true});
+  window.addEventListener('resize', apply, {passive:true});
+  apply();
+})();
 window.addEventListener('resize', positionTabsBar);
 window.addEventListener('orientationchange', positionTabsBar);
 /* The header can change height when the badge wraps, which is why this used to
