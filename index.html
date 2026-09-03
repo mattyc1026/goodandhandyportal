@@ -77,6 +77,18 @@
 
   /* Icon stroke weight, one number for the whole set. */
   --ic-stroke:1.7;
+
+  /* ---- Notice / wizard surfaces ----
+     These used to be hard-coded hexes scattered through the markup (the warm
+     #fff3e0 warning boxes, the pre-site wizard's white cards). A hard-coded
+     light background does not follow the theme, so in dark mode those panels
+     stayed pale while the text and buttons on them turned light, which is why
+     the Docs tab buttons vanished. Everything reads these instead now. */
+  --notice:#fff3e0; --notice-line:#f0c48a; --notice-ink:#5a3d15;
+  --well:#f5f7fb;          /* recessed strip inside a card */
+  --field-ro:#f2f4f8;      /* read-only input fill */
+  --accent-b:#2f6fed;      /* wizard accent, distinct from the status palette */
+  --accent-b-soft:#f2f6ff;
 }
 
 /* ---- DARK MODE ----
@@ -107,6 +119,9 @@ html.dark{
   --sh-2:0 2px 6px rgba(0,0,0,.44), 0 8px 20px rgba(0,0,0,.34);
   --sh-3:0 10px 26px rgba(0,0,0,.5), 0 24px 56px rgba(0,0,0,.44);
   --sh-4:0 26px 80px rgba(0,0,0,.7);
+  --notice:#3a2a12; --notice-line:#6b4c1d; --notice-ink:#f2d9b0;
+  --well:#131c2c; --field-ro:#1c2637;
+  --accent-b:#7aa8ff; --accent-b-soft:#1a2740;
 }
 /* ---- High Contrast mode ----
    Toggled by adding class "hc" to <html>. Overrides the same CSS
@@ -115,6 +130,10 @@ html.dark{
    borders/backgrounds without needing separate override rules per
    element. */
 html.hc{
+  /* Every hard-coded #fff/#000 in the high-contrast rules below reads these
+     two instead. That is what lets dark mode keep its ground when high
+     contrast is switched on: the pair simply swaps. */
+  --hc-bg:#ffffff; --hc-fg:#000000;
   --navy:#000000; --navy2:#000000; --orange:#a83e00; --orange2:#c74600;
   --cream:#ffffff; --paper:#ffffff; --ink:#000000; --muted:#2b2b2b;
   --line:#000000; --line-soft:#000000;
@@ -125,9 +144,35 @@ html.hc{
   --grey:#e0e0e0; --greyb:#222222;
   /* High contrast trades the glow for a heavy, unambiguous green rail. */
   --neon:#005c2a; --neon-rail:#005c2a; --neon-rgb:0,92,42;
+  --notice:#fff4d6; --notice-line:#6b5400; --notice-ink:#000000;
+  --well:#ffffff; --field-ro:#ffffff; --accent-b:#0a3a86; --accent-b-soft:#dbe8ff;
   --sh-1:none; --sh-2:none; --sh-3:none; --sh-4:none;
 }
-html.hc body{background:#fff;}
+/* ---- Dark + High Contrast ----
+   High contrast used to be a light-only palette, so turning it on while in
+   dark mode flipped the whole app back to white: the two classes set the same
+   variables and this one came last. It now has a dark counterpart, which wins
+   on specificity, so the pairing means "maximum contrast, still dark" rather
+   than "dark mode off". Same job as the block above, black ground instead of
+   white, with the status tints darkened and their accents lifted so text on
+   them clears the same bar. */
+html.dark.hc{
+  color-scheme:dark;
+  --hc-bg:#000000; --hc-fg:#ffffff;
+  --navy:#ffffff; --navy2:#ffffff; --orange:#ffb066; --orange2:#ffc48c;
+  --cream:#000000; --paper:#000000; --ink:#ffffff; --muted:#e8e8e8;
+  --line:#ffffff; --line-soft:#ffffff;
+  --red:#4a0d0d; --redb:#ff9a90; --red-bold:#6b1212;
+  --yellow:#3d3000; --yellowb:#ffd54a; --yellow-bold:#584600;
+  --green:#00331d; --greenb:#63f0a6; --green-bold:#004d2c;
+  --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
+  --grey:#242424; --greyb:#e0e0e0;
+  --neon:#5eff9f; --neon-rail:#5eff9f; --neon-rgb:94,255,159;
+  --notice:#332600; --notice-line:#ffd54a; --notice-ink:#ffeab4;
+  --well:#000000; --field-ro:#000000; --accent-b:#93bdff; --accent-b-soft:#001f4d;
+  --sh-1:none; --sh-2:none; --sh-3:none; --sh-4:none;
+}
+html.hc body{background:var(--hc-bg);}
 /* High contrast keeps the status spine, it just makes it heavier, along with
    the surrounding border. Setting only the individual sides leaves the left
    rail intact; a `border-width` shorthand here would flatten it. */
@@ -135,10 +180,10 @@ html.hc .woRow{border-top-width:2px;border-right-width:2px;border-bottom-width:2
 html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,html.hc .woRow.st-green-bold,html.hc .woRow.st-blue-bold{
   border-top-width:3px;border-right-width:3px;border-bottom-width:3px;border-left-width:12px;
 }
-html.hc .woSub,html.hc .woMeta,html.hc .woLastNote,html.hc .woNoteDate,html.hc .listHeader p,html.hc .small,html.hc .field label{color:#000 !important;}
-html.hc .tag{border:1px solid #000;}
-html.hc .field input,html.hc select,html.hc textarea{border:1.5px solid #000;}
-html.hc a,html.hc .editLink,html.hc .adminViewLink{color:#a83e00;}
+html.hc .woSub,html.hc .woMeta,html.hc .woLastNote,html.hc .woNoteDate,html.hc .listHeader p,html.hc .small,html.hc .field label{color:var(--hc-fg) !important;}
+html.hc .tag{border:1px solid var(--hc-fg);}
+html.hc .field input,html.hc select,html.hc textarea{border:1.5px solid var(--hc-fg);}
+html.hc a,html.hc .editLink,html.hc .adminViewLink{color:var(--orange);}
 *{box-sizing:border-box;}
 /* The blueprint grid from the login screen, carried through the whole app at
    a fraction of the strength. background-attachment:fixed keeps it still
@@ -182,14 +227,14 @@ input,select,textarea{font-family:inherit;font-size:inherit;}
   -webkit-mask-image:radial-gradient(85% 70% at 50% 40%, #000 30%, transparent 100%);
   mask-image:radial-gradient(85% 70% at 50% 40%, #000 30%, transparent 100%);
 }
-html.hc #loginScreen{background:#fff;}
+html.hc #loginScreen{background:var(--hc-bg);}
 html.hc #loginScreen::before{display:none;}
 .loginCard{
   background:var(--paper);width:392px;max-width:100%;border-radius:var(--radius-lg);
   padding:38px 34px 32px;box-shadow:var(--sh-4);position:relative;z-index:1;
   border:1px solid rgba(255,255,255,.6);
 }
-html.hc .loginCard{border:2px solid #000;}
+html.hc .loginCard{border:2px solid var(--hc-fg);}
 .loginCard h1{font-size:1.7em;text-align:center;}
 .loginCard .tag{
   text-align:center;color:var(--orange);font-weight:700;letter-spacing:.18em;
@@ -237,7 +282,7 @@ header.top{
   box-shadow:0 1px 0 rgba(255,255,255,.06) inset, var(--sh-2);
   position:sticky;top:0;z-index:50;
 }
-html.hc header.top{background:#000;}
+html.hc header.top{background:#000;color:#fff;}
 .globalSearchBar{
   background:var(--paper);border-bottom:1px solid var(--line);
   padding:11px 26px;display:flex;gap:10px;align-items:center;
@@ -361,15 +406,18 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
   transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease;
 }
 .woRow:hover{box-shadow:var(--sh-2);transform:translateY(-2px);}
-.woRow.st-red{border-left-color:var(--redb);background:linear-gradient(90deg,var(--red),var(--paper) 300px);}
-.woRow.st-red-bold{border-color:var(--redb);border-left-color:var(--redb);border-left-width:8px;background:linear-gradient(90deg,var(--red-bold),var(--paper) 400px);}
-.woRow.st-yellow{border-left-color:var(--yellowb);background:linear-gradient(90deg,var(--yellow),var(--paper) 300px);}
-.woRow.st-yellow-bold{border-color:var(--yellowb);border-left-color:var(--yellowb);border-left-width:8px;background:linear-gradient(90deg,var(--yellow-bold),var(--paper) 400px);}
-.woRow.st-green{border-left-color:var(--greenb);background:linear-gradient(90deg,var(--green),var(--paper) 300px);}
-.woRow.st-green-bold{border-color:var(--greenb);border-left-color:var(--greenb);border-left-width:8px;background:linear-gradient(90deg,var(--green-bold),var(--paper) 400px);}
-.woRow.st-blue{border-left-color:var(--blueb);background:linear-gradient(90deg,var(--blue),var(--paper) 300px);}
-.woRow.st-blue-bold{border-color:var(--blueb);border-left-color:var(--blueb);border-left-width:8px;background:linear-gradient(90deg,var(--blue-bold),var(--paper) 400px);}
-.woRow.st-grey{border-left-color:var(--greyb);background:linear-gradient(90deg,var(--grey),var(--paper) 300px);}
+/* Stage colours here are the spine and border only. The tint across the card
+   is handled by the stage meter further down, which sizes the wash by how far
+   along the job is rather than giving every stage the same width. */
+.woRow.st-red{border-left-color:var(--redb);}
+.woRow.st-red-bold{border-color:var(--redb);border-left-color:var(--redb);border-left-width:8px;}
+.woRow.st-yellow{border-left-color:var(--yellowb);}
+.woRow.st-yellow-bold{border-color:var(--yellowb);border-left-color:var(--yellowb);border-left-width:8px;}
+.woRow.st-green{border-left-color:var(--greenb);}
+.woRow.st-green-bold{border-color:var(--greenb);border-left-color:var(--greenb);border-left-width:8px;}
+.woRow.st-blue{border-left-color:var(--blueb);}
+.woRow.st-blue-bold{border-color:var(--blueb);border-left-color:var(--blueb);border-left-width:8px;}
+.woRow.st-grey{border-left-color:var(--greyb);}
 /* The bold tints are saturated enough that the default muted grey loses
    contrast against them, darken the supporting text on those rows so a
    job that still needs action stays the most readable one on the board. */
@@ -409,7 +457,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 .tag.survey{background:var(--blue);color:var(--blueb);border-color:var(--blueb);}
 /* closed */
 .tag.hist{background:var(--grey);color:var(--greyb);border-color:var(--line);}
-html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.go,html.hc .tag.build-inv{color:#fff;}
+html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.go,html.hc .tag.build-inv{color:var(--hc-bg);}
 .emptyState{
   text-align:center;padding:64px 24px;color:var(--muted);
   background:var(--paper);border:1px dashed var(--line);border-radius:var(--radius);
@@ -449,8 +497,8 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 }
 .docsTab input[type="file"]::file-selector-button:hover{background:var(--orange2);}
 .docsTab input[type="file"]:disabled{opacity:.55;cursor:progress;border-style:solid;}
-html.hc .docsTab input[type="file"]{border-color:#000;background:#fff;}
-html.hc .docsTab input[type="file"]::file-selector-button{background:#000;}
+html.hc .docsTab input[type="file"]{border-color:var(--hc-fg);background:var(--hc-bg);color:var(--hc-fg);}
+html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg);color:var(--hc-bg);}
 .docRow{
   display:flex;justify-content:space-between;align-items:center;gap:14px;
   background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);
@@ -590,7 +638,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .schedCalDay.hasJob::after{content:'';position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--yellowb);}
 .schedCalDay.selStart,.schedCalDay.selEnd{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:500;}
 .schedCalDay.inRange{background:rgba(15,38,71,.12);border-color:rgba(15,38,71,.2);}
-.schedCalDay.skipDay{background:repeating-linear-gradient(45deg,rgba(15,38,71,.06),rgba(15,38,71,.06) 4px,transparent 4px,transparent 8px);color:#9aa4b2;}
+.schedCalDay.skipDay{background:repeating-linear-gradient(45deg,rgba(15,38,71,.06),rgba(15,38,71,.06) 4px,transparent 4px,transparent 8px);color:var(--muted);}
 .field select#schedRepeat{width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--line);background:var(--paper);font:inherit;color:var(--ink);}
 .schedRepeatNote{font-size:.8em;color:var(--muted);margin-top:-4px;margin-bottom:8px;line-height:1.5;}
 .schedDayPopup{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 11px;border-radius:var(--radius-sm);font-size:.72em;line-height:1.45;white-space:normal;width:max-content;max-width:200px;z-index:60;box-shadow:var(--sh-3);display:none;text-align:left;cursor:default;font-family:var(--f-body);}
@@ -633,7 +681,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .noteItem .noteType{font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;}
 .noteItem .noteActions{display:flex;gap:16px;}
 .noteItem .noteActions button{background:none;border:none;font-size:.82em;color:var(--redb);padding:6px 4px;min-height:32px;font-weight:600;white-space:nowrap;word-break:normal;overflow-wrap:normal;font-family:inherit;}
-.adminTab{background:#fffaf0;border:1px solid #f0dcb4;border-radius:var(--radius);padding:16px 18px;}
+.adminTab{background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);border-radius:var(--radius);padding:16px 18px;}
 .adminTab h4{margin:0 0 10px;color:#8a5a00;font-size:.72em;text-transform:uppercase;letter-spacing:.09em;font-family:var(--f-body);}
 .adminLogRow{font-size:.78em;color:#6b5320;margin-bottom:6px;line-height:1.5;}
 .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:100%;}
@@ -982,9 +1030,9 @@ html.hc .woRow.checkedInGlow{
   background:var(--yellow);color:var(--yellowb);border:1px solid rgba(165,113,10,.35);font-size:.64em;
   font-weight:700;text-transform:uppercase;letter-spacing:.06em;vertical-align:middle;
 }
-html.hc .tinyEdit{border-color:#000;color:#000;}
-html.hc .schedLoggedTag{background:#fff;color:#000;border:1px solid #000;}
-html.hc .schedDblTag{background:#fff;color:#000;border:1px solid #000;}
+html.hc .tinyEdit{border-color:var(--hc-fg);color:var(--hc-fg);}
+html.hc .schedLoggedTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
+html.hc .schedDblTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
 /* Per-date hours tag (schedRowHTML) and the section-wide running total
    (scheduleDatesSectionHTML), both built from completed check-in/check-out
    pairs, so they only ever count time that's actually been logged. Set in the
@@ -999,8 +1047,8 @@ html.hc .schedDblTag{background:#fff;color:#000;border:1px solid #000;}
   font-size:.85em;color:var(--navy);font-weight:700;
 }
 .schedHoursTotal .small{font-weight:400;}
-html.hc .schedHoursTag{background:#fff;color:#000;border:1px solid #000;}
-html.hc .schedHoursTotal{border-top:1px solid #000;}
+html.hc .schedHoursTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
+html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 /* Tap-to-act contact details. The address opens the device's default maps app
    and the email opens a new message, same treatment as .telLink so all three
    actionable customer fields read alike. Address and email are secondary to
@@ -1046,13 +1094,13 @@ html.hc .mapLink,html.hc .mailLink{border-bottom:2px solid var(--orange);font-we
   animation:toastIn .2s cubic-bezier(.2,.8,.3,1);
 }
 @keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-html.hc .toastItem{background:#000;border:2px solid #fff;}
+html.hc .toastItem{background:var(--hc-fg);color:var(--hc-bg);border:2px solid var(--hc-bg);}
 
 /* ---- Visible keyboard focus ----
    Nothing in the app had a focus style, so tabbing through it was invisible.
    :focus-visible keeps mouse clicks clean while making keyboard use followable. */
 :focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:4px;}
-html.hc :focus-visible{outline:3px solid #000;}
+html.hc :focus-visible{outline:3px solid var(--hc-fg);}
 
 /* Long customer names/addresses used to push the row layout wide instead of
    wrapping, squeezing the status tag off the edge on narrow screens. */
@@ -1354,7 +1402,7 @@ html.dark *{scrollbar-color:#3a4a66 transparent;}
 html.dark ::-webkit-scrollbar-thumb{background:#3a4a66;border-color:var(--paper);}
 html.dark .modalHeadCust .mhName{color:var(--navy);}
 /* High contrast wins outright if somehow both are set. */
-html.hc.dark{color-scheme:light;}
+
 html.hc body{background-image:none;}
 
 /* ---- WORK ORDER ROW, redesigned ----
@@ -1391,17 +1439,61 @@ html.hc body{background-image:none;}
 .woRow.st-yellow-bold::before{background:var(--yellowb);width:6px;}
 .woRow.st-green-bold::before{background:var(--greenb);width:6px;}
 .woRow.st-blue-bold::before{background:var(--blueb);width:6px;}
-/* Proportional tint. Bold states run the wash further and start it heavier,
-   which is what keeps "waiting on me" distinct from "waiting on them". */
-.woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 42%);}
-.woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 42%);}
-.woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 42%);}
-.woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 42%);}
-.woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 42%);}
-.woRow.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 58%);border-color:var(--redb);}
-.woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 58%);border-color:var(--yellowb);}
-.woRow.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 58%);border-color:var(--greenb);}
-.woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 58%);border-color:var(--blueb);}
+.woRow.st-red-bold{border-color:var(--redb);}
+.woRow.st-yellow-bold{border-color:var(--yellowb);}
+.woRow.st-green-bold{border-color:var(--greenb);}
+.woRow.st-blue-bold{border-color:var(--blueb);}
+/* ---- STAGE METER ----
+   The stage tint is no longer a fixed gradient per status. It is a meter: the
+   wash starts short at the first stage and reaches the full width of the card
+   by the last, so the length of the colour says how far along the job is and
+   the hue says which stage it is in.
+
+   Both values are registered custom properties rather than plain variables.
+   An unregistered variable holding a colour or a length is just a string to
+   the browser, so it snaps between values; registering them with a syntax
+   makes them real animatable types, which is what lets the fill grow and the
+   hue cross-fade instead of jumping. Browsers without @property still show
+   the right colours, they just change instantly. */
+@property --meter-tint{syntax:'<color>';inherits:true;initial-value:transparent;}
+@property --meter-fill{syntax:'<percentage>';inherits:true;initial-value:0%;}
+/* Fill lengths follow PROGRESSION_ORDER in the script: pre-site incomplete is
+   the shortest, awaiting survey runs the whole card. History sits at full
+   length in neutral grey, since the job did finish the journey. */
+.woRow.st-red-bold   {--meter-tint:var(--red-bold);    --meter-fill:20%;  --stage-glow:var(--redb);}
+.woRow.st-red        {--meter-tint:var(--red);         --meter-fill:31%;  --stage-glow:var(--redb);}
+.woRow.st-yellow-bold{--meter-tint:var(--yellow-bold); --meter-fill:43%;  --stage-glow:var(--yellowb);}
+.woRow.st-yellow     {--meter-tint:var(--yellow);      --meter-fill:54%;  --stage-glow:var(--yellowb);}
+.woRow.st-green-bold {--meter-tint:var(--green-bold);  --meter-fill:66%;  --stage-glow:var(--greenb);}
+.woRow.st-green      {--meter-tint:var(--green);       --meter-fill:77%;  --stage-glow:var(--greenb);}
+.woRow.st-blue-bold  {--meter-tint:var(--blue-bold);   --meter-fill:89%;  --stage-glow:var(--blueb);}
+.woRow.st-blue       {--meter-tint:var(--blue);        --meter-fill:100%; --stage-glow:var(--blueb);}
+.woRow.st-grey       {--meter-tint:var(--grey);        --meter-fill:100%; --stage-glow:var(--greyb);}
+/* The meter is its own element rather than a pseudo, because ::after on the
+   row is already the mobile chevron. */
+.woMeter{
+  position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(90deg,var(--meter-tint),transparent var(--meter-fill));
+}
+.woRow>.woMain,.woRow>.woMeta{position:relative;z-index:1;}
+/* The meter cross-fades rather than snapping, and it waits out the pulse
+   before it starts moving, so the sequence reads as one event: the card fires,
+   then the bar grows into its new stage. */
+.woRow{
+  transition:transform .12s ease,box-shadow .12s ease,border-color .5s var(--e-out),
+    --meter-tint .8s var(--e-out) .3s, --meter-fill .8s var(--e-out) .3s;
+}
+@keyframes stagePulse{
+  0%  {transform:none;            box-shadow:var(--sh-1);}
+  30% {transform:scale(1.02);     box-shadow:0 0 0 5px color-mix(in srgb,var(--stage-glow,var(--orange)) 42%,transparent),var(--sh-3);}
+  55% {transform:scale(1.006);    box-shadow:0 0 0 9px color-mix(in srgb,var(--stage-glow,var(--orange)) 0%,transparent),var(--sh-2);}
+  100%{transform:none;            box-shadow:var(--sh-1);}
+}
+.woRow.stageAdvance{animation:stagePulse .62s var(--e-bounce);z-index:2;}
+@media (prefers-reduced-motion: reduce){
+  .woRow{transition:none;}
+  .woRow.stageAdvance{animation:none;}
+}
 /* The neon rail wins over the stage colour: a crew on site outranks whatever
    lifecycle stage the job happens to be sitting in. */
 .woRow.checkedInGlow{border-left:1px solid var(--neon-rail);}
@@ -1444,16 +1536,17 @@ html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
   .woRow{padding-left:26px;border-left-width:1px;}
   .woRow .woMeta{flex-direction:row;align-items:center;text-align:left;padding-left:0;flex-wrap:wrap;}
   .woRow .woName{font-size:1.35em;}
-  .woRow.st-red,.woRow.st-yellow,.woRow.st-green,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
-  .woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 72%);}
-  .woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 72%);}
-  .woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 72%);}
-  .woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 72%);}
-  .woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 72%);}
-  .woRow.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 88%);}
-  .woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 88%);}
-  .woRow.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 88%);}
-  .woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 88%);}
+  /* A phone card is much narrower, so the same percentages read as a thinner
+     sliver. Stretch every stage by a fixed amount, keeping the ordering and
+     still landing the last stage at a full wash. */
+  .woRow.st-red-bold{--meter-fill:34%;}
+  .woRow.st-red{--meter-fill:42%;}
+  .woRow.st-yellow-bold{--meter-fill:52%;}
+  .woRow.st-yellow{--meter-fill:61%;}
+  .woRow.st-green-bold{--meter-fill:71%;}
+  .woRow.st-green{--meter-fill:80%;}
+  .woRow.st-blue-bold{--meter-fill:90%;}
+  .woRow.st-blue,.woRow.st-grey{--meter-fill:100%;}
   /* Replace the rotated single-guillemet with a real chevron. The old one was
      a text glyph flipped 180 degrees, which rendered at a different weight
      and vertical offset in every font it landed in. */
@@ -1674,6 +1767,10 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
     box-shadow:none !important;
   }
   .woRow{border:1px solid #999 !important;background:#fff !important;margin-bottom:6px;}
+  /* The stage meter is a screen affordance. On paper it would print as a grey
+     band across every row, so it is dropped and the status tag carries the
+     stage instead. */
+  .woMeter{display:none !important;}
   .woRow::before{background:#333 !important;}
   .woRow::after{display:none !important;}
   .custPanel,.jobPanel,.descParagraph,.listEditor{background:#fff !important;border:1px solid #bbb !important;}
@@ -1927,6 +2024,36 @@ function setWoSort(val){
 /* Progression order matches stage: bold red -> red -> bold yellow -> yellow
    -> bold green -> green -> bold blue -> blue (earliest to latest stage) */
 const PROGRESSION_ORDER=['st-red-bold','st-red','st-yellow-bold','st-yellow','st-green-bold','st-green','st-blue-bold','st-blue','st-grey'];
+/* Advancing a stage moves the job to a different tab, so re-rendering straight
+   away makes the row vanish before anyone sees what happened. This applies the
+   change, then plays the pulse and meter growth on the row where it is sitting
+   right now, and only re-renders once that has finished. The row keeps its old
+   place in the old list for the length of the animation, which is the point:
+   you watch the meter fill, then the job moves on.
+
+   Callers pass a function that mutates the work order. Anything with no row on
+   screen, no visible stage change, or reduced motion turned on skips straight
+   to the re-render. */
+const STAGE_ADVANCE_MS=1000;
+function advanceStage(id, mutate, message){
+  const wo=getWO(id);
+  if(!wo){ renderTabCounts(); renderMain(); return; }
+  const before=statusClass(wo);
+  mutate(wo);
+  saveDB(DB);
+  const after=statusClass(wo);
+  const row=document.querySelector(`.woRow[data-wo-id="${id}"]`);
+  const finish=()=>{ renderTabCounts(); renderMain(); if(message) toast(message); };
+  if(!row || before===after || reducedMotion()){ finish(); return; }
+  renderTabCounts();
+  /* Strip every status class, not just the one we computed. They are mutually
+     exclusive, and if the row on screen had drifted from the data for any
+     reason, removing only the expected one would leave two on the element and
+     the meter would take whichever the stylesheet happens to list last. */
+  row.classList.remove(...PROGRESSION_ORDER);
+  row.classList.add(after,'stageAdvance');
+  setTimeout(finish, STAGE_ADVANCE_MS);
+}
 function woFirstName(wo){
   const n=(wo.customer.name||'').trim();
   if(!n) return '';
@@ -2768,6 +2895,7 @@ function rowHTML(wo, opts){
        </div>`
     : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today. See Job Details for other days.</div>' : '');
   return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
+    <div class="woMeter" aria-hidden="true"></div>
     <div class="woMain">
       <div class="woName">${esc(wo.customer.name) || '(No name yet)'}</div>
       <div class="woSub">${wo.jobDetails.description ? esc(wo.jobDetails.description.slice(0,80)) : 'No job description yet'}</div>
@@ -2789,12 +2917,8 @@ function confirmJobComplete(id, checkboxEl){
   checkboxEl.checked=false; // don't visually check until confirmed
   askYesNo('Confirm this job is complete and you\'re ready to generate an invoice?', (yes)=>{
     if(yes){
-      wo.jobComplete=true;
-      saveDB(DB);
       closeModal();
-      renderTabCounts();
-      renderMain();
-      toast('Job marked complete. Moved to Build Invoice.');
+      advanceStage(id, w=>{ w.jobComplete=true; }, 'Job marked complete. Moved to Build Invoice.');
     }
   });
 }
@@ -3056,12 +3180,8 @@ function approveEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
   askYesNo('Confirm this estimate is approved? It will move to Schedule Job.', (yes)=>{
     if(yes){
-      const wo=getWO(id);
-      if(!wo) return;
-      wo.estimateApproved=true;
-      saveDB(DB);
-      toast('Approved. Moved to Schedule Job.');
-      renderTabCounts(); renderMain();
+      if(!getWO(id)) return;
+      advanceStage(id, w=>{ w.estimateApproved=true; }, 'Approved. Moved to Schedule Job.');
     }
   });
 }
@@ -3075,13 +3195,8 @@ function declineEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false;
   askYesNo('Confirm this job is not proceeding? It will move to Job History.', (yes)=>{
     if(yes){
-      const wo=getWO(id);
-      if(!wo) return;
-      wo.estimateDeclined=true;
-      wo.movedToHistoryAt=Date.now();
-      saveDB(DB);
-      toast('Job declined. Moved to Job History.');
-      renderTabCounts(); renderMain();
+      if(!getWO(id)) return;
+      advanceStage(id, w=>{ w.estimateDeclined=true; w.movedToHistoryAt=Date.now(); }, 'Job declined. Moved to Job History.');
     }
   });
 }
@@ -4384,7 +4499,7 @@ function presiteSummaryHTML(jd){
   const t=p.totals||{}; const r=p.readiness||{};
   const money=n=>'$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const colors={ready:'#1d6b34',caution:'#8a6100',risk:'#9b2226'};
-  return `<div style="margin-top:12px;border:1px solid #dfe4ec;border-radius:8px;padding:10px 12px;background:#fbfcfe">
+  return `<div style="margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--well)">
     <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#7a8699;font-weight:700;margin-bottom:6px">From the pre-site</div>
     <div class="small">Labor ${money(t.labor)} &nbsp;|&nbsp; Materials ${money(t.materialsBilled)} (cost ${money(t.materialsCost)} + ${t.markupPct||0}% markup ${money(t.markupAmount)} + tax ${money(t.tax)}) &nbsp;|&nbsp; <b>Total ${money(t.grandTotal)}</b></div>
     ${r.message?`<div class="small" style="margin-top:6px;color:${colors[r.level]||'#5b6675'};font-weight:600">${esc(r.message)}</div>`:''}
@@ -4656,7 +4771,7 @@ service firebase.storage {
     title='The upload was rejected by Firebase';
     body=`<p style="margin:6px 0;">Check <b>Build &rsaquo; Storage</b> is enabled in your Firebase console, and that its <b>Rules</b> allow writes. The exact error is shown below.</p>`;
   }
-  return `<div style="background:#fff3e0;border:1px solid #f0c48a;border-radius:var(--radius);padding:14px 16px;margin-top:12px;font-size:.86em;line-height:1.6;">
+  return `<div style="background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);border-radius:var(--radius);padding:14px 16px;margin-top:12px;font-size:.86em;line-height:1.6;">
     <div style="font-weight:700;color:var(--redb);margin-bottom:4px;">${esc(title)}</div>
     ${body}
     <div class="small" style="margin-top:10px;color:var(--muted);word-break:break-word;">
@@ -4694,17 +4809,17 @@ function docsTabHTML(wo){
   if(syncStorage){
     const cfg=(typeof getSyncConfig==='function' ? getSyncConfig() : null) || {};
     const bucketNote = cfg.__derivedBucket
-      ? `<div class="small" style="margin-top:2px;color:#9aa4b2;">Your sync config had no <code>storageBucket</code>, so uploads are using <b>${esc(cfg.storageBucket||'')}</b>. If uploads fail, copy the exact <code>storageBucket</code> from your Firebase console into the sync config.</div>`
+      ? `<div class="small" style="margin-top:2px;color:var(--muted);">Your sync config had no <code>storageBucket</code>, so uploads are using <b>${esc(cfg.storageBucket||'')}</b>. If uploads fail, copy the exact <code>storageBucket</code> from your Firebase console into the sync config.</div>`
       : '';
     uploaderHTML = `<input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
        <div id="docUploadStatus_${wo.id}" class="small" style="color:var(--orange);font-weight:600;min-height:1.2em;margin-top:4px;"></div>
-       <div class="small" style="margin-top:2px;color:#9aa4b2;">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>
+       <div class="small" style="margin-top:2px;color:var(--muted);">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>
        ${bucketNote}
        ${docUploadErrorHTML()}`;
   } else if(syncDb){
     // Sync is connected, so telling them to set up sync would send them in
     // circles, the problem is Storage specifically.
-    uploaderHTML = `<div class="small" style="background:#fff3e0;padding:12px;border-radius:8px;line-height:1.6;">
+    uploaderHTML = `<div class="small" style="background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);padding:12px;border-radius:8px;line-height:1.6;">
       <b>Multi-Device Sync is connected, but Firebase Storage isn't available</b>, so uploads are turned off. Usually one of:
       <ul style="margin:8px 0 8px 18px;padding:0;">
         <li>Storage hasn't been enabled yet. Open the Firebase console and click <b>Build &rsaquo; Storage &rsaquo; Get started</b>.</li>
@@ -4714,7 +4829,7 @@ function docsTabHTML(wo){
       <button class="btn secondary" onclick="openSyncModal()">Review Sync Config</button>
     </div>`;
   } else {
-    uploaderHTML = `<div class="small" style="background:#fff3e0;padding:10px;border-radius:8px;">Document uploads need Multi-Device Sync connected first, since files are stored in your Firebase project rather than on this device. <button class="btn secondary" onclick="openSyncModal()">Set up Sync</button></div>`;
+    uploaderHTML = `<div class="small" style="background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);padding:10px;border-radius:8px;">Document uploads need Multi-Device Sync connected first, since files are stored in your Firebase project rather than on this device. <button class="btn secondary" onclick="openSyncModal()">Set up Sync</button></div>`;
   }
   return `<div class="docsTab">
     <h4>Documents</h4>
@@ -6279,44 +6394,44 @@ function psMoney(n){ return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFr
 const PS_CSS = `
 .psWrap{display:flex;flex-direction:column;gap:14px}
 .psBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.psStep{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#7a8699;font-weight:700}
-.psCard{border:1px solid #dfe4ec;border-radius:10px;padding:12px;background:#fff}
+.psStep{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.psCard{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--paper)}
 .psCard h4{margin:0 0 8px;font-size:15px}
 .psGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
-.psTile{border:1px solid #d7dde7;border-radius:10px;padding:14px 12px;background:#fbfcfe;cursor:pointer;font-weight:600;font-size:14px;text-align:left;line-height:1.3}
-.psTile:hover{border-color:#2f6fed;background:#f2f6ff}
-.psTile.on{border-color:#2f6fed;background:#e9f0ff}
-.psChip{display:inline-flex;align-items:center;gap:6px;border:1px solid #d7dde7;border-radius:20px;padding:7px 13px;background:#fbfcfe;cursor:pointer;font-size:13px;margin:0 6px 6px 0}
-.psChip:hover{border-color:#2f6fed}
-.psChip.on{border-color:#2f6fed;background:#e9f0ff;font-weight:600}
-.psScopeRow{border:1px solid #dfe4ec;border-left:3px solid #2f6fed;border-radius:8px;padding:11px 12px;margin-bottom:9px;background:#fff}
-.psScopeRow.dep{border-left-color:#8b96a8;margin-left:18px}
+.psTile{border:1px solid var(--line);border-radius:10px;padding:14px 12px;background:var(--well);color:var(--ink);font-family:inherit;cursor:pointer;font-weight:600;font-size:14px;text-align:left;line-height:1.3}
+.psTile:hover{border-color:var(--accent-b);background:var(--accent-b-soft)}
+.psTile.on{border-color:var(--accent-b);background:var(--accent-b-soft)}
+.psChip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:7px 13px;background:var(--well);color:var(--ink);font-family:inherit;cursor:pointer;font-size:13px;margin:0 6px 6px 0}
+.psChip:hover{border-color:var(--accent-b)}
+.psChip.on{border-color:var(--accent-b);background:var(--accent-b-soft);font-weight:600}
+.psScopeRow{border:1px solid var(--line);border-left:3px solid var(--accent-b);border-radius:8px;padding:11px 12px;margin-bottom:9px;background:var(--paper)}
+.psScopeRow.dep{border-left-color:var(--muted);margin-left:18px}
 .psScopeHead{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .psScopeHead b{font-size:14px}
 .psFieldRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
-.psFieldRow label{font-size:12px;color:#5b6675;font-weight:600}
-.psFieldRow input,.psFieldRow select{border:1px solid #cfd6e0;border-radius:6px;padding:6px 8px;font-size:13px}
-.psPrompt{border:1px dashed #e0a63a;background:#fffaf0;border-radius:8px;padding:10px 12px;margin:0 0 8px 18px}
-.psPrompt .why{font-size:12px;color:#7a6633;margin-top:3px}
+.psFieldRow label{font-size:12px;color:var(--muted);font-weight:600}
+.psFieldRow input,.psFieldRow select{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;padding:6px 8px;font-size:13px}
+.psPrompt{border:1px dashed var(--notice-line);background:var(--notice);color:var(--notice-ink);border-radius:8px;padding:10px 12px;margin:0 0 8px 18px}
+.psPrompt .why{font-size:12px;color:var(--notice-ink);margin-top:3px}
 .psPromptBtns{display:flex;gap:6px;margin-top:8px}
-.psMini{border:1px solid #cfd6e0;background:#fff;border-radius:6px;padding:5px 11px;font-size:12.5px;cursor:pointer;font-weight:600}
-.psMini.add{border-color:#2f6fed;color:#2f6fed}
-.psMini.no{color:#7a8699}
-.psX{border:none;background:none;color:#a0a9b8;cursor:pointer;font-size:16px;padding:0 4px}
+.psMini{border:1px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;border-radius:6px;padding:5px 11px;font-size:12.5px;cursor:pointer;font-weight:600}
+.psMini.add{border-color:var(--accent-b);color:var(--accent-b)}
+.psMini.no{color:var(--muted)}
+.psX{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px}
 .psReady{border-radius:8px;padding:10px 12px;font-size:13px;font-weight:600}
-.psReady.ready{background:#e8f6ec;color:#1d6b34;border:1px solid #b7e0c3}
-.psReady.caution{background:#fff6e5;color:#8a6100;border:1px solid #f0d59b}
-.psReady.risk{background:#fdeaea;color:#9b2226;border:1px solid #f2bdbd}
-.psTotals{display:flex;gap:16px;flex-wrap:wrap;background:#f5f7fb;border-radius:8px;padding:12px}
+.psReady.ready{background:var(--green);color:var(--greenb);border:1px solid var(--greenb)}
+.psReady.caution{background:var(--yellow);color:var(--yellowb);border:1px solid var(--yellowb)}
+.psReady.risk{background:var(--red);color:var(--redb);border:1px solid var(--redb)}
+.psTotals{display:flex;gap:16px;flex-wrap:wrap;background:var(--well);border-radius:8px;padding:12px}
 .psTotals div{font-size:13px}
 .psTotals b{display:block;font-size:17px;margin-top:2px}
 .psRec{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.psDot{width:11px;height:11px;border-radius:50%;background:#c8ced8}
+.psDot{width:11px;height:11px;border-radius:50%;background:var(--line)}
 .psDot.live{background:#d94040;animation:psPulse 1s infinite}
 @keyframes psPulse{0%,100%{opacity:1}50%{opacity:.3}}
-.psTrans{border:1px solid #dfe4ec;border-radius:8px;padding:10px;min-height:90px;font-size:13.5px;line-height:1.5;background:#fbfcfe;white-space:pre-wrap}
-.psSub{font-size:12.5px;color:#6b7688;line-height:1.5}
-.psSecTitle{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#7a8699;font-weight:700;margin:14px 0 6px}
+.psTrans{border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;min-height:90px;font-size:13.5px;line-height:1.5;background:var(--well);white-space:pre-wrap}
+.psSub{font-size:12.5px;color:var(--muted);line-height:1.5}
+.psSecTitle{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:14px 0 6px}
 `;
 function psInjectCSS(){
   if(document.getElementById('psCSS')) return;
@@ -6406,7 +6521,7 @@ function psVoiceHTML(){
     <div class="psCard">
       <h4>Walkthrough notes</h4>
       <div class="psSub" style="margin-bottom:6px">This is saved word for word to the work order. Edit freely.</div>
-      <textarea id="psTrans" class="psTrans" style="width:100%;border:1px solid #dfe4ec" rows="7"
+      <textarea id="psTrans" class="psTrans" style="width:100%;border:1px solid var(--line)" rows="7"
         oninput="PRESITE_STATE.transcript=this.value">${esc(S.transcript)}</textarea>
     </div>
     <div class="btnRow">
@@ -6586,7 +6701,7 @@ function psReviewHTML(){
       <input value="${esc(it.item)}" style="flex:2" onchange="psEditLine('${key}',${i},'item',this.value)">
       <input type="number" step="any" value="${esc(it.qty)}" style="flex:0 0 70px" onchange="psEditLine('${key}',${i},'qty',this.value)">
       <input type="number" step="0.01" value="${esc(it.unit)}" style="flex:0 0 85px" onchange="psEditLine('${key}',${i},'unit',this.value)">
-      <input value="${esc(it.price)}" style="flex:0 0 90px;background:#f2f4f8;font-weight:600" readonly>
+      <input value="${esc(it.price)}" style="flex:0 0 90px;background:var(--field-ro);font-weight:600" readonly>
       <button onclick="psDelLine('${key}',${i})">&times;</button>
     </div>`).join('')||'<div class="psSub">None.</div>'}</div>
     <button class="btn secondary" style="margin-top:6px" onclick="psAddLine('${key}')">+ Add line</button>`;
@@ -6655,7 +6770,7 @@ function psRatesHTML(){
       ${keys.map(k=>`<div class="editRow">
         <input value="${esc(rates[k].label)}" style="flex:2" readonly>
         <input type="number" step="0.01" style="flex:0 0 95px" value="${esc(rates[k].price)}" onchange="setRate('${k}',this.value);toast('Rate saved.')">
-        <input value="per ${esc(rates[k].unit)}" style="flex:0 0 95px;background:#f2f4f8" readonly>
+        <input value="per ${esc(rates[k].unit)}" style="flex:0 0 95px;background:var(--field-ro)" readonly>
       </div>`).join('')}
     </div>
     <div class="btnRow"><button class="btn" onclick="psGo(PRESITE_STATE.lists?'review':'start')">Done</button></div>
@@ -6718,12 +6833,10 @@ function psFinish(){
   if(S.dismissed.length) lines.push('Waved off at walkthrough: '+S.dismissed.map(d=>(psItem(d.itemId)||{}).label||d.itemId).join('; ')+'.');
   addNote(wo,'PRESITE', lines.join(' '));
 
-  wo.presiteDone=true;
   saveDB(DB);
   PRESITE_STATE=null;
   closeModal();
-  renderTabCounts(); renderMain();
-  toast('Pre-site saved. Job moved to Estimates.');
+  advanceStage(wo.id, w=>{ w.presiteDone=true; }, 'Pre-site saved. Job moved to Estimates.');
 }
 
 /* =========================================================================
@@ -6789,12 +6902,12 @@ function closeSplit(kind, id){
     (yes)=>{
       const wo=getWO(id);
       if(!wo){ closeModal(); return; }
+      closeModal();
+      if(!yes){ saveDB(DB); renderTabCounts(); renderMain(); return; }
       if(kind==='estimate'){
-        if(yes){ wo.estimateDone=true; toast('Estimate saved. Moved to Pending Approval.'); }
-        saveDB(DB); closeModal(); renderTabCounts(); renderMain();
+        advanceStage(id, w=>{ w.estimateDone=true; }, 'Estimate saved. Moved to Pending Approval.');
       } else {
-        if(yes){ wo.invoiceDone=true; toast('Invoice complete. Moved to Surveys.'); }
-        saveDB(DB); closeModal(); renderTabCounts(); renderMain();
+        advanceStage(id, w=>{ w.invoiceDone=true; }, 'Invoice complete. Moved to Surveys.');
       }
     }
   );
