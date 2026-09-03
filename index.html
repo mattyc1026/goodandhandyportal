@@ -737,9 +737,44 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 @media (prefers-reduced-motion: reduce){
   .jdToggle .jdChev{transition:none;}
 }
-.editRow{display:flex;gap:6px;margin-bottom:6px;}
-.editRow input{flex:1;padding:8px 10px;border-radius:6px;border:1.5px solid var(--line);font-family:inherit;}
-.editRow button{background:var(--redb);color:#fff;border:none;border-radius:6px;padding:0 12px;font-family:inherit;font-weight:700;}
+.editRow{display:flex;gap:6px;margin-bottom:6px;align-items:stretch;}
+/* min-width:0 lets the text fields give way to the grip and delete button.
+   Without it a flex item refuses to shrink below its content width and the
+   row overflows on a phone instead of the inputs narrowing. */
+.editRow input{flex:1;min-width:0;padding:8px 10px;border-radius:6px;border:1.5px solid var(--line);font-family:inherit;background:var(--paper);color:var(--ink);}
+/* Scoped to .jdDel rather than every button in the row: the drag grip is a
+   button too, and must not inherit the destructive red. */
+.editRow .jdDel{background:var(--redb);color:#fff;border:none;border-radius:6px;padding:0 12px;font-family:inherit;font-weight:700;flex:none;cursor:pointer;}
+/* Drag handle. Deliberately faint: it sits on every row, so at full strength
+   it would turn a list of content into a column of controls. It comes up on
+   hover and whenever a drag is in progress.
+   touch-action:none is load-bearing on a phone. Without it the browser claims
+   the vertical gesture for scrolling and the drag never gets any move events. */
+.editRow .jdGrip{
+  flex:none;width:24px;align-self:stretch;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;border:none;border-radius:6px;
+  color:var(--muted);opacity:.4;font-size:1.1em;line-height:1;
+  font-family:inherit;cursor:grab;touch-action:none;
+  transition:opacity .12s,background .12s;
+}
+.editRow .jdGrip:hover{opacity:.95;background:var(--cream);}
+.editRow .jdGrip:focus-visible{opacity:1;outline:2px solid var(--orange);outline-offset:1px;}
+.editRow .jdGrip:active{cursor:grabbing;}
+.jdRows.jdDragging .jdGrip{opacity:.8;}
+/* The row being dragged lifts off the list so it is obviously the thing under
+   your finger, and stops swallowing pointer events aimed at the rows beneath. */
+.editRow.dragging{
+  background:var(--paper);border-radius:8px;box-shadow:var(--sh-3);
+  position:relative;z-index:5;cursor:grabbing;
+}
+.editRow.dragging input,.editRow.dragging .jdDel{pointer-events:none;}
+@media (max-width:900px){
+  .editRow .jdGrip{width:34px;min-height:40px;opacity:.55;}
+}
+@media (prefers-reduced-motion: reduce){
+  .editRow .jdGrip{transition:none;}
+}
 .small{font-size:.8em;color:var(--muted);line-height:1.5;}
 .confirmBox{position:fixed;inset:0;background:rgba(10,24,45,.66);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;box-sizing:border-box;overflow-y:auto;}
 .confirmCard{background:var(--paper);border-radius:var(--radius-lg);padding:30px 30px;max-width:380px;width:100%;text-align:center;box-shadow:var(--sh-4);box-sizing:border-box;overflow-x:hidden;animation:pop .16s cubic-bezier(.2,.8,.3,1);}
@@ -1431,7 +1466,7 @@ html.dark .aiPanel{
   background:linear-gradient(165deg,var(--navy2),#0b1524);
   color:var(--ink);border:1px solid var(--line);
 }
-html.dark .editRow button{color:#2a0f0b;}
+html.dark .editRow .jdDel{color:#2a0f0b;}
 /* High contrast wins outright if somehow both are set. */
 
 html.hc body{background-image:none;}
@@ -4250,6 +4285,13 @@ function renderWorkOrderModal(id){
           <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
           <div class="mhEmail">${emailLink(wo.customer.email)}</div>
         </div>`;
+  /* Every re-render replaces the whole modal, which destroys the element that
+     was holding the scroll position and drops the user back at the top. That
+     is what made "+ Add Item" feel like it threw you out of a long list. The
+     offset is captured off the outgoing body and reapplied to the new one in
+     the same frame, so the swap is invisible. */
+  const prevBody=modal.querySelector('.modalBody');
+  const prevScroll=prevBody ? prevBody.scrollTop : 0;
   modal.innerHTML=`
   <div class="overlay" id="woOverlay">
     <div class="modal">
@@ -4269,6 +4311,10 @@ function renderWorkOrderModal(id){
       </div>
     </div>
   </div>`;
+  if(prevScroll){
+    const nextBody=modal.querySelector('.modalBody');
+    if(nextBody) nextBody.scrollTop=prevScroll;
+  }
 }
 function custField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${esc(val)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
@@ -4580,21 +4626,135 @@ function removeJDItem(id, key, idx){
   JD_EDIT[key].splice(idx,1);
   renderWorkOrderModal(id);
 }
+/* Moves a row by one position. Kept as the keyboard path now that the visible
+   control is a drag grip: a grip alone is unusable without a pointer, so the
+   arrow keys do the same job while focus is on it. dir is -1 for up, 1 for
+   down; bounds are checked so a key held at either end does nothing. */
+function moveJDItem(id, key, idx, dir){
+  const list=JD_EDIT[key];
+  const target=idx+dir;
+  if(!list || target<0 || target>=list.length) return;
+  const moved=list[idx];
+  list[idx]=list[target];
+  list[target]=moved;
+  renderWorkOrderModal(id);
+  const grip=document.querySelector(`[data-jd-row="${key}-${target}"] .jdGrip`);
+  if(grip) grip.focus({preventScroll:true});
+}
+function jdGripKey(ev, id){
+  const dir = ev.key==='ArrowUp' ? -1 : ev.key==='ArrowDown' ? 1 : 0;
+  if(!dir) return;
+  ev.preventDefault();
+  moveJDItem(id, ev.currentTarget.dataset.jdKey, +ev.currentTarget.dataset.jdIdx, dir);
+}
+
+/* ---- Drag to reorder ----
+   Pointer events rather than HTML5 drag-and-drop, because dragstart/drop never
+   fire for touch input and this list has to work on a phone in someone's
+   kitchen. One pointer API covers mouse, touch and stylus.
+
+   The rows are reordered in the DOM live as you drag, so the gap opens where
+   the row will land and no separate placeholder is needed. JD_EDIT is left
+   untouched until the drop, which also means an input's change event firing
+   mid-drag still writes to the right index. */
+let JD_DRAG=null;
+function jdDragStart(ev, id){
+  if(ev.button!==undefined && ev.button!==0) return;   // left button / touch only
+  const grip=ev.currentTarget;
+  const row=grip.closest('.editRow');
+  const container=row && row.parentNode;
+  if(!row || !container) return;
+  ev.preventDefault();
+  JD_DRAG={id, key:grip.dataset.jdKey, row, container, moved:false};
+  row.classList.add('dragging');
+  container.classList.add('jdDragging');
+  grip.setPointerCapture(ev.pointerId);
+  grip.addEventListener('pointermove', jdDragMove);
+  grip.addEventListener('pointerup', jdDragEnd);
+  grip.addEventListener('pointercancel', jdDragEnd);
+}
+function jdDragMove(ev){
+  if(!JD_DRAG) return;
+  ev.preventDefault();
+  JD_DRAG.moved=true;
+  const {row, container}=JD_DRAG;
+  const y=ev.clientY;
+  /* Find the first row whose midpoint is below the pointer and insert above
+     it. Comparing against midpoints rather than edges is what stops the row
+     flickering between two slots when it is hovering a boundary. */
+  const others=[...container.querySelectorAll('.editRow')].filter(r=>r!==row);
+  let before=null;
+  for(const other of others){
+    const box=other.getBoundingClientRect();
+    if(y < box.top + box.height/2){ before=other; break; }
+  }
+  if(before){ if(before!==row.nextSibling) container.insertBefore(row, before); }
+  else if(row!==container.lastElementChild){ container.appendChild(row); }
+  jdDragAutoScroll(y);
+}
+/* Long lists run past the bottom of the modal, so dragging toward either edge
+   scrolls the panel rather than stranding the row at the boundary. */
+function jdDragAutoScroll(y){
+  const body=document.querySelector('.modalBody');
+  if(!body) return;
+  const box=body.getBoundingClientRect();
+  const zone=52;
+  if(y < box.top + zone) body.scrollTop -= Math.max(4, (box.top + zone - y)/3);
+  else if(y > box.bottom - zone) body.scrollTop += Math.max(4, (y - (box.bottom - zone))/3);
+}
+function jdDragEnd(ev){
+  if(!JD_DRAG) return;
+  const {id, key, row, container, moved}=JD_DRAG;
+  const grip=ev.currentTarget;
+  grip.removeEventListener('pointermove', jdDragMove);
+  grip.removeEventListener('pointerup', jdDragEnd);
+  grip.removeEventListener('pointercancel', jdDragEnd);
+  row.classList.remove('dragging');
+  container.classList.remove('jdDragging');
+  JD_DRAG=null;
+  if(!moved) return;                       // a click on the grip, not a drag
+  /* Rebuild the list from the DOM order. Each row still carries the index it
+     was rendered with, so the new array is just the old items read out in
+     their new sequence. */
+  const order=[...container.querySelectorAll('.editRow')].map(r=>+r.dataset.jdIdx);
+  const src=JD_EDIT[key];
+  /* Only commit a genuine permutation of the current list: same length, every
+     index valid, and no index twice. The DOM should never produce anything
+     else, but a duplicate would silently clone one item and drop another, so
+     the order is discarded rather than trusted if it does not check out. */
+  const valid = order.length===src.length
+    && order.every(i=>Number.isInteger(i) && i>=0 && i<src.length)
+    && new Set(order).size===order.length;
+  if(valid) JD_EDIT[key]=order.map(i=>src[i]);
+  renderWorkOrderModal(id);
+}
 function addJDItem(id, key){
   const isPriced = key==='labor' || key==='materials';
   JD_EDIT[key].push(isPriced ? {item:'',price:''} : '');
   renderWorkOrderModal(id);
+  /* Put the caret straight into the row that was just created. On a long list
+     the new row is below the fold, so this scrolls it into view as well and
+     you can start typing without hunting for it. */
+  const input=document.getElementById(`jdIn-${key}-${JD_EDIT[key].length-1}`);
+  if(input){ input.focus(); input.scrollIntoView({block:'nearest'}); }
 }
 function jdEditSection(id, key, label, isPriced){
   const items=JD_EDIT[key]||[];
+  /* The grip is a real button so the list is still reorderable without a
+     pointer: focus it and use the arrow keys. Sighted mouse and touch users
+     just drag it. touch-action:none in the stylesheet is what stops a drag
+     from scrolling the page out from under the row on a phone. */
+  const grip=(i)=>`<button type="button" class="jdGrip" data-jd-key="${key}" data-jd-idx="${i}"
+      title="Drag to reorder" aria-label="Reorder item ${i+1} of ${items.length}. Use arrow keys to move it."
+      onpointerdown="jdDragStart(event,${id})" onkeydown="jdGripKey(event,${id})">&#8801;</button>`;
   const rows = items.map((it,i)=>{
     if(isPriced){
       const itemVal=esc(it.item);
       const priceVal=esc(it.price);
-      return `<div class="editRow"><input value="${itemVal}" placeholder="Item" style="flex:2" onchange="updateJDItem('${key}',${i},this.value,'item')"><input value="${priceVal}" placeholder="Price range" style="flex:1" onchange="updateJDItem('${key}',${i},this.value,'price')"><button onclick="removeJDItem(${id},'${key}',${i})">✕</button></div>`;
+      return `<div class="editRow" data-jd-row="${key}-${i}" data-jd-idx="${i}">${grip(i)}<input id="jdIn-${key}-${i}" value="${itemVal}" placeholder="Item" style="flex:2" onchange="updateJDItem('${key}',${i},this.value,'item')"><input value="${priceVal}" placeholder="Price range" style="flex:1" onchange="updateJDItem('${key}',${i},this.value,'price')"><button class="jdDel" title="Remove" aria-label="Remove" onclick="removeJDItem(${id},'${key}',${i})">&#10005;</button></div>`;
     }
     const val=esc(it);
-    return `<div class="editRow"><input value="${val}" onchange="updateJDItem('${key}',${i},this.value)"><button onclick="removeJDItem(${id},'${key}',${i})">✕</button></div>`;
+    return `<div class="editRow" data-jd-row="${key}-${i}" data-jd-idx="${i}">${grip(i)}<input id="jdIn-${key}-${i}" value="${val}" onchange="updateJDItem('${key}',${i},this.value)"><button class="jdDel" title="Remove" aria-label="Remove" onclick="removeJDItem(${id},'${key}',${i})">&#10005;</button></div>`;
   }).join('') || '<div class="small">None yet.</div>';
   const collapsed = !!JD_COLLAPSED[key];
   return `<div class="listEditor" style="margin-top:10px;">
@@ -4606,7 +4766,7 @@ function jdEditSection(id, key, label, isPriced){
       <span class="jdCount">${items.length}</span>
     </button>
     <div id="jdBody-${key}"${collapsed?' hidden':''}>
-      <div>${rows}</div>
+      <div class="jdRows" id="jdRows-${key}">${rows}</div>
       <button class="btn secondary" onclick="addJDItem(${id},'${key}')" style="margin-top:6px;">+ Add Item</button>
     </div>
   </div>`;
