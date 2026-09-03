@@ -1476,6 +1476,36 @@ html.dark #ghStorageRules{background:#0a111d !important;color:var(--ink) !import
 html.dark *{scrollbar-color:#3a4a66 transparent;}
 html.dark ::-webkit-scrollbar-thumb{background:#3a4a66;border-color:var(--paper);}
 html.dark .modalHeadCust .mhName{color:var(--navy);}
+/* ---- Dark + High Contrast: white-on-white repaint ----
+   In this pairing --navy, --navy2 and --ink are all pure white, so every
+   dark-mode rule above that paints --ink on a --navy2 fill resolves to white
+   text on a white pill and the content disappears. Tab badge numbers are the
+   obvious casualty; the sub-list counts, selected calendar days, schedule
+   popovers and the tiny edit affordance all share the same rule and the same
+   fate. Repainted as the theme's own ground and ink, outlined so each still
+   reads as a distinct pill rather than dissolving into the bar behind it.
+   The tab selectors carry #tabsNav because the rules they override do, and an
+   id outranks any number of classes. */
+html.dark.hc nav.tabs#tabsNav button .count,
+html.dark.hc .subListHeader .count,
+html.dark.hc .schedCalDay.selStart,
+html.dark.hc .schedCalDay.selEnd,
+html.dark.hc .schedDayPopup,
+html.dark.hc .schedTypeToggle button.active,
+html.dark.hc .tinyEdit:hover{
+  background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);
+}
+/* The active tab keeps its orange fill, but that orange is light in this
+   pairing, so its label has to flip to the dark ground to stay legible. */
+html.dark.hc nav.tabs#tabsNav button.active .count{
+  background:var(--orange);color:var(--hc-bg);border-color:var(--orange);
+}
+/* Same collapse, on hover only, which is why it hid: the button reads fine
+   until the pointer is on it and then the label disappears. Keeps its own
+   1.5px border rather than inheriting the pill outline above. */
+html.dark.hc .btn.secondary:hover{
+  background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);
+}
 /* Same failure as the Docs tab buttons, in three more places. Each pairs a
    fixed white label with a fill that is dark in light mode and light in dark
    mode, so the text lands on its own colour once the theme flips. --navy in
