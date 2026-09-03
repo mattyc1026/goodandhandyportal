@@ -6629,6 +6629,8 @@ const PS_CSS = `
 .psCard h4{margin:0 0 8px;font-size:15px}
 .psGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
 .psTile{border:1px solid var(--line);border-radius:10px;padding:14px 12px;background:var(--well);color:var(--ink);font-family:inherit;cursor:pointer;font-weight:600;font-size:14px;text-align:left;line-height:1.3}
+.psTile:disabled{opacity:.42;cursor:not-allowed}
+.psGrid.psLocked{opacity:.85}
 .psTile:hover{border-color:var(--accent-b);background:var(--accent-b-soft)}
 .psTile.on{border-color:var(--accent-b);background:var(--accent-b-soft)}
 .psChip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:7px 13px;background:var(--well);color:var(--ink);font-family:inherit;cursor:pointer;font-size:13px;margin:0 6px 6px 0}
@@ -6707,18 +6709,26 @@ function renderPresiteBody(){
 /* ---------- Stage: start ------------------------------------------------- */
 function psStartHTML(){
   const S=PRESITE_STATE;
+  const ready=!!S.yearBuilt;
+  /* The age question comes first and the capture tiles are inert until it is
+     answered. It used to sit underneath them, so the natural reading order was
+     to pick a mode and get bounced back by a toast. The answer also has to be
+     in hand before either path starts, because it drives the lead, asbestos
+     and old-wiring language the tool adds as you go. */
   return `<div class="psWrap">
-    <div class="psStep">Step 1 of 4, how are you capturing this</div>
-    <div class="psGrid">
-      <button class="psTile" onclick="psSetMode('tap')"><div style="font-size:15px">Tap through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Pick what the customer wants. The tool prompts you with everything that rides along.</div></button>
-      <button class="psTile" onclick="psSetMode('voice')"><div style="font-size:15px">Talk through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Record the walkthrough out loud. The recording is saved and the tool suggests items from it.</div></button>
-    </div>
+    <div class="psStep">Step 1 of 4, about the house</div>
     <div class="psCard">
       <h4>Roughly how old is the house?</h4>
       <div class="psSub" style="margin-bottom:8px">This drives the lead, asbestos and old-wiring language automatically. It is the only background question the tool asks.</div>
       <div>${YEAR_BUCKETS.map(b=>`<span class="psChip ${S.yearBuilt===b.key?'on':''}" onclick="psSetYear('${b.key}')">${b.label}</span>`).join('')}</div>
     </div>
-    <div class="psSub">Rates, markup and tax are set under <a href="#" onclick="psGo('rates');return false;">rate settings</a>. They carry over to every job.</div>
+    <div class="psStep" style="margin-top:16px">Then, how are you capturing this</div>
+    ${ready?'':'<div class="psSub" style="margin-bottom:8px">Pick the age of the house above to continue.</div>'}
+    <div class="psGrid${ready?'':' psLocked'}">
+      <button class="psTile" ${ready?'':'disabled'} onclick="psSetMode('tap')"><div style="font-size:15px">Tap through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Pick what the customer wants. The tool prompts you with everything that rides along.</div></button>
+      <button class="psTile" ${ready?'':'disabled'} onclick="psSetMode('voice')"><div style="font-size:15px">Talk through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Record the walkthrough out loud. The recording is saved and the tool suggests items from it.</div></button>
+    </div>
+    <div class="psSub" style="margin-top:14px">Rates, markup and tax are set under <a href="#" onclick="psGo('rates');return false;">rate settings</a>. They carry over to every job.</div>
   </div>`;
 }
 function psSetYear(k){ PRESITE_STATE.yearBuilt=k; renderPresiteBody(); }
@@ -6729,6 +6739,25 @@ function psSetMode(m){
   renderPresiteBody();
 }
 function psGo(stage){ PRESITE_STATE.stage=stage; renderPresiteBody(); }
+/* One step back, worked out from where you are rather than from a history
+   stack, so it stays right no matter how you arrived. The two cases that are
+   easy to get wrong: the item list's previous screen is the category list, not
+   the previous stage, since both live inside 'pick'; and coming out of the
+   scope screen has to return to whichever capture mode you actually used,
+   otherwise a voice walkthrough drops you into the tap-through picker. */
+function psBack(){
+  const S=PRESITE_STATE;
+  if(S.stage==='scope')       S.stage = S.mode==='voice' ? 'voice' : 'pick';
+  else if(S.stage==='pick'){
+    if(S.jobType)             S.jobType=null;
+    else if(S.mode==='voice') S.stage='voice';
+    else                      S.stage='start';
+  }
+  else if(S.stage==='voice')  S.stage='start';
+  else if(S.stage==='review') S.stage='scope';
+  else                        S.stage='start';
+  renderPresiteBody();
+}
 
 /* ---------- Stage: voice ------------------------------------------------- */
 let PS_REC=null, PS_SR=null, PS_CHUNKS=[];
@@ -6755,7 +6784,7 @@ function psVoiceHTML(){
         oninput="PRESITE_STATE.transcript=this.value">${esc(S.transcript)}</textarea>
     </div>
     <div class="btnRow">
-      <button class="btn secondary" onclick="psGo('start')">Back</button>
+      <button class="btn secondary" onclick="psBack()">Back</button>
       <button class="btn" onclick="psScanTranscript()">Suggest items from these notes</button>
       <button class="btn secondary" onclick="psGo('pick')">Skip, pick items myself</button>
     </div>
@@ -6821,7 +6850,7 @@ function psPickHTML(){
     return `<div class="psWrap">
       <div class="psStep">Step 2 of 4, what does the customer want done</div>
       <div class="psGrid">${JOB_PRESETS.map(p=>`<button class="psTile" onclick="psSetJobType('${p.id}')">${p.label}</button>`).join('')}</div>
-      <div class="btnRow"><button class="btn secondary" onclick="psGo('start')">Back</button></div>
+      <div class="btnRow"><button class="btn secondary" onclick="psBack()">Back</button></div>
     </div>`;
   }
   const preset=JOB_PRESETS.find(p=>p.id===S.jobType);
@@ -6837,6 +6866,7 @@ function psPickHTML(){
       <div>${ids.map(id=>`<span class="psChip ${psInScope(id)?'on':''}" onclick="psTogglePick('${id}')">${esc(PS_ITEMS[id].label)}</span>`).join('')}</div>
     </div>
     <div class="btnRow">
+      <button class="btn secondary" onclick="psBack()">Back</button>
       <button class="btn secondary" onclick="PRESITE_STATE.jobType=null;renderPresiteBody()">Different category</button>
       <button class="btn" onclick="psGo('scope')">Continue${PRESITE_STATE.scope.length?' ('+PRESITE_STATE.scope.length+' selected)':''}</button>
     </div>
@@ -6887,6 +6917,7 @@ function psScopeHTML(){
     <div>${rows||'<div class="psSub">Nothing in scope yet.</div>'}</div>
     ${orphan.map(k=>psPromptHTML(k)).join('')}
     <div class="btnRow">
+      <button class="btn secondary" onclick="psBack()">Back</button>
       <button class="btn secondary" onclick="PRESITE_STATE.jobType=null;psGo('pick')">Anything else? Add more</button>
       <button class="btn" onclick="psBuild()">Build the list</button>
     </div>
@@ -6967,7 +6998,7 @@ function psReviewHTML(){
     ${plain('exclusions','Exclusions, what is not included')}
     ${plain('disclaimers','Disclaimers')}
     <div class="btnRow" style="margin-top:16px">
-      <button class="btn secondary" onclick="psGo('scope')">Back to scope</button>
+      <button class="btn secondary" onclick="psBack()">Back to scope</button>
       <button class="btn" onclick="psFinish()">Save to work order</button>
     </div>
   </div>`;
