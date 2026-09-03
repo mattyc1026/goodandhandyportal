@@ -767,8 +767,13 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
    scrollable ancestor is the whole modal body, and reaching for a slot further
    down would drag the description and the other sub-lists past you too.
    overscroll-behavior stops a flick at either end leaking into the panel. */
-.jdRows{max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;}
-.jdRows.jdDragging{cursor:grabbing;}
+.jdRows{position:relative;max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;}
+.jdRows.jdDragging{cursor:grabbing;-webkit-user-select:none;user-select:none;}
+/* While a drag is live the other rows are scenery. Without this they light up
+   their own grips as the pointer sweeps past, which reads as the row having
+   jumped to whichever line is under the cursor. */
+.jdRows.jdDragging .editRow:not(.dragging) .jdGrip{pointer-events:none;}
+.jdRows.jdDragging .editRow:not(.dragging) .jdGrip:hover{opacity:.4;background:transparent;}
 /* Rows slide aside rather than jumping, so the gap visibly opens where the
    line will land. The dragged row is exempt: it tracks the pointer directly
    and any easing would make it lag behind the cursor. */
@@ -4689,10 +4694,20 @@ function jdDragStart(ev, id){
   const rows=[...container.querySelectorAll('.editRow')];
   const from=rows.indexOf(row);
   if(from<0) return;
-  /* Geometry is measured once, before anything is transformed. offsetTop is
-     unaffected by the transforms applied during the drag, so these stay a
-     stable map of where each slot lives. */
-  const geom=rows.map(r=>({top:r.offsetTop, h:r.offsetHeight}));
+  /* Geometry is measured once, before anything is transformed, and expressed
+     in the container's own scroll coordinates.
+
+     This deliberately does NOT use offsetTop. offsetTop is measured from the
+     nearest positioned ancestor, which is not necessarily this list, so those
+     numbers could be in a completely different coordinate space from the
+     pointer maths below. That mismatch is what made a grabbed row leap across
+     the panel. Rects taken against the container are self-consistent whatever
+     the surrounding CSS does. */
+  const cBox0=container.getBoundingClientRect();
+  const geom=rows.map(r=>{
+    const b=r.getBoundingClientRect();
+    return {top: b.top - cBox0.top + container.scrollTop, h: b.height};
+  });
   JD_DRAG={
     id, key:grip.dataset.jdKey, row, container, rows, geom, from, target:from,
     grabDy: ev.clientY - row.getBoundingClientRect().top,
