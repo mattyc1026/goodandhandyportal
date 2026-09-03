@@ -1382,7 +1382,15 @@ html.dark .tag.pending,html.dark .tag.build-est,
 html.dark .tag.go,html.dark .tag.build-inv{color:#0e1522;}
 html.dark .subListHeader .count{background:var(--navy2);color:var(--ink);}
 html.dark .toastItem{background:#22304a;color:var(--ink);}
-html.dark .btn{color:#121a29;}
+/* Dark mode flips the primary button's label to dark ink, because its fill is
+   the orange accent and stays light in both themes. That must NOT reach the
+   outlined variants: .btn.secondary has a transparent fill, so dark ink on it
+   lands on the dark card behind and the button disappears. This is what made
+   View / Download / Rename invisible in the Docs tab. :not() keeps the rule on
+   the filled buttons where it belongs; the outlined ones keep reading --navy,
+   which inverts to a light ink in dark mode as intended. */
+html.dark .btn:not(.secondary){color:#121a29;}
+html.dark .btn.secondary{color:var(--navy);border-color:var(--line);}
 html.dark .btn.secondary:hover{background:var(--navy2);color:var(--ink);border-color:var(--navy2);}
 html.dark .syncPill.on{color:#0e1522;}
 html.dark .woRow.st-red-bold .followupBadge,html.dark .woRow.st-yellow-bold .followupBadge,
@@ -1401,6 +1409,17 @@ html.dark #ghStorageRules{background:#0a111d !important;color:var(--ink) !import
 html.dark *{scrollbar-color:#3a4a66 transparent;}
 html.dark ::-webkit-scrollbar-thumb{background:#3a4a66;border-color:var(--paper);}
 html.dark .modalHeadCust .mhName{color:var(--navy);}
+/* Same failure as the Docs tab buttons, in three more places. Each pairs a
+   fixed white label with a fill that is dark in light mode and light in dark
+   mode, so the text lands on its own colour once the theme flips. --navy in
+   particular inverts meaning between themes, so anything that used it as a
+   dark *background* rather than as heading ink has to be corrected here. */
+html.dark .addrSuggest{background:var(--paper);color:var(--ink);}
+html.dark .aiPanel{
+  background:linear-gradient(165deg,var(--navy2),#0b1524);
+  color:var(--ink);border:1px solid var(--line);
+}
+html.dark .editRow button{color:#2a0f0b;}
 /* High contrast wins outright if somehow both are set. */
 
 html.hc body{background-image:none;}
@@ -1722,8 +1741,13 @@ header.top{background:linear-gradient(180deg,#16345f,var(--navy));box-shadow:non
 .tabsBarWrap{transition:box-shadow var(--t-med) var(--e-out);}
 body.scrolled .tabsBarWrap{box-shadow:0 6px 20px rgba(6,17,35,.22);}
 html.hc .globalSearchBar{background:#000;border-bottom:2px solid #fff;}
-html.hc .globalSearchBar input{background:#fff;color:#000;border-color:#fff;}
-html.hc .globalSearchBar input::placeholder{color:#444;}
+/* The bar itself is black under high contrast in both themes, so its white
+   border and white button labels stay fixed. The input is the part that was
+   still forced light: it now takes the theme pair, giving a white field on
+   black in light mode and a black field on black in dark, each with the white
+   border keeping its outline. */
+html.hc .globalSearchBar input{background:var(--hc-bg);color:var(--hc-fg);border-color:#fff;}
+html.hc .globalSearchBar input::placeholder{color:var(--muted);}
 html.hc nav.tabs{background:#000;}
 html.hc .globalSearchBar .btn.secondary{border-color:#fff;color:#fff;}
 @media (max-width:900px){
