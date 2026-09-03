@@ -1482,20 +1482,61 @@ html.hc body{background-image:none;}
    tracks, which is what makes the movement legible at all. */
 .woMeter{
   position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;
+  /* The wash gets hotter as it approaches the leading edge rather than sitting
+     at one flat tint. Mixing the pale stage tint toward its own strong accent
+     keeps every stage on its own hue while giving the bar somewhere to build
+     to, so it reads as charging instead of as a flat block of colour. */
   background:linear-gradient(90deg,
-    var(--meter-tint) 0%,
-    var(--meter-tint) calc(var(--meter-fill) - 14%),
+    color-mix(in srgb,var(--stage-glow) 20%,var(--meter-tint)) 0%,
+    color-mix(in srgb,var(--stage-glow) 44%,var(--meter-tint)) calc(var(--meter-fill) - 13%),
     transparent var(--meter-fill));
+}
+/* A soft halo sitting behind the edge. It carries the twinkle's bloom; the
+   edge itself stays hairline so it reads as a sharp position marker rather
+   than a band. */
+.woMeter::before{
+  content:'';position:absolute;top:2px;bottom:2px;
+  left:calc(var(--meter-fill) - 11px);width:22px;opacity:0;
+  background:radial-gradient(closest-side,
+    color-mix(in srgb,var(--stage-glow) 75%,transparent),transparent);
 }
 .woMeter::after{
   content:'';position:absolute;top:0;bottom:0;
-  left:calc(var(--meter-fill) - 3px);width:3px;
+  left:calc(var(--meter-fill) - 1px);width:1px;
   background:var(--stage-glow,var(--line));
-  opacity:.55;
+  opacity:.85;
 }
+/* Twinkle, and only while the meter is actually travelling. An irregular
+   flicker rather than an even pulse: a steady blink reads as a loading
+   spinner, an uneven one reads as something live moving up the bar. The
+   halo breathes on its own offset rhythm so the two never sync up. */
+@keyframes edgeTwinkle{
+  0%,100%{opacity:.9;}
+  11%{opacity:.3;}
+  24%{opacity:1;}
+  39%{opacity:.45;}
+  56%{opacity:1;}
+  71%{opacity:.38;}
+  87%{opacity:.95;}
+}
+@keyframes edgeGlow{
+  0%  {opacity:0;   transform:scaleX(.5);}
+  14% {opacity:.9;  transform:scaleX(1.25);}
+  38% {opacity:.45; transform:scaleX(.85);}
+  61% {opacity:.95; transform:scaleX(1.3);}
+  82% {opacity:.5;  transform:scaleX(.9);}
+  100%{opacity:0;   transform:scaleX(.6);}
+}
+.woRow.stageAdvance .woMeter::after{animation:edgeTwinkle 1.1s var(--e-out) .34s;}
+.woRow.stageAdvance .woMeter::before{animation:edgeGlow 1.1s var(--e-out) .34s;}
 /* At a full meter the edge would sit on the card's right border and read as a
-   stray line, so it is dropped once the bar is complete. */
-.woRow.st-blue .woMeter::after,.woRow.st-grey .woMeter::after{display:none;}
+   stray line, so it is dropped once the bar is complete. The :not() matters:
+   while a job is animating INTO one of these stages the edge still has to be
+   there, twinkling its way across, and only disappears when the row settles. */
+.woRow.st-blue:not(.stageAdvance) .woMeter::after,
+.woRow.st-grey:not(.stageAdvance) .woMeter::after,
+.woRow.st-blue:not(.stageAdvance) .woMeter::before,
+.woRow.st-grey:not(.stageAdvance) .woMeter::before{display:none;}
 .woRow>.woMain,.woRow>.woMeta{position:relative;z-index:1;}
 /* Timing. The pulse fires first, then the meter travels, and the re-render
    waits until the travel has actually finished. The previous version cut the
@@ -1542,6 +1583,8 @@ html.hc body{background-image:none;}
 @media (prefers-reduced-motion: reduce){
   .woRow{transition:none;}
   .woRow.stageAdvance,.woRow.stageAdvance .tag,.woRow.stageAdvance .woFlash{animation:none;}
+  .woRow.stageAdvance .woMeter::after,.woRow.stageAdvance .woMeter::before{animation:none;}
+  .woMeter::before{opacity:0;}
 }
 /* The neon rail wins over the stage colour: a crew on site outranks whatever
    lifecycle stage the job happens to be sitting in. */
