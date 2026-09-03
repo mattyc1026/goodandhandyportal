@@ -762,13 +762,28 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .editRow .jdGrip:focus-visible{opacity:1;outline:2px solid var(--orange);outline-offset:1px;}
 .editRow .jdGrip:active{cursor:grabbing;}
 .jdRows.jdDragging .jdGrip{opacity:.8;}
+/* Each sub-list is its own scroll area once it outgrows the cap. That is what
+   lets a drag scroll the list and nothing else: without it the nearest
+   scrollable ancestor is the whole modal body, and reaching for a slot further
+   down would drag the description and the other sub-lists past you too.
+   overscroll-behavior stops a flick at either end leaking into the panel. */
+.jdRows{max-height:min(52vh,430px);overflow-y:auto;overscroll-behavior:contain;}
+.jdRows.jdDragging{cursor:grabbing;}
+/* Rows slide aside rather than jumping, so the gap visibly opens where the
+   line will land. The dragged row is exempt: it tracks the pointer directly
+   and any easing would make it lag behind the cursor. */
+.jdRows.jdDragging .editRow{transition:transform .16s var(--e-out);}
 /* The row being dragged lifts off the list so it is obviously the thing under
    your finger, and stops swallowing pointer events aimed at the rows beneath. */
 .editRow.dragging{
   background:var(--paper);border-radius:8px;box-shadow:var(--sh-3);
-  position:relative;z-index:5;cursor:grabbing;
+  position:relative;z-index:5;cursor:grabbing;transition:none;
+  will-change:transform;
 }
 .editRow.dragging input,.editRow.dragging .jdDel{pointer-events:none;}
+@media (prefers-reduced-motion: reduce){
+  .jdRows.jdDragging .editRow{transition:none;}
+}
 @media (max-width:900px){
   .editRow .jdGrip{width:34px;min-height:40px;opacity:.55;}
 }
@@ -4650,82 +4665,121 @@ function jdGripKey(ev, id){
 
 /* ---- Drag to reorder ----
    Pointer events rather than HTML5 drag-and-drop, because dragstart/drop never
-   fire for touch input and this list has to work on a phone in someone's
-   kitchen. One pointer API covers mouse, touch and stylus.
+   fire for touch input and this list has to work on a phone. One pointer API
+   covers mouse, touch and stylus.
 
-   The rows are reordered in the DOM live as you drag, so the gap opens where
-   the row will land and no separate placeholder is needed. JD_EDIT is left
-   untouched until the drop, which also means an input's change event firing
-   mid-drag still writes to the right index. */
+   Nothing is moved in the DOM during the drag. The grabbed row is lifted and
+   translated to follow the pointer, and the rows it passes slide out of the
+   way by the same amount, so the gap opens where it will land. The order is
+   committed to JD_EDIT once, on drop.
+
+   The first version DID reorder the DOM live, and it broke: re-inserting the
+   row detaches and re-attaches the grip inside it, which drops the pointer
+   capture, so the browser stopped delivering move events after exactly one
+   step. That is why it crawled one line per drag. Listeners now sit on the
+   window and the row never leaves its slot, so neither can happen. */
 let JD_DRAG=null;
 function jdDragStart(ev, id){
-  if(ev.button!==undefined && ev.button!==0) return;   // left button / touch only
+  if(ev.button!==undefined && ev.button!==0) return;   // left button or touch
   const grip=ev.currentTarget;
   const row=grip.closest('.editRow');
-  const container=row && row.parentNode;
+  const container=row && row.closest('.jdRows');
   if(!row || !container) return;
   ev.preventDefault();
-  JD_DRAG={id, key:grip.dataset.jdKey, row, container, moved:false};
+  const rows=[...container.querySelectorAll('.editRow')];
+  const from=rows.indexOf(row);
+  if(from<0) return;
+  /* Geometry is measured once, before anything is transformed. offsetTop is
+     unaffected by the transforms applied during the drag, so these stay a
+     stable map of where each slot lives. */
+  const geom=rows.map(r=>({top:r.offsetTop, h:r.offsetHeight}));
+  JD_DRAG={
+    id, key:grip.dataset.jdKey, row, container, rows, geom, from, target:from,
+    grabDy: ev.clientY - row.getBoundingClientRect().top,
+    height: geom[from].h,
+    pointerY: ev.clientY, moved:false, raf:0
+  };
   row.classList.add('dragging');
   container.classList.add('jdDragging');
-  grip.setPointerCapture(ev.pointerId);
-  grip.addEventListener('pointermove', jdDragMove);
-  grip.addEventListener('pointerup', jdDragEnd);
-  grip.addEventListener('pointercancel', jdDragEnd);
+  window.addEventListener('pointermove', jdDragMove, {passive:false});
+  window.addEventListener('pointerup', jdDragEnd);
+  window.addEventListener('pointercancel', jdDragEnd);
+  JD_DRAG.raf=requestAnimationFrame(jdDragTick);
 }
 function jdDragMove(ev){
   if(!JD_DRAG) return;
   ev.preventDefault();
+  JD_DRAG.pointerY=ev.clientY;
   JD_DRAG.moved=true;
-  const {row, container}=JD_DRAG;
-  const y=ev.clientY;
-  /* Find the first row whose midpoint is below the pointer and insert above
-     it. Comparing against midpoints rather than edges is what stops the row
-     flickering between two slots when it is hovering a boundary. */
-  const others=[...container.querySelectorAll('.editRow')].filter(r=>r!==row);
-  let before=null;
-  for(const other of others){
-    const box=other.getBoundingClientRect();
-    if(y < box.top + box.height/2){ before=other; break; }
-  }
-  if(before){ if(before!==row.nextSibling) container.insertBefore(row, before); }
-  else if(row!==container.lastElementChild){ container.appendChild(row); }
-  jdDragAutoScroll(y);
 }
-/* Long lists run past the bottom of the modal, so dragging toward either edge
-   scrolls the panel rather than stranding the row at the boundary. */
-function jdDragAutoScroll(y){
-  const body=document.querySelector('.modalBody');
-  if(!body) return;
-  const box=body.getBoundingClientRect();
-  const zone=52;
-  if(y < box.top + zone) body.scrollTop -= Math.max(4, (box.top + zone - y)/3);
-  else if(y > box.bottom - zone) body.scrollTop += Math.max(4, (y - (box.bottom - zone))/3);
-}
-function jdDragEnd(ev){
+/* Driven by a frame loop rather than straight off the move event, so holding
+   the pointer still inside the auto-scroll zone keeps scrolling instead of
+   stalling until the next twitch. */
+function jdDragTick(){
   if(!JD_DRAG) return;
-  const {id, key, row, container, moved}=JD_DRAG;
-  const grip=ev.currentTarget;
-  grip.removeEventListener('pointermove', jdDragMove);
-  grip.removeEventListener('pointerup', jdDragEnd);
-  grip.removeEventListener('pointercancel', jdDragEnd);
-  row.classList.remove('dragging');
-  container.classList.remove('jdDragging');
+  jdDragScroll();
+  jdDragApply();
+  JD_DRAG.raf=requestAnimationFrame(jdDragTick);
+}
+/* Only the sub-list scrolls. The modal body is deliberately left alone: it
+   carries the description, the other sub-lists and the buttons, and scrolling
+   all of that while you are placing one line moves the target out from under
+   you. */
+function jdDragScroll(){
+  const d=JD_DRAG;
+  const box=d.container.getBoundingClientRect();
+  const zone=44;
+  let dy=0;
+  if(d.pointerY < box.top+zone) dy=-Math.max(3,(box.top+zone-d.pointerY)/2.5);
+  else if(d.pointerY > box.bottom-zone) dy=Math.max(3,(d.pointerY-(box.bottom-zone))/2.5);
+  if(dy) d.container.scrollTop+=dy;
+}
+function jdDragApply(){
+  const d=JD_DRAG;
+  const cBox=d.container.getBoundingClientRect();
+  const lastSlot=d.geom[d.geom.length-1];
+  const maxTop=lastSlot.top+lastSlot.h-d.height;
+  /* Where the row's own top sits, in the container's coordinate space, with
+     the grab offset preserved so the line does not jump under the cursor. */
+  let top=d.pointerY - cBox.top + d.container.scrollTop - d.grabDy;
+  top=Math.max(0, Math.min(top, maxTop));
+  d.row.style.transform=`translateY(${top-d.geom[d.from].top}px)`;
+  /* Which slot the dragged row's centre is sitting in. Testing containment
+     (centre is inside slot i's span) rather than "centre is above slot i's
+     midpoint": the midpoint test reported the next slot down the moment the
+     drag began, because at rest the centre sits exactly on its own midpoint
+     and the strict comparison fell through to the following row. */
+  const centre=top+d.height/2;
+  let target=d.geom.length-1;
+  for(let i=0;i<d.geom.length;i++){
+    if(centre < d.geom[i].top+d.geom[i].h){ target=i; break; }
+  }
+  d.target=target;
+  d.rows.forEach((r,i)=>{
+    if(r===d.row) return;
+    let shift=0;
+    if(target>d.from && i>d.from && i<=target) shift=-d.height;
+    else if(target<d.from && i>=target && i<d.from) shift=d.height;
+    r.style.transform = shift ? `translateY(${shift}px)` : '';
+  });
+}
+function jdDragEnd(){
+  const d=JD_DRAG;
+  if(!d) return;
+  cancelAnimationFrame(d.raf);
+  window.removeEventListener('pointermove', jdDragMove);
+  window.removeEventListener('pointerup', jdDragEnd);
+  window.removeEventListener('pointercancel', jdDragEnd);
+  d.rows.forEach(r=>{ r.style.transform=''; });
+  d.row.classList.remove('dragging');
+  d.container.classList.remove('jdDragging');
+  const {id, key, from, target, moved}=d;
   JD_DRAG=null;
-  if(!moved) return;                       // a click on the grip, not a drag
-  /* Rebuild the list from the DOM order. Each row still carries the index it
-     was rendered with, so the new array is just the old items read out in
-     their new sequence. */
-  const order=[...container.querySelectorAll('.editRow')].map(r=>+r.dataset.jdIdx);
-  const src=JD_EDIT[key];
-  /* Only commit a genuine permutation of the current list: same length, every
-     index valid, and no index twice. The DOM should never produce anything
-     else, but a duplicate would silently clone one item and drop another, so
-     the order is discarded rather than trusted if it does not check out. */
-  const valid = order.length===src.length
-    && order.every(i=>Number.isInteger(i) && i>=0 && i<src.length)
-    && new Set(order).size===order.length;
-  if(valid) JD_EDIT[key]=order.map(i=>src[i]);
+  if(!moved || target===from) return;     // a click on the grip, or dropped home
+  const list=JD_EDIT[key];
+  if(!list || from<0 || from>=list.length || target<0 || target>=list.length) return;
+  const [item]=list.splice(from,1);
+  list.splice(target,0,item);
   renderWorkOrderModal(id);
 }
 function addJDItem(id, key){
