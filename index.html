@@ -2299,59 +2299,88 @@ function initSync(){
 function openDataConnection(){
   if(!syncDb) return;
   try{
-    const ref=syncDb.collection('gh_portal').doc('main');
     SYNC_LOADING=true;
     if(CURRENT_USER && typeof renderMain==='function') renderMain();
-    if(syncUnsub) syncUnsub();
-    syncUnsub=ref.onSnapshot(snap=>{
+    if(syncUnsub){ syncUnsub(); syncUnsub=null; }
+
+    const unsubs=[];
+
+    // ---- shared bits: users and the storage running total ----------
+    unsubs.push(mainDocRef().onSnapshot(snap=>{
       SYNC_LOADING=false;
-      if(snap.exists){
-        const remote=snap.data().db;
-        const remoteStamp=snap.data().updatedAt||0;
-        const localStamp=DB.updatedAt||0;
-        // This device holds a change the cloud never received (tab closed
-        // inside the push debounce, or the write failed). Blindly applying the
-        // older cloud copy here is what silently threw that change away. Push
-        // ours up instead and let the resulting snapshot settle it.
-        if(localStamp>remoteStamp){
-          console.warn('Local database is newer than the cloud copy, pushing local changes up.');
-          pushToCloud();
-          setSyncPill('on');
-          onDatabaseReady();
-          return;
-        }
-        if(remote){
-          applyingRemote=true;
-          try{ DB=JSON.parse(remote); }catch(err){ applyingRemote=false; console.error('Bad remote payload', err); return; }
-          normalizeDB(DB);
-          localStorage.setItem(DB_KEY, JSON.stringify(DB));
-          applyingRemote=false;
-          setSyncPill('on');
-          if(CURRENT_USER){ renderTabCounts(); renderMain(); }
-          onDatabaseReady();
-        }
-      } else {
-        // nothing in the cloud yet, seed it with whatever's on this device
-        ref.set({db:JSON.stringify(DB), updatedAt:(DB.updatedAt||Date.now())});
+      if(!snap.exists){
+        // Nothing in the cloud at all. Seed it from this device.
+        CLOUD_MIRROR={meta:null, wos:{}};
+        flushToCloud();
         setSyncPill('on');
         onDatabaseReady();
+        return;
       }
-    }, err=>{
+      const data=snap.data();
+      if(data.schema!==2){
+        // Still on the old single-document layout, so move it across once.
+        migrateToPerWorkOrderDocs(data);
+        return;
+      }
+      if(data.meta && data.meta!==CLOUD_MIRROR.meta){
+        applyingRemote=true;
+        try{
+          const meta=JSON.parse(data.meta);
+          DB.users=meta.users||{};
+          DB.storageUsedBytes=meta.storageUsedBytes||0;
+          CLOUD_MIRROR.meta=data.meta;
+          normalizeDB(DB);
+          localStorage.setItem(DB_KEY, JSON.stringify(DB));
+        }catch(err){ console.error('Bad meta payload', err); }
+        applyingRemote=false;
+      }
+      setSyncPill('on');
+      if(CURRENT_USER){ renderTabCounts(); renderMain(); }
+      onDatabaseReady();
+    }, syncErrorHandler));
+
+    // ---- one document per work order -------------------------------
+    unsubs.push(woCollectionRef().onSnapshot(snap=>{
       SYNC_LOADING=false;
-      console.error('Sync error', err);
-      setSyncPill('off');
-      if(CURRENT_USER && typeof renderMain==='function') renderMain();
-      // permission-denied here means the signed-in account is not on the
-      // approved list in the Firestore rules, which is a very different
-      // problem from a malformed config and deserves its own message.
-      if(err && err.code==='permission-denied'){
-        toast('This account is not approved for the portal. Ask an admin to add it.');
-        showAuthError('This account is signed in but not approved for this portal. Ask Matthew to add it.');
-        firebase.auth().signOut();
-      } else {
-        toast('Sync connection failed. Check your Firebase config.');
+      if(MIGRATING) return;
+      let touchedOpenWO=false;
+      applyingRemote=true;
+      try{
+        snap.docChanges().forEach(change=>{
+          const id=change.doc.id;
+          if(change.type==='removed'){
+            const at=DB.workOrders.findIndex(w=>String(w.id)===id);
+            if(at>=0) DB.workOrders.splice(at,1);
+            delete CLOUD_MIRROR.wos[id];
+            if(OPEN_WO_ID!==null && String(OPEN_WO_ID)===id) touchedOpenWO=true;
+            return;
+          }
+          const json=change.doc.data().wo;
+          if(!json) return;
+          // A document echoing back a change this device just made needs no
+          // work; the in-memory copy is already identical.
+          if(CLOUD_MIRROR.wos[id]===json) return;
+          let wo;
+          try{ wo=JSON.parse(json); }catch(err){ console.error('Bad work order payload', id, err); return; }
+          normalizeWO(wo);
+          const at=DB.workOrders.findIndex(w=>String(w.id)===id);
+          if(at>=0) DB.workOrders[at]=wo; else DB.workOrders.push(wo);
+          CLOUD_MIRROR.wos[id]=json;
+          if(OPEN_WO_ID!==null && String(OPEN_WO_ID)===id) touchedOpenWO=true;
+        });
+        localStorage.setItem(DB_KEY, JSON.stringify(DB));
+      } finally {
+        applyingRemote=false;
       }
-    });
+      setSyncPill('on');
+      if(CURRENT_USER){ renderTabCounts(); renderMain(); }
+      // The open modal used to keep showing, and saving from, a copy of a work
+      // order that somebody else had already changed underneath it.
+      if(touchedOpenWO) refreshOpenWorkOrder();
+      onDatabaseReady();
+    }, syncErrorHandler));
+
+    syncUnsub=()=>unsubs.forEach(u=>{ try{ u(); }catch(e){} });
   }catch(e){
     SYNC_LOADING=false;
     console.error(e);
@@ -2359,14 +2388,165 @@ function openDataConnection(){
     toast('Could not connect sync. Check your Firebase config.');
   }
 }
-function pushToCloud(){
-  if(!syncDb || applyingRemote) return;
-  clearTimeout(syncSaveTimer);
-  syncSaveTimer=setTimeout(()=>{
-    syncDb.collection('gh_portal').doc('main').set({db:JSON.stringify(DB), updatedAt:(DB.updatedAt||Date.now())}).catch(e=>{
-      console.error(e); toast('Could not sync latest change to the cloud.');
+/* Shared by both listeners. permission-denied means the signed-in account is
+   not on the approved list in the Firestore rules, which is a very different
+   problem from a malformed config and deserves its own message. */
+function syncErrorHandler(err){
+  SYNC_LOADING=false;
+  console.error('Sync error', err);
+  setSyncPill('off');
+  if(CURRENT_USER && typeof renderMain==='function') renderMain();
+  if(err && err.code==='permission-denied'){
+    toast('This account is not approved for the portal. Ask an admin to add it.');
+    showAuthError('This account is signed in but not approved for this portal. Ask Matthew to add it.');
+    firebase.auth().signOut();
+  } else {
+    toast('Sync connection failed. Check your Firebase config.');
+  }
+}
+/* Someone else changed the work order currently on screen. If nothing is
+   half-typed the modal is simply redrawn; if there is an edit in progress the
+   redraw would throw away what is in the fields, so it warns instead and lets
+   the person finish. */
+function refreshOpenWorkOrder(){
+  if(OPEN_WO_ID===null) return;
+  const stillExists=getWO(OPEN_WO_ID);
+  if(!stillExists){
+    closeModal();
+    toast('That work order was deleted by someone else.');
+    return;
+  }
+  const midEdit = WO_JOB_EDIT || JD_EDIT || WO_CUST_EDIT || WO_EDIT_NOTE_IDX!==null;
+  if(midEdit){
+    toast('Someone else just changed this job. Save or cancel to see their update.');
+    return;
+  }
+  renderWorkOrderModal(OPEN_WO_ID);
+}
+/* One-time move from the old single-document layout to one document per work
+   order. The original db field is deliberately left untouched afterwards, so
+   there is a full copy of the pre-migration data sitting in Firestore if this
+   ever needs to be undone. */
+function migrateToPerWorkOrderDocs(data){
+  if(MIGRATING) return;
+  MIGRATING=true;
+  setSyncPill('connecting');
+  try{
+    if(data.db){
+      applyingRemote=true;
+      try{
+        const legacy=JSON.parse(data.db);
+        if(legacy && typeof legacy==='object'){
+          DB.users=legacy.users||DB.users||{};
+          DB.workOrders=Array.isArray(legacy.workOrders)?legacy.workOrders:(DB.workOrders||[]);
+          DB.storageUsedBytes=legacy.storageUsedBytes||DB.storageUsedBytes||0;
+        }
+      }catch(err){ console.error('Could not read the pre-migration database', err); }
+      normalizeDB(DB);
+      applyingRemote=false;
+    }
+    const stamp=Date.now();
+    const batch=syncDb.batch();
+    const written={};
+    (DB.workOrders||[]).forEach(wo=>{
+      const json=JSON.stringify(wo);
+      written[String(wo.id)]=json;
+      batch.set(woCollectionRef().doc(String(wo.id)), {wo:json, updatedAt:stamp});
     });
-  }, 250);
+    const meta=metaPayload();
+    batch.set(mainDocRef(), {meta, schema:2, updatedAt:stamp}, {merge:true});
+    batch.commit().then(()=>{
+      CLOUD_MIRROR.meta=meta;
+      CLOUD_MIRROR.wos=written;
+      DB.updatedAt=stamp;
+      localStorage.setItem(DB_KEY, JSON.stringify(DB));
+      MIGRATING=false;
+      setSyncPill('on');
+      if(CURRENT_USER){ renderTabCounts(); renderMain(); }
+      onDatabaseReady();
+      console.log('Migrated '+Object.keys(written).length+' work orders to individual records.');
+    }).catch(e=>{
+      MIGRATING=false;
+      console.error('Migration failed', e);
+      setSyncPill('off');
+      toast('Could not upgrade the database layout. Nothing was lost, try reloading.');
+    });
+  }catch(e){
+    MIGRATING=false;
+    applyingRemote=false;
+    console.error(e);
+    setSyncPill('off');
+  }
+}
+
+
+/* ---------------------------------------------------------------------
+   The whole database used to live in one Firestore document, written out
+   in full on every single save. Two people editing different jobs at the
+   same time meant whoever saved second erased the other one's work, and
+   the document was on course to hit Firestore's 1MB per-document ceiling.
+
+   Each work order now owns a document under gh_portal/main/workOrders,
+   and gh_portal/main holds only the shared bits (users, storage total).
+   A save writes just the records that actually changed, so two people on
+   two different jobs no longer touch the same document at all.
+
+   CLOUD_MIRROR is what this device believes is already in the cloud. The
+   diff against it is what decides which documents get written.
+--------------------------------------------------------------------- */
+const WO_COLLECTION='workOrders';
+let CLOUD_MIRROR={meta:null, wos:{}};
+let MIGRATING=false;
+
+function metaPayload(){
+  return JSON.stringify({users:DB.users||{}, storageUsedBytes:DB.storageUsedBytes||0});
+}
+function mainDocRef(){ return syncDb.collection('gh_portal').doc('main'); }
+function woCollectionRef(){ return mainDocRef().collection(WO_COLLECTION); }
+
+function pushToCloud(){
+  if(!syncDb || applyingRemote || MIGRATING) return;
+  if(!firebase.auth().currentUser) return;
+  clearTimeout(syncSaveTimer);
+  syncSaveTimer=setTimeout(flushToCloud, 250);
+}
+function flushToCloud(){
+  if(!syncDb || applyingRemote || MIGRATING) return;
+  if(!firebase.auth().currentUser) return;
+  const stamp=DB.updatedAt||Date.now();
+  const batch=syncDb.batch();
+  let writes=0;
+  const written={};
+
+  const meta=metaPayload();
+  if(meta!==CLOUD_MIRROR.meta){
+    // schema is written on every meta update so a device that somehow still
+    // has the old single-document code cannot quietly drag things backwards.
+    batch.set(mainDocRef(), {meta, schema:2, updatedAt:stamp}, {merge:true});
+    writes++;
+  }
+  (DB.workOrders||[]).forEach(wo=>{
+    const json=JSON.stringify(wo);
+    written[String(wo.id)]=json;
+    if(CLOUD_MIRROR.wos[String(wo.id)]!==json){
+      batch.set(woCollectionRef().doc(String(wo.id)), {wo:json, updatedAt:stamp});
+      writes++;
+    }
+  });
+  // A work order deleted on this device leaves its document behind unless it
+  // is explicitly removed.
+  Object.keys(CLOUD_MIRROR.wos).forEach(id=>{
+    if(!(id in written)){ batch.delete(woCollectionRef().doc(id)); writes++; }
+  });
+
+  if(!writes) return;
+  batch.commit().then(()=>{
+    CLOUD_MIRROR.meta=meta;
+    CLOUD_MIRROR.wos=written;
+  }).catch(e=>{
+    console.error(e);
+    toast('Could not sync latest change to the cloud.');
+  });
 }
 function openSyncModal(){
   const cfg=getSyncConfig();
@@ -2515,7 +2695,9 @@ function normalizeDB(db){
   let changed=false;
   if(!db.users || typeof db.users!=='object'){ db.users={}; changed=true; }
   if(!Array.isArray(db.workOrders)){ db.workOrders=[]; changed=true; }
-  if(typeof db.nextId!=='number'){ db.nextId=1; changed=true; }
+  // db.nextId is a leftover from the old shared-counter scheme. It is left in
+  // place so an older copy of the app can still read the database, but nothing
+  // allocates from it any more; see newWorkOrderId().
   (db.workOrders||[]).forEach(normalizeWO);
   if(db.storageUsedBytes===undefined){
     // Back-fill from whatever's already on file (only counts files uploaded to Storage, i.e. have .url + .size)
@@ -2537,10 +2719,6 @@ function normalizeDB(db){
   // Previously the return value was discarded and nothing was saved, so this
   // repair silently re-ran on every single load without ever sticking.
   if(fixLegacyUserDisplayNames(db)) changed=true;
-  // nextId must always be ahead of every existing work order, otherwise a
-  // restored/merged database can hand out an id that already exists.
-  const maxId=(db.workOrders||[]).reduce((m,w)=>Math.max(m, w.id||0), 0);
-  if(db.nextId<=maxId){ db.nextId=maxId+1; changed=true; }
   return changed;
 }
 /* Older records (created before usernames were shown everywhere) may still
@@ -3503,7 +3681,7 @@ function declineEstimate(id, checkboxEl){
    NEW WORK ORDER
 ========================================================================= */
 function openNewWorkOrder(){
-  const id=DB.nextId++;
+  const id=newWorkOrderId();
   const wo={
     id, createdAt:Date.now(),
     customer:{name:'',phone:'',altPhone:'',email:'',address:''},
@@ -3531,11 +3709,13 @@ function runGlobalSearch(){
     const nameParts=name.split(/\s+/).filter(Boolean);
     const address=(wo.customer.address||'').toLowerCase();
     const idStr=String(wo.id);
+    const code=woCode(wo).toLowerCase();
     return (name && name.includes(q))
       || nameParts.some(p=>p.startsWith(q))
       || (address && address.includes(q))
       || (wo.customer.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
-      || idStr.includes(q); // idStr===q was redundant, includes() already covers it
+      || idStr.includes(q)  // idStr===q was redundant, includes() already covers it
+      || code.includes(q);  // also match the short code shown on the row
   }).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   renderSearchResultsModal(raw, results);
 }
@@ -3551,7 +3731,7 @@ function renderSearchResultsModal(query, results){
       <div class="woMeta">
         ${statusTag(wo)}
         <span>${esc(wo.customer.address)}</span>
-        <span class="small">WO #${wo.id}</span>
+        <span class="small">WO ${woCode(wo)}</span>
       </div>
     </div>`).join('') : `<div class="small">No work orders match "${safeQuery}".</div>`;
   modal.innerHTML=`
@@ -4289,6 +4469,24 @@ function downloadICS(wo, entries){
    WORK ORDER MODAL
 ========================================================================= */
 function getWO(id){ return DB.workOrders.find(w=>w.id===id); }
+/* Work order ids used to come from a single counter stored in the shared
+   database. Two devices that both created a job before syncing got handed the
+   same number, and the whole-database overwrite meant one of the two jobs
+   simply vanished. A millisecond timestamp needs no coordination between
+   devices and cannot collide in practice; the loop is belt and braces for two
+   taps inside the same millisecond on one device. */
+function newWorkOrderId(){
+  let id=Date.now();
+  const used=new Set((DB.workOrders||[]).map(w=>w.id));
+  while(used.has(id)) id++;
+  return id;
+}
+/* Timestamp ids are 13 digits, which is not something anyone wants to read on
+   a job row. This renders a short stable code from the same number, so the
+   displayed reference stays short while the underlying id stays unique. */
+function woCode(wo){
+  return String((wo && wo.id) || 0).toString(36).toUpperCase().slice(-5);
+}
 let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false, WO_EDIT_NOTE_IDX=null;
 /* Which Job Details sub-lists are folded shut, keyed by list name. Survives the
    modal re-renders that add/remove item trigger; cleared when edit mode opens. */
@@ -4306,6 +4504,7 @@ function jobListOpen(key){
 }
 function rememberJobList(key, el){ WO_LIST_OPEN[key]=el.open; }
 
+let OPEN_WO_ID=null;   // work order currently shown in the modal, if any
 function openWorkOrder(id){
   const wo=getWO(id);
   if(!wo){ toast('That work order no longer exists.'); renderTabCounts(); renderMain(); return; }
@@ -4464,6 +4663,7 @@ function splitAddress(rawAddr){
   };
 }
 function renderWorkOrderModal(id){
+  OPEN_WO_ID=id;
   const wo=getWO(id);
   if(!wo || !CURRENT_USER){ closeModal(); return; }
   const isAdmin=!!CURRENT_USER.isAdmin;
@@ -5771,6 +5971,7 @@ function closeModal(){
   root.innerHTML='';
   detachHeaderCustOutsideClickHandler();
   hideAddressSuggestions();
+  OPEN_WO_ID=null;
   WO_JOB_EDIT=false; JD_EDIT=null; WO_EDIT_NOTE_IDX=null;
   WO_CUST_EDIT=false; WO_ADMIN_VIEW=false; WO_DOCS_VIEW=false;
   WO_LIST_OPEN={};
