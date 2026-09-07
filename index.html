@@ -1423,6 +1423,13 @@ html.hc #mainArea.stagger .woRow.checkedInGlow{
 /* Composited hints. Only on the surfaces that actually move, since a
    blanket will-change costs memory on a long board. */
 .modal,.confirmCard,.toastItem,.settingsMenu{will-change:transform,opacity;}
+/* Shown until somebody moves off the shared password they were handed. */
+#pwNudge{display:none;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:10px 12px 0;padding:10px 12px;border-radius:10px;
+  background:var(--accent-b-soft);border:1px solid var(--accent-b);
+  color:var(--ink);font-size:.92rem;}
+#pwNudge.show{display:flex;}
+#pwNudge button{flex:0 0 auto;}
 
 /* =========================================================================
    VISUAL DESIGN LAYER
@@ -1989,12 +1996,21 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
               </svg>
             </button>
           </div>
+          <div class="settingsRow">
+            <span>Password</span>
+            <button class="editLink" id="changePwBtn" onclick="closeSettingsMenus(); openChangePassword()">Change</button>
+          </div>
         </div>
       </div>
       <button class="syncPill off" id="syncPill" onclick="openSyncModal()">Sync: Off</button>
       <button class="logoutBtn" onclick="confirmLogout()">Sign Out</button>
     </div>
   </header>
+  <div id="pwNudge" role="status">
+    <span style="flex:1 1 200px;">You are still using the password you were given. Set one only you know.</span>
+    <button class="btn" onclick="openChangePassword()">Change Password</button>
+    <button class="btn secondary" onclick="dismissPwNudge()">Later</button>
+  </div>
   <div class="globalSearchBar">
     <input type="text" id="globalSearchInput" placeholder="Search work orders by name, number, or address..." autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
     <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
@@ -2990,6 +3006,8 @@ function enterApp(u){
   STAGGER_NEXT_RENDER=true;
   document.getElementById('whoami').textContent=CURRENT_USER.displayName;
   document.getElementById('adminPill').classList.toggle('hidden', !u.isAdmin);
+  PW_NUDGE_DISMISSED=false;
+  refreshPwNudge();
   document.getElementById('siErr').textContent='';
   document.getElementById('suErr').textContent='';
   ['siPass','suPass','suPass2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
@@ -2997,11 +3015,100 @@ function enterApp(u){
 }
 function showLoginScreen(){
   CURRENT_USER=null;
+  PW_NUDGE_DISMISSED=false;
+  refreshPwNudge();
   document.getElementById('appScreen').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   ['siEmail','siPass','suPass','suPass2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   toggleForms(true);
 }
+/* ---------------------------------------------------------------------
+   Changing your own password.
+
+   Firebase refuses updatePassword() on a session that has been sitting
+   around for a while, which is exactly the situation in a portal people
+   stay signed into for days. Re-authenticating with the current password
+   first, which is asked for anyway, means that never surfaces as a
+   mystery failure halfway through.
+--------------------------------------------------------------------- */
+function openChangePassword(){
+  const user=firebase.auth().currentUser;
+  if(!user){ toast('Sign in first.'); return; }
+  const modal=document.getElementById('modalRoot');
+  modal.innerHTML=`
+  <div class="overlay" id="changePwModal">
+    <div class="modal" style="max-width:420px;">
+      <div class="modalHead"><h2>Change Password</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
+      <div class="modalBody">
+        <div class="field"><label>Current Password</label>
+          <input id="cpOld" type="password" autocomplete="current-password"></div>
+        <div class="field"><label>New Password</label>
+          <input id="cpNew" type="password" autocomplete="new-password"></div>
+        <div class="field"><label>Confirm New Password</label>
+          <input id="cpNew2" type="password" autocomplete="new-password"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitChangePassword();}"></div>
+        <div class="small">At least 8 characters. Do not reuse the one you were given.</div>
+        <div class="errMsg" id="cpErr"></div>
+        <div class="btnRow">
+          <button class="btn" id="cpBtn" onclick="submitChangePassword()">Save Password</button>
+          <button class="btn secondary" onclick="closeModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function submitChangePassword(){
+  const user=firebase.auth().currentUser;
+  const err=document.getElementById('cpErr');
+  const btn=document.getElementById('cpBtn');
+  if(!user){ err.textContent='Your session expired. Sign in again.'; return; }
+  const oldPw=document.getElementById('cpOld').value;
+  const nw=document.getElementById('cpNew').value;
+  const nw2=document.getElementById('cpNew2').value;
+  if(!oldPw){ err.textContent='Enter your current password.'; return; }
+  if(nw.length<8){ err.textContent='New password must be at least 8 characters.'; return; }
+  if(nw!==nw2){ err.textContent='New passwords do not match.'; return; }
+  if(nw===oldPw){ err.textContent='That is the same password you are already using.'; return; }
+  err.textContent='';
+  btn.disabled=true; btn.textContent='Saving…';
+  const cred=firebase.auth.EmailAuthProvider.credential(user.email, oldPw);
+  user.reauthenticateWithCredential(cred)
+    .then(()=>user.updatePassword(nw))
+    .then(()=>{
+      // Recording that this account has moved off its issued password is what
+      // stops the reminder banner coming back.
+      const rec=CURRENT_USER && DB.users[CURRENT_USER.username];
+      if(rec){ rec.pwChangedAt=Date.now(); saveDB(DB); }
+      closeModal();
+      refreshPwNudge();
+      toast('Password changed.');
+    })
+    .catch(e=>{
+      btn.disabled=false; btn.textContent='Save Password';
+      const code=(e && e.code) ? String(e.code) : '';
+      if(code==='auth/wrong-password' || code==='auth/invalid-credential'){
+        err.textContent='Current password is incorrect.';
+      } else {
+        err.textContent=authErrorMessage(e);
+      }
+    });
+}
+/* The banner is per-device and per-session: dismissing it is a "not now",
+   not a decision, so it comes back next time the app opens. It stops for
+   good once the password actually changes. */
+let PW_NUDGE_DISMISSED=false;
+function dismissPwNudge(){
+  PW_NUDGE_DISMISSED=true;
+  refreshPwNudge();
+}
+function refreshPwNudge(){
+  const el=document.getElementById('pwNudge');
+  if(!el) return;
+  const rec=CURRENT_USER && DB.users[CURRENT_USER.username];
+  const needs = !!CURRENT_USER && !PW_NUDGE_DISMISSED && !(rec && rec.pwChangedAt);
+  el.classList.toggle('show', needs);
+}
+
 /* Sign Out sits immediately beside the sync pill and settings gear in a
    cramped header; a mis-tap used to dump you straight back to the login
    screen. */
