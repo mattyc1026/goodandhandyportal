@@ -2107,6 +2107,10 @@ function saveDB(db){
   localStorage.setItem(DB_KEY, JSON.stringify(db));
   if(!applyingRemote) pushToCloud();
 }
+/* Declared here, above the load-time normalizeDB() call below, because that
+   call reads it. A const declared further down the file is not reachable from
+   code that runs earlier, and the whole script dies on load if it tries. */
+const ADMIN_USERNAMES=['matthewc','alyssac'];
 let DB = loadDB();
 {
   const normalized = normalizeDB(DB);
@@ -2428,7 +2432,8 @@ function disconnectSync(){
   try{ if(firebase.apps.length) firebase.auth().signOut(); }catch(e){}
 }
 
-const ADMIN_USERNAMES=['matthewc','alyssac'];
+// ADMIN_USERNAMES is declared near the top of this script, ahead of the
+// load-time normalizeDB() call that reads it.
 const NOTE_TYPES=['NOTE','L/M','WCB','SCHD PRESITE','SCHD','RESCHD','PRESITE','SURVEY'];
 
 /* Ensure work orders created before this feature set have the newer fields. */
