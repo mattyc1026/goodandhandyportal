@@ -552,6 +552,7 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg
 .modalHeadCust .mhAddr1  {grid-column:2;grid-row:1;}
 .modalHeadCust .mhAddr2  {grid-column:2;grid-row:2;}
 .modalHeadCust .mhEmail  {grid-column:2;grid-row:3;}
+.modalHeadCust .mhHomeowner{grid-column:1 / -1;grid-row:4;margin-top:5px;font-size:.86em;color:var(--ink);}
 .modalHeadCust.editing{display:flex;flex-direction:column;gap:6px;width:360px;max-width:100%;cursor:default;}
 .modalHeadCust.editing .kv{margin-bottom:0;}
 /* A tight line-height pulls the name up to the top of its cell. At the default
@@ -581,6 +582,13 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 }
 .modalHeadCust .mhPrimary,.modalHeadCust .mhAlt{font-size:.92em;color:var(--ink);font-family:var(--f-data);font-size:.86em;}
 .modalHeadCust .mhEmail{font-size:.88em;color:var(--muted);}
+.modalHeadCust .mhHomeownerTag{
+  display:inline-block;margin-right:8px;padding:1px 7px;border-radius:999px;
+  background:var(--line-soft);border:1px solid var(--line);color:var(--muted);
+  font-size:.78em;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+  vertical-align:middle;
+}
+.modalHeadCust .mhHomeownerSep{color:var(--muted);margin:0 8px;}
 .headerActionsWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
 .headerTabs{display:flex;gap:3px;}
 .headerTabs button{
@@ -2662,6 +2670,13 @@ const NOTE_TYPES=['NOTE','L/M','WCB','SCHD PRESITE','SCHD','RESCHD','PRESITE','S
 /* Ensure work orders created before this feature set have the newer fields. */
 function normalizeWO(wo){
   if(!wo.customer || typeof wo.customer!=='object') wo.customer={name:'',phone:'',altPhone:'',email:'',address:''};
+  /* Homeowner is optional and often blank: on a management-company or agent
+     job the customer on the account is not the person who answers the door.
+     Older work orders simply have no key, so they get an empty one rather
+     than an undefined that would print as "undefined" in the header. */
+  ['name','phone','altPhone','email','address','homeownerName','homeownerPhone'].forEach(k=>{
+    if(typeof wo.customer[k]!=='string') wo.customer[k]='';
+  });
   if(!wo.jobDetails || typeof wo.jobDetails!=='object') wo.jobDetails={description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]};
   ['labor','materials','tools','issues','exclusions','disclaimers'].forEach(k=>{ if(!Array.isArray(wo.jobDetails[k])) wo.jobDetails[k]=[]; });
   if(typeof wo.jobDetails.description!=='string') wo.jobDetails.description='';
@@ -3843,7 +3858,7 @@ function openNewWorkOrder(){
   const id=newWorkOrderId();
   const wo={
     id, createdAt:Date.now(),
-    customer:{name:'',phone:'',altPhone:'',email:'',address:''},
+    customer:{name:'',phone:'',altPhone:'',email:'',address:'',homeownerName:'',homeownerPhone:''},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
@@ -3869,8 +3884,13 @@ function runGlobalSearch(){
     const address=(wo.customer.address||'').toLowerCase();
     const idStr=String(wo.id);
     const code=woCode(wo).toLowerCase();
+    const homeowner=(wo.customer.homeownerName||'').toLowerCase();
+    const homeownerParts=homeowner.split(/\s+/).filter(Boolean);
     return (name && name.includes(q))
       || nameParts.some(p=>p.startsWith(q))
+      || (homeowner && homeowner.includes(q))
+      || homeownerParts.some(p=>p.startsWith(q))
+      || (wo.customer.homeownerPhone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
       || (address && address.includes(q))
       || (wo.customer.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
       || idStr.includes(q)  // idStr===q was redundant, includes() already covers it
@@ -4922,6 +4942,8 @@ function renderWorkOrderModal(id){
           ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
           ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
           ${custField('email','Email (optional)', wo.customer.email)}
+          ${custField('homeownerName','Homeowner Name (optional)', wo.customer.homeownerName)}
+          ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', wo.customer.homeownerPhone)}
           ${addressField('address','Address', wo.customer.address)}
           ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
           <div class="small">Tap outside this box to save and close.</div>
@@ -4935,6 +4957,7 @@ function renderWorkOrderModal(id){
           <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1)}</div>
           <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
           <div class="mhEmail">${emailLink(wo.customer.email)}</div>
+          ${homeownerLine(wo)}
         </div>`;
   /* Every re-render replaces the whole modal, which destroys the element that
      was holding the scroll position and drops the user back at the top. That
@@ -4966,6 +4989,18 @@ function renderWorkOrderModal(id){
     const nextBody=modal.querySelector('.modalBody');
     if(nextBody) nextBody.scrollTop=prevScroll;
   }
+}
+/* The homeowner row spans the full width beneath the two columns and is
+   omitted entirely when both fields are blank, so a job where the customer is
+   the homeowner does not carry an empty label. */
+function homeownerLine(wo){
+  const nm=(wo.customer.homeownerName||'').trim();
+  const ph=(wo.customer.homeownerPhone||'').trim();
+  if(!nm && !ph) return '';
+  const bits=[];
+  if(nm) bits.push(esc(nm));
+  if(ph) bits.push(phoneLink(ph));
+  return `<div class="mhHomeowner"><span class="mhHomeownerTag">Homeowner</span>${bits.join('<span class="mhHomeownerSep">&middot;</span>')}</div>`;
 }
 function custField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${esc(val)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
@@ -5083,12 +5118,13 @@ function hideAddressSuggestions(){
 function saveCustomer(id){
   const wo=getWO(id);
   const wasEligible=inPresiteList(wo);
-  ['name','phone','altPhone','email','address'].forEach(k=>{
+  ['name','phone','altPhone','email','address','homeownerName','homeownerPhone'].forEach(k=>{
     const field=document.getElementById('cf_'+k);
     wo.customer[k]= field ? field.value.trim() : (wo.customer[k]||'');
   });
   wo.customer.phone = formatPhoneNumber(wo.customer.phone);
   wo.customer.altPhone = wo.customer.altPhone ? formatPhoneNumber(wo.customer.altPhone) : '';
+  wo.customer.homeownerPhone = wo.customer.homeownerPhone ? formatPhoneNumber(wo.customer.homeownerPhone) : '';
   saveDB(DB);
   const nowEligible=inPresiteList(wo);
   WO_CUST_EDIT=false;
@@ -7925,6 +7961,8 @@ function sendJobDataToBuilder(iframeEl, id, kind){
       name:wo.customer.name,
       phone:wo.customer.phone,
       altPhone:wo.customer.altPhone||'',
+      homeownerName:wo.customer.homeownerName||'',
+      homeownerPhone:wo.customer.homeownerPhone||'',
       // The builder's Bill To block has its own email field. It was never
       // populated because the payload simply didn't carry one.
       email:wo.customer.email||'',
