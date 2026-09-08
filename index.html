@@ -542,20 +542,26 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg
    row sits outside it, so its width can never feed back into how wide the
    first column is drawn. */
 .mhCols{
-  display:grid;grid-template-columns:auto auto;column-gap:72px;row-gap:3px;
-  align-content:start;align-items:start;
+  display:flex;flex-wrap:wrap;align-items:flex-start;
+  column-gap:96px;row-gap:10px;
 }
+/* Each column is its own box. A grid cell could be squeezed narrower than its
+   own text, and the overflow then painted straight across the gap, which is
+   what made the address look glued to the name in a desktop-width window.
+   These shrink to a floor and then wrap the address block underneath instead. */
+.mhCols > .mhColA,.mhCols > .mhColB{
+  display:flex;flex-direction:column;gap:3px;
+  min-width:0;flex:0 1 auto;max-width:100%;
+}
+.mhCols > .mhColA{flex-basis:auto;}
+.modalHeadCust .mhName,
+.modalHeadCust .mhAddr1,.modalHeadCust .mhAddr2,
+.modalHeadCust .mhEmail{overflow-wrap:anywhere;}
 /* Every cell is placed explicitly rather than left to auto-placement. The two
    columns read down as name/phone/alt and address1/address2/email, so the
    markup can keep the address lines adjacent to each other. Auto-placement
    forced the DOM to alternate columns, which meant dragging to select the
    address swept up the phone number sitting between the two lines. */
-.modalHeadCust .mhName   {grid-column:1;grid-row:1;}
-.modalHeadCust .mhPrimary{grid-column:1;grid-row:2;}
-.modalHeadCust .mhAlt    {grid-column:1;grid-row:3;}
-.modalHeadCust .mhAddr1  {grid-column:2;grid-row:1;}
-.modalHeadCust .mhAddr2  {grid-column:2;grid-row:2;}
-.modalHeadCust .mhEmail  {grid-column:2;grid-row:3;}
 .modalHeadCust .mhHomeowner{
   margin-top:11px;padding-top:9px;border-top:1px solid var(--line);
   font-size:.86em;color:var(--ink);
@@ -1028,12 +1034,11 @@ html.hc .woRow.checkedInGlow{
     z-index:5;min-height:56px;flex-wrap:wrap;
   }
   .modalHead h2{font-size:1.2em;}
-  .mhCols{grid-template-columns:1fr;column-gap:0;}
+  .modalHeadCust .mhCols{flex-direction:column;column-gap:0;row-gap:3px;}
   .modalHeadCust.editing{width:100%;}
-  /* Single column on mobile/tablet: release the explicit desktop placement and
-     let the cells stack in DOM order, which is already name, primary phone,
-     alt phone, address line 1, address line 2, email. */
-  .mhCols > div{grid-column:1;grid-row:auto;}
+  /* One column on a narrow screen, stacking in reading order: name, primary
+     phone, alt phone, address line 1, address line 2, email. */
+  .modalHeadCust .mhCols > .mhColA,.modalHeadCust .mhCols > .mhColB{width:100%;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
   .modalBody{padding:16px;font-size:1em;flex:1;}
@@ -4959,12 +4964,16 @@ function renderWorkOrderModal(id){
           ondblclick="startHeaderCustEdit(${id})"
           ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
           <div class="mhCols">
-            <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
-            <div class="mhPrimary">${phoneLink(wo.customer.phone)}</div>
-            <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
-            <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1)}</div>
-            <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
-            <div class="mhEmail">${emailLink(wo.customer.email)}</div>
+            <div class="mhColA">
+              <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
+              <div class="mhPrimary">${phoneLink(wo.customer.phone)}</div>
+              <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
+            </div>
+            <div class="mhColB">
+              <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1)}</div>
+              <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
+              <div class="mhEmail">${emailLink(wo.customer.email)}</div>
+            </div>
           </div>
           ${homeownerLine(wo)}
         </div>`;
