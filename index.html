@@ -537,9 +537,13 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg
    at the top left. Without it every cell stretches to its row height and the
    taller display-serif name appears to float in the middle of row one, which
    is what made the columns look vertically centred against each other. */
-.modalHeadCust{
-  display:grid;grid-template-columns:auto auto;column-gap:44px;row-gap:3px;
-  align-content:start;align-items:start;cursor:pointer;
+.modalHeadCust{display:block;cursor:pointer;}
+/* Only the name/phone and address/email cells live in the grid. The homeowner
+   row sits outside it, so its width can never feed back into how wide the
+   first column is drawn. */
+.mhCols{
+  display:grid;grid-template-columns:auto auto;column-gap:72px;row-gap:3px;
+  align-content:start;align-items:start;
 }
 /* Every cell is placed explicitly rather than left to auto-placement. The two
    columns read down as name/phone/alt and address1/address2/email, so the
@@ -552,7 +556,10 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg
 .modalHeadCust .mhAddr1  {grid-column:2;grid-row:1;}
 .modalHeadCust .mhAddr2  {grid-column:2;grid-row:2;}
 .modalHeadCust .mhEmail  {grid-column:2;grid-row:3;}
-.modalHeadCust .mhHomeowner{grid-column:1 / -1;grid-row:4;margin-top:5px;font-size:.86em;color:var(--ink);}
+.modalHeadCust .mhHomeowner{
+  margin-top:11px;padding-top:9px;border-top:1px solid var(--line);
+  font-size:.86em;color:var(--ink);
+}
 .modalHeadCust.editing{display:flex;flex-direction:column;gap:6px;width:360px;max-width:100%;cursor:default;}
 .modalHeadCust.editing .kv{margin-bottom:0;}
 /* A tight line-height pulls the name up to the top of its cell. At the default
@@ -1021,12 +1028,12 @@ html.hc .woRow.checkedInGlow{
     z-index:5;min-height:56px;flex-wrap:wrap;
   }
   .modalHead h2{font-size:1.2em;}
-  .modalHeadCust{grid-template-columns:1fr;column-gap:0;}
+  .mhCols{grid-template-columns:1fr;column-gap:0;}
   .modalHeadCust.editing{width:100%;}
   /* Single column on mobile/tablet: release the explicit desktop placement and
      let the cells stack in DOM order, which is already name, primary phone,
      alt phone, address line 1, address line 2, email. */
-  .modalHeadCust > div{grid-column:1;grid-row:auto;}
+  .mhCols > div{grid-column:1;grid-row:auto;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
   .modalBody{padding:16px;font-size:1em;flex:1;}
@@ -4951,12 +4958,14 @@ function renderWorkOrderModal(id){
         <div class="modalHeadCust" id="modalHeadCust" title="Double-click (or long-press) to edit"
           ondblclick="startHeaderCustEdit(${id})"
           ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
-          <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
-          <div class="mhPrimary">${phoneLink(wo.customer.phone)}</div>
-          <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
-          <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1)}</div>
-          <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
-          <div class="mhEmail">${emailLink(wo.customer.email)}</div>
+          <div class="mhCols">
+            <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
+            <div class="mhPrimary">${phoneLink(wo.customer.phone)}</div>
+            <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
+            <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1)}</div>
+            <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
+            <div class="mhEmail">${emailLink(wo.customer.email)}</div>
+          </div>
           ${homeownerLine(wo)}
         </div>`;
   /* Every re-render replaces the whole modal, which destroys the element that
