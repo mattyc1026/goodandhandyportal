@@ -889,8 +889,8 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .expandLinks summary,.sideBySide>details>summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:.78em;text-transform:uppercase;letter-spacing:.06em;}
 .sideBySide>details>summary{margin-bottom:2px;}
 .descParagraph{background:var(--paper);border-radius:var(--radius-sm);padding:13px 15px;font-size:.88em;line-height:1.6;margin-bottom:6px;border:1px solid var(--line);}
-.expandLinks{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
-.expandLinks details{flex:1;min-width:180px;}
+.expandLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;align-items:start;}
+.expandLinks details{min-width:0;}
 .expandLinks .lineRow,.sideBySide>details .lineRow{font-size:.82em;}
 .custDisplay .kv{display:flex;justify-content:space-between;align-items:baseline;}
 .editLink{background:none;border:none;color:var(--orange);font-weight:700;font-size:.78em;cursor:pointer;padding:8px 4px;min-height:36px;font-family:inherit;text-transform:uppercase;letter-spacing:.06em;}
@@ -1080,20 +1080,74 @@ html.hc .woRow.checkedInGlow{
   }
   .modalHead h2{font-size:1.2em;}
   .modalHeadCust .mhCols{flex-direction:column;column-gap:0;row-gap:3px;}
+  /* One per row on a genuinely narrow screen: two columns of line items on a
+     phone is unreadable. */
+  .expandLinks{grid-template-columns:1fr;}
+
+  /* ================= PHONE LAYOUT =================
+     Everything below trades chrome for content. Nothing is removed outright:
+     the folded pieces are all one tap away. */
+
+  /* --- customer header folds to name and primary number --- */
+  .modalHeadCust{position:relative;padding-right:52px;}
+  .mhToggle{display:block;}
+  .modalHeadCust.collapsed .mhAlt,
+  .modalHeadCust.collapsed .mhColB,
+  .modalHeadCust.collapsed .mhHomeowner{display:none;}
+  .modalHeadCust.collapsed .mhName{font-size:1.15em;}
+  .modalHeadCust.editing .mhToggle{display:none;}
+
+  /* --- the note form becomes a sheet --- */
+  .noteOpenBtn{display:inline-flex;align-items:center;gap:6px;}
+  .noteEntryRow{display:none;}
+  .noteEntryRow.sheetOpen{
+    display:block;position:fixed;inset:0;z-index:60;
+    background:var(--paper);padding:0 16px 16px;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+  .noteEntryRow.sheetOpen .noteSheetBar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    position:sticky;top:0;background:var(--paper);z-index:2;
+    padding:14px 0 12px;margin-bottom:6px;border-bottom:1px solid var(--line);
+    font-weight:800;font-size:1.05em;
+  }
+  .noteEntryRow.sheetOpen textarea{min-height:38vh;}
+
+  /* --- search collapses to its icon --- */
+  .globalSearchBar{gap:8px;}
+  .searchToggleBtn{
+    display:inline-flex;align-items:center;gap:7px;
+    background:none;border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:9px 14px;cursor:pointer;font-family:inherit;font-weight:700;
+    font-size:.85em;color:var(--muted);
+  }
+  .globalSearchBar input,
+  .globalSearchBar > .btn{display:none;}
+  .globalSearchBar.open .searchToggleBtn{display:none;}
+  .globalSearchBar.open input,
+  .globalSearchBar.open > .btn{display:block;}
+  .globalSearchBar.open input{flex:1;}
+
+  .docCameraBtn{display:inline-flex;align-items:center;gap:6px;}
   .modalHeadCust.editing{width:100%;}
   /* One column on a narrow screen, stacking in reading order: name, primary
      phone, alt phone, address line 1, address line 2, email. */
   .modalHeadCust .mhCols > .mhColA,.modalHeadCust .mhCols > .mhColB{width:100%;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
-  .modalBody{padding:16px;font-size:1em;flex:1;}
+  .modalBody{padding:13px;font-size:1em;flex:1;}
   .footerActions{
     padding:14px 16px;flex-wrap:wrap;position:sticky;bottom:0;
     background:var(--paper);border-top:1px solid var(--line);border-radius:0;
     padding-bottom:calc(14px + env(safe-area-inset-bottom,0));
   }
   .footerActions .btn{flex:1 1 auto;min-width:120px;min-height:52px;}
-  .woGrid{flex-direction:column;gap:16px;}
+  .woGrid{flex-direction:column;gap:12px;}
+  /* Padding tuned for a desktop panel is a real tax on a 390px screen. */
+  .jobPanel,.custPanel{padding:13px;}
+  .notesSection{margin-top:16px;padding-top:13px;}
+  .panelTitle{margin-bottom:7px;}
+  .sideBySide{gap:10px;margin-top:8px;}
   .custPanel,.jobPanel{flex:1 1 100%;min-width:0;}
   .formGrid{grid-template-columns:1fr;gap:14px;}
   .field input,.field label{font-size:1em;}
@@ -1191,6 +1245,59 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 }
 .telLink .ic,.mapLink .ic,.mailLink .ic{flex:0 0 auto;opacity:.85;}
 .mapLink .ic.spacer{visibility:hidden;}
+
+/* =========================================================================
+   FIELD MODE
+   Few controls, all of them big. Sized for a thumb in a work glove, and
+   readable at arm's length in daylight.
+========================================================================= */
+.fieldMode{display:flex;flex-direction:column;gap:14px;}
+.fieldCust{text-align:center;}
+.fieldName{font-family:var(--f-display);font-size:1.6em;line-height:1.2;overflow-wrap:anywhere;}
+.fieldAddr{margin-top:4px;color:var(--muted);font-size:.95em;overflow-wrap:anywhere;}
+.fieldActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.fieldActions:has(> :only-child){grid-template-columns:1fr;}
+.fieldBtn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  min-height:92px;padding:14px 10px;border-radius:var(--radius-lg);
+  border:1px solid var(--line);background:var(--paper);color:var(--navy);
+  font-family:inherit;font-size:.95em;font-weight:700;text-align:center;
+  text-decoration:none;cursor:pointer;
+}
+.fieldBtn .ic{width:28px;height:28px;}
+.fieldBtn.primary{background:var(--orange);border-color:var(--orange);color:#fff;}
+.fieldBtn.done{background:var(--well);color:var(--muted);}
+.fieldBtn:disabled{opacity:.75;cursor:default;}
+.fieldBtn:active:not(:disabled){transform:scale(.97);}
+.fieldBlock{border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;background:var(--well);}
+.fieldBlockTitle{font-size:.74em;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px;}
+.fieldDay{text-align:center;font-weight:800;font-size:1.05em;margin-bottom:10px;}
+.fieldFull{width:100%;margin-top:4px;}
+.fieldModeBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+
+/* ---- collapsible customer header ---- */
+.mhToggle{
+  display:none;position:absolute;top:0;right:0;
+  background:none;border:none;padding:6px 8px;cursor:pointer;
+  font-family:inherit;font-size:.72em;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--orange);
+}
+
+/* ---- note sheet ---- */
+.noteSheetBar{display:none;}
+.noteOpenBtn{display:none;}
+
+
+/* ---- collapsing search ---- */
+.searchToggleBtn{display:none;}
+
+/* ---- past schedule dates ---- */
+.schedPast{margin:4px 0 6px;}
+.schedPast > summary{
+  cursor:pointer;font-size:.8em;font-weight:700;color:var(--muted);
+  padding:6px 2px;letter-spacing:.03em;
+}
+.docCameraBtn{display:none;margin-bottom:8px;}
 /* A little air before the email, so it reads as its own thing rather than a
    third line of the address. */
 .modalHeadCust .mhEmail{margin-top:5px;}
@@ -2096,6 +2203,10 @@ window._bootSafety = setTimeout(function(){
             </button>
           </div>
           <div class="settingsRow">
+            <span>Field Mode</span>
+            <button class="hcToggleBtn fieldModeBtn" id="fieldModeBtn" onclick="toggleFieldMode()" title="Open work orders in the simplified on-site view" aria-pressed="false">Off</button>
+          </div>
+          <div class="settingsRow">
             <span>Password</span>
             <button class="editLink" id="changePwBtn" onclick="closeSettingsMenus(); openChangePassword()">Change</button>
           </div>
@@ -2110,7 +2221,10 @@ window._bootSafety = setTimeout(function(){
     <button class="btn" onclick="openChangePassword()">Change Password</button>
     <button class="btn secondary" onclick="dismissPwNudge()">Later</button>
   </div>
-  <div class="globalSearchBar">
+  <div class="globalSearchBar" id="globalSearchBar">
+    <button class="searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders">
+      <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span>Search</span>
+    </button>
     <input type="text" id="globalSearchInput" placeholder="Search work orders by name, number, or address..." autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
     <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
   </div>
@@ -2130,6 +2244,7 @@ window._bootSafety = setTimeout(function(){
     </nav>
   </div>
   <main id="mainArea"></main>
+  <input type="file" id="fieldCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleFieldCamera(this)">
 </div>
 
 <div id="modalRoot"></div>
@@ -3147,6 +3262,7 @@ function enterApp(u){
   document.getElementById('suErr').textContent='';
   ['siPass','suPass','suPass2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   switchTab(lastTab());
+  syncFieldModeBtn();
   restoreSession();
   hideBootSplash();
 }
@@ -3945,6 +4061,18 @@ function openNewWorkOrder(){
 /* =========================================================================
    GLOBAL SEARCH
 ========================================================================= */
+/* The search bar was a full row of screen on a phone for something used a few
+   times a day. It collapses to its icon and expands on tap. */
+function toggleSearchBar(){
+  const bar=document.getElementById('globalSearchBar');
+  if(!bar) return;
+  const opening=!bar.classList.contains('open');
+  bar.classList.toggle('open', opening);
+  if(opening){
+    const i=document.getElementById('globalSearchInput');
+    if(i) setTimeout(()=>i.focus(), 40);
+  }
+}
 function runGlobalSearch(){
   const input=document.getElementById('globalSearchInput');
   const raw=input ? input.value.trim() : '';
@@ -4061,10 +4189,26 @@ function scheduleDatesSectionHTML(wo, id){
         <button class="editLink" onclick="openScheduleWidget(${id})">+ Add</button>
       </div>
       ${(!presite.length && !full.length) ? '<div class="small">No dates scheduled yet.</div>' : ''}
-      ${presite.length ? `<div class="schedSubHeader">Pre-Site Inspection</div>${presite.map(d=>schedRowHTML(id,d)).join('')}` : ''}
-      ${full.length ? `<div class="schedSubHeader">Whole Job</div>${full.map(d=>schedRowHTML(id,d)).join('')}` : ''}
+      ${schedGroupHTML(id, 'Pre-Site Inspection', presite)}
+      ${schedGroupHTML(id, 'Whole Job', full)}
       ${totalHTML}
     </div>`;
+}
+/* Dates that have already passed are still worth keeping, but they should not
+   push the next visit off the bottom of a phone screen. Anything before today
+   goes behind a single line you can open. */
+function schedGroupHTML(id, title, list){
+  if(!list.length) return '';
+  const today=new Date().toISOString().slice(0,10);
+  const past=list.filter(d=>(d.endDate||d.startDate) < today);
+  const rest=list.filter(d=>(d.endDate||d.startDate) >= today);
+  const head=`<div class="schedSubHeader">${esc(title)}</div>`;
+  const pastHTML = past.length
+    ? `<details class="schedPast"><summary>${past.length} earlier date${past.length>1?'s':''}</summary>${past.map(d=>schedRowHTML(id,d)).join('')}</details>`
+    : '';
+  // With nothing upcoming, the past dates are all there is, so they show.
+  if(!rest.length) return head + past.map(d=>schedRowHTML(id,d)).join('');
+  return head + pastHTML + rest.map(d=>schedRowHTML(id,d)).join('');
 }
 function schedRowHTML(woId, d){
   const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
@@ -4828,6 +4972,22 @@ function woCode(wo){
   return String((wo && wo.id) || 0).toString(36).toUpperCase().slice(-5);
 }
 let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false, WO_PRIOR_VIEW=false, WO_EDIT_NOTE_IDX=null;
+/* Phone-only view state. The customer block opens folded down to the name and
+   one number, and the note form is a button until you want it. Both are inert
+   on a desktop-width screen, where there is room for everything at once. */
+let WO_HEAD_EXPANDED=false;
+let NOTE_SHEET_OPEN=false;
+function isNarrowScreen(){
+  return window.matchMedia && window.matchMedia('(max-width:900px)').matches;
+}
+function toggleWoHead(id){ WO_HEAD_EXPANDED=!WO_HEAD_EXPANDED; renderWorkOrderModal(id); }
+function openNoteSheet(id){
+  NOTE_SHEET_OPEN=true;
+  if(FIELD_VIEW_OVERRIDE===null && fieldModeFor(getWO(id))) FIELD_VIEW_OVERRIDE=false;
+  renderWorkOrderModal(id);
+  setTimeout(()=>{ const t=document.getElementById('noteText'); if(t) t.focus(); }, 60);
+}
+function closeNoteSheet(id){ NOTE_SHEET_OPEN=false; renderWorkOrderModal(id); }
 /* Which Job Details sub-lists are folded shut, keyed by list name. Survives the
    modal re-renders that add/remove item trigger; cleared when edit mode opens. */
 let JD_COLLAPSED={};
@@ -4844,7 +5004,136 @@ const JOB_LIST_DEFAULT_OPEN={labor:false, materials:false, tools:false, issues:f
 function jobListOpen(key){
   return WO_LIST_OPEN[key]===undefined ? !!JOB_LIST_DEFAULT_OPEN[key] : WO_LIST_OPEN[key];
 }
-function rememberJobList(key, el){ WO_LIST_OPEN[key]=el.open; }
+function rememberJobList(key, el){
+  WO_LIST_OPEN[key]=el.open;
+  /* On a phone, six open disclosures is a very long scroll and it is easy to
+     lose your place. Opening one folds the rest. Desktop keeps them
+     independent, where there is room to compare two lists side by side. */
+  if(el.open && isNarrowScreen()){
+    const box=el.closest('.jobPanel') || document;
+    box.querySelectorAll('details[open]').forEach(d=>{
+      if(d!==el){
+        d.open=false;
+        const sum=d.querySelector('summary');
+        const label=sum ? sum.textContent.trim().split(' (')[0].toLowerCase() : '';
+        Object.keys(JOB_LIST_DEFAULT_OPEN).forEach(k=>{ if(label.indexOf(k)>=0) WO_LIST_OPEN[k]=false; });
+      }
+    });
+  }
+}
+
+/* =========================================================================
+   FIELD MODE
+
+   The office needs line items, totals and history. Someone standing at the
+   front door needs five things: get here, call, check in, take a photo,
+   leave a note. Field mode is that second view of the same work order.
+
+   It comes on by itself while you are checked in on site, because that is
+   exactly when you are standing there, and it can be pinned on for the whole
+   device from Settings for a day spent entirely in the truck. Either way the
+   work order carries a button to drop back to the full view, and that choice
+   wins until the job is closed and reopened.
+========================================================================= */
+const FIELD_MODE_KEY='gh_field_mode';
+let FIELD_MODE=false;
+try{ FIELD_MODE = localStorage.getItem(FIELD_MODE_KEY)==='1'; }catch(e){}
+let FIELD_VIEW_OVERRIDE=null;   // null = decide automatically, true/false = pinned for this open job
+
+function isCheckedInNow(wo){
+  return allDayLogsSorted(wo).some(({log})=>log.checkIn && !log.checkOut);
+}
+function fieldModeFor(wo){
+  if(FIELD_VIEW_OVERRIDE!==null) return FIELD_VIEW_OVERRIDE;
+  if(FIELD_MODE) return true;
+  return isCheckedInNow(wo);
+}
+function setFieldView(id, on){
+  FIELD_VIEW_OVERRIDE = on;
+  renderWorkOrderModal(id);
+}
+function toggleFieldMode(){
+  FIELD_MODE=!FIELD_MODE;
+  try{ localStorage.setItem(FIELD_MODE_KEY, FIELD_MODE?'1':'0'); }catch(e){}
+  FIELD_VIEW_OVERRIDE=null;
+  syncFieldModeBtn();
+  if(OPEN_WO_ID!=null && getWO(OPEN_WO_ID)) renderWorkOrderModal(OPEN_WO_ID);
+  toast(FIELD_MODE ? 'Field mode on. Work orders open in the simplified view.' : 'Field mode off.');
+}
+function syncFieldModeBtn(){
+  const b=document.getElementById('fieldModeBtn');
+  if(!b) return;
+  b.setAttribute('aria-pressed', FIELD_MODE?'true':'false');
+  b.classList.toggle('on', FIELD_MODE);
+  b.textContent = FIELD_MODE ? 'On' : 'Off';
+}
+/* The day you are most likely to act on: the one you are checked into, else
+   the next one still ahead, else the most recent. */
+function fieldFocusLog(wo){
+  const rows=allDayLogsSorted(wo);
+  if(!rows.length) return null;
+  const open=rows.find(r=>r.log.checkIn && !r.log.checkOut);
+  if(open) return open.log;
+  const today=new Date().toISOString().slice(0,10);
+  const next=rows.find(r=>r.log.date>=today && !r.log.checkOut);
+  return next ? next.log : rows[rows.length-1].log;
+}
+function fieldModeHTML(wo){
+  const id=wo.id;
+  const c=wo.customer||{};
+  const addr=splitAddress(c.address);
+  const phoneDigits=String(c.phone||'').replace(/\D/g,'');
+  const log=fieldFocusLog(wo);
+  const inDone=!!(log && log.checkIn);
+  const outDone=!!(log && log.checkOut);
+  const photoCount=(wo.docs||[]).filter(isImageDoc).length;
+
+  const actions=`<div class="fieldActions">
+    ${phoneDigits?`<button class="fieldBtn" onclick="openPhoneAction('${esc(c.phone)}')">${icon('phone','lg')}<span>Call / Text</span></button>`:''}
+    ${c.address?`<a class="fieldBtn" href="${directionsUrl(c.address)}" target="_blank" rel="noopener">${icon('map-pin','lg')}<span>Navigate</span></a>`:''}
+  </div>`;
+
+  const checkBlock = !log
+    ? '<div class="small">No scheduled days yet.</div>'
+    : `<div class="fieldDay">${formatDateDisplay(log.date)}</div>
+       <div class="fieldActions">
+         <button class="fieldBtn ${inDone?'done':'primary'}" ${inDone?'disabled':''} onclick="checkInDay(${id}, '${log.date}', null)">
+           ${icon('login','lg')}<span>${inDone?('In '+esc(log.checkIn.time)):'Check In'}</span>
+         </button>
+         <button class="fieldBtn ${outDone?'done':(inDone?'primary':'')}" ${(!inDone||outDone)?'disabled':''} onclick="checkOutDay(${id}, '${log.date}', null)">
+           ${icon('logout','lg')}<span>${outDone?('Out '+esc(log.checkOut.time)):'Check Out'}</span>
+         </button>
+       </div>`;
+
+  return `<div class="fieldMode">
+    <div class="fieldCust">
+      <div class="fieldName">${esc(c.name||'Unnamed customer')}</div>
+      ${c.address?`<div class="fieldAddr">${esc(addr.line1)}${addr.line2?', '+esc(addr.line2):''}</div>`:''}
+    </div>
+    ${actions}
+    <div class="fieldBlock">${checkBlock}</div>
+    <div class="fieldActions">
+      <button class="fieldBtn" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
+      <button class="fieldBtn" onclick="openNoteSheet(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
+    </div>
+    ${wo.jobDetails && wo.jobDetails.description ? `<div class="fieldBlock"><div class="fieldBlockTitle">Job</div><div>${esc(wo.jobDetails.description)}</div></div>` : ''}
+    <button class="btn secondary fieldFull" onclick="setFieldView(${id}, false)">Show full work order</button>
+  </div>`;
+}
+/* Straight to the camera rather than the share sheet, which is three taps and
+   a scroll away from taking a picture. */
+function openFieldCamera(id){
+  const el=document.getElementById('fieldCameraInput');
+  if(!el) return;
+  el.dataset.woId=String(id);
+  el.value='';
+  el.click();
+}
+function handleFieldCamera(inputEl){
+  const id=Number(inputEl.dataset.woId||0);
+  if(!id || !inputEl.files || !inputEl.files.length) return;
+  handleDocUpload(id, inputEl);
+}
 
 let OPEN_WO_ID=null;   // work order currently shown in the modal, if any
 function openWorkOrder(id){
@@ -4856,6 +5145,9 @@ function openWorkOrder(id){
   JD_EDIT = null;
   WO_DOCS_VIEW = false;
   WO_PRIOR_VIEW = false;
+  FIELD_VIEW_OVERRIDE = null;
+  WO_HEAD_EXPANDED = false;
+  NOTE_SHEET_OPEN = false;
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
   renderWorkOrderModal(id);
@@ -5046,7 +5338,13 @@ function renderWorkOrderModal(id){
   // appears on a first-time customer.
   const priorCount = priorJobsFor(wo).length;
 
-  if(WO_DOCS_VIEW){
+  const fieldOn = fieldModeFor(wo) && !WO_DOCS_VIEW && !WO_ADMIN_VIEW && !WO_PRIOR_VIEW && !WO_CUST_EDIT && !WO_JOB_EDIT;
+
+  if(fieldOn){
+    headerSuffix = '';
+    headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="setFieldView(${id}, false)">Full view</button></div>`;
+    bodyHTML = fieldModeHTML(wo);
+  } else if(WO_DOCS_VIEW){
     headerSuffix = ', Documents';
     headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleDocsView(${id})">&larr; Docs</button></div>`;
     bodyHTML = docsTabHTML(wo);
@@ -5060,6 +5358,7 @@ function renderWorkOrderModal(id){
     bodyHTML = adminTabHTML(wo);
   } else {
     headerActions = `<div class="headerTabs">
+          <button class="headerTab" onclick="setFieldView(${id}, true)">Field</button>
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Prior Jobs (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
@@ -5091,14 +5390,21 @@ function renderWorkOrderModal(id){
         </div>
 
         <div class="notesSection">
-          <div class="panelTitle">Notes</div>
+          <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Notes</span>
+            <button class="btn secondary noteOpenBtn" onclick="openNoteSheet(${id})">${icon('pencil')}Add Note</button>
+          </div>
           ${(() => {
             const editingNote = (WO_EDIT_NOTE_IDX!==null && wo.notes[WO_EDIT_NOTE_IDX]) ? wo.notes[WO_EDIT_NOTE_IDX] : null;
             const typeVal = editingNote ? editingNote.type : '';
             const followUpVal = editingNote && editingNote.followUpDate ? formatDateDisplay(editingNote.followUpDate) : '';
             const textVal = editingNote ? editingNote.text : (noteDraftFor(id)||'');
             return `
-          <div class="noteEntryRow">
+          <div class="noteEntryRow${NOTE_SHEET_OPEN||editingNote?' sheetOpen':''}">
+            <div class="noteSheetBar">
+              <span>${editingNote ? 'Edit Note' : 'Add Note'}</span>
+              <button class="btn secondary" onclick="closeNoteSheet(${id})">Done</button>
+            </div>
             ${editingNote ? '<div class="small" style="color:var(--orange);font-weight:700;">Editing note. Save Edit to update it, or Cancel to discard changes.</div>' : ''}
             <div class="noteEntryTop">
               <div class="noteFieldGroup">
@@ -5147,9 +5453,12 @@ function renderWorkOrderModal(id){
           ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
           <div class="small">Tap outside this box to save and close.</div>
         </div>` : `
-        <div class="modalHeadCust" id="modalHeadCust" title="Double-click (or long-press) to edit"
+        <div class="modalHeadCust${WO_HEAD_EXPANDED?'':' collapsed'}" id="modalHeadCust" title="Double-click (or long-press) to edit"
           ondblclick="startHeaderCustEdit(${id})"
           ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
+          <button type="button" class="mhToggle" aria-label="${WO_HEAD_EXPANDED?'Hide':'Show'} full customer details"
+            onclick="event.stopPropagation();toggleWoHead(${id})"
+            ondblclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">${WO_HEAD_EXPANDED?'Less':'More'}</button>
           <div class="mhCols">
             <div class="mhColA">
               <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
@@ -5982,7 +6291,8 @@ function docsTabHTML(wo){
     const bucketNote = cfg.__derivedBucket
       ? `<div class="small" style="margin-top:2px;color:var(--muted);">Your sync config had no <code>storageBucket</code>, so uploads are using <b>${esc(cfg.storageBucket||'')}</b>. If uploads fail, copy the exact <code>storageBucket</code> from your Firebase console into the sync config.</div>`
       : '';
-    uploaderHTML = `<input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
+    uploaderHTML = `<button class="btn secondary docCameraBtn" onclick="openFieldCamera(${wo.id})">${icon('image')}Take Photo</button>
+       <input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
        <div id="docUploadStatus_${wo.id}" class="small" style="color:var(--orange);font-weight:600;min-height:1.2em;margin-top:4px;"></div>
        <div class="small" style="margin-top:2px;color:var(--muted);">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>
        ${bucketNote}
@@ -8698,6 +9008,7 @@ function srSave(){
     opener:SR_OPENER,
     state:{
       OPEN_WO_ID, WO_CUST_EDIT, WO_ADMIN_VIEW, WO_JOB_EDIT, JD_EDIT, WO_PRIOR_VIEW,
+      FIELD_VIEW_OVERRIDE, WO_HEAD_EXPANDED, NOTE_SHEET_OPEN,
       WO_DOCS_VIEW, WO_EDIT_NOTE_IDX, WO_LIST_OPEN, DOC_TAG_FILTER,
       PRESITE_STATE:srPresiteSnapshot(), PS_UID,
       SCHED_WO_ID, SCHED_EDIT_ID, SCHED_TYPE, SCHED_START, SCHED_END,
@@ -8763,6 +9074,9 @@ function restoreSession(){
     const st=data.state||{};
     WO_CUST_EDIT=!!st.WO_CUST_EDIT; WO_ADMIN_VIEW=!!st.WO_ADMIN_VIEW;
     WO_PRIOR_VIEW=!!st.WO_PRIOR_VIEW;
+    FIELD_VIEW_OVERRIDE = (st.FIELD_VIEW_OVERRIDE===true || st.FIELD_VIEW_OVERRIDE===false) ? st.FIELD_VIEW_OVERRIDE : null;
+    WO_HEAD_EXPANDED=!!st.WO_HEAD_EXPANDED;
+    NOTE_SHEET_OPEN=!!st.NOTE_SHEET_OPEN;
     WO_JOB_EDIT=!!st.WO_JOB_EDIT; JD_EDIT=st.JD_EDIT==null?null:st.JD_EDIT;
     WO_DOCS_VIEW=!!st.WO_DOCS_VIEW;
     WO_EDIT_NOTE_IDX=st.WO_EDIT_NOTE_IDX==null?null:st.WO_EDIT_NOTE_IDX;
