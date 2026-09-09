@@ -1234,6 +1234,10 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .telLink,.mapLink,.mailLink{
   display:inline-flex;align-items:center;gap:6px;
 }
+/* The phone glyph is drawn inset within its box, so a 6px gap reads as more.
+   The pin and envelope fill their boxes edge to edge and need the difference
+   added back to sit the same distance from their text. */
+.mapLink,.mailLink{gap:9px;}
 .telLink .ic,.mapLink .ic,.mailLink .ic{flex:0 0 auto;opacity:.85;}
 .mapLink .ic.spacer{visibility:hidden;}
 
