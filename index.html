@@ -5218,7 +5218,11 @@ function toggleFieldMode(){
   try{ localStorage.setItem(FIELD_MODE_KEY, FIELD_MODE?'1':'0'); }catch(e){}
   FIELD_VIEW_OVERRIDE=null;
   syncFieldModeBtn();
-  if(OPEN_WO_ID!=null && getWO(OPEN_WO_ID)) renderWorkOrderModal(OPEN_WO_ID);
+  /* Only re-draw a work order that is genuinely on screen. OPEN_WO_ID is left
+     set by the last job opened, so re-rendering on that alone could pop a
+     closed job back up when the switch is flipped. */
+  const overlay=document.getElementById('woOverlay');
+  if(overlay && OPEN_WO_ID!=null && getWO(OPEN_WO_ID)) renderWorkOrderModal(OPEN_WO_ID);
   toast(FIELD_MODE ? 'Field mode on. Work orders open in the simplified view.' : 'Field mode off.');
 }
 function syncFieldModeBtn(){
@@ -5593,18 +5597,39 @@ function renderWorkOrderModal(id){
 
   const fieldOn = fieldModeFor(wo) && !WO_DOCS_VIEW && !WO_ADMIN_VIEW && !WO_PRIOR_VIEW && !WO_CUST_EDIT && !WO_JOB_EDIT;
 
+  let fieldFailed=false;
   if(fieldOn){
-    // The customer block moves into the body as a tappable grid, so the modal
-    // header carries navigation only.
-    headerSuffix = '';
-    headerCustHTML = '';
-    headerActions = `<div class="headerTabs fieldNav">
+    /* If anything in the field view throws, the old behaviour was a modal that
+       never got written: the work order looked like it refused to open, and
+       only appeared once something forced a re-render. A work order opening is
+       not negotiable, so a failure here drops to the full view and says so
+       rather than swallowing the job. */
+    try{
+      // The customer block moves into the body as a tappable grid, so the
+      // modal header carries navigation only.
+      headerSuffix = '';
+      headerCustHTML = '';
+      headerActions = `<div class="headerTabs fieldNav">
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Prior Jobs (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
           <button class="headerTab active" onclick="setFieldView(${id}, false)">Full View</button>
         </div>`;
-    bodyHTML = fieldModeHTML(wo);
+      bodyHTML = fieldModeHTML(wo);
+    }catch(err){
+      console.error('Field view failed, falling back to the full work order:', err);
+      fieldFailed=true;
+      FIELD_VIEW_OVERRIDE=false;
+      headerCustHTML=null;   // rebuilt below
+      setTimeout(()=>toast('Field view could not be drawn. Showing the full work order.'), 0);
+    }
+  }
+  if(fieldFailed){
+    renderWorkOrderModal(id);
+    return;
+  }
+  if(fieldOn){
+    // handled above
   } else if(WO_DOCS_VIEW){
     headerSuffix = ', Documents';
     headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleDocsView(${id})">&larr; Docs</button></div>`;
