@@ -1268,6 +1268,19 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldBlockTitle{font-size:.74em;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px;}
 .fieldDay{text-align:center;font-weight:800;font-size:1.05em;margin-bottom:10px;}
 .fieldFull{width:100%;margin-top:4px;}
+.fieldNoteLabel{
+  display:block;margin-bottom:5px;
+  font-size:.74em;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);font-weight:800;
+}
+.fieldNote select,.fieldNote textarea,.fieldNote input[type="date"]{
+  width:100%;box-sizing:border-box;margin-bottom:10px;
+  padding:12px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--paper);color:var(--ink);font-family:inherit;font-size:1em;
+}
+.fieldNote textarea{resize:vertical;min-height:120px;}
+.fieldNoteBtns{display:flex;gap:10px;}
+.fieldNoteBtns .btn{flex:1;min-height:50px;}
 .fieldModeBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
 
 /* ---- note sheet ---- */
@@ -4962,14 +4975,78 @@ let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO
 /* Phone-only view state: the note form is a button until you want it, and
    inert on a desktop-width screen where there is room for it to sit open. */
 let NOTE_SHEET_OPEN=false;
+let FIELD_NOTE_OPEN=false;   // the on-site note composer, inside field mode
+let FIELD_NOTE_TYPE='NOTE';
+let FIELD_NOTE_DRAFT={text:'', follow:''};
+function openFieldNote(id){
+  FIELD_NOTE_OPEN=true;
+  FIELD_NOTE_TYPE='NOTE';
+  FIELD_NOTE_DRAFT={text:'', follow:''};
+  renderWorkOrderModal(id);
+  setTimeout(()=>{ const t=document.getElementById('fieldNoteText'); if(t) t.focus(); }, 60);
+}
+/* Switching type redraws the composer, so what is typed so far has to be
+   carried across rather than thrown away. */
+function fieldNoteTypeChanged(id, val){
+  const t=document.getElementById('fieldNoteText');
+  const f=document.getElementById('fieldNoteFollow');
+  FIELD_NOTE_DRAFT={text: t?t.value:'', follow: f?f.value:''};
+  FIELD_NOTE_TYPE=val;
+  renderWorkOrderModal(id);
+}
+function closeFieldNote(id){
+  FIELD_NOTE_OPEN=false;
+  renderWorkOrderModal(id);
+}
+/* Same capability as the office form, laid out for one hand. The follow-up
+   date uses the native picker rather than the typed field, because a date
+   wheel beats typing MM/DD/YYYY on a doorstep. */
+function submitFieldNote(id){
+  const wo=getWO(id);
+  if(!wo) return;
+  const typeEl=document.getElementById('fieldNoteType');
+  const textEl=document.getElementById('fieldNoteText');
+  const followEl=document.getElementById('fieldNoteFollow');
+  const type=typeEl ? typeEl.value : 'NOTE';
+  const text=textEl ? textEl.value.trim() : '';
+  const followUp=(followEl && followEl.value) ? followEl.value : null;
+  // The walkthrough IS the pre-site note. Picking that type opens the tool,
+  // which writes its own note when it is saved.
+  if(type==='PRESITE'){
+    FIELD_NOTE_OPEN=false;
+    openPresiteTool(id);
+    return;
+  }
+  if(!text){
+    if(textEl) textEl.focus();
+    toast('Enter some note text before adding it.');
+    return;
+  }
+  addNote(wo, type, text, followUp);
+  let movedMsg=null;
+  if(type==='SCHD PRESITE' && inPresiteIncompleteList(wo)){
+    wo.presiteScheduled=true;
+    movedMsg='Moved to Pre-Site Scheduled.';
+  } else if(type==='SCHD' && inScheduleJobList(wo)){
+    wo.jobScheduled=true;
+    movedMsg='Job scheduled. Moved to In Progress.';
+  } else if(type==='SURVEY' && inSurveysList(wo)){
+    wo.movedToHistoryAt=Date.now();
+    movedMsg='Moved to Job History.';
+  }
+  saveDB(DB);
+  FIELD_NOTE_OPEN=false;
+  FIELD_NOTE_DRAFT={text:'', follow:''};
+  renderWorkOrderModal(id);
+  renderTabCounts();
+  renderMain();
+  toast(movedMsg ? ('Note added. '+movedMsg) : 'Note added.');
+}
 function isNarrowScreen(){
   return window.matchMedia && window.matchMedia('(max-width:900px)').matches;
 }
 function openNoteSheet(id){
   NOTE_SHEET_OPEN=true;
-  // Opened from field mode, this needs the full view to have somewhere to put
-  // the form, so field mode steps aside for the rest of this visit.
-  if(FIELD_VIEW_OVERRIDE===null && fieldModeFor(getWO(id))) FIELD_VIEW_OVERRIDE=false;
   renderWorkOrderModal(id);
   setTimeout(()=>{
     const t=document.getElementById('noteText');
@@ -5106,14 +5183,44 @@ function fieldModeHTML(wo){
     <div class="fieldBlock">${checkBlock}</div>
     <div class="fieldActions">
       <button class="fieldBtn" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
-      <button class="fieldBtn" onclick="openNoteSheet(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
+      <button class="fieldBtn" onclick="openFieldNote(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
     </div>
+    ${FIELD_NOTE_OPEN ? (()=>{
+      const isPre = FIELD_NOTE_TYPE==='PRESITE';
+      return `<div class="fieldBlock fieldNote">
+      <div class="fieldBlockTitle">New Note</div>
+      <label class="fieldNoteLabel" for="fieldNoteType">Note Type</label>
+      <select id="fieldNoteType" onchange="fieldNoteTypeChanged(${id}, this.value)">
+        ${NOTE_TYPES.map(t=>`<option value="${esc(t)}" ${t===FIELD_NOTE_TYPE?'selected':''}>${esc(t)}</option>`).join('')}
+      </select>
+      ${isPre ? `<div class="small" style="margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>` : `
+      <label class="fieldNoteLabel" for="fieldNoteText">Note</label>
+      <textarea id="fieldNoteText" rows="5" placeholder="What happened on site...">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
+      <label class="fieldNoteLabel" for="fieldNoteFollow">Follow-up date (optional)</label>
+      <input type="date" id="fieldNoteFollow" value="${esc(FIELD_NOTE_DRAFT.follow||'')}">`}
+      <div class="fieldNoteBtns">
+        <button class="btn" onclick="submitFieldNote(${id})">${isPre?'Start Pre-Site':'Add Note'}</button>
+        <button class="btn secondary" onclick="closeFieldNote(${id})">Cancel</button>
+      </div>
+    </div>`;
+    })() : ''}
+    ${lastNoteHTML(wo)}
     ${wo.jobDetails && wo.jobDetails.description ? `<div class="fieldBlock"><div class="fieldBlockTitle">Job</div><div>${esc(wo.jobDetails.description)}</div></div>` : ''}
     <button class="btn secondary fieldFull" onclick="setFieldView(${id}, false)">Show full work order</button>
   </div>`;
 }
 /* Straight to the camera rather than the share sheet, which is three taps and
    a scroll away from taking a picture. */
+/* The most recent note, so you can see what was said last without leaving
+   the on-site view. */
+function lastNoteHTML(wo){
+  const n=(wo.notes||[])[0];
+  if(!n) return '';
+  return `<div class="fieldBlock">
+    <div class="fieldBlockTitle">Last Note &middot; ${esc(n.type)} &middot; ${esc(n.date)}</div>
+    <div>${esc(n.text)}</div>
+  </div>`;
+}
 function openFieldCamera(id){
   const el=document.getElementById('fieldCameraInput');
   if(!el) return;
@@ -5139,6 +5246,9 @@ function openWorkOrder(id){
   WO_PRIOR_VIEW = false;
   FIELD_VIEW_OVERRIDE = null;
   NOTE_SHEET_OPEN = false;
+  FIELD_NOTE_OPEN = false;
+  FIELD_NOTE_TYPE = 'NOTE';
+  FIELD_NOTE_DRAFT = {text:'', follow:''};
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
   renderWorkOrderModal(id);
