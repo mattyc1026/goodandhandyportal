@@ -4883,10 +4883,16 @@ function headerCustTouchEnd(){
    and the very next click anywhere on the page re-opened the work order modal.
    It is now tracked in one slot and detached by closeModal() as well. */
 let HEADER_CUST_OUTSIDE_HANDLER=null;
+let HEADER_CUST_PRESS_HANDLER=null;
 function detachHeaderCustOutsideClickHandler(){
   if(HEADER_CUST_OUTSIDE_HANDLER){
     document.removeEventListener('click', HEADER_CUST_OUTSIDE_HANDLER);
     HEADER_CUST_OUTSIDE_HANDLER=null;
+  }
+  if(HEADER_CUST_PRESS_HANDLER){
+    document.removeEventListener('mousedown', HEADER_CUST_PRESS_HANDLER, true);
+    document.removeEventListener('touchstart', HEADER_CUST_PRESS_HANDLER, true);
+    HEADER_CUST_PRESS_HANDLER=null;
   }
 }
 function attachHeaderCustOutsideClickHandler(id){
@@ -4895,9 +4901,28 @@ function attachHeaderCustOutsideClickHandler(id){
   // that immediately closes it again.
   setTimeout(()=>{
     if(!WO_CUST_EDIT) return;
+    /* Selecting text by dragging from inside a field and releasing past its
+       edge produced a click event whose target was the element underneath the
+       release point, which read as "clicked outside" and closed the panel
+       mid-selection. The press location decides now: a gesture that STARTED
+       inside the panel never closes it, however far the finger or mouse
+       travels before letting go. */
+    let pressedInside=false;
+    HEADER_CUST_PRESS_HANDLER=function(e){
+      const cust=document.getElementById('modalHeadCust');
+      pressedInside = !!(cust && cust.contains(e.target));
+    };
+    document.addEventListener('mousedown', HEADER_CUST_PRESS_HANDLER, true);
+    document.addEventListener('touchstart', HEADER_CUST_PRESS_HANDLER, true);
+
     HEADER_CUST_OUTSIDE_HANDLER=function(e){
       const cust=document.getElementById('modalHeadCust');
       if(!cust){ detachHeaderCustOutsideClickHandler(); return; }
+      if(pressedInside){ pressedInside=false; return; }
+      // A selection that ends outside also leaves the browser reporting the
+      // release element as the target, so an active selection is left alone.
+      const sel=window.getSelection ? window.getSelection() : null;
+      if(sel && !sel.isCollapsed && cust.contains(sel.anchorNode)) return;
       if(!cust.contains(e.target)){
         detachHeaderCustOutsideClickHandler();
         if(WO_CUST_EDIT){ saveCustomer(id); }
