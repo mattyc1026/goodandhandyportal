@@ -543,7 +543,7 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg
    first column is drawn. */
 .mhCols{
   display:flex;flex-wrap:wrap;align-items:flex-start;
-  column-gap:clamp(28px, 2vw, 56px);row-gap:10px;
+  column-gap:clamp(28px, 4vw, 56px);row-gap:10px;
 }
 /* Each column is its own box. A grid cell could be squeezed narrower than its
    own text, and the overflow then painted straight across the gap, which is
@@ -609,6 +609,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
   font-size:.72em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
   vertical-align:middle;border:1px solid transparent;white-space:nowrap;
 }
+.dt-pre-site{background:#e4eef0;color:#1f5560;border-color:#c2dbe0;}
 .dt-before{background:#e7eefb;color:#20416f;border-color:#c3d5f2;}
 .dt-during{background:#fdf0dd;color:#7a4c07;border-color:#f2dcb6;}
 .dt-after{background:#e2f3e6;color:#1d6b34;border-color:#bfe3c8;}
@@ -5749,7 +5750,7 @@ function storageUsagePct(){ return Math.min(100, Math.round(((DB.storageUsedByte
 /* Photo labels. Optional, one per photo, and purely descriptive: nothing in
    the workflow keys off them. Kept as the visible text rather than a code, so
    an exported or synced record reads the same everywhere. */
-const DOC_TAGS=['Before','During','After','Pre-Existing Damage','Damage/Issue'];
+const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue'];
 function docTagClass(tag){
   return 'dt-'+String(tag||'').toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,'');
 }
