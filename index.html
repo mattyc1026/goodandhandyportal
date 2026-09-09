@@ -5591,6 +5591,13 @@ function renderWorkOrderModal(id){
   let headerSuffix = '';
   let headerActions;
   let bodyHTML;
+  /* Declared here, above the field-mode branch that assigns it. It used to be
+     declared further down with `let`, so the field branch's assignment hit the
+     temporal dead zone and threw; worse, the catch block's own assignment threw
+     too, so the error escaped renderWorkOrderModal entirely and the modal was
+     never written. That is what made a work order refuse to open with field
+     mode on, and only appear once field mode was switched back off. */
+  let headerCustHTML = null;
   // The tab is only offered when there is something behind it, so it never
   // appears on a first-time customer.
   const priorCount = priorJobsFor(wo).length;
@@ -5726,8 +5733,11 @@ function renderWorkOrderModal(id){
         </div>`;
   }
 
+  /* Field mode has already set its own (empty) header block above; only the
+     full view builds the customer header here. */
+  if(headerCustHTML===null){
   const addr=splitAddress(wo.customer.address);
-  let headerCustHTML = WO_CUST_EDIT ? `
+  headerCustHTML = WO_CUST_EDIT ? `
         <div class="modalHeadCust editing" id="modalHeadCust">
           ${custField('name','Full Name', wo.customer.name)}
           ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
@@ -5756,6 +5766,7 @@ function renderWorkOrderModal(id){
           </div>
           ${homeownerLine(wo)}
         </div>`;
+  }
   /* Every re-render replaces the whole modal, which destroys the element that
      was holding the scroll position and drops the user back at the top. That
      is what made "+ Add Item" feel like it threw you out of a long list. The
