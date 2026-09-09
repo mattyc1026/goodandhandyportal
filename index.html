@@ -1190,9 +1190,10 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   display:inline-flex;align-items:center;gap:6px;
 }
 .telLink .ic,.mapLink .ic,.mailLink .ic{flex:0 0 auto;opacity:.85;}
-/* The second address line has no pin, so it is nudged over to sit flush
-   under the first line's text rather than under its icon. */
-.mhAddr2 .mapLink{margin-left:24px;}
+.mapLink .ic.spacer{visibility:hidden;}
+/* A little air before the email, so it reads as its own thing rather than a
+   third line of the address. */
+.modalHeadCust .mhEmail{margin-top:5px;}
 .phoneActionRow{display:flex;gap:10px;justify-content:center;}
 .phoneActionRow .btn{display:inline-flex;align-items:center;gap:7px;}
 .mapLink,.mailLink{
@@ -5124,7 +5125,7 @@ function renderWorkOrderModal(id){
             </div>
             <div class="mhColB">
               <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1, true)}</div>
-              <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2)}</div>
+              <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2, 'spacer')}</div>
               <div class="mhEmail">${emailLink(wo.customer.email)}</div>
             </div>
           </div>
@@ -5248,7 +5249,9 @@ function addressLink(fullAddress, text, withIcon){
   if(!shown) return '';
   const full=(fullAddress||'').trim();
   if(!full) return esc(shown);
-  const lead = withIcon ? icon('map-pin') : '';
+  /* 'spacer' draws the same pin but hidden, which holds the second line of an
+     address in exact alignment with the first without hard-coding a width. */
+  const lead = withIcon==='spacer' ? icon('map-pin','spacer') : (withIcon ? icon('map-pin') : '');
   return `<a class="mapLink${withIcon?' hasIcon':''}" href="${directionsUrl(full)}" target="_blank" rel="noopener"`
     + ` title="Directions to ${esc(full)}" aria-label="Directions to ${esc(full)}"`
     + ` onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"`
