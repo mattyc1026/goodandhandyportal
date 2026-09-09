@@ -1246,12 +1246,89 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
    Few controls, all of them big. Sized for a thumb in a work glove, and
    readable at arm's length in daylight.
 ========================================================================= */
-.fieldMode{display:flex;flex-direction:column;gap:14px;}
-.fieldCust{text-align:center;}
-.fieldName{font-family:var(--f-display);font-size:1.6em;line-height:1.2;overflow-wrap:anywhere;}
-.fieldAddr{margin-top:4px;color:var(--muted);font-size:.95em;overflow-wrap:anywhere;}
+.fieldMode{display:flex;flex-direction:column;gap:12px;}
+
+/* Customer block as four tappable quarters. Everything you would reach for
+   first is one tap and no scrolling. */
+.fieldGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.fgCell{
+  border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--paper);min-height:78px;overflow:hidden;
+}
+.fgCell.fgName{padding:11px 12px;background:var(--well);}
+.fgHit{
+  display:block;width:100%;height:100%;box-sizing:border-box;
+  padding:11px 12px;text-align:left;background:none;border:none;
+  font:inherit;color:inherit;text-decoration:none;cursor:pointer;
+}
+.fgHit:active{background:var(--line-soft);}
+.fgLabel{
+  font-size:.66em;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:5px;
+}
+.fgCell .fgName{font-family:var(--f-display);font-size:1.15em;line-height:1.25;overflow-wrap:anywhere;}
+.fgValue{
+  display:flex;align-items:flex-start;gap:7px;
+  font-size:.92em;line-height:1.35;overflow-wrap:anywhere;color:var(--navy);font-weight:600;
+}
+.fgValue .ic{flex:0 0 auto;width:15px;height:15px;margin-top:2px;opacity:.8;}
+.fgValue.muted{color:var(--muted);font-weight:400;}
+
+/* Shared small controls: More toggles, sub-panels, folded sections. */
+.fieldMoreBtn{
+  align-self:flex-start;margin-top:2px;padding:6px 13px;
+  border:1px solid var(--line);border-radius:999px;background:var(--paper);
+  font-family:inherit;font-size:.74em;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);cursor:pointer;
+}
+.fieldSubPanel{
+  margin-top:9px;padding:11px 12px;border:1px solid var(--line);
+  border-radius:var(--radius);background:var(--well);
+}
+.fsRow{display:flex;flex-wrap:wrap;gap:4px 10px;padding:5px 0;align-items:baseline;}
+.fsKey{
+  font-size:.68em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);
+}
+.fsList{margin-bottom:12px;}
+.fsList:last-child{margin-bottom:0;}
+.fsNote{padding:7px 0;}
+.fsNote + .fsNote{border-top:1px solid var(--line-soft);}
+.fsNoteHead{
+  font-size:.68em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:4px;
+}
+.fieldSec{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);}
+.fieldSecHead{
+  display:flex;width:100%;box-sizing:border-box;align-items:center;justify-content:space-between;
+  padding:13px 14px;background:none;border:none;cursor:pointer;
+  font-family:inherit;font-size:.78em;font-weight:800;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);
+}
+.fieldSecChev{font-size:1.3em;line-height:1;color:var(--orange);}
+.fieldSecBody{
+  display:flex;flex-direction:column;
+  padding:0 14px 14px;line-height:1.55;overflow-wrap:anywhere;
+}
+
+/* Minimal day status: the date, the times, and an edit pencil for admins. */
+.fieldStatus{
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
+  padding:9px 13px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--well);font-size:.83em;
+}
+.fsDate{font-weight:800;}
+.fsTime{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-weight:600;}
+.fsHours{margin-left:auto;font-weight:700;color:var(--navy);}
+.fsEdit{
+  background:none;border:none;padding:2px;cursor:pointer;color:var(--orange);
+  display:inline-flex;align-items:center;
+}
+.fsEdit .ic{width:14px;height:14px;}
+.fieldBtn.wide{grid-column:1 / -1;width:100%;}
 .fieldActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
 .fieldActions:has(> :only-child){grid-template-columns:1fr;}
+.fieldNav{flex-wrap:wrap;}
 .fieldBtn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
   min-height:92px;padding:14px 10px;border-radius:var(--radius-lg);
@@ -4975,6 +5052,21 @@ let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO
 /* Phone-only view state: the note form is a button until you want it, and
    inert on a desktop-width screen where there is room for it to sit open. */
 let NOTE_SHEET_OPEN=false;
+/* Which of the folded sections are open. All shut when a job is opened: the
+   point of field mode is that the top of the screen is the whole job. */
+let FIELD_SEC={extras:false, note:false, notesMore:false, job:false, jobMore:false};
+function toggleFieldSec(id, key){
+  FIELD_SEC[key]=!FIELD_SEC[key];
+  if(key==='note' && !FIELD_SEC.note) FIELD_SEC.notesMore=false;
+  if(key==='job' && !FIELD_SEC.job) FIELD_SEC.jobMore=false;
+  renderWorkOrderModal(id);
+}
+/* toISOString is UTC, which flips the date late in the evening and would show
+   the wrong day's check-in. This is the local calendar date. */
+function todayLocalISO(){
+  const d=new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+}
 let FIELD_NOTE_OPEN=false;   // the on-site note composer, inside field mode
 let FIELD_NOTE_TYPE='NOTE';
 let FIELD_NOTE_DRAFT={text:'', follow:''};
@@ -5147,78 +5239,137 @@ function fieldFocusLog(wo){
   const next=rows.find(r=>r.log.date>=today && !r.log.checkOut);
   return next ? next.log : rows[rows.length-1].log;
 }
-function fieldModeHTML(wo){
-  const id=wo.id;
+function fieldGridHTML(wo){
   const c=wo.customer||{};
   const addr=splitAddress(c.address);
-  const phoneDigits=String(c.phone||'').replace(/\D/g,'');
-  const log=fieldFocusLog(wo);
-  const inDone=!!(log && log.checkIn);
-  const outDone=!!(log && log.checkOut);
-  const photoCount=(wo.docs||[]).filter(isImageDoc).length;
+  const addrText=[addr.line1, addr.line2].filter(Boolean).join(', ') || (c.address||'');
+  const hasExtras = !!(String(c.altPhone||'').trim() || String(c.homeownerName||'').trim() || String(c.homeownerPhone||'').trim());
+  const cell=(cls, inner)=>`<div class="fgCell ${cls}">${inner}</div>`;
+  return `<div class="fieldGrid">
+    ${cell('fgName', `<div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'Unnamed customer')}</div>`)}
+    ${cell('fgTap', c.phone
+      ? `<button type="button" class="fgHit" onclick="openPhoneAction('${esc(c.phone)}')"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
+      : `<div class="fgLabel">Phone</div><div class="fgValue muted">None</div>`)}
+    ${cell('fgTap', addrText
+      ? `<a class="fgHit" href="${directionsUrl(c.address)}" target="_blank" rel="noopener"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}${esc(addrText)}</div></a>`
+      : `<div class="fgLabel">Address</div><div class="fgValue muted">None</div>`)}
+    ${cell('fgTap', c.email
+      ? `<a class="fgHit" href="mailto:${esc(c.email)}"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></a>`
+      : `<div class="fgLabel">Email</div><div class="fgValue muted">None</div>`)}
+  </div>
+  ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
+  ${(hasExtras && FIELD_SEC.extras) ? `<div class="fieldSubPanel">
+    ${c.altPhone?`<div class="fsRow"><span class="fsKey">Alternate</span>${phoneLink(c.altPhone)}</div>`:''}
+    ${c.homeownerName?`<div class="fsRow"><span class="fsKey">Homeowner</span>${esc(c.homeownerName)}</div>`:''}
+    ${c.homeownerPhone?`<div class="fsRow"><span class="fsKey">Homeowner Phone</span>${phoneLink(c.homeownerPhone)}</div>`:''}
+  </div>` : ''}`;
+}
+/* Check in and check out are the same button in two states, and it only
+   appears on a day the job is actually scheduled for. Once the day is closed
+   out, all that is left is the small status line. */
+function fieldCheckHTML(wo){
+  const id=wo.id;
+  const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
+  const today=todayLocalISO();
+  const rows=allDayLogsSorted(wo);
+  const entry=rows.find(r=>r.log.date===today);
 
-  const actions=`<div class="fieldActions">
-    ${phoneDigits?`<button class="fieldBtn" onclick="openPhoneAction('${esc(c.phone)}')">${icon('phone','lg')}<span>Call / Text</span></button>`:''}
-    ${c.address?`<a class="fieldBtn" href="${directionsUrl(c.address)}" target="_blank" rel="noopener">${icon('map-pin','lg')}<span>Navigate</span></a>`:''}
+  if(!entry){
+    const next=rows.find(r=>r.log.date>today);
+    return `<div class="fieldStatus">
+      <span class="fsDate">${next ? 'Next visit '+formatDateDisplay(next.log.date) : 'No visit scheduled'}</span>
+    </div>`;
+  }
+
+  const log=entry.log;
+  const hrs=dayLogHours(log);
+  const status=`<div class="fieldStatus">
+    <span class="fsDate">${formatDateDisplay(log.date)}</span>
+    ${log.checkIn?`<span class="fsTime">In ${esc(log.checkIn.time)}${isAdmin?`<button class="fsEdit" title="Edit check-in time" onclick="editCheckInDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
+    ${log.checkOut?`<span class="fsTime">Out ${esc(log.checkOut.time)}${isAdmin?`<button class="fsEdit" title="Edit check-out time" onclick="editCheckOutDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
+    ${hrs!=null?`<span class="fsHours">${formatHoursMinutes(hrs)}</span>`:''}
   </div>`;
 
-  const checkBlock = !log
-    ? '<div class="small">No scheduled days yet.</div>'
-    : `<div class="fieldDay">${formatDateDisplay(log.date)}</div>
-       <div class="fieldActions">
-         <button class="fieldBtn ${inDone?'done':'primary'}" ${inDone?'disabled':''} onclick="checkInDay(${id}, '${log.date}', null)">
-           ${icon('login','lg')}<span>${inDone?('In '+esc(log.checkIn.time)):'Check In'}</span>
-         </button>
-         <button class="fieldBtn ${outDone?'done':(inDone?'primary':'')}" ${(!inDone||outDone)?'disabled':''} onclick="checkOutDay(${id}, '${log.date}', null)">
-           ${icon('logout','lg')}<span>${outDone?('Out '+esc(log.checkOut.time)):'Check Out'}</span>
-         </button>
-       </div>`;
-
-  return `<div class="fieldMode">
-    <div class="fieldCust">
-      <div class="fieldName">${esc(c.name||'Unnamed customer')}</div>
-      ${c.address?`<div class="fieldAddr">${esc(addr.line1)}${addr.line2?', '+esc(addr.line2):''}</div>`:''}
+  let button='';
+  if(!log.checkIn){
+    button=`<button class="fieldBtn primary wide" onclick="checkInDay(${id}, '${log.date}', null)">${icon('login','lg')}<span>Check In</span></button>`;
+  } else if(!log.checkOut){
+    button=`<button class="fieldBtn primary wide" onclick="checkOutDay(${id}, '${log.date}', null)">${icon('logout','lg')}<span>Check Out</span></button>`;
+  }
+  return button + status;
+}
+function fieldNoteComposerHTML(id){
+  if(!FIELD_NOTE_OPEN) return '';
+  const isPre = FIELD_NOTE_TYPE==='PRESITE';
+  return `<div class="fieldBlock fieldNote">
+    <div class="fieldBlockTitle">New Note</div>
+    <label class="fieldNoteLabel" for="fieldNoteType">Note Type</label>
+    <select id="fieldNoteType" onchange="fieldNoteTypeChanged(${id}, this.value)">
+      ${NOTE_TYPES.map(t=>`<option value="${esc(t)}" ${t===FIELD_NOTE_TYPE?'selected':''}>${esc(t)}</option>`).join('')}
+    </select>
+    ${isPre ? `<div class="small" style="margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>` : `
+    <label class="fieldNoteLabel" for="fieldNoteText">Note</label>
+    <textarea id="fieldNoteText" rows="5" placeholder="What happened on site...">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
+    <label class="fieldNoteLabel" for="fieldNoteFollow">Follow-up date (optional)</label>
+    <input type="date" id="fieldNoteFollow" value="${esc(FIELD_NOTE_DRAFT.follow||'')}">`}
+    <div class="fieldNoteBtns">
+      <button class="btn" onclick="submitFieldNote(${id})">${isPre?'Start Pre-Site':'Add Note'}</button>
+      <button class="btn secondary" onclick="closeFieldNote(${id})">Cancel</button>
     </div>
-    ${actions}
-    <div class="fieldBlock">${checkBlock}</div>
+  </div>`;
+}
+function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel){
+  const open=!!FIELD_SEC[key];
+  return `<div class="fieldSec${open?' open':''}">
+    <button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
+      <span>${esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+    </button>
+    ${open?`<div class="fieldSecBody">
+      ${body}
+      ${morePanel!==undefined && morePanel!=='' ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${id},'${moreKey}')">${FIELD_SEC[moreKey]?'Less':esc(moreLabel)}</button>` : ''}
+      ${(morePanel && FIELD_SEC[moreKey]) ? `<div class="fieldSubPanel">${morePanel}</div>` : ''}
+    </div>`:''}
+  </div>`;
+}
+function fieldNotesSecHTML(wo){
+  const notes=wo.notes||[];
+  if(!notes.length) return fieldSecHTML(wo.id, 'note', 'Last Note', '<div class="small">No notes yet.</div>');
+  const one=n=>`<div class="fsNote">
+      <div class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.by?' &middot; '+esc(n.by):''}</div>
+      <div>${esc(n.text)}</div>
+    </div>`;
+  const rest=notes.slice(1);
+  return fieldSecHTML(wo.id, 'note', 'Last Note', one(notes[0]),
+    'notesMore', `All notes (${notes.length})`,
+    rest.length ? rest.map(one).join('') : '');
+}
+function fieldJobSecHTML(wo){
+  const jd=wo.jobDetails||{};
+  const body=jd.description ? esc(jd.description) : '<div class="small">No job description yet.</div>';
+  const lists=[
+    ['Labor', jd.labor, true], ['Materials', jd.materials, true],
+    ['Required Tools', jd.tools, false], ['Potential Issues', jd.issues, false],
+    ['Exclusions', jd.exclusions, false], ['Disclaimers', jd.disclaimers, false]
+  ].filter(([,list])=>list && list.length);
+  const panel=lists.map(([title, list, priced])=>`<div class="fsList">
+      <div class="fsKey">${esc(title)}</div>
+      ${list.map(priced?priceLineRow:plainLineRow).join('')}
+    </div>`).join('');
+  return fieldSecHTML(wo.id, 'job', 'Job', body, 'jobMore', 'Line items', panel);
+}
+function fieldModeHTML(wo){
+  const id=wo.id;
+  const photoCount=(wo.docs||[]).filter(isImageDoc).length;
+  return `<div class="fieldMode">
+    ${fieldGridHTML(wo)}
+    ${fieldCheckHTML(wo)}
     <div class="fieldActions">
       <button class="fieldBtn" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
       <button class="fieldBtn" onclick="openFieldNote(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
     </div>
-    ${FIELD_NOTE_OPEN ? (()=>{
-      const isPre = FIELD_NOTE_TYPE==='PRESITE';
-      return `<div class="fieldBlock fieldNote">
-      <div class="fieldBlockTitle">New Note</div>
-      <label class="fieldNoteLabel" for="fieldNoteType">Note Type</label>
-      <select id="fieldNoteType" onchange="fieldNoteTypeChanged(${id}, this.value)">
-        ${NOTE_TYPES.map(t=>`<option value="${esc(t)}" ${t===FIELD_NOTE_TYPE?'selected':''}>${esc(t)}</option>`).join('')}
-      </select>
-      ${isPre ? `<div class="small" style="margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>` : `
-      <label class="fieldNoteLabel" for="fieldNoteText">Note</label>
-      <textarea id="fieldNoteText" rows="5" placeholder="What happened on site...">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
-      <label class="fieldNoteLabel" for="fieldNoteFollow">Follow-up date (optional)</label>
-      <input type="date" id="fieldNoteFollow" value="${esc(FIELD_NOTE_DRAFT.follow||'')}">`}
-      <div class="fieldNoteBtns">
-        <button class="btn" onclick="submitFieldNote(${id})">${isPre?'Start Pre-Site':'Add Note'}</button>
-        <button class="btn secondary" onclick="closeFieldNote(${id})">Cancel</button>
-      </div>
-    </div>`;
-    })() : ''}
-    ${lastNoteHTML(wo)}
-    ${wo.jobDetails && wo.jobDetails.description ? `<div class="fieldBlock"><div class="fieldBlockTitle">Job</div><div>${esc(wo.jobDetails.description)}</div></div>` : ''}
-    <button class="btn secondary fieldFull" onclick="setFieldView(${id}, false)">Show full work order</button>
-  </div>`;
-}
-/* Straight to the camera rather than the share sheet, which is three taps and
-   a scroll away from taking a picture. */
-/* The most recent note, so you can see what was said last without leaving
-   the on-site view. */
-function lastNoteHTML(wo){
-  const n=(wo.notes||[])[0];
-  if(!n) return '';
-  return `<div class="fieldBlock">
-    <div class="fieldBlockTitle">Last Note &middot; ${esc(n.type)} &middot; ${esc(n.date)}</div>
-    <div>${esc(n.text)}</div>
+    ${fieldNoteComposerHTML(id)}
+    ${fieldNotesSecHTML(wo)}
+    ${fieldJobSecHTML(wo)}
   </div>`;
 }
 function openFieldCamera(id){
@@ -5249,6 +5400,7 @@ function openWorkOrder(id){
   FIELD_NOTE_OPEN = false;
   FIELD_NOTE_TYPE = 'NOTE';
   FIELD_NOTE_DRAFT = {text:'', follow:''};
+  FIELD_SEC = {extras:false, note:false, notesMore:false, job:false, jobMore:false};
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
   renderWorkOrderModal(id);
@@ -5442,8 +5594,16 @@ function renderWorkOrderModal(id){
   const fieldOn = fieldModeFor(wo) && !WO_DOCS_VIEW && !WO_ADMIN_VIEW && !WO_PRIOR_VIEW && !WO_CUST_EDIT && !WO_JOB_EDIT;
 
   if(fieldOn){
+    // The customer block moves into the body as a tappable grid, so the modal
+    // header carries navigation only.
     headerSuffix = '';
-    headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="setFieldView(${id}, false)">Full view</button></div>`;
+    headerCustHTML = '';
+    headerActions = `<div class="headerTabs fieldNav">
+          <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
+          ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Prior Jobs (${priorCount})</button>` : ''}
+          ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
+          <button class="headerTab active" onclick="setFieldView(${id}, false)">Full View</button>
+        </div>`;
     bodyHTML = fieldModeHTML(wo);
   } else if(WO_DOCS_VIEW){
     headerSuffix = ', Documents';
@@ -5542,7 +5702,7 @@ function renderWorkOrderModal(id){
   }
 
   const addr=splitAddress(wo.customer.address);
-  const headerCustHTML = WO_CUST_EDIT ? `
+  let headerCustHTML = WO_CUST_EDIT ? `
         <div class="modalHeadCust editing" id="modalHeadCust">
           ${custField('name','Full Name', wo.customer.name)}
           ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
