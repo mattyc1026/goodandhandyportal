@@ -602,6 +602,49 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
   vertical-align:middle;
 }
 .modalHeadCust .mhHomeownerSep{color:var(--muted);margin:0 8px;}
+
+/* ---- photo labels ---- */
+.docTagPill{
+  display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;
+  font-size:.72em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  vertical-align:middle;border:1px solid transparent;white-space:nowrap;
+}
+.dt-before{background:#e7eefb;color:#20416f;border-color:#c3d5f2;}
+.dt-during{background:#fdf0dd;color:#7a4c07;border-color:#f2dcb6;}
+.dt-after{background:#e2f3e6;color:#1d6b34;border-color:#bfe3c8;}
+.dt-pre-existing-damage{background:#efe9f7;color:#4b2f75;border-color:#d8cbec;}
+.dt-damage-issue{background:#fbe6e6;color:#9b2226;border-color:#efc6c6;}
+.docTagSel{
+  font-size:.82em;padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  background:var(--paper);color:var(--ink);max-width:170px;
+}
+.docTagFilter{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.docTagChip{
+  padding:5px 11px;border-radius:999px;border:1px solid var(--line);
+  background:var(--paper);color:var(--muted);cursor:pointer;
+  font-size:.78em;font-weight:700;letter-spacing:.03em;
+}
+.docTagChip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.docTagChipN{opacity:.65;margin-left:3px;font-weight:600;}
+
+/* ---- prior jobs ---- */
+.priorRow{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:9px 0;border-bottom:1px solid var(--line-soft);
+}
+.priorRow:last-child{border-bottom:none;}
+.priorMain{min-width:0;}
+.priorTitle{font-weight:700;overflow-wrap:anywhere;}
+.priorWhy{
+  display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;
+  background:var(--line-soft);border:1px solid var(--line);color:var(--muted);
+  font-size:.7em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  vertical-align:middle;white-space:nowrap;
+}
+.dupBanner{
+  margin:0 0 14px;padding:12px 14px;border-radius:8px;line-height:1.55;
+  background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);
+}
 .headerActionsWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
 .headerTabs{display:flex;gap:3px;}
 .headerTabs button{
@@ -2705,6 +2748,9 @@ function normalizeWO(wo){
   if(wo.checkOut===undefined) wo.checkOut=null;
   if(!Array.isArray(wo.docs)) wo.docs=[];
   wo.docs.forEach(d=>{ if(d.uploadedAt===undefined) d.uploadedAt=0; });
+  // Optional one-word label on a photo. Blank on everything uploaded before
+  // labels existed, which is a valid state, not a missing one.
+  wo.docs.forEach(d=>{ if(typeof d.tag!=='string') d.tag=''; });
   if(!Array.isArray(wo.scheduleDates)) wo.scheduleDates=[];
   wo.scheduleDates.forEach(sd=>{
     // Older saved dates predate the repeat field. A prior version of this
@@ -4675,6 +4721,96 @@ function newWorkOrderId(){
 /* Timestamp ids are 13 digits, which is not something anyone wants to read on
    a job row. This renders a short stable code from the same number, so the
    displayed reference stays short while the underlying id stays unique. */
+/* =========================================================================
+   CUSTOMER HISTORY
+
+   Two work orders belong to the same customer when a phone number matches,
+   or failing that when the street address matches. Nothing is ever merged:
+   every work order stays its own record with its own number, notes, photos
+   and schedule. Matching is worked out fresh each time it is needed, so
+   correcting a typo in a phone number regroups the jobs immediately and
+   there is no stored link to go stale.
+========================================================================= */
+function normPhoneKey(raw){
+  let d=String(raw||'').replace(/\D/g,'');
+  if(d.length===11 && d.charAt(0)==='1') d=d.slice(1);   // leading US country code
+  return d.length===10 ? d : '';
+}
+function customerPhoneKeys(c){
+  return [c.phone, c.altPhone, c.homeownerPhone].map(normPhoneKey).filter(Boolean);
+}
+/* "1234 N. Oak Street, Apt 2" and "1234 North Oak St #2" are the same door.
+   Only the street line and unit are compared: city, state and zip add nothing
+   once the street matches and are the parts most often typed inconsistently. */
+const ADDR_ABBREV={
+  street:'st', str:'st', avenue:'ave', av:'ave', road:'rd', drive:'dr',
+  lane:'ln', boulevard:'blvd', court:'ct', place:'pl', terrace:'ter',
+  circle:'cir', parkway:'pkwy', highway:'hwy', trail:'trl', square:'sq',
+  north:'n', south:'s', east:'e', west:'w',
+  northeast:'ne', northwest:'nw', southeast:'se', southwest:'sw',
+  apartment:'apt', unit:'apt', suite:'ste', building:'bldg', floor:'fl'
+};
+function normAddrKey(raw){
+  if(!raw || !String(raw).trim()) return '';
+  let parts;
+  try{ parts=splitAddress(raw); }catch(e){ parts=null; }
+  const street=(parts && (parts.street || parts.line1)) || String(raw);
+  const unit=(parts && parts.unit) || '';
+  let s=(street+' '+unit).toLowerCase()
+    .replace(/[.,#]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+  if(!s) return '';
+  return s.split(' ').map(w=>ADDR_ABBREV[w]||w).filter(Boolean).join(' ');
+}
+/* Returns why two work orders match, or null. Phone wins over address, so a
+   duplicate found by phone is never reported as an address match. */
+function customerMatchReason(a, b){
+  const ac=a.customer||{}, bc=b.customer||{};
+  const ap=customerPhoneKeys(ac), bp=customerPhoneKeys(bc);
+  if(ap.some(k=>bp.includes(k))) return 'phone';
+  const aa=normAddrKey(ac.address), ba=normAddrKey(bc.address);
+  if(aa && aa===ba) return 'address';
+  return null;
+}
+function priorJobsFor(wo){
+  if(!wo) return [];
+  return (DB.workOrders||[])
+    .filter(w=>w && w.id!==wo.id)
+    .map(w=>({wo:w, why:customerMatchReason(wo, w)}))
+    .filter(x=>x.why)
+    .sort((x,y)=>(y.wo.createdAt||0)-(x.wo.createdAt||0));
+}
+const STAGE_LABELS={
+  workorders:'Work Orders', presite:'Pre-Site', estimates:'Estimates',
+  inprogress:'In Progress', invoices:'Invoices', surveys:'Surveys',
+  jobhistory:'Job History'
+};
+function stageLabelFor(wo){
+  let key='workorders';
+  try{ key=workOrderCurrentTab(wo); }catch(e){}
+  return STAGE_LABELS[key] || 'Work Orders';
+}
+function priorJobsPanelHTML(wo){
+  const prior=priorJobsFor(wo);
+  if(!prior.length) return '';
+  const rows=prior.map(({wo:w, why})=>{
+    const when=w.createdAt ? new Date(w.createdAt).toLocaleDateString('en-US') : '';
+    const desc=(w.jobDetails && w.jobDetails.description) ? w.jobDetails.description.trim() : '';
+    return `<div class="priorRow">
+      <div class="priorMain">
+        <div class="priorTitle">#${esc(woCode(w))} &middot; ${esc(w.customer.name||'Unnamed customer')}<span class="priorWhy">${why==='phone'?'Same phone':'Same address'}</span></div>
+        <div class="small">${esc(stageLabelFor(w))}${when?' &middot; opened '+esc(when):''}${desc?' &middot; '+esc(desc.slice(0,70))+(desc.length>70?'…':''):''}</div>
+      </div>
+      <button class="btn secondary" onclick="openWorkOrder(${w.id})">Open</button>
+    </div>`;
+  }).join('');
+  return `<div class="jobPanel">
+    <div class="panelTitle">Prior Jobs (${prior.length})</div>
+    <div class="small" style="margin-bottom:6px;">Other work orders for this customer, matched on phone number or street address. Each one stays a separate work order.</div>
+    ${rows}
+  </div>`;
+}
 function woCode(wo){
   return String((wo && wo.id) || 0).toString(36).toUpperCase().slice(-5);
 }
@@ -4689,7 +4825,9 @@ let JD_COLLAPSED={};
    list back to its default and undo whatever the user had just set up.
    Cleared when the work order closes, so each one opens predictably. */
 let WO_LIST_OPEN={};
-const JOB_LIST_DEFAULT_OPEN={labor:true, materials:true, tools:false, issues:false, exclusions:false, disclaimers:false};
+/* Everything starts folded. Opening a work order should show the shape of the
+   job at a glance, not a wall of line items you have to scroll past. */
+const JOB_LIST_DEFAULT_OPEN={labor:false, materials:false, tools:false, issues:false, exclusions:false, disclaimers:false};
 function jobListOpen(key){
   return WO_LIST_OPEN[key]===undefined ? !!JOB_LIST_DEFAULT_OPEN[key] : WO_LIST_OPEN[key];
 }
@@ -4704,6 +4842,7 @@ function openWorkOrder(id){
   WO_JOB_EDIT = false;
   JD_EDIT = null;
   WO_DOCS_VIEW = false;
+  DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
   renderWorkOrderModal(id);
   if(WO_CUST_EDIT){ attachHeaderCustOutsideClickHandler(id); }
@@ -4901,6 +5040,7 @@ function renderWorkOrderModal(id){
             ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
             ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
           </div>
+          ${priorJobsPanelHTML(wo)}
         </div>
 
         <div class="notesSection">
@@ -5150,6 +5290,29 @@ function saveCustomer(id){
   renderTabCounts();
   if(!wasEligible && nowEligible){ toast('Required info complete. Job added to Pre-Site Inspections.'); }
   renderMain();
+  warnIfDuplicateCustomer(id);
+}
+/* Raised once per work order, the first time its customer details land on an
+   existing customer. It is a warning, not a gate: the second job at the same
+   address is usually legitimate, and the two records stay separate either
+   way. Acknowledging it is recorded so nobody gets asked twice. */
+function warnIfDuplicateCustomer(id){
+  const wo=getWO(id);
+  if(!wo || wo.dupWarned) return;
+  const prior=priorJobsFor(wo);
+  if(!prior.length) return;
+  wo.dupWarned=true;
+  saveDB(DB);
+  const byPhone=prior.filter(x=>x.why==='phone').length;
+  const how = byPhone ? 'the same phone number' : 'the same street address';
+  const list=prior.slice(0,5).map(x=>'#'+woCode(x.wo)+'  '+(x.wo.customer.name||'Unnamed customer')+'  ('+stageLabelFor(x.wo)+')').join('\n');
+  const more = prior.length>5 ? ('\nand '+(prior.length-5)+' more') : '';
+  askYesNo(
+    'This customer already has '+prior.length+' work order'+(prior.length>1?'s':'')+' on file, matched on '+how+':\n\n'+list+more+
+    '\n\nNothing has been merged. This work order stays separate, and all of them are listed under Prior Jobs.',
+    ()=>{},
+    {yes:'Got it', no:'Close'}
+  );
 }
 function copyToClipboard(text, btn){
   const done=()=>{ if(btn){ const orig=btn.textContent; btn.textContent='✓'; setTimeout(()=>{btn.textContent=orig;},1000); } };
@@ -5583,6 +5746,28 @@ function fmtBytes(n){
 }
 const STORAGE_CAP_BYTES = 5*1024*1024*1024; // 5GB, Firebase Storage free-tier ceiling
 function storageUsagePct(){ return Math.min(100, Math.round(((DB.storageUsedBytes||0)/STORAGE_CAP_BYTES)*100)); }
+/* Photo labels. Optional, one per photo, and purely descriptive: nothing in
+   the workflow keys off them. Kept as the visible text rather than a code, so
+   an exported or synced record reads the same everywhere. */
+const DOC_TAGS=['Before','During','After','Pre-Existing Damage','Damage/Issue'];
+function docTagClass(tag){
+  return 'dt-'+String(tag||'').toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,'');
+}
+let DOC_TAG_FILTER='all';   // 'all' | 'none' | one of DOC_TAGS
+function setDocTagFilter(woId, val){
+  DOC_TAG_FILTER=val;
+  renderWorkOrderModal(woId);
+}
+function setDocTag(woId, docId, tag){
+  const wo=getWO(woId);
+  if(!wo) return;
+  const d=getDoc(wo, docId);
+  if(!d) return;
+  d.tag = DOC_TAGS.includes(tag) ? tag : '';
+  saveDB(DB);
+  renderWorkOrderModal(woId);
+  toast(d.tag ? `Labeled "${d.tag}".` : 'Label removed.');
+}
 function isImageDoc(d){
   if(d.type) return d.type.startsWith('image/');
   return /\.(jpe?g|png|gif|webp|heic|heif|bmp|svg)$/i.test(d.name||'');
@@ -5602,13 +5787,17 @@ function docRowHTML(wo, d){
       <div class="docLead">
         ${lead}
         <div class="docInfo">
-          <span class="docName">${esc(d.name||'Untitled')}</span>
+          <span class="docName">${esc(d.name||'Untitled')}${d.tag?` <span class="docTagPill ${docTagClass(d.tag)}">${esc(d.tag)}</span>`:''}</span>
           <span class="small">${esc(d.uploadedBy)} · ${esc(d.date)} ${d.size?('· '+fmtBytes(d.size)):''}${!d.url?' · local only (not synced)':''}</span>
         </div>
       </div>
       <div class="docActions">
         <button class="btn secondary" onclick="viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
         <button class="btn secondary" onclick="downloadDoc(${wo.id},'${d.id}')">${icon('download')}Download</button>
+        ${isImg ? `<select class="docTagSel" title="Photo label (optional)" aria-label="Photo label" onchange="setDocTag(${wo.id},'${d.id}',this.value)">
+          <option value="" ${!d.tag?'selected':''}>No label</option>
+          ${DOC_TAGS.map(t=>`<option value="${esc(t)}" ${d.tag===t?'selected':''}>${esc(t)}</option>`).join('')}
+        </select>` : ''}
         <button class="btn secondary" onclick="renameDoc(${wo.id},'${d.id}')">${icon('pencil')}Rename</button>
         <button class="btn danger" onclick="deleteDoc(${wo.id},'${d.id}')">${icon('trash')}Delete</button>
       </div>
@@ -5683,8 +5872,22 @@ function docsTabHTML(wo){
   const docs=wo.docs||[];
   const images = docs.filter(isImageDoc);
   const files = docs.filter(d=>!isImageDoc(d));
-  const imageRows = images.length ? images.map(d=>docRowHTML(wo,d)).join('')
+  const shown = DOC_TAG_FILTER==='all' ? images
+    : DOC_TAG_FILTER==='none' ? images.filter(d=>!d.tag)
+    : images.filter(d=>d.tag===DOC_TAG_FILTER);
+  const imageRows = images.length
+    ? (shown.length ? shown.map(d=>docRowHTML(wo,d)).join('')
+      : emptyStateHTML('No photos with that label.', {icon:'image', style:'padding:24px 18px;'}))
     : emptyStateHTML('No images uploaded yet.', {icon:'image', style:'padding:30px 18px;'});
+  // The filter bar is pointless with nothing to filter, so it only appears
+  // once at least one photo actually carries a label.
+  const anyTagged = images.some(d=>d.tag);
+  const chip=(val,label,count)=>`<button class="docTagChip ${DOC_TAG_FILTER===val?'active':''} ${val!=='all'&&val!=='none'?docTagClass(val):''}" onclick="setDocTagFilter(${wo.id},'${esc(val)}')">${esc(label)} <span class="docTagChipN">${count}</span></button>`;
+  const filterBar = (images.length && anyTagged) ? `<div class="docTagFilter">
+      ${chip('all','All', images.length)}
+      ${DOC_TAGS.filter(t=>images.some(d=>d.tag===t)).map(t=>chip(t,t,images.filter(d=>d.tag===t).length)).join('')}
+      ${images.some(d=>!d.tag) ? chip('none','No label', images.filter(d=>!d.tag).length) : ''}
+    </div>` : '';
   const fileRows = files.length ? files.map(d=>docRowHTML(wo,d)).join('')
     : emptyStateHTML('No documents uploaded yet.', {icon:'folder', style:'padding:30px 18px;'});
   // Three distinct states, because "no uploader" previously always blamed
@@ -5718,9 +5921,10 @@ function docsTabHTML(wo){
   }
   return `<div class="docsTab">
     <h4>Documents</h4>
-    <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. Files are named from the filename automatically. Use Rename on any row to change it.</div>
+    <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. Files are named from the filename automatically. Use Rename on any row to change it. Photos can carry an optional label such as Before or Damage/Issue.</div>
     ${uploaderHTML}
     <h4 style="margin-top:18px;">Images${images.length?` (${images.length})`:''}</h4>
+    ${filterBar}
     <div class="docList" style="margin-top:8px;">${imageRows}</div>
     <h4 style="margin-top:18px;">Documents${files.length?` (${files.length})`:''}</h4>
     <div class="docList" style="margin-top:8px;">${fileRows}</div>
@@ -6116,19 +6320,45 @@ function saveNoteEdit(id){
    rest of the app, can't be styled, and is suppressed outright in some
    in-app browsers (silently deleting nothing, or everything). They now use
    the same askYesNo dialog as every other confirmation in the portal. */
+/* A PRESITE note is the receipt for a walkthrough, and the walkthrough is
+   what filled in Job Details. Deleting the note without clearing that data
+   left a job carrying priced line items nobody could trace back to anything,
+   so the two are removed together and the prompt says so before it happens. */
+function clearPresiteData(wo){
+  const jd=wo.jobDetails||(wo.jobDetails={});
+  delete jd.presite;
+  jd.labor=[]; jd.materials=[]; jd.tools=[];
+  jd.issues=[]; jd.exclusions=[]; jd.disclaimers=[];
+}
 function adminDeleteNote(woId, idx){
   const wo=getWO(woId);
   if(!wo || !wo.notes[idx]) return;
-  askYesNo('Delete this note? This cannot be undone.', (yes)=>{
+  const note=wo.notes[idx];
+  const isPresite = note.type==='PRESITE';
+  const othersRemain = isPresite && wo.notes.some((n,i)=>i!==idx && n.type==='PRESITE');
+  let question='Delete this note? This cannot be undone.';
+  if(isPresite){
+    question =
+      'Delete this pre-site note?\n\n'+
+      'This also erases everything the walkthrough produced on this work order: the pre-site summary and scope, and the Labor, Materials, Required Tools, Potential Issues, Exclusions and Disclaimers lists.\n\n'+
+      'The typed job description, photos, documents, schedule dates and all other notes are kept. The job stays at its current stage.\n\n'+
+      (othersRemain ? 'Note: this job has more than one pre-site note. The pre-site data is cleared regardless of which one you delete.\n\n' : '')+
+      'This cannot be undone.';
+  }
+  askYesNo(question, (yes)=>{
     if(!yes) return;
     const n=wo.notes[idx];
     wo.notes.splice(idx,1);
     addAdminLog(wo, `Deleted a ${n.type} note ("${n.text}")`);
+    if(isPresite){
+      clearPresiteData(wo);
+      addAdminLog(wo, 'Cleared the pre-site record and all walkthrough-generated job detail lists');
+    }
     if(WO_EDIT_NOTE_IDX===idx) WO_EDIT_NOTE_IDX=null;
     else if(WO_EDIT_NOTE_IDX!==null && WO_EDIT_NOTE_IDX>idx) WO_EDIT_NOTE_IDX--;
     saveDB(DB); renderWorkOrderModal(woId); renderTabCounts(); renderMain();
-    toast('Note deleted.');
-  });
+    toast(isPresite ? 'Pre-site note and walkthrough data deleted.' : 'Note deleted.');
+  }, isPresite ? {yes:'Delete pre-site data', no:'Cancel'} : undefined);
 }
 function adminDeleteWorkOrder(id){
   const wo=getWO(id);
@@ -8385,7 +8615,7 @@ function srSave(){
     opener:SR_OPENER,
     state:{
       OPEN_WO_ID, WO_CUST_EDIT, WO_ADMIN_VIEW, WO_JOB_EDIT, JD_EDIT,
-      WO_DOCS_VIEW, WO_EDIT_NOTE_IDX, WO_LIST_OPEN,
+      WO_DOCS_VIEW, WO_EDIT_NOTE_IDX, WO_LIST_OPEN, DOC_TAG_FILTER,
       PRESITE_STATE:srPresiteSnapshot(), PS_UID,
       SCHED_WO_ID, SCHED_EDIT_ID, SCHED_TYPE, SCHED_START, SCHED_END,
       SCHED_STIME, SCHED_ETIME, SCHED_REPEAT, SCHED_PENDING
@@ -8453,6 +8683,7 @@ function restoreSession(){
     WO_DOCS_VIEW=!!st.WO_DOCS_VIEW;
     WO_EDIT_NOTE_IDX=st.WO_EDIT_NOTE_IDX==null?null:st.WO_EDIT_NOTE_IDX;
     WO_LIST_OPEN=st.WO_LIST_OPEN||{};
+    DOC_TAG_FILTER=st.DOC_TAG_FILTER||'all';
     SCHED_WO_ID=st.SCHED_WO_ID==null?null:st.SCHED_WO_ID;
     SCHED_EDIT_ID=st.SCHED_EDIT_ID==null?null:st.SCHED_EDIT_ID;
     SCHED_TYPE=st.SCHED_TYPE||'full';
