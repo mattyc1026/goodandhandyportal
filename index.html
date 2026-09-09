@@ -1088,30 +1088,21 @@ html.hc .woRow.checkedInGlow{
      Everything below trades chrome for content. Nothing is removed outright:
      the folded pieces are all one tap away. */
 
-  /* --- customer header folds to name and primary number --- */
-  .modalHeadCust{position:relative;padding-right:52px;}
-  .mhToggle{display:block;}
-  .modalHeadCust.collapsed .mhAlt,
-  .modalHeadCust.collapsed .mhColB,
-  .modalHeadCust.collapsed .mhHomeowner{display:none;}
-  .modalHeadCust.collapsed .mhName{font-size:1.15em;}
-  .modalHeadCust.editing .mhToggle{display:none;}
-
   /* --- the note form becomes a sheet --- */
   .noteOpenBtn{display:inline-flex;align-items:center;gap:6px;}
   .noteEntryRow{display:none;}
   .noteEntryRow.sheetOpen{
-    display:block;position:fixed;inset:0;z-index:60;
-    background:var(--paper);padding:0 16px 16px;
-    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    display:block;background:var(--paper);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:0 13px 13px;margin-bottom:12px;
   }
   .noteEntryRow.sheetOpen .noteSheetBar{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
-    position:sticky;top:0;background:var(--paper);z-index:2;
-    padding:14px 0 12px;margin-bottom:6px;border-bottom:1px solid var(--line);
-    font-weight:800;font-size:1.05em;
+    padding:12px 0 10px;margin-bottom:8px;border-bottom:1px solid var(--line);
+    font-weight:800;font-size:1em;
   }
-  .noteEntryRow.sheetOpen textarea{min-height:38vh;}
+  .noteEntryRow.sheetOpen textarea{min-height:26vh;}
+  .noteEntryRow.sheetOpen ~ #notesList{margin-top:4px;}
 
   /* --- search collapses to its icon --- */
   .globalSearchBar{gap:8px;}
@@ -1274,14 +1265,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldDay{text-align:center;font-weight:800;font-size:1.05em;margin-bottom:10px;}
 .fieldFull{width:100%;margin-top:4px;}
 .fieldModeBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
-
-/* ---- collapsible customer header ---- */
-.mhToggle{
-  display:none;position:absolute;top:0;right:0;
-  background:none;border:none;padding:6px 8px;cursor:pointer;
-  font-family:inherit;font-size:.72em;font-weight:800;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--orange);
-}
 
 /* ---- note sheet ---- */
 .noteSheetBar{display:none;}
@@ -4972,20 +4955,25 @@ function woCode(wo){
   return String((wo && wo.id) || 0).toString(36).toUpperCase().slice(-5);
 }
 let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false, WO_PRIOR_VIEW=false, WO_EDIT_NOTE_IDX=null;
-/* Phone-only view state. The customer block opens folded down to the name and
-   one number, and the note form is a button until you want it. Both are inert
-   on a desktop-width screen, where there is room for everything at once. */
-let WO_HEAD_EXPANDED=false;
+/* Phone-only view state: the note form is a button until you want it, and
+   inert on a desktop-width screen where there is room for it to sit open. */
 let NOTE_SHEET_OPEN=false;
 function isNarrowScreen(){
   return window.matchMedia && window.matchMedia('(max-width:900px)').matches;
 }
-function toggleWoHead(id){ WO_HEAD_EXPANDED=!WO_HEAD_EXPANDED; renderWorkOrderModal(id); }
 function openNoteSheet(id){
   NOTE_SHEET_OPEN=true;
+  // Opened from field mode, this needs the full view to have somewhere to put
+  // the form, so field mode steps aside for the rest of this visit.
   if(FIELD_VIEW_OVERRIDE===null && fieldModeFor(getWO(id))) FIELD_VIEW_OVERRIDE=false;
   renderWorkOrderModal(id);
-  setTimeout(()=>{ const t=document.getElementById('noteText'); if(t) t.focus(); }, 60);
+  setTimeout(()=>{
+    const t=document.getElementById('noteText');
+    if(!t) return;
+    const row=t.closest('.noteEntryRow');
+    if(row && row.scrollIntoView) row.scrollIntoView({behavior:'smooth', block:'center'});
+    t.focus();
+  }, 60);
 }
 function closeNoteSheet(id){ NOTE_SHEET_OPEN=false; renderWorkOrderModal(id); }
 /* Which Job Details sub-lists are folded shut, keyed by list name. Survives the
@@ -5146,7 +5134,6 @@ function openWorkOrder(id){
   WO_DOCS_VIEW = false;
   WO_PRIOR_VIEW = false;
   FIELD_VIEW_OVERRIDE = null;
-  WO_HEAD_EXPANDED = false;
   NOTE_SHEET_OPEN = false;
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
@@ -5453,12 +5440,9 @@ function renderWorkOrderModal(id){
           ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
           <div class="small">Tap outside this box to save and close.</div>
         </div>` : `
-        <div class="modalHeadCust${WO_HEAD_EXPANDED?'':' collapsed'}" id="modalHeadCust" title="Double-click (or long-press) to edit"
+        <div class="modalHeadCust" id="modalHeadCust" title="Double-click (or long-press) to edit"
           ondblclick="startHeaderCustEdit(${id})"
           ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
-          <button type="button" class="mhToggle" aria-label="${WO_HEAD_EXPANDED?'Hide':'Show'} full customer details"
-            onclick="event.stopPropagation();toggleWoHead(${id})"
-            ondblclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">${WO_HEAD_EXPANDED?'Less':'More'}</button>
           <div class="mhCols">
             <div class="mhColA">
               <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
@@ -9008,7 +8992,7 @@ function srSave(){
     opener:SR_OPENER,
     state:{
       OPEN_WO_ID, WO_CUST_EDIT, WO_ADMIN_VIEW, WO_JOB_EDIT, JD_EDIT, WO_PRIOR_VIEW,
-      FIELD_VIEW_OVERRIDE, WO_HEAD_EXPANDED, NOTE_SHEET_OPEN,
+      FIELD_VIEW_OVERRIDE, NOTE_SHEET_OPEN,
       WO_DOCS_VIEW, WO_EDIT_NOTE_IDX, WO_LIST_OPEN, DOC_TAG_FILTER,
       PRESITE_STATE:srPresiteSnapshot(), PS_UID,
       SCHED_WO_ID, SCHED_EDIT_ID, SCHED_TYPE, SCHED_START, SCHED_END,
@@ -9075,7 +9059,6 @@ function restoreSession(){
     WO_CUST_EDIT=!!st.WO_CUST_EDIT; WO_ADMIN_VIEW=!!st.WO_ADMIN_VIEW;
     WO_PRIOR_VIEW=!!st.WO_PRIOR_VIEW;
     FIELD_VIEW_OVERRIDE = (st.FIELD_VIEW_OVERRIDE===true || st.FIELD_VIEW_OVERRIDE===false) ? st.FIELD_VIEW_OVERRIDE : null;
-    WO_HEAD_EXPANDED=!!st.WO_HEAD_EXPANDED;
     NOTE_SHEET_OPEN=!!st.NOTE_SHEET_OPEN;
     WO_JOB_EDIT=!!st.WO_JOB_EDIT; JD_EDIT=st.JD_EDIT==null?null:st.JD_EDIT;
     WO_DOCS_VIEW=!!st.WO_DOCS_VIEW;
