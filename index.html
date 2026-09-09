@@ -4805,9 +4805,9 @@ function stageLabelFor(wo){
   try{ key=workOrderCurrentTab(wo); }catch(e){}
   return STAGE_LABELS[key] || 'Work Orders';
 }
-function priorJobsPanelHTML(wo){
+function priorJobsTabHTML(wo){
   const prior=priorJobsFor(wo);
-  if(!prior.length) return '';
+  if(!prior.length) return emptyStateHTML('No prior jobs for this customer.', {icon:'clipboard', style:'padding:30px 18px;'});
   const rows=prior.map(({wo:w, why})=>{
     const when=w.createdAt ? new Date(w.createdAt).toLocaleDateString('en-US') : '';
     const desc=(w.jobDetails && w.jobDetails.description) ? w.jobDetails.description.trim() : '';
@@ -4821,14 +4821,13 @@ function priorJobsPanelHTML(wo){
   }).join('');
   return `<div class="jobPanel">
     <div class="panelTitle">Prior Jobs (${prior.length})</div>
-    <div class="small" style="margin-bottom:6px;">Other work orders for this customer, matched on phone number or street address. Each one stays a separate work order.</div>
     ${rows}
   </div>`;
 }
 function woCode(wo){
   return String((wo && wo.id) || 0).toString(36).toUpperCase().slice(-5);
 }
-let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false, WO_EDIT_NOTE_IDX=null;
+let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO_DOCS_VIEW=false, WO_PRIOR_VIEW=false, WO_EDIT_NOTE_IDX=null;
 /* Which Job Details sub-lists are folded shut, keyed by list name. Survives the
    modal re-renders that add/remove item trigger; cleared when edit mode opens. */
 let JD_COLLAPSED={};
@@ -4856,6 +4855,7 @@ function openWorkOrder(id){
   WO_JOB_EDIT = false;
   JD_EDIT = null;
   WO_DOCS_VIEW = false;
+  WO_PRIOR_VIEW = false;
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
   renderWorkOrderModal(id);
@@ -4908,6 +4908,7 @@ function attachHeaderCustOutsideClickHandler(id){
 }
 function toggleAdminView(id){ WO_ADMIN_VIEW=!WO_ADMIN_VIEW; renderWorkOrderModal(id); }
 function toggleDocsView(id){ WO_DOCS_VIEW=!WO_DOCS_VIEW; renderWorkOrderModal(id); }
+function togglePriorView(id){ WO_PRIOR_VIEW=!WO_PRIOR_VIEW; renderWorkOrderModal(id); }
 
 function extractUnit(str){
   // Pulls a unit/suite/apt/building/# designator out of a freeform address
@@ -5016,11 +5017,18 @@ function renderWorkOrderModal(id){
   let headerSuffix = '';
   let headerActions;
   let bodyHTML;
+  // The tab is only offered when there is something behind it, so it never
+  // appears on a first-time customer.
+  const priorCount = priorJobsFor(wo).length;
 
   if(WO_DOCS_VIEW){
     headerSuffix = ', Documents';
     headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleDocsView(${id})">&larr; Docs</button></div>`;
     bodyHTML = docsTabHTML(wo);
+  } else if(WO_PRIOR_VIEW && priorCount){
+    headerSuffix = ', Prior Jobs';
+    headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="togglePriorView(${id})">&larr; Prior Jobs</button></div>`;
+    bodyHTML = priorJobsTabHTML(wo);
   } else if(isAdmin && WO_ADMIN_VIEW){
     headerSuffix = ', Admin';
     headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleAdminView(${id})">&larr; Admin</button></div>`;
@@ -5028,6 +5036,7 @@ function renderWorkOrderModal(id){
   } else {
     headerActions = `<div class="headerTabs">
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
+          ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Prior Jobs (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
         </div>`;
     bodyHTML = `
@@ -5054,7 +5063,6 @@ function renderWorkOrderModal(id){
             ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
             ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
           </div>
-          ${priorJobsPanelHTML(wo)}
         </div>
 
         <div class="notesSection">
@@ -6466,7 +6474,7 @@ function closeModal(){
   hideAddressSuggestions();
   OPEN_WO_ID=null;
   WO_JOB_EDIT=false; JD_EDIT=null; WO_EDIT_NOTE_IDX=null;
-  WO_CUST_EDIT=false; WO_ADMIN_VIEW=false; WO_DOCS_VIEW=false;
+  WO_CUST_EDIT=false; WO_ADMIN_VIEW=false; WO_DOCS_VIEW=false; WO_PRIOR_VIEW=false;
   WO_LIST_OPEN={};
   PRESITE_STATE=null;
   SCHED_WO_ID=null; SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
@@ -8664,7 +8672,7 @@ function srSave(){
     fields,
     opener:SR_OPENER,
     state:{
-      OPEN_WO_ID, WO_CUST_EDIT, WO_ADMIN_VIEW, WO_JOB_EDIT, JD_EDIT,
+      OPEN_WO_ID, WO_CUST_EDIT, WO_ADMIN_VIEW, WO_JOB_EDIT, JD_EDIT, WO_PRIOR_VIEW,
       WO_DOCS_VIEW, WO_EDIT_NOTE_IDX, WO_LIST_OPEN, DOC_TAG_FILTER,
       PRESITE_STATE:srPresiteSnapshot(), PS_UID,
       SCHED_WO_ID, SCHED_EDIT_ID, SCHED_TYPE, SCHED_START, SCHED_END,
@@ -8729,6 +8737,7 @@ function restoreSession(){
   try{
     const st=data.state||{};
     WO_CUST_EDIT=!!st.WO_CUST_EDIT; WO_ADMIN_VIEW=!!st.WO_ADMIN_VIEW;
+    WO_PRIOR_VIEW=!!st.WO_PRIOR_VIEW;
     WO_JOB_EDIT=!!st.WO_JOB_EDIT; JD_EDIT=st.JD_EDIT==null?null:st.JD_EDIT;
     WO_DOCS_VIEW=!!st.WO_DOCS_VIEW;
     WO_EDIT_NOTE_IDX=st.WO_EDIT_NOTE_IDX==null?null:st.WO_EDIT_NOTE_IDX;
