@@ -1284,12 +1284,20 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fgValue.muted{color:var(--muted);font-weight:400;}
 
 /* Shared small controls: More toggles, sub-panels, folded sections. */
+/* Pills are a primary control in field mode, not a footnote: they are what
+   gets tapped with a glove on. Sized to a real 44px target, bordered in the
+   accent and set in the ink colour so they read as buttons rather than as
+   small print. */
 .fieldMoreBtn{
-  align-self:flex-start;margin-top:2px;padding:6px 13px;
-  border:1px solid var(--line);border-radius:999px;background:var(--paper);
-  font-family:inherit;font-size:.74em;font-weight:800;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--muted);cursor:pointer;
+  align-self:flex-start;margin-top:2px;padding:11px 18px;min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--orange);border-radius:999px;background:var(--paper);
+  font-family:inherit;font-size:.82em;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--navy);cursor:pointer;
+  box-shadow:0 1px 2px rgba(10,24,45,.08);
+  transition:background .12s,color .12s,border-color .12s,transform .1s;
 }
+.fieldMoreBtn:active{transform:scale(.97);}
 /* Selected pill. Same shape as the rest, filled so which card is showing is
    readable at arm's length in daylight. */
 .fieldMoreBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
@@ -5309,7 +5317,7 @@ function fieldCheckHTML(wo){
   if(!entry){
     const next=rows.find(r=>r.log.date>today);
     return `<div class="fieldStatus">
-      <span class="fsDate">${next ? 'Next visit '+formatDateDisplay(next.log.date) : 'No visit scheduled'}</span>
+      <span class="fsDate">${next ? 'Next visit '+formatDateDisplay(next.log.date) : 'No upcoming visits scheduled'}</span>
     </div>`;
   }
 
@@ -5365,13 +5373,16 @@ function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel){
 }
 function fieldNotesSecHTML(wo){
   const notes=wo.notes||[];
-  if(!notes.length) return fieldSecHTML(wo.id, 'note', 'Last Note', '<div class="small">No notes yet.</div>');
+  if(!notes.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>');
   const one=n=>`<div class="fsNote">
       <div class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.by?' &middot; '+esc(n.by):''}</div>
       <div>${esc(n.text)}</div>
     </div>`;
   const rest=notes.slice(1);
-  return fieldSecHTML(wo.id, 'note', 'Last Note', one(notes[0]),
+  /* The section opens on the most recent note. It is not labelled as such:
+     the note carries its own date, and "Last Note" as a heading read like the
+     name of the section rather than what was in it. */
+  return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0]),
     'notesMore', `All notes (${notes.length})`,
     rest.length ? rest.map(one).join('') : '');
 }
@@ -5419,7 +5430,7 @@ function fieldJobSecHTML(wo){
     </div>` : '';
   return `<div class="fieldSec${open?' open':''}">
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="${open}">
-      <span>Job</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+      <span>Job Details</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
     ${open?`<div class="fieldSecBody">
       ${body}
@@ -5842,6 +5853,13 @@ function renderWorkOrderModal(id){
      the same frame, so the swap is invisible. */
   const prevBody=modal.querySelector('.modalBody');
   const prevScroll=prevBody ? prevBody.scrollTop : 0;
+  /* The element that actually scrolls is the overlay: it is fixed to the
+     viewport with overflow-y:auto, and the modal sits inside it. Only the body
+     offset was being carried across a re-render, so opening a pill or a folded
+     section rebuilt the overlay at scrollTop 0 and threw the user back to the
+     top of the work order. */
+  const prevOverlay=modal.querySelector('.overlay');
+  const prevOverlayScroll=prevOverlay ? prevOverlay.scrollTop : 0;
   modal.innerHTML=`
   <div class="overlay" id="woOverlay">
     <div class="modal">
@@ -5864,6 +5882,10 @@ function renderWorkOrderModal(id){
   if(prevScroll){
     const nextBody=modal.querySelector('.modalBody');
     if(nextBody) nextBody.scrollTop=prevScroll;
+  }
+  if(prevOverlayScroll){
+    const nextOverlay=modal.querySelector('.overlay');
+    if(nextOverlay) nextOverlay.scrollTop=prevOverlayScroll;
   }
 }
 /* The homeowner row spans the full width beneath the two columns and is
