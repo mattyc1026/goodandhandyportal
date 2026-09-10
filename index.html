@@ -647,8 +647,13 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
   margin:0 0 14px;padding:12px 14px;border-radius:8px;line-height:1.55;
   background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);
 }
-.headerActionsWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
-.headerTabs{display:flex;gap:3px;}
+/* margin-left:auto rather than relying on the header's space-between. In field
+   mode the customer block is empty, so the tabs were the only child and
+   space-between parked them on the LEFT; on a phone the header wraps and the
+   tab row started at the left margin too. Pushing from the element itself
+   right-aligns it in every one of those cases. */
+.headerActionsWrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;}
+.headerTabs{display:flex;gap:3px;justify-content:flex-end;}
 .headerTabs button{
   background:var(--cream);border:1px solid var(--line);border-bottom:none;color:var(--muted);
   font-weight:700;font-size:.74em;padding:10px 16px;border-radius:10px 10px 0 0;cursor:pointer;
@@ -1124,6 +1129,10 @@ html.hc .woRow.checkedInGlow{
   /* One column on a narrow screen, stacking in reading order: name, primary
      phone, alt phone, address line 1, address line 2, email. */
   .modalHeadCust .mhCols > .mhColA,.modalHeadCust .mhCols > .mhColB{width:100%;}
+  /* Only the narrow layout wraps the tab row: four tabs will not fit across a
+     phone, and without this they ran off the right edge. The wrapped rows stay
+     right-aligned so the group still reads as one block. */
+  .headerTabs{flex-wrap:wrap;justify-content:flex-end;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
   .modalBody{padding:13px;font-size:1em;flex:1;}
@@ -1360,13 +1369,21 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldNoteBtns .btn{flex:1;min-height:50px;}
 .fieldModeBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
 
-/* ---- note sheet ---- */
-.noteSheetBar{display:none;}
-.noteOpenBtn{display:none;}
-
-
-/* ---- collapsing search ---- */
-.searchToggleBtn{display:none;}
+/* ---- phone/tablet-only controls ----
+   The Add Note button, the search button and the Take Photo button exist
+   only in the narrow layout. Their hidden state used to be written as plain
+   rules HERE, further down the stylesheet than the max-width:900px block that
+   shows them. Equal specificity means the later rule wins at every width, so
+   these three were hidden on phones and tablets too: the work order had no way
+   to open the note sheet at all, which is why a note could not be left on a
+   phone. Hiding them is now scoped to wide screens, where source order cannot
+   put it back. */
+@media (min-width:901px){
+  .noteSheetBar{display:none;}
+  .noteOpenBtn{display:none;}
+  .searchToggleBtn{display:none;}
+  .docCameraBtn{display:none;}
+}
 
 /* ---- past schedule dates ---- */
 .schedPast{margin:4px 0 6px;}
@@ -1374,7 +1391,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   cursor:pointer;font-size:.8em;font-weight:700;color:var(--muted);
   padding:6px 2px;letter-spacing:.03em;
 }
-.docCameraBtn{display:none;margin-bottom:8px;}
+.docCameraBtn{margin-bottom:8px;}
 /* A little air before the email, so it reads as its own thing rather than a
    third line of the address. */
 .modalHeadCust .mhEmail{margin-top:5px;}
