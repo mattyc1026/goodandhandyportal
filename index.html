@@ -666,8 +666,8 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .closeX:hover{background:var(--cream);color:var(--navy);}
 .modalBody{padding:22px 24px;overflow-x:hidden;}
 .woGrid{display:flex;gap:20px;flex-wrap:wrap;}
-.custPanel{flex:1 1 30%;min-width:min(240px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-sizing:border-box;}
-.jobPanel{flex:2 1 60%;min-width:min(300px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-sizing:border-box;}
+.custPanel{flex:1 1 30%;min-width:min(240px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-sizing:border-box;}
+.jobPanel{flex:2 1 60%;min-width:min(300px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-sizing:border-box;}
 /* Section titles get a short orange rule beneath them, the same accent the
    status spine uses, so labelling and status read as one system. */
 .panelTitle{
@@ -1255,19 +1255,19 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
    Few controls, all of them big. Sized for a thumb in a work glove, and
    readable at arm's length in daylight.
 ========================================================================= */
-.fieldMode{display:flex;flex-direction:column;gap:12px;}
+.fieldMode{display:flex;flex-direction:column;gap:18px;}
 
 /* Customer block as four tappable quarters. Everything you would reach for
    first is one tap and no scrolling. */
-.fieldGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.fieldGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .fgCell{
   border:1px solid var(--line);border-radius:var(--radius);
   background:var(--paper);min-height:78px;overflow:hidden;
 }
-.fgCell.fgName{padding:15px 16px;background:var(--well);}
+.fgCell.fgName{padding:19px 20px;background:var(--well);}
 .fgHit{
   display:block;width:100%;height:100%;box-sizing:border-box;
-  padding:15px 16px;text-align:left;background:none;border:none;
+  padding:19px 20px;text-align:left;background:none;border:none;
   font:inherit;color:inherit;text-decoration:none;cursor:pointer;
 }
 .fgHit:active{background:var(--line-soft);}
@@ -1303,14 +1303,32 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 /* Selected pill. Same shape as the rest, filled so which card is showing is
    readable at arm's length in daylight. */
 .fieldMoreBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
-/* The Job Details sub-list pills sit in a wrapping row rather than one per
-   line, so up to six of them cost two lines on a phone. Centred in the card
-   with one gap value, so the spacing between any two pills is the same and
-   each wrapped row is balanced rather than left-hanging. */
-.fieldPillRow{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:12px;}
-.fieldPillRow .fieldMoreBtn{align-self:auto;margin-top:0;}
+/* The Job Details sub-list pills are laid out as a grid rather than a wrapping
+   row: every pill is the same width, the gaps between them are identical, and
+   the row runs the full width of the card inside its padding with no ragged
+   end. auto-fit picks the column count from the space available, so a phone
+   gets two across and a desktop card three or four. */
+.fieldPillRow{
+  display:grid;
+  /* Capped at three columns: with at most six sub-lists that fills two whole
+     rows on a wide card instead of leaving a single orphan pill on the end of
+     a five-across row. The 140px floor drops it to two columns on a phone,
+     which again divides six evenly. 24px is the two gaps a three-column row
+     spends. */
+  grid-template-columns:repeat(auto-fit,minmax(min(100%, max(170px, (100% - 24px)/3)),1fr));
+  gap:12px;margin-top:14px;width:100%;
+}
+.fieldPillRow .fieldMoreBtn{
+  align-self:stretch;margin-top:0;width:100%;min-width:0;
+  padding-left:10px;padding-right:10px;
+  white-space:normal;line-height:1.25;text-align:center;
+  /* The section body sets overflow-wrap:anywhere so a long address cannot
+     burst the card. Inherited here it split labels mid-word ("MATERI / ALS"),
+     so the pills opt back out and wrap between words only. */
+  overflow-wrap:normal;word-break:normal;hyphens:none;
+}
 .fieldSubPanel{
-  margin-top:11px;padding:16px 18px;border:1px solid var(--line);
+  margin-top:14px;padding:20px 22px;border:1px solid var(--line);
   border-radius:var(--radius);background:var(--well);
 }
 .fsRow{display:flex;flex-wrap:wrap;gap:4px 10px;padding:5px 0;align-items:baseline;}
@@ -1329,20 +1347,20 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldSec{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);}
 .fieldSecHead{
   display:flex;width:100%;box-sizing:border-box;align-items:center;justify-content:space-between;
-  padding:17px 19px;background:none;border:none;cursor:pointer;
+  padding:21px 24px;background:none;border:none;cursor:pointer;
   font-family:inherit;font-size:.78em;font-weight:800;letter-spacing:.07em;
   text-transform:uppercase;color:var(--muted);
 }
 .fieldSecChev{font-size:1.3em;line-height:1;color:var(--orange);}
 .fieldSecBody{
   display:flex;flex-direction:column;
-  padding:0 19px 19px;line-height:1.55;overflow-wrap:anywhere;
+  padding:0 24px 24px;line-height:1.55;overflow-wrap:anywhere;
 }
 
 /* Minimal day status: the date, the times, and an edit pencil for admins. */
 .fieldStatus{
   display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
-  padding:14px 18px;border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 22px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--well);font-size:.83em;
 }
 .fsDate{font-weight:800;}
@@ -1369,7 +1387,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldBtn.done{background:var(--well);color:var(--muted);}
 .fieldBtn:disabled{opacity:.75;cursor:default;}
 .fieldBtn:active:not(:disabled){transform:scale(.97);}
-.fieldBlock{border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;background:var(--well);}
+.fieldBlock{border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;background:var(--well);}
 .fieldBlockTitle{font-size:.74em;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px;}
 .fieldDay{text-align:center;font-weight:800;font-size:1.05em;margin-bottom:10px;}
 .fieldFull{width:100%;margin-top:4px;}
