@@ -666,8 +666,8 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .closeX:hover{background:var(--cream);color:var(--navy);}
 .modalBody{padding:22px 24px;overflow-x:hidden;}
 .woGrid{display:flex;gap:20px;flex-wrap:wrap;}
-.custPanel{flex:1 1 30%;min-width:min(240px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-sizing:border-box;}
-.jobPanel{flex:2 1 60%;min-width:min(300px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-sizing:border-box;}
+.custPanel{flex:1 1 30%;min-width:min(240px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-sizing:border-box;}
+.jobPanel{flex:2 1 60%;min-width:min(300px,100%);background:var(--cream);border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-sizing:border-box;}
 /* Section titles get a short orange rule beneath them, the same accent the
    status spine uses, so labelling and status read as one system. */
 .panelTitle{
@@ -1264,10 +1264,10 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   border:1px solid var(--line);border-radius:var(--radius);
   background:var(--paper);min-height:78px;overflow:hidden;
 }
-.fgCell.fgName{padding:11px 12px;background:var(--well);}
+.fgCell.fgName{padding:15px 16px;background:var(--well);}
 .fgHit{
   display:block;width:100%;height:100%;box-sizing:border-box;
-  padding:11px 12px;text-align:left;background:none;border:none;
+  padding:15px 16px;text-align:left;background:none;border:none;
   font:inherit;color:inherit;text-decoration:none;cursor:pointer;
 }
 .fgHit:active{background:var(--line-soft);}
@@ -1298,15 +1298,19 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   transition:background .12s,color .12s,border-color .12s,transform .1s;
 }
 .fieldMoreBtn:active{transform:scale(.97);}
+/* A section's own pill on the right of its card rather than the left. */
+.fieldMoreBtn.alignEnd{align-self:flex-end;}
 /* Selected pill. Same shape as the rest, filled so which card is showing is
    readable at arm's length in daylight. */
 .fieldMoreBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
-/* The Job section's sub-list pills sit in a wrapping row rather than one per
-   line, so up to six of them cost two lines on a phone. */
-.fieldPillRow{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+/* The Job Details sub-list pills sit in a wrapping row rather than one per
+   line, so up to six of them cost two lines on a phone. Centred in the card
+   with one gap value, so the spacing between any two pills is the same and
+   each wrapped row is balanced rather than left-hanging. */
+.fieldPillRow{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:12px;}
 .fieldPillRow .fieldMoreBtn{align-self:auto;margin-top:0;}
 .fieldSubPanel{
-  margin-top:9px;padding:11px 12px;border:1px solid var(--line);
+  margin-top:11px;padding:16px 18px;border:1px solid var(--line);
   border-radius:var(--radius);background:var(--well);
 }
 .fsRow{display:flex;flex-wrap:wrap;gap:4px 10px;padding:5px 0;align-items:baseline;}
@@ -1325,20 +1329,20 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldSec{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);}
 .fieldSecHead{
   display:flex;width:100%;box-sizing:border-box;align-items:center;justify-content:space-between;
-  padding:13px 14px;background:none;border:none;cursor:pointer;
+  padding:17px 19px;background:none;border:none;cursor:pointer;
   font-family:inherit;font-size:.78em;font-weight:800;letter-spacing:.07em;
   text-transform:uppercase;color:var(--muted);
 }
 .fieldSecChev{font-size:1.3em;line-height:1;color:var(--orange);}
 .fieldSecBody{
   display:flex;flex-direction:column;
-  padding:0 14px 14px;line-height:1.55;overflow-wrap:anywhere;
+  padding:0 19px 19px;line-height:1.55;overflow-wrap:anywhere;
 }
 
 /* Minimal day status: the date, the times, and an edit pencil for admins. */
 .fieldStatus{
   display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
-  padding:9px 13px;border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 18px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--well);font-size:.83em;
 }
 .fsDate{font-weight:800;}
@@ -1365,7 +1369,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldBtn.done{background:var(--well);color:var(--muted);}
 .fieldBtn:disabled{opacity:.75;cursor:default;}
 .fieldBtn:active:not(:disabled){transform:scale(.97);}
-.fieldBlock{border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;background:var(--well);}
+.fieldBlock{border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px;background:var(--well);}
 .fieldBlockTitle{font-size:.74em;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px;}
 .fieldDay{text-align:center;font-weight:800;font-size:1.05em;margin-bottom:10px;}
 .fieldFull{width:100%;margin-top:4px;}
@@ -5358,15 +5362,19 @@ function fieldNoteComposerHTML(id){
     </div>
   </div>`;
 }
-function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel){
+/* moreAlign: where the section's own pill sits on its row. 'end' puts it on
+   the right of the card, which is where the all-notes pill belongs; anything
+   else leaves it on the left, where the customer block's More still is. */
+function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign){
   const open=!!FIELD_SEC[key];
+  const moreCls = moreAlign==='end' ? ' alignEnd' : '';
   return `<div class="fieldSec${open?' open':''}">
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
       <span>${esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
     ${open?`<div class="fieldSecBody">
       ${body}
-      ${morePanel!==undefined && morePanel!=='' ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${id},'${moreKey}')">${FIELD_SEC[moreKey]?'Less':esc(moreLabel)}</button>` : ''}
+      ${morePanel!==undefined && morePanel!=='' ? `<button class="fieldMoreBtn${moreCls}" onclick="toggleFieldSec(${id},'${moreKey}')">${FIELD_SEC[moreKey]?'Less':esc(moreLabel)}</button>` : ''}
       ${(morePanel && FIELD_SEC[moreKey]) ? `<div class="fieldSubPanel">${morePanel}</div>` : ''}
     </div>`:''}
   </div>`;
@@ -5384,7 +5392,7 @@ function fieldNotesSecHTML(wo){
      name of the section rather than what was in it. */
   return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0]),
     'notesMore', `All notes (${notes.length})`,
-    rest.length ? rest.map(one).join('') : '');
+    rest.length ? rest.map(one).join('') : '', 'end');
 }
 /* The six job sub-lists, in the order they are shown, with the ones that
    carry a price flagged. Empty lists are dropped: a pill for a list with
