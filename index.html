@@ -1290,6 +1290,13 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   font-family:inherit;font-size:.74em;font-weight:800;letter-spacing:.06em;
   text-transform:uppercase;color:var(--muted);cursor:pointer;
 }
+/* Selected pill. Same shape as the rest, filled so which card is showing is
+   readable at arm's length in daylight. */
+.fieldMoreBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+/* The Job section's sub-list pills sit in a wrapping row rather than one per
+   line, so up to six of them cost two lines on a phone. */
+.fieldPillRow{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+.fieldPillRow .fieldMoreBtn{align-self:auto;margin-top:0;}
 .fieldSubPanel{
   margin-top:9px;padding:11px 12px;border:1px solid var(--line);
   border-radius:var(--radius);background:var(--well);
@@ -5072,10 +5079,14 @@ let NOTE_SHEET_OPEN=false;
 /* Which of the folded sections are open. All shut when a job is opened: the
    point of field mode is that the top of the screen is the whole job. */
 let FIELD_SEC={extras:false, note:false, notesMore:false, job:false, jobMore:false};
+/* Which of the Job section's sub-lists is showing its card, by key, or null
+   when none is. One at a time on purpose: six lists opened together is the
+   wall of text field mode exists to get away from. */
+let FIELD_JOB_LIST=null;
 function toggleFieldSec(id, key){
   FIELD_SEC[key]=!FIELD_SEC[key];
   if(key==='note' && !FIELD_SEC.note) FIELD_SEC.notesMore=false;
-  if(key==='job' && !FIELD_SEC.job) FIELD_SEC.jobMore=false;
+  if(key==='job' && !FIELD_SEC.job){ FIELD_SEC.jobMore=false; FIELD_JOB_LIST=null; }
   renderWorkOrderModal(id);
 }
 /* toISOString is UTC, which flips the date late in the evening and would show
@@ -5364,19 +5375,58 @@ function fieldNotesSecHTML(wo){
     'notesMore', `All notes (${notes.length})`,
     rest.length ? rest.map(one).join('') : '');
 }
+/* The six job sub-lists, in the order they are shown, with the ones that
+   carry a price flagged. Empty lists are dropped: a pill for a list with
+   nothing behind it is a dead tap. */
+function fieldJobLists(wo){
+  const jd=wo.jobDetails||{};
+  return [
+    ['labor',       'Labor',            jd.labor,       true],
+    ['materials',   'Materials',        jd.materials,   true],
+    ['tools',       'Required Tools',   jd.tools,       false],
+    ['issues',      'Potential Issues', jd.issues,      false],
+    ['exclusions',  'Exclusions',       jd.exclusions,  false],
+    ['disclaimers', 'Disclaimers',      jd.disclaimers, false]
+  ].filter(entry=>Array.isArray(entry[2]) && entry[2].length);
+}
+/* Tapping the pill that is already showing closes its card, so the same
+   button both opens and dismisses. */
+function toggleFieldJobList(id, key){
+  FIELD_JOB_LIST = (FIELD_JOB_LIST===key) ? null : key;
+  renderWorkOrderModal(id);
+}
+/* One pill per sub-list rather than a single "Line items" pill that dumped
+   all six lists into one continuous card. Standing at the door you want the
+   tools list, or the exclusions, not everything at once. */
 function fieldJobSecHTML(wo){
+  const id=wo.id;
   const jd=wo.jobDetails||{};
   const body=jd.description ? esc(jd.description) : '<div class="small">No job description yet.</div>';
-  const lists=[
-    ['Labor', jd.labor, true], ['Materials', jd.materials, true],
-    ['Required Tools', jd.tools, false], ['Potential Issues', jd.issues, false],
-    ['Exclusions', jd.exclusions, false], ['Disclaimers', jd.disclaimers, false]
-  ].filter(([,list])=>list && list.length);
-  const panel=lists.map(([title, list, priced])=>`<div class="fsList">
-      <div class="fsKey">${esc(title)}</div>
-      ${list.map(priced?priceLineRow:plainLineRow).join('')}
-    </div>`).join('');
-  return fieldSecHTML(wo.id, 'job', 'Job', body, 'jobMore', 'Line items', panel);
+  const lists=fieldJobLists(wo);
+  const open=!!FIELD_SEC.job;
+  const active=lists.find(entry=>entry[0]===FIELD_JOB_LIST);
+  const pills=lists.length ? `<div class="fieldPillRow">
+      ${lists.map(([key, title, list])=>{
+        const on = FIELD_JOB_LIST===key;
+        return `<button type="button" class="fieldMoreBtn${on?' on':''}" aria-pressed="${on}" onclick="toggleFieldJobList(${id},'${key}')">${esc(title)} (${list.length})</button>`;
+      }).join('')}
+    </div>` : '';
+  const card = active ? `<div class="fieldSubPanel">
+      <div class="fsList">
+        <div class="fsKey">${esc(active[1])}</div>
+        ${active[2].map(active[3] ? priceLineRow : plainLineRow).join('')}
+      </div>
+    </div>` : '';
+  return `<div class="fieldSec${open?' open':''}">
+    <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="${open}">
+      <span>Job</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+    </button>
+    ${open?`<div class="fieldSecBody">
+      ${body}
+      ${pills}
+      ${card}
+    </div>`:''}
+  </div>`;
 }
 function fieldModeHTML(wo){
   const id=wo.id;
@@ -5422,6 +5472,7 @@ function openWorkOrder(id){
   FIELD_NOTE_TYPE = 'NOTE';
   FIELD_NOTE_DRAFT = {text:'', follow:''};
   FIELD_SEC = {extras:false, note:false, notesMore:false, job:false, jobMore:false};
+  FIELD_JOB_LIST = null;
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
   renderWorkOrderModal(id);
