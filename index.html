@@ -1077,8 +1077,28 @@ html.hc .woRow.checkedInGlow{
 
   /* ---- modals: sticky head/footer so key actions are always reachable
      without hunting through a scrolling page ---- */
-  .overlay{padding:0;align-items:stretch;}
-  .modal{max-width:100% !important;width:100%;min-height:100vh;border-radius:0;display:flex;flex-direction:column;}
+  /* ONE scrolling element, not two. The body carries overflow-x:hidden, which
+     makes the browser turn its vertical overflow into a scroller too, and as a
+     flex:1 child of a 100vh modal it had a fixed height. The result was a work
+     order with thousands of pixels of content inside a body that only scrolled
+     when the finger started inside it: a swipe beginning on the header, the
+     footer or the margin moved the overlay its one spare pixel and stopped
+     dead, just short of the bottom. The body is now allowed to grow to its
+     content and the overlay scrolls the whole thing, so a swipe anywhere
+     carries through to the end. overflow-x moves up to the overlay so nothing
+     can drift sideways. The sticky header and footer keep working: they now
+     stick against the overlay instead of the body. */
+  /* flex-start, not stretch: a stretched flex item is pinned to the overlay's
+     own height, so the modal stayed 100vh tall and the body's extra thousands
+     of pixels hung outside it without adding to what the overlay could scroll.
+     min-height:100vh on the modal already guarantees a full screen. */
+  .overlay{padding:0;align-items:flex-start;overflow-x:hidden;}
+  /* overflow:visible so the sticky header and footer resolve against the
+     overlay, which is what scrolls now. The base rule's overflow-x:hidden
+     quietly made the modal itself a scroll container, and a sticky child of a
+     scroll container that never scrolls simply never sticks. Sideways
+     containment is handled on the overlay instead. */
+  .modal{max-width:100% !important;width:100%;min-height:100vh;border-radius:0;display:flex;flex-direction:column;overflow:visible;}
   .modalHead{
     padding:16px 18px;position:sticky;top:0;background:var(--paper);
     z-index:5;min-height:56px;flex-wrap:wrap;
@@ -1135,7 +1155,7 @@ html.hc .woRow.checkedInGlow{
   .headerTabs{flex-wrap:wrap;justify-content:flex-end;}
   .headerTabs button{padding:10px 12px;font-size:.78em;}
   .closeX{font-size:1.7em;min-width:44px;min-height:44px;}
-  .modalBody{padding:13px;font-size:1em;flex:1;}
+  .modalBody{padding:13px;font-size:1em;flex:1 0 auto;overflow:visible;}
   .footerActions{
     padding:14px 16px;flex-wrap:wrap;position:sticky;bottom:0;
     background:var(--paper);border-top:1px solid var(--line);border-radius:0;
