@@ -27,6 +27,10 @@
   --green:#d2f2df; --greenb:#1f8a55; --green-bold:#a8ecc4;
   --blue:#d8e6ff; --blueb:#1f5aa8; --blue-bold:#aecdfa;
   --grey:#e9edf2; --greyb:#5f6e87;
+  /* Chartreuse sits outside the status palette on purpose: the schedule strip
+     is not a job stage, it is "when someone is due here", so it must not read
+     as another shade of the lifecycle greens or blues. */
+  --chartreuse:#e3f7a4; --chartreuse-ink:#4c7708; --chartreuse-line:#c8ea6e;
   --radius:12px; --radius-sm:8px; --radius-lg:18px;
   /* Layered shadows read as real elevation instead of a single grey blur. */
   --sh-1:0 1px 2px rgba(15,38,71,.06), 0 1px 3px rgba(15,38,71,.04);
@@ -114,6 +118,7 @@ html.dark{
   --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
+  --chartreuse:#1e2a10; --chartreuse-ink:#b7e254; --chartreuse-line:#3a4d1c;
   --grid-line:rgba(180,205,245,.035);
   --sh-1:0 1px 2px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.44), 0 8px 20px rgba(0,0,0,.34);
@@ -142,6 +147,7 @@ html.hc{
   --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
+  --chartreuse:#eaffb3; --chartreuse-ink:#2d4700; --chartreuse-line:#000000;
   /* High contrast trades the glow for a heavy, unambiguous green rail. */
   --neon:#005c2a; --neon-rail:#005c2a; --neon-rgb:0,92,42;
   --notice:#fff4d6; --notice-line:#6b5400; --notice-ink:#000000;
@@ -167,6 +173,7 @@ html.dark.hc{
   --green:#00331d; --greenb:#63f0a6; --green-bold:#004d2c;
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
   --grey:#242424; --greyb:#e0e0e0;
+  --chartreuse:#1a2600; --chartreuse-ink:#d6ff6d; --chartreuse-line:#ffffff;
   --neon:#5eff9f; --neon-rail:#5eff9f; --neon-rgb:94,255,159;
   --notice:#332600; --notice-line:#ffd54a; --notice-ink:#ffeab4;
   --well:#000000; --field-ro:#000000; --accent-b:#93bdff; --accent-b-soft:#001f4d;
@@ -1490,27 +1497,30 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 
 /* ---- Day status strip ---- */
 .fieldStatus{
-  border-left:5px solid var(--blueb);
-  background:linear-gradient(120deg,var(--blue) 0%,var(--well) 68%);
+  border-left:5px solid var(--chartreuse-ink);
+  background:linear-gradient(120deg,var(--chartreuse) 0%,var(--well) 68%);
 }
 .fsDate{color:var(--navy);}
+/* Solid navy rather than the green it used to be: a green pill on chartreuse
+   is two neighbours on the colour wheel fighting, and the hours are the one
+   number on this strip worth picking out. */
 .fsHours{
   padding:3px 11px;border-radius:999px;font-weight:800;
-  background:var(--green);color:var(--greenb);border:1px solid var(--green-bold);
+  background:var(--navy2);color:#fff;border:1px solid transparent;
 }
 
 /* ---- The two big actions ---- */
 .fieldActions .fieldBtn{box-shadow:var(--sh-1);}
 .fieldActions .fieldBtn:nth-child(1){
-  border-color:var(--blue-bold);
-  background:linear-gradient(155deg,var(--blue) 0%,var(--paper) 72%);
+  border-color:var(--greyb);
+  background:linear-gradient(155deg,var(--grey) 0%,var(--paper) 72%);
 }
-.fieldActions .fieldBtn:nth-child(1) .ic{color:var(--blueb);}
+.fieldActions .fieldBtn:nth-child(1) .ic{color:var(--greyb);}
 .fieldActions .fieldBtn:nth-child(2){
-  border-color:var(--orange);
+  border-color:var(--yellowb);
   background:linear-gradient(155deg,var(--yellow) 0%,var(--paper) 72%);
 }
-.fieldActions .fieldBtn:nth-child(2) .ic{color:var(--orange);}
+.fieldActions .fieldBtn:nth-child(2) .ic{color:var(--yellowb);}
 
 /* ---- Folding sections: a colour per section, kept on its own parts ---- */
 .fieldSec{overflow:hidden;box-shadow:var(--sh-1);}
