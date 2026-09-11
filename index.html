@@ -31,6 +31,8 @@
      is not a job stage, it is "when someone is due here", so it must not read
      as another shade of the lifecycle greens or blues. */
   --chartreuse:#e3f7a4; --chartreuse-ink:#4c7708; --chartreuse-line:#c8ea6e;
+  --babyblue:#dff0fb; --babyblue-ink:#3a7ca5;
+  --yellow-lite:#fff7dc;
   --radius:12px; --radius-sm:8px; --radius-lg:18px;
   /* Layered shadows read as real elevation instead of a single grey blur. */
   --sh-1:0 1px 2px rgba(15,38,71,.06), 0 1px 3px rgba(15,38,71,.04);
@@ -119,6 +121,8 @@ html.dark{
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
   --chartreuse:#1e2a10; --chartreuse-ink:#b7e254; --chartreuse-line:#3a4d1c;
+  --babyblue:#16283a; --babyblue-ink:#82c7ec;
+  --yellow-lite:#403720;
   --grid-line:rgba(180,205,245,.035);
   --sh-1:0 1px 2px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.44), 0 8px 20px rgba(0,0,0,.34);
@@ -148,6 +152,8 @@ html.hc{
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
   --chartreuse:#eaffb3; --chartreuse-ink:#2d4700; --chartreuse-line:#000000;
+  --babyblue:#cfe8f7; --babyblue-ink:#0a3a86;
+  --yellow-lite:#fff9e4;
   /* High contrast trades the glow for a heavy, unambiguous green rail. */
   --neon:#005c2a; --neon-rail:#005c2a; --neon-rgb:0,92,42;
   --notice:#fff4d6; --notice-line:#6b5400; --notice-ink:#000000;
@@ -174,6 +180,8 @@ html.dark.hc{
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
   --grey:#242424; --greyb:#e0e0e0;
   --chartreuse:#1a2600; --chartreuse-ink:#d6ff6d; --chartreuse-line:#ffffff;
+  --babyblue:#001f33; --babyblue-ink:#a3daff;
+  --yellow-lite:#463800;
   --neon:#5eff9f; --neon-rail:#5eff9f; --neon-rgb:94,255,159;
   --notice:#332600; --notice-line:#ffd54a; --notice-ink:#ffeab4;
   --well:#000000; --field-ro:#000000; --accent-b:#93bdff; --accent-b-soft:#001f4d;
@@ -1464,20 +1472,20 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   background:linear-gradient(125deg,var(--green) 0%,var(--paper) 70%);
 }
 .fieldGrid .fgCell:nth-child(3){
-  border-left:5px solid var(--orange);
-  background:linear-gradient(125deg,var(--yellow) 0%,var(--paper) 70%);
+  border-left:5px solid var(--redb);
+  background:linear-gradient(125deg,var(--red) 0%,var(--paper) 70%);
 }
 .fieldGrid .fgCell:nth-child(4){
-  border-left:5px solid var(--blueb);
-  background:linear-gradient(125deg,var(--blue) 0%,var(--paper) 70%);
+  border-left:5px solid var(--babyblue-ink);
+  background:linear-gradient(125deg,var(--babyblue) 0%,var(--paper) 70%);
 }
 .fieldGrid .fgCell:nth-child(2) .fgLabel{color:var(--greenb);}
-.fieldGrid .fgCell:nth-child(3) .fgLabel{color:var(--orange);}
-.fieldGrid .fgCell:nth-child(4) .fgLabel{color:var(--blueb);}
+.fieldGrid .fgCell:nth-child(3) .fgLabel{color:var(--redb);}
+.fieldGrid .fgCell:nth-child(4) .fgLabel{color:var(--babyblue-ink);}
 .fgValue .ic{opacity:1;}
 .fieldGrid .fgCell:nth-child(2) .fgValue .ic{color:var(--greenb);}
-.fieldGrid .fgCell:nth-child(3) .fgValue .ic{color:var(--orange);}
-.fieldGrid .fgCell:nth-child(4) .fgValue .ic{color:var(--blueb);}
+.fieldGrid .fgCell:nth-child(3) .fgValue .ic{color:var(--redb);}
+.fieldGrid .fgCell:nth-child(4) .fgValue .ic{color:var(--babyblue-ink);}
 
 /* ---- Check in / check out ----
    The one control on the screen that changes the state of the day, so it is
@@ -1527,7 +1535,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldSec--note{border-top:4px solid var(--orange);}
 .fieldSec--job{border-top:4px solid var(--blueb);}
 .fieldSecHead{color:var(--navy);}
-.fieldSec--note.open .fieldSecHead{background:linear-gradient(90deg,var(--yellow) 0%,transparent 62%);}
+.fieldSec--note.open .fieldSecHead{background:linear-gradient(90deg,var(--yellow-lite) 0%,transparent 62%);}
 .fieldSec--job.open .fieldSecHead{background:linear-gradient(90deg,var(--blue) 0%,transparent 62%);}
 /* The +/- was a grey tick of text. As a filled disc it is a real target and
    tells you which section you are looking at even while scrolling past. */
@@ -1541,7 +1549,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fsKey{color:var(--blueb);}
 .fieldSubPanel{
   border-left:4px solid var(--orange);
-  background:linear-gradient(125deg,var(--yellow) 0%,var(--well) 62%);
+  background:linear-gradient(125deg,var(--yellow-lite) 0%,var(--well) 62%);
 }
 .fieldSec--job .fieldSubPanel{
   border-left-color:var(--blueb);
