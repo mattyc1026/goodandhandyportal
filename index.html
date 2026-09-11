@@ -5906,11 +5906,15 @@ function renderWorkOrderModal(id){
       // modal header carries navigation only.
       headerSuffix = '';
       headerCustHTML = '';
+      /* The view toggle is the first tab here exactly as it is in the full
+         view below. It used to sit last in field mode and first in the full
+         view, so the one button you press to get back jumped across the
+         header every time you used it. */
       headerActions = `<div class="headerTabs fieldNav">
+          <button class="headerTab active" onclick="setFieldView(${id}, false)">Full View</button>
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Prior Jobs (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
-          <button class="headerTab active" onclick="setFieldView(${id}, false)">Full View</button>
         </div>`;
       bodyHTML = fieldModeHTML(wo);
     }catch(err){
