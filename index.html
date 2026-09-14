@@ -1421,11 +1421,14 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
    part of the green strip rather than as a neutral control dropped onto it. */
 .fieldStatus .fsChev{width:26px;height:26px;font-size:.95em;margin-left:auto;background:var(--chartreuse-ink);color:var(--chartreuse);}
 .fieldStatus .fsHours + .fsChev{margin-left:14px;}
+/* The unfolded days hang off the bottom of the strip. Same fade, so the two
+   elements read as one card rather than as a card with a tray under it: a 90deg
+   gradient is uniform top to bottom, so it carries across the join. */
 .fieldDayPanel{
   border:1px solid var(--line);border-top:none;
-  border-left:5px solid var(--chartreuse-ink);
   border-radius:0 0 var(--radius) var(--radius);
-  background:var(--well);padding:16px 20px;
+  background:linear-gradient(90deg,var(--chartreuse) 0%,var(--paper) 62%);
+  padding:16px 20px;
 }
 .fieldDayPanel .dayLogRow{margin-bottom:8px;}
 .fieldDayPanel .dayLogRow:last-child{margin-bottom:0;}
@@ -1603,10 +1606,13 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 }
 .fieldBtn.goIn .ic,.fieldBtn.goOut .ic{color:#fff;}
 
-/* ---- Day status strip ---- */
+/* ---- Day status strip ----
+   A top rule and a left-to-right fade, the same shape the folding section cards
+   use. The left rail is reserved for the customer cells, where it marks a row of
+   sibling values rather than the head of a card. */
 .fieldStatus{
-  border-left:5px solid var(--chartreuse-ink);
-  background:linear-gradient(120deg,var(--chartreuse) 0%,var(--well) 68%);
+  border-top:4px solid var(--chartreuse-ink);
+  background:linear-gradient(90deg,var(--chartreuse) 0%,var(--paper) 62%);
 }
 .fsDate{color:var(--navy);}
 /* Solid navy rather than the green it used to be: a green pill on chartreuse
