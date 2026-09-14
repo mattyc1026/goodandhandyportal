@@ -1419,7 +1419,13 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 /* The other cards put a white glyph on a coloured disc. This one carries the
    card's own chartreuse on the dark ink instead, so the symbol itself reads as
    part of the green strip rather than as a neutral control dropped onto it. */
-.fieldStatus .fsChev{width:26px;height:26px;font-size:.95em;margin-left:auto;background:var(--chartreuse-ink);color:var(--chartreuse);}
+/* Size and right edge deliberately match .fieldSecChev. This card sets a larger
+   font-size than .fieldSecHead, so the glyph multiplier is scaled down to land
+   on the same rendered size rather than reusing that rule's 1.05em. */
+.fieldStatus .fsChev{
+  width:30px;height:30px;font-size:.99em;margin-left:auto;
+  background:var(--chartreuse-ink);color:var(--chartreuse);
+}
 .fieldStatus .fsHours + .fsChev{margin-left:14px;}
 /* The unfolded days hang off the bottom of the strip. Same fade, so the two
    elements read as one card rather than as a card with a tray under it: a 90deg
@@ -1428,7 +1434,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   border:1px solid var(--line);border-top:none;
   border-radius:0 0 var(--radius) var(--radius);
   background:linear-gradient(90deg,var(--chartreuse) 0%,var(--paper) 62%);
-  padding:16px 20px;
+  padding:16px 24px 20px;
 }
 .fieldDayPanel .dayLogRow{margin-bottom:8px;}
 .fieldDayPanel .dayLogRow:last-child{margin-bottom:0;}
@@ -1496,7 +1502,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 /* Minimal day status: the date, the times, and an edit pencil for admins. */
 .fieldStatus{
   display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
-  padding:18px 22px;border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 24px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--well);font-size:.83em;
 }
 .fsDate{font-weight:800;}
