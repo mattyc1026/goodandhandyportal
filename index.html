@@ -1458,8 +1458,9 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 /* The calendar is off by default and opens on a link, because it is the one
    part of scheduling that needs a screen rather than a thumb. */
 .schedCalLink{
-  background:none;border:none;padding:4px 0;margin-bottom:10px;
-  font-family:inherit;font-size:.78em;font-weight:700;
+  display:block;margin:0 0 10px auto;
+  background:none;border:none;padding:4px 0;
+  font-family:inherit;font-size:.86em;font-weight:700;
   color:var(--purple-ink);text-decoration:underline;cursor:pointer;
 }
 .fieldSchedCal{margin-bottom:16px;}
@@ -1678,6 +1679,17 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldMoreBtn.on{
   background:linear-gradient(135deg,var(--orange) 0%,var(--orange2) 100%);
   border-color:transparent;box-shadow:0 4px 13px rgba(232,121,26,.35);
+}
+/* A pill takes its outline from whichever card it sits in, so the ring around
+   Add Date, the job list pills and All Notes each echo their own section rather
+   than all defaulting to the orange the base rule sets. */
+.fieldGrid + .fieldMoreBtn{border-color:var(--navy);}
+.fieldSec--note .fieldMoreBtn{border-color:var(--orange);}
+.fieldSec--job .fieldMoreBtn{border-color:var(--blueb);}
+.fieldSec--sched .fieldMoreBtn{border-color:var(--purple-ink);}
+.fieldSec--job .fieldMoreBtn.on{
+  background:linear-gradient(135deg,var(--blueb) 0%,var(--navy) 100%);
+  border-color:transparent;box-shadow:0 4px 13px rgba(15,38,71,.3);
 }
 
 /* ---- Note composer ---- */
