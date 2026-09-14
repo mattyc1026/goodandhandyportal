@@ -31,7 +31,7 @@
      is not a job stage, it is "when someone is due here", so it must not read
      as another shade of the lifecycle greens or blues. */
   --chartreuse:#e3f7a4; --chartreuse-ink:#4c7708; --chartreuse-line:#c8ea6e;
-  --babyblue:#dff0fb; --babyblue-ink:#3a7ca5;
+  --cyan:#d3f3f7; --cyan-ink:#0b7285;
   --yellow-lite:#fff7dc;
   --radius:12px; --radius-sm:8px; --radius-lg:18px;
   /* Layered shadows read as real elevation instead of a single grey blur. */
@@ -121,7 +121,7 @@ html.dark{
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
   --chartreuse:#1e2a10; --chartreuse-ink:#b7e254; --chartreuse-line:#3a4d1c;
-  --babyblue:#16283a; --babyblue-ink:#82c7ec;
+  --cyan:#0f2c33; --cyan-ink:#5ed8e8;
   --yellow-lite:#403720;
   --grid-line:rgba(180,205,245,.035);
   --sh-1:0 1px 2px rgba(0,0,0,.4);
@@ -152,7 +152,7 @@ html.hc{
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
   --chartreuse:#eaffb3; --chartreuse-ink:#2d4700; --chartreuse-line:#000000;
-  --babyblue:#cfe8f7; --babyblue-ink:#0a3a86;
+  --cyan:#c4f1f7; --cyan-ink:#004d59;
   --yellow-lite:#fff9e4;
   /* High contrast trades the glow for a heavy, unambiguous green rail. */
   --neon:#005c2a; --neon-rail:#005c2a; --neon-rgb:0,92,42;
@@ -180,7 +180,7 @@ html.dark.hc{
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
   --grey:#242424; --greyb:#e0e0e0;
   --chartreuse:#1a2600; --chartreuse-ink:#d6ff6d; --chartreuse-line:#ffffff;
-  --babyblue:#001f33; --babyblue-ink:#a3daff;
+  --cyan:#002630; --cyan-ink:#8ef0ff;
   --yellow-lite:#463800;
   --neon:#5eff9f; --neon-rail:#5eff9f; --neon-rgb:94,255,159;
   --notice:#332600; --notice-line:#ffd54a; --notice-ink:#ffeab4;
@@ -978,6 +978,26 @@ html.hc .woRow.checkedInGlow{
 .woRow.jumpHighlight{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,121,26,.28), var(--sh-2);}
 
 /* =========================================================================
+   COLLAPSIBLE WORK ORDER SECTIONS (phone only)
+   A full work order is one long scroll on a phone, so every top-level section
+   and every Schedule Date(s) sub-section renders inside one of these wrappers.
+   At desktop widths the wrapper is inert: the chevron is hidden, the header is
+   not a pointer, and the body always shows, so the desktop layout is exactly
+   what it was. Under 900px the body stays shut until its header is tapped.
+========================================================================= */
+.woSecHead{display:flex;align-items:center;gap:10px;cursor:default;}
+.woSecHead > span:first-child{flex:1 1 auto;min-width:0;}
+.woSecRight{display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;cursor:auto;}
+.woSecChev{display:none;font-size:1.5em;line-height:1;color:var(--orange);flex:0 0 auto;}
+.woSubHead{
+  display:flex;align-items:center;gap:10px;cursor:default;
+  font-size:.68em;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);font-weight:700;margin:12px 0 6px;
+}
+.woSubHead > span:first-child{flex:1 1 auto;min-width:0;}
+.woSubChev{display:none;font-size:1.5em;line-height:1;color:var(--orange);flex:0 0 auto;}
+
+/* =========================================================================
    RESPONSIVE, TABLET / PHONE (<=900px)
    Redesigned for large touch targets, a fixed thumb-reach bottom nav,
    no hidden/"guess where it is" menus, no pinch-zoom dependence, and
@@ -1120,9 +1140,30 @@ html.hc .woRow.checkedInGlow{
   }
   .modalHead h2{font-size:1.2em;}
   .modalHeadCust .mhCols{flex-direction:column;column-gap:0;row-gap:3px;}
-  /* One per row on a genuinely narrow screen: two columns of line items on a
-     phone is unreadable. */
-  .expandLinks{grid-template-columns:1fr;}
+  /* ---- collapsible work order sections ---- */
+  .woSecHead,.woSubHead{cursor:pointer;min-height:48px;}
+  /* The phone rule that spaces edit links apart would otherwise shove the
+     chevron off the end of the header. */
+  .woSecRight .editLink{margin-right:0;}
+  .woSecChev{display:inline-block;font-size:2em;}
+  .woSubChev{display:inline-block;font-size:1.6em;}
+  .woSec[data-open="0"] > .woSecBody{display:none;}
+  .woSub[data-open="0"] > .woSubBody{display:none;}
+  /* A shut section has nothing under its header, so the space reserved for a
+     body would just read as a gap. */
+  .woSec[data-open="0"]{padding-bottom:0;}
+  .woSub[data-open="0"] > .woSubHead{margin-bottom:0;}
+
+  /* Job Details sub-lists stay two across on a phone: three rows of two
+     (labor/materials, then tools/issues, then exclusions/disclaimers) puts the
+     whole set on one screen instead of a six-deep stack. The summaries carry
+     the count, and the line items only appear once a list is opened, so the
+     narrow column is a label, not a wall of text. */
+  .expandLinks{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .sideBySide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;}
+  .sideBySide>div,.sideBySide>details{min-width:0;}
+  .expandLinks details,.sideBySide>details{padding:9px 10px;min-width:0;}
+  .expandLinks summary,.sideBySide>details>summary{font-size:.72em;letter-spacing:.04em;}
 
   /* ================= PHONE LAYOUT =================
      Everything below trades chrome for content. Nothing is removed outright:
@@ -1475,17 +1516,19 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   border-left:5px solid var(--redb);
   background:linear-gradient(125deg,var(--red) 0%,var(--paper) 70%);
 }
+/* Email. Cyan rather than the baby blue it used to be: at arm's length in
+   daylight the old tint was hard to tell from the paper behind it. */
 .fieldGrid .fgCell:nth-child(4){
-  border-left:5px solid var(--babyblue-ink);
-  background:linear-gradient(125deg,var(--babyblue) 0%,var(--paper) 70%);
+  border-left:5px solid var(--cyan-ink);
+  background:linear-gradient(125deg,var(--cyan) 0%,var(--paper) 70%);
 }
 .fieldGrid .fgCell:nth-child(2) .fgLabel{color:var(--greenb);}
 .fieldGrid .fgCell:nth-child(3) .fgLabel{color:var(--redb);}
-.fieldGrid .fgCell:nth-child(4) .fgLabel{color:var(--babyblue-ink);}
+.fieldGrid .fgCell:nth-child(4) .fgLabel{color:var(--cyan-ink);}
 .fgValue .ic{opacity:1;}
 .fieldGrid .fgCell:nth-child(2) .fgValue .ic{color:var(--greenb);}
 .fieldGrid .fgCell:nth-child(3) .fgValue .ic{color:var(--redb);}
-.fieldGrid .fgCell:nth-child(4) .fgValue .ic{color:var(--babyblue-ink);}
+.fieldGrid .fgCell:nth-child(4) .fgValue .ic{color:var(--cyan-ink);}
 
 /* ---- Check in / check out ----
    The one control on the screen that changes the state of the day, so it is
@@ -2358,6 +2401,10 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   .expandLinks details,.sideBySide>details{display:block !important;}
   .expandLinks details > *:not(summary),
   .sideBySide>details > *:not(summary){display:block !important;}
+  /* A work order printed from a phone must not come out as three headers and
+     nothing else, so the folded sections are forced open on paper. */
+  .woSecBody,.woSubBody{display:block !important;}
+  .woSecChev,.woSubChev{display:none !important;}
   .emptyState{border:1px solid #bbb !important;}
   .subListHeader{break-after:avoid;page-break-after:avoid;}
 }
@@ -4498,33 +4545,49 @@ function scheduleDatesSectionHTML(wo, id){
   const totalHTML = grandDays
     ? `<div class="schedHoursTotal">Hours logged: ${formatHoursMinutes(grandHours)} <span class="small">(from ${grandDays} checked-in/out day${grandDays>1?'s':''})</span></div>`
     : '';
-  return `
-    <div class="schedSection">
-      <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
-        <span>Schedule Date(s)</span>
-        <button class="editLink" onclick="openScheduleWidget(${id})">+ Add</button>
-      </div>
+  const isAdmin = !!(CURRENT_USER && CURRENT_USER.isAdmin);
+  const body = `
       ${(!presite.length && !full.length) ? '<div class="small">No dates scheduled yet.</div>' : ''}
-      ${schedGroupHTML(id, 'Pre-Site Inspection', presite)}
-      ${schedGroupHTML(id, 'Whole Job', full)}
-      ${totalHTML}
-    </div>`;
+      ${schedGroupHTML(id, 'Pre-Site Inspection', 'schedPresite', presite)}
+      ${schedGroupHTML(id, 'Whole Job', 'schedFull', full)}
+      ${checkInOutSubHTML(wo, id, isAdmin)}
+      ${totalHTML}`;
+  return woSecHTML(
+    'sched',
+    'Schedule Date(s)',
+    `<button class="editLink" onclick="openScheduleWidget(${id})">+ Add</button>`,
+    body,
+    'schedSection'
+  );
+}
+/* Check In / Check Out used to be a section of its own next to Schedule
+   Date(s). The days it lists are the scheduled days, so it now sits inside the
+   schedule as a third sub-section and folds the same way the other two do. */
+function checkInOutSubHTML(wo, id, isAdmin){
+  const legacy = (wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
+      <div class="small" style="margin-bottom:4px;"><b>Legacy job-level stamp</b> (from before per-day check-in/out)</div>
+      <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+', '+wo.checkIn.by) : 'n/a'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
+      <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
+    </div>` : '';
+  return woSubHTML('checkInOut', 'Check In / Check Out',
+    `<div class="checkStampBox">${dayLogsSectionHTML(wo)}</div>${legacy}`);
 }
 /* Dates that have already passed are still worth keeping, but they should not
    push the next visit off the bottom of a phone screen. Anything before today
    goes behind a single line you can open. */
-function schedGroupHTML(id, title, list){
+function schedGroupHTML(id, title, key, list){
   if(!list.length) return '';
   const today=new Date().toISOString().slice(0,10);
   const past=list.filter(d=>(d.endDate||d.startDate) < today);
   const rest=list.filter(d=>(d.endDate||d.startDate) >= today);
-  const head=`<div class="schedSubHeader">${esc(title)}</div>`;
   const pastHTML = past.length
     ? `<details class="schedPast"><summary>${past.length} earlier date${past.length>1?'s':''}</summary>${past.map(d=>schedRowHTML(id,d)).join('')}</details>`
     : '';
   // With nothing upcoming, the past dates are all there is, so they show.
-  if(!rest.length) return head + past.map(d=>schedRowHTML(id,d)).join('');
-  return head + pastHTML + rest.map(d=>schedRowHTML(id,d)).join('');
+  const body = !rest.length
+    ? past.map(d=>schedRowHTML(id,d)).join('')
+    : pastHTML + rest.map(d=>schedRowHTML(id,d)).join('');
+  return woSubHTML(key, title, body);
 }
 function schedRowHTML(woId, d){
   const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
@@ -4551,6 +4614,7 @@ function schedRowHTML(woId, d){
    Reuses the same calendar/form as adding, switched into a single-entry mode
    by SCHED_EDIT_ID rather than the pending-list mode used for new dates. */
 function openScheduleEdit(woId, dateId){
+  woSecForceOpen('sched');
   const wo=getWO(woId);
   const d=wo && (wo.scheduleDates||[]).find(x=>x.id===dateId);
   if(!d){ toast('That scheduled date no longer exists.'); return; }
@@ -4705,6 +4769,9 @@ function minSchedDate(){
 }
 
 function openScheduleWidget(id){
+  /* Whatever gets added here lands in the schedule section, so it is open when
+     the work order comes back. */
+  woSecForceOpen('sched');
   SCHED_WO_ID=id;
   SCHED_EDIT_ID=null;
   const today=new Date();
@@ -5382,6 +5449,9 @@ function isNarrowScreen(){
 }
 function openNoteSheet(id){
   NOTE_SHEET_OPEN=true;
+  /* The composer lives inside the Notes section, so on a phone it would open
+     behind a shut header and the button would look broken. */
+  woSecForceOpen('notes');
   renderWorkOrderModal(id);
   setTimeout(()=>{
     const t=document.getElementById('noteText');
@@ -5402,6 +5472,60 @@ let JD_COLLAPSED={};
    list back to its default and undo whatever the user had just set up.
    Cleared when the work order closes, so each one opens predictably. */
 let WO_LIST_OPEN={};
+/* ---- Collapsible work order sections (phone only) ----
+   Which sections are open, keyed by section name. This has to live outside the
+   render: renderWorkOrderModal() rebuilds the entire modal whenever anything
+   changes, so a state held on the elements themselves would be thrown away
+   with them and everything would snap shut mid-task. openWorkOrder() clears
+   it, which is what makes every work order open fully collapsed. At desktop
+   widths none of it applies, woSecToggle() refuses to run and the CSS keeps
+   every body visible. */
+let WO_SEC_OPEN={};
+function woSecIsOpen(key){ return !!WO_SEC_OPEN[key]; }
+/* Used when something has to reveal itself, e.g. tapping Add Note while the
+   Notes section is shut, which would otherwise look like the button did
+   nothing. */
+function woSecForceOpen(key){ WO_SEC_OPEN[key]=true; }
+function woSecToggle(key, headEl){
+  if(!isNarrowScreen()) return;
+  const open = !WO_SEC_OPEN[key];
+  WO_SEC_OPEN[key]=open;
+  /* Flipped in place rather than through a re-render. A re-render here would
+     rebuild the note composer while it is being typed into and lose the
+     caret, and it would reset the scroll position for a purely visual change. */
+  const box=headEl.parentElement;
+  if(box){
+    box.setAttribute('data-open', open?'1':'0');
+    const chev=headEl.querySelector('.woSecChev,.woSubChev');
+    if(chev) chev.innerHTML = open ? '&minus;' : '+';
+  }
+}
+/* Top-level section: Schedule Date(s), Job Details, Notes. rightHTML is the
+   section's own control (+ Add, Edit job details, Add Note); it stops the
+   click from bubbling so pressing it never also folds the section shut. */
+function woSecHTML(key, title, rightHTML, bodyHTML, extraClass){
+  const open=woSecIsOpen(key);
+  return `<div class="woSec ${extraClass||''}" data-open="${open?'1':'0'}">
+    <div class="panelTitle woSecHead" onclick="woSecToggle('${key}', this)">
+      <span>${title}</span>
+      ${rightHTML ? `<span class="woSecRight" onclick="event.stopPropagation()">${rightHTML}</span>` : ''}
+      <span class="woSecChev" aria-hidden="true">${open?'&minus;':'+'}</span>
+    </div>
+    <div class="woSecBody">${bodyHTML}</div>
+  </div>`;
+}
+/* Sub-section inside Schedule Date(s): Pre-Site Inspection, Whole Job,
+   Check In / Check Out. */
+function woSubHTML(key, title, bodyHTML){
+  const open=woSecIsOpen(key);
+  return `<div class="woSub" data-open="${open?'1':'0'}">
+    <div class="woSubHead" onclick="woSecToggle('${key}', this)">
+      <span>${esc(title)}</span>
+      <span class="woSubChev" aria-hidden="true">${open?'&minus;':'+'}</span>
+    </div>
+    <div class="woSubBody">${bodyHTML}</div>
+  </div>`;
+}
 /* Everything starts folded. Opening a work order should show the shape of the
    job at a glance, not a wall of line items you have to scroll past. */
 const JOB_LIST_DEFAULT_OPEN={labor:false, materials:false, tools:false, issues:false, exclusions:false, disclaimers:false};
@@ -5656,13 +5780,13 @@ function fieldModeHTML(wo){
   return `<div class="fieldMode">
     ${fieldGridHTML(wo)}
     ${fieldCheckHTML(wo)}
+    ${fieldJobSecHTML(wo)}
     <div class="fieldActions">
       <button class="fieldBtn" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
       <button class="fieldBtn" onclick="openFieldNote(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
     </div>
     ${fieldNoteComposerHTML(id)}
     ${fieldNotesSecHTML(wo)}
-    ${fieldJobSecHTML(wo)}
   </div>`;
 }
 function openFieldCamera(id){
@@ -5697,6 +5821,9 @@ function openWorkOrder(id){
   FIELD_JOB_LIST = null;
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
+  /* Every work order opens with its sections shut, whatever the last one was
+     left looking like. */
+  WO_SEC_OPEN = {};
   renderWorkOrderModal(id);
   if(WO_CUST_EDIT){ attachHeaderCustOutsideClickHandler(id); }
 }
@@ -5954,34 +6081,19 @@ function renderWorkOrderModal(id){
         <div class="woGrid">
           <div class="custPanel">
             ${scheduleDatesSectionHTML(wo, id)}
-            <div class="schedSection">
-              <div class="panelTitle">Check In / Check Out</div>
-              <div class="checkStampBox">
-                ${dayLogsSectionHTML(wo)}
-              </div>
-              ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
-                  <div class="small" style="margin-bottom:4px;"><b>Legacy job-level stamp</b> (from before per-day check-in/out)</div>
-                  <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+', '+wo.checkIn.by) : 'n/a'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
-                  <div class="kv"><span><b>Checked Out</b></span><span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</span></div>
-                </div>` : ''}
-            </div>
           </div>
           <div class="jobPanel">
-            <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
-              <span>Job Details</span>
-              ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : ''}
-            </div>
-            ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
-            ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
+            ${woSecHTML('job', 'Job Details',
+              !WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : '',
+              `${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
+            ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}`)}
           </div>
         </div>
 
         <div class="notesSection">
-          <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
-            <span>Notes</span>
-            <button class="btn secondary noteOpenBtn" onclick="openNoteSheet(${id})">${icon('pencil')}Add Note</button>
-          </div>
-          ${(() => {
+          ${woSecHTML('notes', 'Notes',
+            `<button class="btn secondary noteOpenBtn" onclick="openNoteSheet(${id})">${icon('pencil')}Add Note</button>`,
+            `${(() => {
             const editingNote = (WO_EDIT_NOTE_IDX!==null && wo.notes[WO_EDIT_NOTE_IDX]) ? wo.notes[WO_EDIT_NOTE_IDX] : null;
             const typeVal = editingNote ? editingNote.type : '';
             const followUpVal = editingNote && editingNote.followUpDate ? formatDateDisplay(editingNote.followUpDate) : '';
@@ -6029,7 +6141,7 @@ function renderWorkOrderModal(id){
             </div>
           </div>`;
           })()}
-          <div id="notesList">${notesHTML(wo)}</div>
+          <div id="notesList">${notesHTML(wo)}</div>`)}
         </div>`;
   }
 
@@ -6422,6 +6534,7 @@ function jobListsHTML(wo){
 
 /* ---- Job Details: edit mode ---- */
 function openJobDetailsEdit(id){
+  woSecForceOpen('job');
   const wo=getWO(id);
   const src=wo.jobDetails||{};
   /* Spread the original line rather than rebuilding it from item + price. The
@@ -7293,6 +7406,7 @@ function submitNote(id){
 /* Admin note edit/delete */
 function adminEditNote(woId, idx){
   WO_EDIT_NOTE_IDX = idx;
+  woSecForceOpen('notes');
   renderWorkOrderModal(woId);
   const ta = document.getElementById('noteText');
   if(ta){ ta.focus(); ta.scrollIntoView({behavior:'smooth', block:'center'}); }
