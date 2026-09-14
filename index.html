@@ -1416,7 +1416,10 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldCheckCard .fieldBtn{margin-bottom:14px;}
 .fieldStatus.expandable{cursor:pointer;}
 .fieldStatus.expandable.open{border-bottom-left-radius:0;border-bottom-right-radius:0;}
-.fsChev{width:26px;height:26px;font-size:.95em;margin-left:auto;background:var(--chartreuse-ink);}
+/* The other cards put a white glyph on a coloured disc. This one carries the
+   card's own chartreuse on the dark ink instead, so the symbol itself reads as
+   part of the green strip rather than as a neutral control dropped onto it. */
+.fsChev{width:26px;height:26px;font-size:.95em;margin-left:auto;background:var(--chartreuse-ink);color:var(--chartreuse);}
 .fieldStatus .fsHours + .fsChev{margin-left:14px;}
 .fieldDayPanel{
   border:1px solid var(--line);border-top:none;
@@ -1429,8 +1432,10 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 
 /* ---- Schedule card: purple, so it reads apart from the green check strip
    sitting right under it ---- */
-.fieldSec--sched{border-top:4px solid var(--purple-ink);}
-.fieldSec--sched.open .fieldSecHead{background:linear-gradient(90deg,var(--purple) 0%,transparent 62%);}
+.fieldSec--sched{
+  border-top:4px solid var(--purple-ink);
+  background:linear-gradient(90deg,var(--purple) 0%,var(--paper) 62%);
+}
 .fieldSec--sched .fieldSecChev{background:var(--purple-ink);}
 .fieldSec--sched .fsKey{color:var(--purple-ink);}
 .fieldSec--sched .fieldSubPanel{
@@ -1630,8 +1635,13 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldSec--note{border-top:4px solid var(--orange);}
 .fieldSec--job{border-top:4px solid var(--blueb);}
 .fieldSecHead{color:var(--navy);}
-.fieldSec--note.open .fieldSecHead{background:linear-gradient(90deg,var(--yellow-lite) 0%,transparent 62%);}
-.fieldSec--job.open .fieldSecHead{background:linear-gradient(90deg,var(--blue) 0%,transparent 62%);}
+/* The tint used to appear on the header strip only, and only while the section
+   was open, so a folded card was a plain white bar next to the customer cells
+   and the check strip, which both fade across their width whatever their state.
+   The fade now belongs to the whole card and is always on, which is what makes
+   these read as the same family of surfaces. */
+.fieldSec--note{background:linear-gradient(90deg,var(--yellow-lite) 0%,var(--paper) 62%);}
+.fieldSec--job{background:linear-gradient(90deg,var(--blue) 0%,var(--paper) 62%);}
 /* The +/- was a grey tick of text. As a filled disc it is a real target and
    tells you which section you are looking at even while scrolling past. */
 .fieldSecChev{
@@ -1671,7 +1681,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 html.hc .fieldDayPanel,
 html.hc .fgCell,html.hc .fieldStatus,html.hc .fieldActions .fieldBtn,
 html.hc .fieldSubPanel,html.hc .fieldMoreBtn,html.hc .fieldBlock.fieldNote,
-html.hc .fieldSec.open .fieldSecHead{background:var(--hc-bg);box-shadow:none;}
+html.hc .fieldSec{background:var(--hc-bg);box-shadow:none;}
 html.hc .fieldGrid .fgCell.fgName{background:var(--hc-fg);border-color:var(--hc-fg);}
 html.hc .fieldGrid .fgCell.fgName .fgLabel,
 html.hc .fieldGrid .fgCell.fgName .fgName{color:var(--hc-bg);}
