@@ -31,6 +31,7 @@
      is not a job stage, it is "when someone is due here", so it must not read
      as another shade of the lifecycle greens or blues. */
   --chartreuse:#e3f7a4; --chartreuse-ink:#4c7708; --chartreuse-line:#c8ea6e;
+  --purple:#ece3fb; --purple-ink:#6b4bb0; --purple-line:#d4c3f2;
   --cyan:#d3f3f7; --cyan-ink:#0b7285;
   --yellow-lite:#fff7dc;
   --radius:12px; --radius-sm:8px; --radius-lg:18px;
@@ -121,6 +122,7 @@ html.dark{
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
   --chartreuse:#1e2a10; --chartreuse-ink:#b7e254; --chartreuse-line:#3a4d1c;
+  --purple:#231c33; --purple-ink:#b39cec; --purple-line:#3b3055;
   --cyan:#0f2c33; --cyan-ink:#5ed8e8;
   --yellow-lite:#403720;
   --grid-line:rgba(180,205,245,.035);
@@ -152,6 +154,7 @@ html.hc{
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
   --chartreuse:#eaffb3; --chartreuse-ink:#2d4700; --chartreuse-line:#000000;
+  --purple:#e6dcff; --purple-ink:#3b1a80; --purple-line:#000000;
   --cyan:#c4f1f7; --cyan-ink:#004d59;
   --yellow-lite:#fff9e4;
   /* High contrast trades the glow for a heavy, unambiguous green rail. */
@@ -180,6 +183,7 @@ html.dark.hc{
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
   --grey:#242424; --greyb:#e0e0e0;
   --chartreuse:#1a2600; --chartreuse-ink:#d6ff6d; --chartreuse-line:#ffffff;
+  --purple:#1b1230; --purple-ink:#cbb2ff; --purple-line:#ffffff;
   --cyan:#002630; --cyan-ink:#8ef0ff;
   --yellow-lite:#463800;
   --neon:#5eff9f; --neon-rail:#5eff9f; --neon-rgb:94,255,159;
@@ -1399,6 +1403,54 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   padding:0 24px 24px;line-height:1.55;overflow-wrap:anywhere;
 }
 
+/* The customer name card is the way into editing. Nothing about it changes
+   visually until it is touched, because a card that advertises an edit affordance
+   on every job is one more thing to read on a doorstep. */
+.fieldGrid .fgCell.fgEditable{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.fieldGrid .fgCell.fgEditable:active{transform:scale(.995);}
+
+/* ---- The check in/out card ----
+   One card: the button when today is a scheduled day, the status strip, and
+   every earlier day folded underneath it. */
+.fieldCheckCard{display:flex;flex-direction:column;}
+.fieldCheckCard .fieldBtn{margin-bottom:14px;}
+.fieldStatus.expandable{cursor:pointer;}
+.fieldStatus.expandable.open{border-bottom-left-radius:0;border-bottom-right-radius:0;}
+.fsChev{width:26px;height:26px;font-size:.95em;margin-left:auto;background:var(--chartreuse-ink);}
+.fieldStatus .fsHours + .fsChev{margin-left:14px;}
+.fieldDayPanel{
+  border:1px solid var(--line);border-top:none;
+  border-left:5px solid var(--chartreuse-ink);
+  border-radius:0 0 var(--radius) var(--radius);
+  background:var(--well);padding:16px 20px;
+}
+.fieldDayPanel .dayLogRow{margin-bottom:8px;}
+.fieldDayPanel .dayLogRow:last-child{margin-bottom:0;}
+
+/* ---- Schedule card: purple, so it reads apart from the green check strip
+   sitting right under it ---- */
+.fieldSec--sched{border-top:4px solid var(--purple-ink);}
+.fieldSec--sched.open .fieldSecHead{background:linear-gradient(90deg,var(--purple) 0%,transparent 62%);}
+.fieldSec--sched .fieldSecChev{background:var(--purple-ink);}
+.fieldSec--sched .fsKey{color:var(--purple-ink);}
+.fieldSec--sched .fieldSubPanel{
+  border-left-color:var(--purple-ink);
+  background:linear-gradient(125deg,var(--purple) 0%,var(--well) 62%);
+}
+.fieldSec--sched .fieldMoreBtn.on{
+  background:linear-gradient(135deg,var(--purple-ink) 0%,var(--purple-ink) 100%);
+  border-color:transparent;box-shadow:none;
+}
+/* The calendar is off by default and opens on a link, because it is the one
+   part of scheduling that needs a screen rather than a thumb. */
+.schedCalLink{
+  background:none;border:none;padding:4px 0;margin-bottom:10px;
+  font-family:inherit;font-size:.78em;font-weight:700;
+  color:var(--purple-ink);text-decoration:underline;cursor:pointer;
+}
+.fieldSchedCal{margin-bottom:16px;}
+.fieldSchedCal .schedCalDay{font-size:.82em;}
+
 /* ---- Field mode: the pieces brought over from the full view ---- */
 /* The customer editor is the same form the office view uses, so it keeps that
    class and its id; only the width rule needs relaxing for a card body. */
@@ -1616,6 +1668,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 }
 
 /* ---- High contrast: keep the structure, drop the tint ---- */
+html.hc .fieldDayPanel,
 html.hc .fgCell,html.hc .fieldStatus,html.hc .fieldActions .fieldBtn,
 html.hc .fieldSubPanel,html.hc .fieldMoreBtn,html.hc .fieldBlock.fieldNote,
 html.hc .fieldSec.open .fieldSecHead{background:var(--hc-bg);box-shadow:none;}
@@ -4512,6 +4565,14 @@ let SCHED_EDIT_ID=null;
    its own full-screen widget. Every validation, conflict check and save path
    below is shared between the two; this only decides what gets redrawn. */
 let SCHED_INLINE=false;
+/* The inline scheduler's calendar, off until asked for. A month grid is the
+   one part of scheduling that wants a screen rather than a thumb, so it is a
+   link rather than something always sitting open above the fields. */
+let FIELD_SCHED_CAL=false;
+function toggleFieldSchedCal(id){
+  FIELD_SCHED_CAL=!FIELD_SCHED_CAL;
+  renderWorkOrderModal(id);
+}
 function captureSchedFields(){
   const g=id=>{ const el=document.getElementById(id); return el?el.value:null; };
   const sd=g('schedStartDate'), st=g('schedStartTime'), ed=g('schedEndDate'), et=g('schedEndTime'), rp=g('schedRepeat');
@@ -5550,7 +5611,12 @@ function fieldGridHTML(wo){
   const hasExtras = !!(String(c.altPhone||'').trim() || String(c.homeownerName||'').trim() || String(c.homeownerPhone||'').trim());
   const cell=(cls, inner)=>`<div class="fgCell ${cls}">${inner}</div>`;
   return `<div class="fieldGrid">
-    ${cell('fgName', `<div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'Unnamed customer')}</div>`)}
+    <div class="fgCell fgName fgEditable"
+      title="Double-click, or press and hold on a phone, to edit customer info"
+      ondblclick="startHeaderCustEdit(${wo.id})"
+      ontouchstart="headerCustTouchStart(${wo.id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
+      <div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'Unnamed customer')}</div>
+    </div>
     ${cell('fgTap', c.phone
       ? `<button type="button" class="fgHit" onclick="openPhoneAction('${esc(c.phone)}')"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
       : `<div class="fgLabel">Phone</div><div class="fgValue muted">None</div>`)}
@@ -5561,10 +5627,7 @@ function fieldGridHTML(wo){
       ? `<a class="fgHit" href="mailto:${esc(c.email)}"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></a>`
       : `<div class="fgLabel">Email</div><div class="fgValue muted">None</div>`)}
   </div>
-  <div class="fieldGridBtns">
-    ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
-    <button class="fieldMoreBtn alignEnd" onclick="startHeaderCustEdit(${wo.id})">Edit Customer</button>
-  </div>
+  ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
   ${(hasExtras && FIELD_SEC.extras) ? `<div class="fieldSubPanel">
     ${c.altPhone?`<div class="fsRow"><span class="fsKey">Alternate</span>${phoneLink(c.altPhone)}</div>`:''}
     ${c.homeownerName?`<div class="fsRow"><span class="fsKey">Homeowner</span>${esc(c.homeownerName)}</div>`:''}
@@ -5572,38 +5635,63 @@ function fieldGridHTML(wo){
   </div>` : ''}`;
 }
 /* Check in and check out are the same button in two states, and it only
-   appears on a day the job is actually scheduled for. Once the day is closed
-   out, all that is left is the small status line. */
+   appears on a day the job is actually scheduled for. The strip underneath is
+   today's status; tapping it unfolds every other scheduled day, which is where
+   a missed stamp gets corrected. Once the day is closed out, all that is left
+   is the strip. */
 function fieldCheckHTML(wo){
   const id=wo.id;
   const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
   const today=todayLocalISO();
   const rows=allDayLogsSorted(wo);
   const entry=rows.find(r=>r.log.date===today);
+  const open=!!FIELD_SEC.days;
+  /* Nothing to unfold when the job has never been scheduled, so the strip
+     stays a plain label rather than a control that does nothing. */
+  const expandable=rows.length>0 || !!(wo.checkIn || wo.checkOut);
+  const chev=expandable ? `<span class="fieldSecChev fsChev" aria-hidden="true">${open?'&minus;':'+'}</span>` : '';
+  const headAttrs=expandable
+    ? ` class="fieldStatus expandable${open?' open':''}" role="button" tabindex="0" aria-expanded="${open}" onclick="toggleFieldSec(${id},'days')" title="${open?'Hide':'Show'} every scheduled day"`
+    : ' class="fieldStatus"';
 
+  let strip;
   if(!entry){
     const next=rows.find(r=>r.log.date>today);
-    return `<div class="fieldStatus">
+    strip=`<div${headAttrs}>
       <span class="fsDate">${next ? 'Next visit '+formatDateDisplay(next.log.date) : 'No upcoming visits scheduled'}</span>
+      ${chev}
+    </div>`;
+  } else {
+    const log=entry.log;
+    const hrs=dayLogHours(log);
+    /* stopPropagation on the pencils: they sit inside the strip, which is now
+       the expand control, and editing a time should not also fold the card. */
+    strip=`<div${headAttrs}>
+      <span class="fsDate">${formatDateDisplay(log.date)}</span>
+      ${log.checkIn?`<span class="fsTime">In ${esc(log.checkIn.time)}${isAdmin?`<button class="fsEdit" title="Edit check-in time" onclick="event.stopPropagation();editCheckInDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
+      ${log.checkOut?`<span class="fsTime">Out ${esc(log.checkOut.time)}${isAdmin?`<button class="fsEdit" title="Edit check-out time" onclick="event.stopPropagation();editCheckOutDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
+      ${hrs!=null?`<span class="fsHours">${formatHoursMinutes(hrs)}</span>`:''}
+      ${chev}
     </div>`;
   }
 
-  const log=entry.log;
-  const hrs=dayLogHours(log);
-  const status=`<div class="fieldStatus">
-    <span class="fsDate">${formatDateDisplay(log.date)}</span>
-    ${log.checkIn?`<span class="fsTime">In ${esc(log.checkIn.time)}${isAdmin?`<button class="fsEdit" title="Edit check-in time" onclick="editCheckInDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
-    ${log.checkOut?`<span class="fsTime">Out ${esc(log.checkOut.time)}${isAdmin?`<button class="fsEdit" title="Edit check-out time" onclick="editCheckOutDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
-    ${hrs!=null?`<span class="fsHours">${formatHoursMinutes(hrs)}</span>`:''}
-  </div>`;
-
   let button='';
-  if(!log.checkIn){
-    button=`<button class="fieldBtn primary wide goIn" onclick="checkInDay(${id}, '${log.date}', null)">${icon('login','lg')}<span>Check In</span></button>`;
-  } else if(!log.checkOut){
-    button=`<button class="fieldBtn primary wide goOut" onclick="checkOutDay(${id}, '${log.date}', null)">${icon('logout','lg')}<span>Check Out</span></button>`;
+  if(entry && !entry.log.checkIn){
+    button=`<button class="fieldBtn primary wide goIn" onclick="checkInDay(${id}, '${entry.log.date}', null)">${icon('login','lg')}<span>Check In</span></button>`;
+  } else if(entry && !entry.log.checkOut){
+    button=`<button class="fieldBtn primary wide goOut" onclick="checkOutDay(${id}, '${entry.log.date}', null)">${icon('logout','lg')}<span>Check Out</span></button>`;
   }
-  return button + status;
+
+  const legacy = (wo.checkIn || wo.checkOut) ? `<div class="fsList" style="margin-top:14px;">
+      <div class="fsKey">Legacy job-level stamp</div>
+      <div class="fsRow"><span class="fsKey">In</span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+', '+wo.checkIn.by) : 'n/a'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</div>
+      <div class="fsRow"><span class="fsKey">Out</span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</div>
+    </div>` : '';
+  const panel=(expandable && open)
+    ? `<div class="fieldDayPanel">${rows.length ? dayLogsSectionHTML(wo) : '<div class="small">No scheduled days yet.</div>'}${legacy}</div>`
+    : '';
+
+  return `<div class="fieldCheckCard">${button}${strip}${panel}</div>`;
 }
 function fieldNoteComposerHTML(id){
   const wo=getWO(id);
@@ -5754,8 +5842,12 @@ function fieldSchedGroupHTML(id, title, list){
 }
 function fieldSchedFormHTML(){
   const editing=!!SCHED_EDIT_ID;
+  /* The calendar keeps the widget's own element id so the existing
+     refreshSchedCalendar() redraws it in place when a day is picked. */
   return `<div class="fieldSubPanel fieldSchedForm">
     <div class="fsKey">${editing?'Edit Date':'New Date'}</div>
+    <button type="button" class="schedCalLink" onclick="toggleFieldSchedCal(${SCHED_WO_ID})">${FIELD_SCHED_CAL?'Hide calendar':'View calendar'}</button>
+    ${FIELD_SCHED_CAL?`<div id="schedCalCol" class="fieldSchedCal">${scheduleCalendarHTML()}</div>`:''}
     <div class="schedTypeToggle">
       <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site</button>
       <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
@@ -5806,20 +5898,6 @@ function fieldScheduleSecHTML(wo){
     ${grandDays ? `<div class="schedHoursTotal">Hours logged: ${formatHoursMinutes(grandHours)} <span class="small">(from ${grandDays} checked-in/out day${grandDays>1?'s':''})</span></div>` : ''}
     <button class="fieldMoreBtn" onclick="openScheduleWidget(${id}, true)">+ Add Date</button>`;
   return fieldSecHTML(id, 'sched', 'Schedule Date(s)', body);
-}
-/* ---- Every scheduled day, not just today ----
-   The button at the top of field mode only ever handles the day you are
-   standing on. This is the rest of them, for stamping a day that was missed
-   or correcting one after the fact. */
-function fieldDaysSecHTML(wo){
-  const id=wo.id;
-  const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
-  const legacy = (wo.checkIn || wo.checkOut) ? `<div class="fsList" style="margin-top:14px;">
-      <div class="fsKey">Legacy job-level stamp</div>
-      <div class="fsRow"><span class="fsKey">In</span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+', '+wo.checkIn.by) : 'n/a'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</div>
-      <div class="fsRow"><span class="fsKey">Out</span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</div>
-    </div>` : '';
-  return fieldSecHTML(id, 'days', 'Check In / Check Out', `${dayLogsSectionHTML(wo)}${legacy}`);
 }
 /* The six job sub-lists, in the order they are shown, with the ones that
    carry a price flagged. Empty lists are dropped: a pill for a list with
@@ -5910,6 +5988,7 @@ function fieldModeHTML(wo){
      it, so the thing being edited is not also shown read-only above it. */
   return `<div class="fieldMode">
     ${WO_CUST_EDIT ? fieldCustEditHTML(wo) : fieldGridHTML(wo)}
+    ${fieldScheduleSecHTML(wo)}
     ${fieldCheckHTML(wo)}
     ${fieldJobSecHTML(wo)}
     <div class="fieldActions">
@@ -5918,8 +5997,6 @@ function fieldModeHTML(wo){
     </div>
     ${fieldNoteComposerHTML(id)}
     ${fieldNotesSecHTML(wo)}
-    ${fieldScheduleSecHTML(wo)}
-    ${fieldDaysSecHTML(wo)}
   </div>`;
 }
 function openFieldCamera(id){
@@ -5951,6 +6028,7 @@ function openWorkOrder(id){
   FIELD_NOTE_TYPE = 'NOTE';
   FIELD_NOTE_DRAFT = {text:'', follow:''};
   FIELD_SEC = {extras:false, note:false, notesMore:false, job:false, jobMore:false, sched:false, days:false};
+  FIELD_SCHED_CAL = false;
   FIELD_JOB_LIST = null;
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
