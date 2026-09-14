@@ -1399,6 +1399,40 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   padding:0 24px 24px;line-height:1.55;overflow-wrap:anywhere;
 }
 
+/* ---- Field mode: the pieces brought over from the full view ---- */
+/* The customer editor is the same form the office view uses, so it keeps that
+   class and its id; only the width rule needs relaxing for a card body. */
+.fieldMode .modalHeadCust.editing{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+.fieldMode .modalHeadCust.editing .kv b{font-size:.68em;}
+/* More and Edit sit on one row under the customer grid. */
+.fieldGridBtns{display:flex;align-items:center;gap:12px;margin-top:14px;}
+.fieldGridBtns .fieldMoreBtn{margin-top:0;}
+.fieldGridBtns .fieldMoreBtn.alignEnd{margin-left:auto;}
+/* The inline schedule form. Same inputs as the desktop widget, stacked. */
+.fieldSchedForm .field{margin-bottom:12px;}
+.fieldSchedForm .field:last-of-type{margin-bottom:0;}
+.fieldSchedForm .field label{display:block;font-size:.68em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.fieldSchedForm .field input,.fieldSchedForm .field select{
+  width:100%;box-sizing:border-box;padding:12px 12px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--line);background:var(--paper);font-family:inherit;
+}
+.fieldSchedForm .schedTypeToggle{margin-bottom:14px;}
+.fieldSchedForm .schedPendingItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;font-size:.84em;border-top:1px solid var(--line-soft);}
+.fieldSchedForm .fieldNoteBtns{margin-top:16px;flex-wrap:wrap;}
+/* Adding a date puts three buttons on this row. At a third of a phone width
+   each they truncate, so they wrap to two rows instead. */
+.fieldSchedForm .fieldNoteBtns .btn{flex:1 1 140px;}
+.fieldSchedNote{font-size:.8em;color:var(--muted);margin-top:10px;line-height:1.45;}
+/* A scheduled date row inside a field card: same shape as the office list but
+   without the padding a desktop panel can afford. */
+.fieldSec .schedRow{padding:11px 12px;margin-bottom:8px;}
+.fieldSec .schedRow:last-child{margin-bottom:0;}
+.fieldSec .dayLogRow{margin-bottom:8px;}
+/* Note meta becomes a row that can carry a follow-up tag and admin actions. */
+.fsNoteTop{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:4px;}
+.fsNoteActions{display:inline-flex;gap:14px;margin-left:auto;}
+.fsNoteActions button{background:none;border:none;padding:6px 2px;font-family:inherit;font-size:.78em;font-weight:700;color:var(--orange);cursor:pointer;}
+
 /* Minimal day status: the date, the times, and an edit pencil for admins. */
 .fieldStatus{
   display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
@@ -4474,6 +4508,10 @@ let SCHED_REPEAT='none';
 /* When set, the schedule widget is editing that existing saved date instead of
    building a list of new ones. */
 let SCHED_EDIT_ID=null;
+/* True while the schedule form is being shown inside field mode instead of in
+   its own full-screen widget. Every validation, conflict check and save path
+   below is shared between the two; this only decides what gets redrawn. */
+let SCHED_INLINE=false;
 function captureSchedFields(){
   const g=id=>{ const el=document.getElementById(id); return el?el.value:null; };
   const sd=g('schedStartDate'), st=g('schedStartTime'), ed=g('schedEndDate'), et=g('schedEndTime'), rp=g('schedRepeat');
@@ -4535,7 +4573,7 @@ function schedGroupHTML(id, title, list){
   if(!rest.length) return head + past.map(d=>schedRowHTML(id,d)).join('');
   return head + pastHTML + rest.map(d=>schedRowHTML(id,d)).join('');
 }
-function schedRowHTML(woId, d){
+function schedRowHTML(woId, d, inline){
   const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
   // Days that already have a check-in are called out, so it's obvious before
   // editing that changing the dates could affect logged time.
@@ -4550,7 +4588,7 @@ function schedRowHTML(woId, d){
   return `<div class="schedRow">
     <div><b>${range}</b>${loggedNote}${hoursNote}${dblNote}<br><span class="small">${formatArrivalWindow(d.startTime)}${repeatLabel(d)}</span></div>
     <div class="schedRowBtns">
-      <button class="tinyEdit" title="Edit this date" aria-label="Edit this scheduled date" onclick="openScheduleEdit(${woId},'${d.id}')">Edit</button>
+      <button class="tinyEdit" title="Edit this date" aria-label="Edit this scheduled date" onclick="openScheduleEdit(${woId},'${d.id}'${inline?',true':''})">Edit</button>
       <button class="tinyDel" title="Remove" aria-label="Remove this scheduled date" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
     </div>
   </div>`;
@@ -4559,7 +4597,9 @@ function schedRowHTML(woId, d){
 /* ---- Editing an existing scheduled date ----
    Reuses the same calendar/form as adding, switched into a single-entry mode
    by SCHED_EDIT_ID rather than the pending-list mode used for new dates. */
-function openScheduleEdit(woId, dateId){
+function openScheduleEdit(woId, dateId, inline){
+  SCHED_INLINE=!!inline;
+  if(SCHED_INLINE) FIELD_SEC.sched=true;
   const wo=getWO(woId);
   const d=wo && (wo.scheduleDates||[]).find(x=>x.id===dateId);
   if(!d){ toast('That scheduled date no longer exists.'); return; }
@@ -4613,7 +4653,7 @@ function saveScheduleEdit(){
   const unchanged = d.startDate===startDate && d.startTime===startTime &&
                     (d.endDate||d.startDate)===endDate && d.endTime===endTime && d.type===SCHED_TYPE &&
                     (d.repeat||'none')===repeat;
-  if(unchanged){ SCHED_EDIT_ID=null; renderWorkOrderModal(SCHED_WO_ID); return; }
+  if(unchanged){ SCHED_EDIT_ID=null; SCHED_INLINE=false; renderWorkOrderModal(SCHED_WO_ID); return; }
 
   withConflictOverride(startDate, startTime, endDate, endTime, SCHED_EDIT_ID, (overridden)=>{
     // Warn before silently discarding logged time on days leaving the range
@@ -4647,6 +4687,7 @@ function applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, ov
   saveDB(DB);
   const woId=SCHED_WO_ID, editedId=d.id;
   SCHED_EDIT_ID=null;
+  SCHED_INLINE=false;
   renderWorkOrderModal(woId);
   renderMain();
   // The .ics already sent to a calendar can't be edited in place, so offer a
@@ -4713,7 +4754,9 @@ function minSchedDate(){
   return (d && d.startDate < isoToday()) ? d.startDate : isoToday();
 }
 
-function openScheduleWidget(id){
+function openScheduleWidget(id, inline){
+  SCHED_INLINE=!!inline;
+  if(SCHED_INLINE) FIELD_SEC.sched=true;
   SCHED_WO_ID=id;
   SCHED_EDIT_ID=null;
   const today=new Date();
@@ -4726,6 +4769,9 @@ function openScheduleWidget(id){
   renderScheduleWidget();
 }
 function renderScheduleWidget(){
+  /* In field mode the form lives in the work order itself, so everything that
+     would have redrawn the widget redraws the work order instead. */
+  if(SCHED_INLINE){ renderWorkOrderModal(SCHED_WO_ID); return; }
   const wo=getWO(SCHED_WO_ID);
   const modal=document.getElementById('modalRoot');
   modal.innerHTML=`
@@ -4789,6 +4835,7 @@ function cancelScheduleWidget(){
   const id=SCHED_WO_ID;
   // Leaving edit mode set would make the next "+ Add" open as an edit.
   SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
+  SCHED_INLINE=false;
   renderWorkOrderModal(id);
 }
 function setSchedType(t){ captureSchedFields(); SCHED_TYPE=t; renderScheduleWidget(); }
@@ -5095,7 +5142,7 @@ function finalizeScheduleDates(){
   saveDB(DB);
   downloadICS(wo, SCHED_PENDING);
   const doneId=SCHED_WO_ID;
-  SCHED_PENDING=[]; SCHED_WO_ID=null;
+  SCHED_PENDING=[]; SCHED_WO_ID=null; SCHED_INLINE=false;
   toast('Schedule dates saved. The .ics file downloaded. Open it to add to Apple Calendar.');
   renderWorkOrderModal(doneId);
   renderMain();
@@ -5302,7 +5349,7 @@ let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO
 let NOTE_SHEET_OPEN=false;
 /* Which of the folded sections are open. All shut when a job is opened: the
    point of field mode is that the top of the screen is the whole job. */
-let FIELD_SEC={extras:false, note:false, notesMore:false, job:false, jobMore:false};
+let FIELD_SEC={extras:false, note:false, notesMore:false, job:false, jobMore:false, sched:false, days:false};
 /* Which of the Job section's sub-lists is showing its card, by key, or null
    when none is. One at a time on purpose: six lists opened together is the
    wall of text field mode exists to get away from. */
@@ -5324,6 +5371,7 @@ let FIELD_NOTE_TYPE='NOTE';
 let FIELD_NOTE_DRAFT={text:'', follow:''};
 function openFieldNote(id){
   FIELD_NOTE_OPEN=true;
+  WO_EDIT_NOTE_IDX=null;
   FIELD_NOTE_TYPE='NOTE';
   FIELD_NOTE_DRAFT={text:'', follow:''};
   renderWorkOrderModal(id);
@@ -5513,7 +5561,10 @@ function fieldGridHTML(wo){
       ? `<a class="fgHit" href="mailto:${esc(c.email)}"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></a>`
       : `<div class="fgLabel">Email</div><div class="fgValue muted">None</div>`)}
   </div>
-  ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
+  <div class="fieldGridBtns">
+    ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
+    <button class="fieldMoreBtn alignEnd" onclick="startHeaderCustEdit(${wo.id})">Edit Customer</button>
+  </div>
   ${(hasExtras && FIELD_SEC.extras) ? `<div class="fieldSubPanel">
     ${c.altPhone?`<div class="fsRow"><span class="fsKey">Alternate</span>${phoneLink(c.altPhone)}</div>`:''}
     ${c.homeownerName?`<div class="fsRow"><span class="fsKey">Homeowner</span>${esc(c.homeownerName)}</div>`:''}
@@ -5555,24 +5606,64 @@ function fieldCheckHTML(wo){
   return button + status;
 }
 function fieldNoteComposerHTML(id){
-  if(!FIELD_NOTE_OPEN) return '';
-  const isPre = FIELD_NOTE_TYPE==='PRESITE';
+  const wo=getWO(id);
+  /* One composer covers both jobs. Adding is driven by FIELD_NOTE_OPEN, editing
+     by WO_EDIT_NOTE_IDX, and both read the same draft state so switching the
+     note type never throws away what has been typed. */
+  const editing = (WO_EDIT_NOTE_IDX!==null && wo && wo.notes[WO_EDIT_NOTE_IDX]) ? wo.notes[WO_EDIT_NOTE_IDX] : null;
+  if(!FIELD_NOTE_OPEN && !editing) return '';
+  const isPre = !editing && FIELD_NOTE_TYPE==='PRESITE';
   return `<div class="fieldBlock fieldNote">
-    <div class="fieldBlockTitle">New Note</div>
+    <div class="fieldBlockTitle">${editing?'Edit Note':'New Note'}</div>
     <label class="fieldNoteLabel" for="fieldNoteType">Note Type</label>
     <select id="fieldNoteType" onchange="fieldNoteTypeChanged(${id}, this.value)">
       ${NOTE_TYPES.map(t=>`<option value="${esc(t)}" ${t===FIELD_NOTE_TYPE?'selected':''}>${esc(t)}</option>`).join('')}
     </select>
     ${isPre ? `<div class="small" style="margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>` : `
     <label class="fieldNoteLabel" for="fieldNoteText">Note</label>
-    <textarea id="fieldNoteText" rows="5" placeholder="What happened on site...">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
+    <textarea id="fieldNoteText" rows="5" placeholder="What happened on site..." oninput="FIELD_NOTE_DRAFT.text=this.value">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
     <label class="fieldNoteLabel" for="fieldNoteFollow">Follow-up date (optional)</label>
-    <input type="date" id="fieldNoteFollow" value="${esc(FIELD_NOTE_DRAFT.follow||'')}">`}
+    <input type="date" id="fieldNoteFollow" value="${esc(FIELD_NOTE_DRAFT.follow||'')}" oninput="FIELD_NOTE_DRAFT.follow=this.value">`}
     <div class="fieldNoteBtns">
-      <button class="btn" onclick="submitFieldNote(${id})">${isPre?'Start Pre-Site':'Add Note'}</button>
-      <button class="btn secondary" onclick="closeFieldNote(${id})">Cancel</button>
+      <button class="btn" onclick="${editing?`saveFieldNoteEdit(${id})`:`submitFieldNote(${id})`}">${editing?'Save Edit':(isPre?'Start Pre-Site':'Add Note')}</button>
+      <button class="btn secondary" onclick="${editing?`cancelFieldNoteEdit(${id})`:`closeFieldNote(${id})`}">Cancel</button>
     </div>
   </div>`;
+}
+/* The office form parses a typed MM/DD/YYYY follow-up; the field form uses the
+   native date wheel, so the value is already ISO and needs no parsing. */
+function saveFieldNoteEdit(id){
+  const wo=getWO(id);
+  const n = (WO_EDIT_NOTE_IDX!==null && wo) ? wo.notes[WO_EDIT_NOTE_IDX] : null;
+  if(!n){ WO_EDIT_NOTE_IDX=null; renderWorkOrderModal(id); return; }
+  const typeEl=document.getElementById('fieldNoteType');
+  const textEl=document.getElementById('fieldNoteText');
+  const followEl=document.getElementById('fieldNoteFollow');
+  const type=typeEl ? typeEl.value : n.type;
+  const text=textEl ? textEl.value.trim() : '';
+  if(!text){
+    if(textEl) textEl.focus();
+    toast('A note can\'t be saved empty. Delete it instead if that\'s what you want.');
+    return;
+  }
+  const oldText=n.text;
+  n.type=type;
+  n.text=text;
+  n.followUpDate=(followEl && followEl.value) ? followEl.value : null;
+  addAdminLog(wo, `Edited a ${type} note (was: "${oldText}")`);
+  WO_EDIT_NOTE_IDX=null;
+  FIELD_NOTE_OPEN=false;
+  FIELD_NOTE_DRAFT={text:'', follow:''};
+  saveDB(DB);
+  renderWorkOrderModal(id);
+  renderTabCounts(); renderMain();
+  toast('Note updated.');
+}
+function cancelFieldNoteEdit(id){
+  WO_EDIT_NOTE_IDX=null;
+  FIELD_NOTE_OPEN=false;
+  FIELD_NOTE_DRAFT={text:'', follow:''};
+  renderWorkOrderModal(id);
 }
 /* moreAlign: where the section's own pill sits on its row. 'end' puts it on
    the right of the card, which is where the all-notes pill belongs; anything
@@ -5593,18 +5684,142 @@ function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreA
 }
 function fieldNotesSecHTML(wo){
   const notes=wo.notes||[];
+  const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
   if(!notes.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>');
-  const one=n=>`<div class="fsNote">
-      <div class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.by?' &middot; '+esc(n.by):''}</div>
+  /* idx is the note's real position in wo.notes, because the admin edit and
+     delete calls address notes by index and the section shows the first note
+     separately from the rest. */
+  const one=(n, idx)=>`<div class="fsNote">
+      <div class="fsNoteTop">
+        <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.by?' &middot; '+esc(n.by):''}</span>
+        ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
+        ${isAdmin ? `<span class="fsNoteActions">
+          <button onclick="adminEditNote(${wo.id},${idx})">Edit</button>
+          <button onclick="adminDeleteNote(${wo.id},${idx})">Delete</button>
+        </span>` : ''}
+      </div>
       <div>${esc(n.text)}</div>
     </div>`;
   const rest=notes.slice(1);
   /* The section opens on the most recent note. It is not labelled as such:
      the note carries its own date, and "Last Note" as a heading read like the
      name of the section rather than what was in it. */
-  return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0]),
+  return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0], 0),
     'notesMore', `All notes (${notes.length})`,
-    rest.length ? rest.map(one).join('') : '', 'end');
+    rest.length ? rest.map((n,i)=>one(n, i+1)).join('') : '', 'end');
+}
+/* ---- Customer editing, inline ----
+   The same fields and the same saveCustomer() the office view uses. It keeps
+   the modalHeadCust id so the existing tap-outside-to-save listener finds it;
+   the buttons are there because a doorstep is no place to rely on that. */
+function fieldCustEditHTML(wo){
+  const id=wo.id;
+  const c=wo.customer||{};
+  return `<div class="modalHeadCust editing" id="modalHeadCust">
+    ${custField('name','Full Name', c.name)}
+    ${phoneField('phone','Primary Phone Number', c.phone)}
+    ${phoneField('altPhone','Alternate Phone Number (optional)', c.altPhone)}
+    ${custField('email','Email (optional)', c.email)}
+    ${custField('homeownerName','Homeowner Name (optional)', c.homeownerName)}
+    ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', c.homeownerPhone)}
+    ${addressField('address','Address', c.address)}
+    ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
+    <div class="fieldNoteBtns">
+      <button class="btn" onclick="saveFieldCustomer(${id})">Save</button>
+      ${hasRequiredInfo(wo) ? `<button class="btn secondary" onclick="cancelFieldCustEdit(${id})">Cancel</button>` : ''}
+    </div>
+  </div>`;
+}
+function saveFieldCustomer(id){
+  detachHeaderCustOutsideClickHandler();
+  saveCustomer(id);
+}
+function cancelFieldCustEdit(id){
+  detachHeaderCustOutsideClickHandler();
+  WO_CUST_EDIT=false;
+  renderWorkOrderModal(id);
+}
+/* ---- Schedule Date(s), inline ----
+   Adding and editing run through the same openScheduleWidget /
+   openScheduleEdit / saveScheduleEdit / finalizeScheduleDates functions the
+   desktop widget uses, with SCHED_INLINE telling them to redraw the work order
+   instead of the widget. The inputs below deliberately carry the widget's own
+   element ids, because those functions read the values straight off them. */
+function fieldSchedGroupHTML(id, title, list){
+  if(!list.length) return '';
+  return `<div class="fsList">
+    <div class="fsKey">${esc(title)}</div>
+    ${list.map(d=>schedRowHTML(id, d, true)).join('')}
+  </div>`;
+}
+function fieldSchedFormHTML(){
+  const editing=!!SCHED_EDIT_ID;
+  return `<div class="fieldSubPanel fieldSchedForm">
+    <div class="fsKey">${editing?'Edit Date':'New Date'}</div>
+    <div class="schedTypeToggle">
+      <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site</button>
+      <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
+    </div>
+    <div class="field"><label for="schedStartDate">Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
+    <div class="field"><label for="schedStartTime">Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
+    <div class="field"><label for="schedEndTime">End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
+    <div class="field"><label for="schedRepeat">Repeat</label>
+      <select id="schedRepeat" onchange="onSchedRepeatChange(this.value)">
+        <option value="none" ${SCHED_REPEAT==='none'?'selected':''}>Does not repeat</option>
+        <option value="daily" ${SCHED_REPEAT==='daily'?'selected':''}>Every day</option>
+        <option value="weekly" ${SCHED_REPEAT==='weekly'?'selected':''}>Every week</option>
+      </select>
+    </div>
+    ${SCHED_REPEAT!=='none' ? `
+    <div class="field"><label for="schedEndDate">Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
+    <div class="fieldSchedNote">Each ${SCHED_REPEAT==='weekly'?'week':'day'} in the repeat only books the Start Time to End Time window above, not the full day${SCHED_REPEAT==='weekly'?', always on the same day of the week as the start date':''}.</div>` : ''}
+    ${(!editing && SCHED_PENDING.length) ? `<div class="fsList" style="margin-top:14px;">
+      <div class="fsKey">Dates to add</div>
+      ${SCHED_PENDING.map((pd,i)=>`<div class="schedPendingItem">
+        <span>${pd.overridden?'&#9888; ':''}${pd.type==='presite'?'Pre-Site':'Whole Job'}, ${formatDateDisplay(pd.startDate)}${pd.multiDay?' &ndash; '+formatDateDisplay(pd.endDate):''} @ ${formatTime12(pd.startTime)}${repeatLabel(pd)}</span>
+        <button class="tinyDel" onclick="removePendingScheduleDate(${i})">&times;</button>
+      </div>`).join('')}
+    </div>` : ''}
+    <div class="fieldNoteBtns">
+      ${editing
+        ? `<button class="btn" onclick="saveScheduleEdit()">Save Changes</button>`
+        : `<button class="btn secondary" onclick="addPendingScheduleDate()">Add This Date</button>
+           <button class="btn" ${SCHED_PENDING.length?'':'disabled'} onclick="finalizeScheduleDates()">Save${SCHED_PENDING.length?' ('+SCHED_PENDING.length+')':''}</button>`}
+      <button class="btn secondary" onclick="cancelScheduleWidget()">Cancel</button>
+    </div>
+    ${editing ? '<div class="fieldSchedNote">Logged check-in time on days that stay in range is kept.</div>' : ''}
+  </div>`;
+}
+function fieldScheduleSecHTML(wo){
+  const id=wo.id;
+  if(SCHED_INLINE && SCHED_WO_ID===id){
+    return fieldSecHTML(id, 'sched', 'Schedule Date(s)', fieldSchedFormHTML());
+  }
+  const all=(wo.scheduleDates||[]).slice().sort((a,b)=>(a.startDate+a.startTime).localeCompare(b.startDate+b.startTime));
+  const presite=all.filter(d=>d.type==='presite');
+  const full=all.filter(d=>d.type==='full');
+  const {total:grandHours, count:grandDays}=sumDayLogHours(all.flatMap(d=>d.dayLogs||[]));
+  const body=`
+    ${all.length ? '' : '<div class="small">No dates scheduled yet.</div>'}
+    ${fieldSchedGroupHTML(id, 'Pre-Site Inspection', presite)}
+    ${fieldSchedGroupHTML(id, 'Whole Job', full)}
+    ${grandDays ? `<div class="schedHoursTotal">Hours logged: ${formatHoursMinutes(grandHours)} <span class="small">(from ${grandDays} checked-in/out day${grandDays>1?'s':''})</span></div>` : ''}
+    <button class="fieldMoreBtn" onclick="openScheduleWidget(${id}, true)">+ Add Date</button>`;
+  return fieldSecHTML(id, 'sched', 'Schedule Date(s)', body);
+}
+/* ---- Every scheduled day, not just today ----
+   The button at the top of field mode only ever handles the day you are
+   standing on. This is the rest of them, for stamping a day that was missed
+   or correcting one after the fact. */
+function fieldDaysSecHTML(wo){
+  const id=wo.id;
+  const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
+  const legacy = (wo.checkIn || wo.checkOut) ? `<div class="fsList" style="margin-top:14px;">
+      <div class="fsKey">Legacy job-level stamp</div>
+      <div class="fsRow"><span class="fsKey">In</span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+', '+wo.checkIn.by) : 'n/a'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</div>
+      <div class="fsRow"><span class="fsKey">Out</span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</div>
+    </div>` : '';
+  return fieldSecHTML(id, 'days', 'Check In / Check Out', `${dayLogsSectionHTML(wo)}${legacy}`);
 }
 /* The six job sub-lists, in the order they are shown, with the ones that
    carry a price flagged. Empty lists are dropped: a pill for a list with
@@ -5632,22 +5847,50 @@ function toggleFieldJobList(id, key){
 function fieldJobSecHTML(wo){
   const id=wo.id;
   const jd=wo.jobDetails||{};
+  const open=!!FIELD_SEC.job;
+  /* Edit mode swaps the card's contents for the same form the office view
+     uses, so there is one job details editor in the app, not two. */
+  if(WO_JOB_EDIT){
+    return `<div class="fieldSec fieldSec--job open">
+      <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="true">
+        <span>Job Details</span><span class="fieldSecChev">&minus;</span>
+      </button>
+      <div class="fieldSecBody">${jobDetailsEditHTML(id)}</div>
+    </div>`;
+  }
   const body=jd.description ? esc(jd.description) : '<div class="small">No job description yet.</div>';
   const lists=fieldJobLists(wo);
-  const open=!!FIELD_SEC.job;
-  const active=lists.find(entry=>entry[0]===FIELD_JOB_LIST);
-  const pills=lists.length ? `<div class="fieldPillRow">
-      ${lists.map(([key, title, list])=>{
-        const on = FIELD_JOB_LIST===key;
-        return `<button type="button" class="fieldMoreBtn${on?' on':''}" aria-pressed="${on}" onclick="toggleFieldJobList(${id},'${key}')">${esc(title)} (${list.length})</button>`;
-      }).join('')}
+  /* The walkthrough output gets pills of its own rather than being dumped into
+     the card: the scope can run long, and the summary is a different kind of
+     thing from a line item list. */
+  const psScope = jd.presite ? psScopeLines(jd.presite) : [];
+  const extras=[];
+  if(jd.presite && (psScope.length || jd.presite.transcript)) extras.push(['psScope','Pre-Site Scope']);
+  if(jd.presite) extras.push(['psSummary','Pre-Site Summary']);
+  const pillFor=(key, label, count)=>{
+    const on = FIELD_JOB_LIST===key;
+    return `<button type="button" class="fieldMoreBtn${on?' on':''}" aria-pressed="${on}" onclick="toggleFieldJobList(${id},'${key}')">${esc(label)}${count!=null?` (${count})`:''}</button>`;
+  };
+  const pills=(lists.length || extras.length) ? `<div class="fieldPillRow">
+      ${lists.map(([key, title, list])=>pillFor(key, title, list.length)).join('')}
+      ${extras.map(([key, label])=>pillFor(key, label, null)).join('')}
     </div>` : '';
-  const card = active ? `<div class="fieldSubPanel">
-      <div class="fsList">
-        <div class="fsKey">${esc(active[1])}</div>
-        ${active[2].map(active[3] ? priceLineRow : plainLineRow).join('')}
-      </div>
-    </div>` : '';
+  let card='';
+  if(FIELD_JOB_LIST==='psScope'){
+    card=`<div class="fieldSubPanel">${presiteScopeHTML(jd)}</div>`;
+  } else if(FIELD_JOB_LIST==='psSummary'){
+    card=`<div class="fieldSubPanel">${presiteSummaryHTML(jd)}</div>`;
+  } else {
+    const active=lists.find(entry=>entry[0]===FIELD_JOB_LIST);
+    if(active){
+      card=`<div class="fieldSubPanel">
+        <div class="fsList">
+          <div class="fsKey">${esc(active[1])}</div>
+          ${active[2].map(active[3] ? priceLineRow : plainLineRow).join('')}
+        </div>
+      </div>`;
+    }
+  }
   return `<div class="fieldSec fieldSec--job${open?' open':''}">
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="${open}">
       <span>Job Details</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
@@ -5656,14 +5899,17 @@ function fieldJobSecHTML(wo){
       ${body}
       ${pills}
       ${card}
+      <button class="fieldMoreBtn alignEnd" onclick="openJobDetailsEdit(${id})">Edit Job Details</button>
     </div>`:''}
   </div>`;
 }
 function fieldModeHTML(wo){
   const id=wo.id;
   const photoCount=(wo.docs||[]).filter(isImageDoc).length;
+  /* The customer editor takes the place of the grid rather than sitting under
+     it, so the thing being edited is not also shown read-only above it. */
   return `<div class="fieldMode">
-    ${fieldGridHTML(wo)}
+    ${WO_CUST_EDIT ? fieldCustEditHTML(wo) : fieldGridHTML(wo)}
     ${fieldCheckHTML(wo)}
     ${fieldJobSecHTML(wo)}
     <div class="fieldActions">
@@ -5672,6 +5918,8 @@ function fieldModeHTML(wo){
     </div>
     ${fieldNoteComposerHTML(id)}
     ${fieldNotesSecHTML(wo)}
+    ${fieldScheduleSecHTML(wo)}
+    ${fieldDaysSecHTML(wo)}
   </div>`;
 }
 function openFieldCamera(id){
@@ -5702,7 +5950,7 @@ function openWorkOrder(id){
   FIELD_NOTE_OPEN = false;
   FIELD_NOTE_TYPE = 'NOTE';
   FIELD_NOTE_DRAFT = {text:'', follow:''};
-  FIELD_SEC = {extras:false, note:false, notesMore:false, job:false, jobMore:false};
+  FIELD_SEC = {extras:false, note:false, notesMore:false, job:false, jobMore:false, sched:false, days:false};
   FIELD_JOB_LIST = null;
   DOC_TAG_FILTER = 'all';
   WO_LIST_OPEN = {};
@@ -5901,7 +6149,10 @@ function renderWorkOrderModal(id){
   // appears on a first-time customer.
   const priorCount = priorJobsFor(wo).length;
 
-  const fieldOn = fieldModeFor(wo) && !WO_DOCS_VIEW && !WO_ADMIN_VIEW && !WO_PRIOR_VIEW && !WO_CUST_EDIT && !WO_JOB_EDIT;
+  /* Editing the customer or the job details used to force the full view,
+     because field mode had nowhere to put those forms. Both now render inside
+     field mode, so an edit no longer throws you out of the view you were in. */
+  const fieldOn = fieldModeFor(wo) && !WO_DOCS_VIEW && !WO_ADMIN_VIEW && !WO_PRIOR_VIEW;
 
   let fieldFailed=false;
   if(fieldOn){
@@ -6431,6 +6682,9 @@ function jobListsHTML(wo){
 
 /* ---- Job Details: edit mode ---- */
 function openJobDetailsEdit(id){
+  /* In field mode the editor renders inside the Job Details card, so that card
+     has to be open or the Edit button would look like it did nothing. */
+  FIELD_SEC.job=true;
   const wo=getWO(id);
   const src=wo.jobDetails||{};
   /* Spread the original line rather than rebuilding it from item + price. The
@@ -7302,6 +7556,15 @@ function submitNote(id){
 /* Admin note edit/delete */
 function adminEditNote(woId, idx){
   WO_EDIT_NOTE_IDX = idx;
+  /* Field mode edits notes through its own composer, which reads the same
+     draft state the Add Note form uses, so the note is loaded into it. */
+  const wo=getWO(woId);
+  const n = wo && wo.notes[idx];
+  if(n){
+    FIELD_SEC.note=true;
+    FIELD_NOTE_TYPE=n.type;
+    FIELD_NOTE_DRAFT={text:n.text||'', follow:n.followUpDate||''};
+  }
   renderWorkOrderModal(woId);
   const ta = document.getElementById('noteText');
   if(ta){ ta.focus(); ta.scrollIntoView({behavior:'smooth', block:'center'}); }
