@@ -1483,8 +1483,13 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   display:grid;grid-template-columns:1fr auto 1fr;
   align-items:center;gap:10px;
 }
+/* A button centres its text by default. In the flex layout the title span
+   shrink-wrapped so that never showed, but a grid column stretches it, which is
+   what pushed the title off the left edge. Only the text moves back; the column
+   itself is untouched, so the centred message stays exactly where it is. */
 .fieldSecHead--withFace > span:first-child{
-  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  min-width:0;text-align:left;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .fieldSecHead--withFace .fieldSecChev{justify-self:end;}
 .fieldSecFace{
@@ -1550,7 +1555,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   padding:18px 24px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--well);font-size:.83em;
 }
-.fsTitle{font-size:.92em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+.fsTitle{font-size:.92em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);}
 .fsDate{font-weight:800;}
 .fsTime{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-weight:600;}
 .fsHours{margin-left:auto;font-weight:700;color:var(--navy);}
