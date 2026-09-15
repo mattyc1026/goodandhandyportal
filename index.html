@@ -1483,11 +1483,17 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   background-position:right 12px center;
   background-size:13px;
 }
-/* The collapsed face of the schedule card. It carries the one line worth
-   reading without opening anything: when the next visit is. */
+/* The collapsed face of the schedule card: when the next visit is. It rides on
+   the title row rather than under it, so reading it costs no extra height.
+   flex:1 with the title and chevron pinned either side centres it in whatever
+   space is left, and it opts out of the header's uppercasing because this is a
+   sentence, not a label. */
 .fieldSecFace{
-  padding:0 24px 20px;text-align:center;
-  font-size:.86em;font-weight:700;color:var(--navy);
+  flex:1 1 auto;min-width:0;text-align:center;
+  padding:0 10px;
+  font-size:1.02em;font-weight:700;letter-spacing:0;
+  text-transform:none;color:var(--navy);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .fieldSchedCal{margin-bottom:16px;}
 .fieldSchedCal .schedCalDay{font-size:.82em;}
@@ -5978,9 +5984,11 @@ function fieldSchedCardHTML(wo, body){
   const open=!!FIELD_SEC.sched;
   return `<div class="fieldSec fieldSec--sched${open?' open':''}">
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'sched')" aria-expanded="${open}">
-      <span>Schedule Date(s)</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+      <span>Schedule Date(s)</span>
+      ${open ? '' : `<span class="fieldSecFace">${esc(nextVisitLine(wo))}</span>`}
+      <span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
-    ${open ? `<div class="fieldSecBody">${body}</div>` : `<div class="fieldSecFace">${esc(nextVisitLine(wo))}</div>`}
+    ${open ? `<div class="fieldSecBody">${body}</div>` : ''}
   </div>`;
 }
 /* The six job sub-lists, in the order they are shown, with the ones that
