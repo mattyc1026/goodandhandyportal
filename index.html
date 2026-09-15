@@ -1415,7 +1415,9 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldCheckCard{display:flex;flex-direction:column;}
 .fieldCheckCard .fieldBtn{margin-bottom:14px;}
 .fieldStatus.expandable{cursor:pointer;}
-.fieldStatus.expandable.open{border-bottom-left-radius:0;border-bottom-right-radius:0;}
+/* The strip squares off whenever anything is attached beneath it, whether that
+   is today's pinned boxes or the unfolded history. */
+.fieldStatus.hasBelow{border-bottom-left-radius:0;border-bottom-right-radius:0;}
 /* The other cards put a white glyph on a coloured disc. This one carries the
    card's own chartreuse on the dark ink instead, so the symbol itself reads as
    part of the green strip rather than as a neutral control dropped onto it. */
@@ -1427,15 +1429,22 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   background:var(--chartreuse-ink);color:var(--chartreuse);
 }
 .fieldStatus .fsHours + .fsChev{margin-left:14px;}
-/* The unfolded days hang off the bottom of the strip. Same fade, so the two
-   elements read as one card rather than as a card with a tray under it: a 90deg
-   gradient is uniform top to bottom, so it carries across the join. */
-.fieldDayPanel{
+/* Anything attached under the strip. Same fade, so the pieces read as one card
+   rather than a card with trays under it: a 90deg gradient is uniform top to
+   bottom, so it carries across every join. Only the last piece rounds off. */
+.fieldCheckSub{
   border:1px solid var(--line);border-top:none;
-  border-radius:0 0 var(--radius) var(--radius);
   background:linear-gradient(90deg,var(--chartreuse) 0%,var(--paper) 62%);
-  padding:16px 24px 20px;
+  padding:16px 24px;
 }
+.fieldCheckCard > .fieldCheckSub:last-child{
+  border-radius:0 0 var(--radius) var(--radius);
+  padding-bottom:20px;
+}
+.fieldTodayRow .dayLogRow{margin:0;}
+.dayLogGroup{margin-bottom:16px;}
+.dayLogGroup:last-child{margin-bottom:0;}
+.dayLogGroup .fsKey{margin-bottom:6px;}
 .fieldDayPanel .dayLogRow{margin-bottom:8px;}
 .fieldDayPanel .dayLogRow:last-child{margin-bottom:0;}
 
@@ -1462,6 +1471,23 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   background:none;border:none;padding:4px 0;
   font-family:inherit;font-size:.86em;font-weight:700;
   color:var(--purple-ink);text-decoration:underline;cursor:pointer;
+}
+/* A native select draws its arrow hard against the right edge, while the date
+   and time fields inset their pickers. Swapping in our own chevron is the only
+   way to put it on the same line as those. */
+.fieldSchedForm .field select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  padding-right:38px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8798' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  background-size:13px;
+}
+/* The collapsed face of the schedule card. It carries the one line worth
+   reading without opening anything: when the next visit is. */
+.fieldSecFace{
+  padding:0 24px 20px;text-align:center;
+  font-size:.86em;font-weight:700;color:var(--navy);
 }
 .fieldSchedCal{margin-bottom:16px;}
 .fieldSchedCal .schedCalDay{font-size:.82em;}
@@ -1506,6 +1532,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   padding:18px 24px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--well);font-size:.83em;
 }
+.fsTitle{font-size:.92em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
 .fsDate{font-weight:800;}
 .fsTime{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-weight:600;}
 .fsHours{margin-left:auto;font-weight:700;color:var(--navy);}
@@ -4441,25 +4468,43 @@ function saveCheckOutDayTime(woId, date){
   renderWorkOrderModal(woId);
   toast('Check-out time updated.');
 }
-function dayLogsSectionHTML(wo){
-  const rows=allDayLogsSorted(wo);
-  const isAdmin = !!(CURRENT_USER && CURRENT_USER.isAdmin);
-  if(!rows.length) return '<div class="small">No scheduled days yet. Use Schedule Date(s) to add visit dates.</div>';
-  return `<div class="dayLogsList">` + rows.map(({log})=>{
-    const inDone = !!log.checkIn;
-    const outDone = !!log.checkOut;
-    const hrs = dayLogHours(log);
-    const hrsNote = hrs!=null ? `<span class="schedHoursTag" title="Hours for ${formatDateDisplay(log.date)}">${formatHoursMinutes(hrs)}</span>` : '';
-    return `<div class="dayLogRow">
+/* One scheduled day: the date, an In box, an Out box, and the hours once both
+   are stamped. Pulled out of the list so the check in/out card can pin today's
+   copy of it above the fold. */
+function dayLogRowHTML(woId, log, isAdmin){
+  const inDone = !!log.checkIn;
+  const outDone = !!log.checkOut;
+  const hrs = dayLogHours(log);
+  const hrsNote = hrs!=null ? `<span class="schedHoursTag" title="Hours for ${formatDateDisplay(log.date)}">${formatHoursMinutes(hrs)}</span>` : '';
+  return `<div class="dayLogRow">
       <div class="dayLogDate">${formatDateDisplay(log.date)}</div>
-      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${wo.id}, '${log.date}', this)">${icon('login')} In${inDone?` (${log.checkIn.time})`:''}</label>
-      ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
-      <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${wo.id}, '${log.date}', this)"> Out${outDone?` (${log.checkOut.time})`:''}</label>
-      ${(isAdmin && outDone) ? `<button class="editLink" onclick="editCheckOutDayTime(${wo.id}, '${log.date}')">Edit</button>` : ''}
+      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${woId}, '${log.date}', this)">${icon('login')} In${inDone?` (${log.checkIn.time})`:''}</label>
+      ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${woId}, '${log.date}')">Edit</button>` : ''}
+      <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${woId}, '${log.date}', this)">${icon('logout')} Out${outDone?` (${log.checkOut.time})`:''}</label>
+      ${(isAdmin && outDone) ? `<button class="editLink" onclick="editCheckOutDayTime(${woId}, '${log.date}')">Edit</button>` : ''}
       ${hrsNote}
     </div>`;
-  }).join('') + `</div>`;
 }
+/* skipDate drops one day from the list, which is how the field card avoids
+   printing today twice when today is already pinned above it. */
+function dayLogsSectionHTML(wo, skipDate){
+  const rows=allDayLogsSorted(wo).filter(r=>r.log.date!==skipDate);
+  const isAdmin = !!(CURRENT_USER && CURRENT_USER.isAdmin);
+  if(!rows.length) return `<div class="small">${skipDate?'No other scheduled days.':'No scheduled days yet. Use Schedule Date(s) to add visit dates.'}</div>`;
+  /* Grouped the same way the schedule list is, because a pre-site walkthrough
+     and a work day are different kinds of visit and the hours off them get read
+     differently. */
+  const groups=[['presite','Pre-Site Inspection'],['full','Whole Job']];
+  return groups.map(([type, title])=>{
+    const inGroup=rows.filter(r=>(r.entry.type||'full')===type);
+    if(!inGroup.length) return '';
+    return `<div class="dayLogGroup">
+      <div class="fsKey">${title}</div>
+      <div class="dayLogsList">${inGroup.map(r=>dayLogRowHTML(wo.id, r.log, isAdmin)).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
 function approveEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
   askYesNo('Confirm this estimate is approved? It will move to Schedule Job.', (yes)=>{
@@ -5680,41 +5725,17 @@ function fieldCheckHTML(wo){
   const rows=allDayLogsSorted(wo);
   const entry=rows.find(r=>r.log.date===today);
   const open=!!FIELD_SEC.days;
-  /* Nothing to unfold when the job has never been scheduled, so the strip
-     stays a plain label rather than a control that does nothing. */
-  const expandable=rows.length>0 || !!(wo.checkIn || wo.checkOut);
+  /* The card says one thing and one thing only. When today is a scheduled day
+     its two boxes are pinned under the title so they can be stamped without
+     opening anything; every other day is history and lives behind the chevron.
+     Where the next visit falls is on the schedule card, which is the card that
+     question belongs to. */
+  const expandable=rows.length>(entry?1:0) || !!(wo.checkIn || wo.checkOut);
   const chev=expandable ? `<span class="fieldSecChev fsChev" aria-hidden="true">${open?'&minus;':'+'}</span>` : '';
-  const headAttrs=expandable
-    ? ` class="fieldStatus expandable${open?' open':''}" role="button" tabindex="0" aria-expanded="${open}" onclick="toggleFieldSec(${id},'days')" title="${open?'Hide':'Show'} every scheduled day"`
-    : ' class="fieldStatus"';
 
-  let strip;
-  if(!entry){
-    const next=rows.find(r=>r.log.date>today);
-    strip=`<div${headAttrs}>
-      <span class="fsDate">${next ? 'Next visit '+formatDateDisplay(next.log.date) : 'No upcoming visits scheduled'}</span>
-      ${chev}
-    </div>`;
-  } else {
-    const log=entry.log;
-    const hrs=dayLogHours(log);
-    /* stopPropagation on the pencils: they sit inside the strip, which is now
-       the expand control, and editing a time should not also fold the card. */
-    strip=`<div${headAttrs}>
-      <span class="fsDate">${formatDateDisplay(log.date)}</span>
-      ${log.checkIn?`<span class="fsTime">In ${esc(log.checkIn.time)}${isAdmin?`<button class="fsEdit" title="Edit check-in time" onclick="event.stopPropagation();editCheckInDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
-      ${log.checkOut?`<span class="fsTime">Out ${esc(log.checkOut.time)}${isAdmin?`<button class="fsEdit" title="Edit check-out time" onclick="event.stopPropagation();editCheckOutDayTime(${id}, '${log.date}')">${icon('pencil')}</button>`:''}</span>`:''}
-      ${hrs!=null?`<span class="fsHours">${formatHoursMinutes(hrs)}</span>`:''}
-      ${chev}
-    </div>`;
-  }
-
-  let button='';
-  if(entry && !entry.log.checkIn){
-    button=`<button class="fieldBtn primary wide goIn" onclick="checkInDay(${id}, '${entry.log.date}', null)">${icon('login','lg')}<span>Check In</span></button>`;
-  } else if(entry && !entry.log.checkOut){
-    button=`<button class="fieldBtn primary wide goOut" onclick="checkOutDay(${id}, '${entry.log.date}', null)">${icon('logout','lg')}<span>Check Out</span></button>`;
-  }
+  const todayHTML=entry
+    ? `<div class="fieldCheckSub fieldTodayRow">${dayLogRowHTML(id, entry.log, isAdmin)}</div>`
+    : '';
 
   const legacy = (wo.checkIn || wo.checkOut) ? `<div class="fsList" style="margin-top:14px;">
       <div class="fsKey">Legacy job-level stamp</div>
@@ -5722,10 +5743,29 @@ function fieldCheckHTML(wo){
       <div class="fsRow"><span class="fsKey">Out</span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</div>
     </div>` : '';
   const panel=(expandable && open)
-    ? `<div class="fieldDayPanel">${rows.length ? dayLogsSectionHTML(wo) : '<div class="small">No scheduled days yet.</div>'}${legacy}</div>`
+    ? `<div class="fieldCheckSub fieldDayPanel">${dayLogsSectionHTML(wo, entry?today:null)}${legacy}</div>`
     : '';
 
-  return `<div class="fieldCheckCard">${button}${strip}${panel}</div>`;
+  const hasBelow=!!todayHTML || !!panel;
+  const headAttrs=expandable
+    ? ` class="fieldStatus expandable${hasBelow?' hasBelow':''}" role="button" tabindex="0" aria-expanded="${open}" onclick="toggleFieldSec(${id},'days')" title="${open?'Hide':'Show'} every scheduled day"`
+    : ` class="fieldStatus${hasBelow?' hasBelow':''}"`;
+
+  return `<div class="fieldCheckCard">
+    <div${headAttrs}>
+      <span class="fsTitle">Check In / Check Out</span>
+      ${chev}
+    </div>
+    ${todayHTML}${panel}
+  </div>`;
+}
+/* The line that used to sit on the chartreuse strip. */
+function nextVisitLine(wo){
+  const today=todayLocalISO();
+  const rows=allDayLogsSorted(wo);
+  if(rows.some(r=>r.log.date===today)) return 'Scheduled today, '+formatDateDisplay(today);
+  const next=rows.find(r=>r.log.date>today);
+  return next ? 'Next visit '+formatDateDisplay(next.log.date) : 'No upcoming visits scheduled';
 }
 function fieldNoteComposerHTML(id){
   const wo=getWO(id);
@@ -5919,7 +5959,7 @@ function fieldSchedFormHTML(){
 function fieldScheduleSecHTML(wo){
   const id=wo.id;
   if(SCHED_INLINE && SCHED_WO_ID===id){
-    return fieldSecHTML(id, 'sched', 'Schedule Date(s)', fieldSchedFormHTML());
+    return fieldSchedCardHTML(wo, fieldSchedFormHTML());
   }
   const all=(wo.scheduleDates||[]).slice().sort((a,b)=>(a.startDate+a.startTime).localeCompare(b.startDate+b.startTime));
   const presite=all.filter(d=>d.type==='presite');
@@ -5930,8 +5970,18 @@ function fieldScheduleSecHTML(wo){
     ${fieldSchedGroupHTML(id, 'Pre-Site Inspection', presite)}
     ${fieldSchedGroupHTML(id, 'Whole Job', full)}
     ${grandDays ? `<div class="schedHoursTotal">Hours logged: ${formatHoursMinutes(grandHours)} <span class="small">(from ${grandDays} checked-in/out day${grandDays>1?'s':''})</span></div>` : ''}
-    <button class="fieldMoreBtn" onclick="openScheduleWidget(${id}, true)">+ Add Date</button>`;
-  return fieldSecHTML(id, 'sched', 'Schedule Date(s)', body);
+    <button class="fieldMoreBtn alignEnd" onclick="openScheduleWidget(${id}, true)">+ Add Date</button>`;
+  return fieldSchedCardHTML(wo, body);
+}
+function fieldSchedCardHTML(wo, body){
+  const id=wo.id;
+  const open=!!FIELD_SEC.sched;
+  return `<div class="fieldSec fieldSec--sched${open?' open':''}">
+    <button class="fieldSecHead" onclick="toggleFieldSec(${id},'sched')" aria-expanded="${open}">
+      <span>Schedule Date(s)</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+    </button>
+    ${open ? `<div class="fieldSecBody">${body}</div>` : `<div class="fieldSecFace">${esc(nextVisitLine(wo))}</div>`}
+  </div>`;
 }
 /* The six job sub-lists, in the order they are shown, with the ones that
    carry a price flagged. Empty lists are dropped: a pill for a list with
@@ -7294,7 +7344,6 @@ function docsTabHTML(wo){
   }
   return `<div class="docsTab">
     <h4>Documents</h4>
-    <div class="small" style="margin-bottom:8px;">Upload photos, PDFs, or other documents for this job. Files are named from the filename automatically. Use Rename on any row to change it. Photos can carry an optional label such as Before or Damage/Issue.</div>
     ${uploaderHTML}
     <h4 style="margin-top:18px;">Images${images.length?` (${images.length})`:''}</h4>
     ${filterBar}
