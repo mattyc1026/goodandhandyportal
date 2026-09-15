@@ -1297,7 +1297,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .mapLink .ic.spacer{visibility:hidden;}
 
 /* =========================================================================
-   FIELD MODE
+   FIELD VIEW
    Few controls, all of them big. Sized for a thumb in a work glove, and
    readable at arm's length in daylight.
 ========================================================================= */
@@ -1330,7 +1330,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fgValue.muted{color:var(--muted);font-weight:400;}
 
 /* Shared small controls: More toggles, sub-panels, folded sections. */
-/* Pills are a primary control in field mode, not a footnote: they are what
+/* Pills are a primary control in field view, not a footnote: they are what
    gets tapped with a glove on. Sized to a real 44px target, bordered in the
    accent and set in the ink colour so they read as buttons rather than as
    small print. */
@@ -1501,7 +1501,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldSchedCal{margin-bottom:16px;}
 .fieldSchedCal .schedCalDay{font-size:.82em;}
 
-/* ---- Field mode: the pieces brought over from the full view ---- */
+/* ---- Field view: the pieces brought over from the full view ---- */
 /* The customer editor is the same form the office view uses, so it keeps that
    class and its id; only the width rule needs relaxing for a card body. */
 .fieldMode .modalHeadCust.editing{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
@@ -1601,7 +1601,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 
 
 /* =========================================================================
-   FIELD MODE COLOUR
+   FIELD VIEW COLOUR
    The layout was right but the surface was flat: white cards, grey labels,
    a single orange accent. On a phone in daylight that reads as one
    undifferentiated sheet, so nothing is findable at a glance. Colour is
@@ -2697,7 +2697,7 @@ window._bootSafety = setTimeout(function(){
             </button>
           </div>
           <div class="settingsRow">
-            <span>Field Mode</span>
+            <span>Field View</span>
             <button class="hcToggleBtn fieldModeBtn" id="fieldModeBtn" onclick="toggleFieldMode()" title="Open work orders in the simplified on-site view" aria-pressed="false">Off</button>
           </div>
           <div class="settingsRow">
@@ -4663,7 +4663,7 @@ let SCHED_REPEAT='none';
 /* When set, the schedule widget is editing that existing saved date instead of
    building a list of new ones. */
 let SCHED_EDIT_ID=null;
-/* True while the schedule form is being shown inside field mode instead of in
+/* True while the schedule form is being shown inside field view instead of in
    its own full-screen widget. Every validation, conflict check and save path
    below is shared between the two; this only decides what gets redrawn. */
 let SCHED_INLINE=false;
@@ -4932,7 +4932,7 @@ function openScheduleWidget(id, inline){
   renderScheduleWidget();
 }
 function renderScheduleWidget(){
-  /* In field mode the form lives in the work order itself, so everything that
+  /* In field view the form lives in the work order itself, so everything that
      would have redrawn the widget redraws the work order instead. */
   if(SCHED_INLINE){ renderWorkOrderModal(SCHED_WO_ID); return; }
   const wo=getWO(SCHED_WO_ID);
@@ -5522,11 +5522,11 @@ let WO_CUST_EDIT=false, WO_ADMIN_VIEW=false, WO_JOB_EDIT=false, JD_EDIT=null, WO
    inert on a desktop-width screen where there is room for it to sit open. */
 let NOTE_SHEET_OPEN=false;
 /* Which of the folded sections are open. All shut when a job is opened: the
-   point of field mode is that the top of the screen is the whole job. */
+   point of field view is that the top of the screen is the whole job. */
 let FIELD_SEC={extras:false, note:false, notesMore:false, job:false, jobMore:false, sched:false, days:false};
 /* Which of the Job section's sub-lists is showing its card, by key, or null
    when none is. One at a time on purpose: six lists opened together is the
-   wall of text field mode exists to get away from. */
+   wall of text field view exists to get away from. */
 let FIELD_JOB_LIST=null;
 function toggleFieldSec(id, key){
   FIELD_SEC[key]=!FIELD_SEC[key];
@@ -5540,7 +5540,7 @@ function todayLocalISO(){
   const d=new Date();
   return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 }
-let FIELD_NOTE_OPEN=false;   // the on-site note composer, inside field mode
+let FIELD_NOTE_OPEN=false;   // the on-site note composer, inside field view
 let FIELD_NOTE_TYPE='NOTE';
 let FIELD_NOTE_DRAFT={text:'', follow:''};
 function openFieldNote(id){
@@ -5670,11 +5670,11 @@ function rememberJobList(key, el){
 }
 
 /* =========================================================================
-   FIELD MODE
+   FIELD VIEW
 
    The office needs line items, totals and history. Someone standing at the
    front door needs five things: get here, call, check in, take a photo,
-   leave a note. Field mode is that second view of the same work order.
+   leave a note. Field view is that second view of the same work order.
 
    It comes on by itself while you are checked in on site, because that is
    exactly when you are standing there, and it can be pinned on for the whole
@@ -5709,7 +5709,7 @@ function toggleFieldMode(){
      closed job back up when the switch is flipped. */
   const overlay=document.getElementById('woOverlay');
   if(overlay && OPEN_WO_ID!=null && getWO(OPEN_WO_ID)) renderWorkOrderModal(OPEN_WO_ID);
-  toast(FIELD_MODE ? 'Field mode on. Work orders open in the simplified view.' : 'Field mode off.');
+  toast(FIELD_MODE ? 'Field view on. Work orders open in the simplified view.' : 'Field view off.');
 }
 function syncFieldModeBtn(){
   const b=document.getElementById('fieldModeBtn');
@@ -6361,20 +6361,20 @@ function renderWorkOrderModal(id){
   let headerSuffix = '';
   let headerActions;
   let bodyHTML;
-  /* Declared here, above the field-mode branch that assigns it. It used to be
+  /* Declared here, above the field-view branch that assigns it. It used to be
      declared further down with `let`, so the field branch's assignment hit the
      temporal dead zone and threw; worse, the catch block's own assignment threw
      too, so the error escaped renderWorkOrderModal entirely and the modal was
      never written. That is what made a work order refuse to open with field
-     mode on, and only appear once field mode was switched back off. */
+     view on, and only appear once field view was switched back off. */
   let headerCustHTML = null;
   // The tab is only offered when there is something behind it, so it never
   // appears on a first-time customer.
   const priorCount = priorJobsFor(wo).length;
 
   /* Editing the customer or the job details used to force the full view,
-     because field mode had nowhere to put those forms. Both now render inside
-     field mode, so an edit no longer throws you out of the view you were in. */
+     because field view had nowhere to put those forms. Both now render inside
+     field view, so an edit no longer throws you out of the view you were in. */
   const fieldOn = fieldModeFor(wo) && !WO_DOCS_VIEW && !WO_ADMIN_VIEW && !WO_PRIOR_VIEW;
 
   let fieldFailed=false;
@@ -6390,7 +6390,7 @@ function renderWorkOrderModal(id){
       headerSuffix = '';
       headerCustHTML = '';
       /* The view toggle is the first tab here exactly as it is in the full
-         view below. It used to sit last in field mode and first in the full
+         view below. It used to sit last in field view and first in the full
          view, so the one button you press to get back jumped across the
          header every time you used it. */
       headerActions = `<div class="headerTabs fieldNav">
@@ -6401,11 +6401,11 @@ function renderWorkOrderModal(id){
         </div>`;
       bodyHTML = fieldModeHTML(wo);
     }catch(err){
-      console.error('Field view failed, falling back to the full work order:', err);
+      console.error('Field view failed, falling back to the full view:', err);
       fieldFailed=true;
       FIELD_VIEW_OVERRIDE=false;
       headerCustHTML=null;   // rebuilt below
-      setTimeout(()=>toast('Field view could not be drawn. Showing the full work order.'), 0);
+      setTimeout(()=>toast('Field view could not be drawn. Showing the full view.'), 0);
     }
   }
   if(fieldFailed){
@@ -6470,7 +6470,7 @@ function renderWorkOrderModal(id){
             const followUpVal = editingNote && editingNote.followUpDate ? formatDateDisplay(editingNote.followUpDate) : '';
             const textVal = editingNote ? editingNote.text : (noteDraftFor(id)||'');
             /* PRESITE isn't a typed note: it launches the walkthrough, which
-               writes its own note on save. Field mode already swapped its
+               writes its own note on save. Field view already swapped its
                composer for a Start Pre-Site button; the full view does the
                same now, via noteTypeChanged() below. */
             const isPreInit = !editingNote && typeVal==='PRESITE';
@@ -6516,7 +6516,7 @@ function renderWorkOrderModal(id){
         </div>`;
   }
 
-  /* Field mode has already set its own (empty) header block above; only the
+  /* Field view has already set its own (empty) header block above; only the
      full view builds the customer header here. */
   if(headerCustHTML===null){
   const addr=splitAddress(wo.customer.address);
@@ -6905,7 +6905,7 @@ function jobListsHTML(wo){
 
 /* ---- Job Details: edit mode ---- */
 function openJobDetailsEdit(id){
-  /* In field mode the editor renders inside the Job Details card, so that card
+  /* In field view the editor renders inside the Job Details card, so that card
      has to be open or the Edit button would look like it did nothing. */
   FIELD_SEC.job=true;
   const wo=getWO(id);
@@ -7778,7 +7778,7 @@ function submitNote(id){
 /* Admin note edit/delete */
 function adminEditNote(woId, idx){
   WO_EDIT_NOTE_IDX = idx;
-  /* Field mode edits notes through its own composer, which reads the same
+  /* Field view edits notes through its own composer, which reads the same
      draft state the Add Note form uses, so the note is loaded into it. */
   const wo=getWO(woId);
   const n = wo && wo.notes[idx];
