@@ -1485,12 +1485,21 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 }
 /* The collapsed face of the schedule card: when the next visit is. It rides on
    the title row rather than under it, so reading it costs no extra height.
-   flex:1 with the title and chevron pinned either side centres it in whatever
-   space is left, and it opts out of the header's uppercasing because this is a
-   sentence, not a label. */
+   Centring it needs a three column grid, not flex. Flex would only centre it in
+   the gap left between the title and the chevron, and since the title is far
+   the wider of the two, that gap's midpoint sits well right of the card's. Two
+   1fr side columns are equal by definition, so the auto column between them
+   lands on the true centre whatever the title and chevron measure. */
+.fieldSecHead--withFace{
+  display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:center;gap:10px;
+}
+.fieldSecHead--withFace > span:first-child{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.fieldSecHead--withFace .fieldSecChev{justify-self:end;}
 .fieldSecFace{
-  flex:1 1 auto;min-width:0;text-align:center;
-  padding:0 10px;
+  min-width:0;text-align:center;
   font-size:1.02em;font-weight:700;letter-spacing:0;
   text-transform:none;color:var(--navy);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -5983,7 +5992,7 @@ function fieldSchedCardHTML(wo, body){
   const id=wo.id;
   const open=!!FIELD_SEC.sched;
   return `<div class="fieldSec fieldSec--sched${open?' open':''}">
-    <button class="fieldSecHead" onclick="toggleFieldSec(${id},'sched')" aria-expanded="${open}">
+    <button class="fieldSecHead${open?'':' fieldSecHead--withFace'}" onclick="toggleFieldSec(${id},'sched')" aria-expanded="${open}">
       <span>Schedule Date(s)</span>
       ${open ? '' : `<span class="fieldSecFace">${esc(nextVisitLine(wo))}</span>`}
       <span class="fieldSecChev">${open?'&minus;':'+'}</span>
