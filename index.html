@@ -1472,17 +1472,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   font-family:inherit;font-size:.86em;font-weight:700;
   color:var(--purple-ink);text-decoration:underline;cursor:pointer;
 }
-/* A native select draws its arrow hard against the right edge, while the date
-   and time fields inset their pickers. Swapping in our own chevron is the only
-   way to put it on the same line as those. */
-.fieldSchedForm .field select{
-  appearance:none;-webkit-appearance:none;-moz-appearance:none;
-  padding-right:38px;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8798' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-  background-repeat:no-repeat;
-  background-position:right 12px center;
-  background-size:13px;
-}
 /* The collapsed face of the schedule card: when the next visit is. It rides on
    the title row rather than under it, so reading it costs no extra height.
    Centring it needs a three column grid, not flex. Flex would only centre it in
@@ -1523,6 +1512,20 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldSchedForm .field input,.fieldSchedForm .field select{
   width:100%;box-sizing:border-box;padding:12px 12px;border-radius:var(--radius-sm);
   border:1.5px solid var(--line);background:var(--paper);font-family:inherit;
+}
+/* A native select draws its arrow hard against the right edge, while the date
+   and time fields inset their pickers, so the arrow is replaced with one we can
+   position on the same line as those. This has to sit after the rule above:
+   that rule's `background` shorthand resets background-image to none, and at
+   equal specificity the later declaration is the one that sticks. Putting it
+   first is what left the field with no arrow at all. */
+.fieldSchedForm .field select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  padding-right:38px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8798' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  background-size:13px;
 }
 .fieldSchedForm .schedTypeToggle{margin-bottom:14px;}
 .fieldSchedForm .schedPendingItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;font-size:.84em;border-top:1px solid var(--line-soft);}
@@ -5124,6 +5127,17 @@ function isDateBooked(iso){
   const map=buildJobDaysMap(SCHED_EDIT_ID);
   return !!(map[iso] && map[iso].length);
 }
+/* Worded for the input the device actually has, not for its width: the office
+   view gets opened on a phone held in desktop mode often enough that a width
+   test would tell somebody to hover on a screen with no pointer. */
+function isFinePointer(){
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+}
+function schedCalendarHint(){
+  return isFinePointer()
+    ? "Click an open date to set the start date, then click a later date to set the end date. Shaded days already have a job scheduled. Hover over any shaded day to see what's booked."
+    : "Tap an open date to set the start date, then tap a later date to set the end date. Shaded days already have a job scheduled. Long press on any shaded day to see what's booked.";
+}
 function scheduleCalendarHTML(){
   const month=SCHED_CAL_MONTH;
   const y=month.getFullYear(), m=month.getMonth();
@@ -5190,7 +5204,7 @@ function scheduleCalendarHTML(){
       <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
       ${cells}
     </div>
-    <div class="small" style="margin-top:8px;">Shaded days already have a job scheduled. Hover on desktop (press and hold on mobile) to see what's booked, or just tap to pick that day. You can still schedule another job the same day as long as the times don't overlap. Click an open date to set the start date; click a later date to set the end date.</div>`;
+    <div class="small" style="margin-top:8px;">${schedCalendarHint()}</div>`;
 }
 /* Re-renders only the calendar column, leaving the form fields (and the
    rest of the page) untouched so typing/tapping in the date & time inputs
