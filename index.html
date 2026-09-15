@@ -5547,7 +5547,11 @@ function openFieldNote(id){
   FIELD_NOTE_OPEN=true;
   WO_EDIT_NOTE_IDX=null;
   FIELD_NOTE_TYPE='NOTE';
-  FIELD_NOTE_DRAFT={text:'', follow:''};
+  /* The draft is read back from the same per-work-order store the office
+     composer writes to, so a note half typed in one view is still there in the
+     other, and is still there after the work order is closed and reopened. The
+     follow-up date is not carried: neither composer has ever persisted it. */
+  FIELD_NOTE_DRAFT={text: noteDraftFor(id), follow:''};
   renderWorkOrderModal(id);
   setTimeout(()=>{ const t=document.getElementById('fieldNoteText'); if(t) t.focus(); }, 60);
 }
@@ -5567,6 +5571,13 @@ function closeFieldNote(id){
 /* Same capability as the office form, laid out for one hand. The follow-up
    date uses the native picker rather than the typed field, because a date
    wheel beats typing MM/DD/YYYY on a doorstep. */
+/* Typing in the field composer writes through to the shared draft. Guarded on
+   editing, because an edit loads an existing note into the same textarea and
+   must not overwrite a pending new note with it. */
+function fieldNoteInput(id, value, editing){
+  FIELD_NOTE_DRAFT.text=value;
+  if(!editing) saveNoteDraft(id, value);
+}
 function submitFieldNote(id){
   const wo=getWO(id);
   if(!wo) return;
@@ -5603,6 +5614,7 @@ function submitFieldNote(id){
   saveDB(DB);
   FIELD_NOTE_OPEN=false;
   FIELD_NOTE_DRAFT={text:'', follow:''};
+  saveNoteDraft(id, '');
   renderWorkOrderModal(id);
   renderTabCounts();
   renderMain();
@@ -5817,7 +5829,7 @@ function fieldNoteComposerHTML(id){
     </select>
     ${isPre ? `<div class="small" style="margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>` : `
     <label class="fieldNoteLabel" for="fieldNoteText">Note</label>
-    <textarea id="fieldNoteText" rows="5" placeholder="What happened on site..." oninput="FIELD_NOTE_DRAFT.text=this.value">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
+    <textarea id="fieldNoteText" rows="5" placeholder="What happened on site..." oninput="fieldNoteInput(${id}, this.value, ${editing?'true':'false'})">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
     <label class="fieldNoteLabel" for="fieldNoteFollow">Follow-up date (optional)</label>
     <input type="date" id="fieldNoteFollow" value="${esc(FIELD_NOTE_DRAFT.follow||'')}" oninput="FIELD_NOTE_DRAFT.follow=this.value">`}
     <div class="fieldNoteBtns">
@@ -5887,7 +5899,7 @@ function fieldNotesSecHTML(wo){
      separately from the rest. */
   const one=(n, idx)=>`<div class="fsNote">
       <div class="fsNoteTop">
-        <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.by?' &middot; '+esc(n.by):''}</span>
+        <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.time?' '+esc(n.time):''}${n.by?' &middot; '+esc(n.by):''}</span>
         ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
         ${isAdmin ? `<span class="fsNoteActions">
           <button onclick="adminEditNote(${wo.id},${idx})">Edit</button>
@@ -6056,8 +6068,20 @@ function fieldJobSecHTML(wo){
       <div class="fieldSecBody">${jobDetailsEditHTML(id)}</div>
     </div>`;
   }
-  const body=jd.description ? esc(jd.description) : '<div class="small">No job description yet.</div>';
   const lists=fieldJobLists(wo);
+  /* Same test the office view uses. With nothing on the job at all, say what to
+     do about it rather than just reporting an empty description; with lists but
+     no description, the pills already carry the content and a "no description"
+     line is only noise. */
+  const hasAny = (jd.description && jd.description.trim()) || lists.length || !!jd.presite;
+  const body = jd.description
+    ? esc(jd.description)
+    : (hasAny ? '' : '<div class="small">No job details yet. Use Edit Job Details below to add them, or complete a pre-site inspection.</div>');
+  /* A job sitting in Pre-Site Inspections has no details until the walkthrough
+     is done, so the card points at the way to get them. */
+  const presitePrompt = inPresiteList(wo)
+    ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>'
+    : '';
   /* The walkthrough output gets pills of its own rather than being dumped into
      the card: the scope can run long, and the summary is a different kind of
      thing from a line item list. */
@@ -6095,6 +6119,7 @@ function fieldJobSecHTML(wo){
     </button>
     ${open?`<div class="fieldSecBody">
       ${body}
+      ${presitePrompt}
       ${pills}
       ${card}
       <button class="fieldMoreBtn alignEnd" onclick="openJobDetailsEdit(${id})">Edit Job Details</button>
