@@ -708,6 +708,8 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .addrSuggestItem{padding:9px 10px;font-size:.85em;line-height:1.3;cursor:pointer;border-bottom:1px solid #f0eee6;color:var(--navy);}
 .addrSuggestItem:last-child{border-bottom:none;}
 .addrSuggestItem:hover,.addrSuggestItem:active{background:var(--cream);}
+.addrSuggestAttr{padding:5px 10px;font-family:Roboto,Arial,sans-serif;font-size:.7em;color:#5e5e5e;text-align:right;cursor:default;user-select:none;}
+html.dark .addrSuggestAttr{color:#c4c4c4;}
 .kv b{color:var(--navy);display:block;font-size:.68em;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;margin-bottom:1px;}
 .schedSection{margin-top:20px;border-top:1px solid var(--line);padding-top:16px;}
 /* The divider exists to separate this section from what sits above it. Now
@@ -4985,9 +4987,6 @@ function renderScheduleWidget(){
               <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site Inspection</button>
               <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
             </div>
-            <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
-            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
-            <div class="field"><label>End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
             <div class="field"><label>Repeat</label>
               <select id="schedRepeat" onchange="onSchedRepeatChange(this.value)">
                 <option value="none" ${SCHED_REPEAT==='none'?'selected':''}>Does not repeat</option>
@@ -4995,6 +4994,10 @@ function renderScheduleWidget(){
                 <option value="weekly" ${SCHED_REPEAT==='weekly'?'selected':''}>Every week</option>
               </select>
             </div>
+            <div class="schedRepeatNote">Set this field first if scheduling a job that runs more than one day.</div>
+            <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
+            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
+            <div class="field"><label>End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
             ${SCHED_REPEAT!=='none' ? `
             <div class="field"><label>Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
             <div class="schedRepeatNote">Each ${SCHED_REPEAT==='weekly'?'week':'day'} in the repeat only books the Start Time–End Time window above, not the full day${SCHED_REPEAT==='weekly'?', always on the same day of the week as the start date':''}.</div>
@@ -6018,9 +6021,6 @@ function fieldSchedFormHTML(){
       <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site</button>
       <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
     </div>
-    <div class="field"><label for="schedStartDate">Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
-    <div class="field"><label for="schedStartTime">Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
-    <div class="field"><label for="schedEndTime">End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
     <div class="field"><label for="schedRepeat">Repeat</label>
       <select id="schedRepeat" onchange="onSchedRepeatChange(this.value)">
         <option value="none" ${SCHED_REPEAT==='none'?'selected':''}>Does not repeat</option>
@@ -6028,6 +6028,10 @@ function fieldSchedFormHTML(){
         <option value="weekly" ${SCHED_REPEAT==='weekly'?'selected':''}>Every week</option>
       </select>
     </div>
+    <div class="fieldSchedNote" style="margin-top:-4px;margin-bottom:10px;">Set this field first if scheduling a job that runs more than one day.</div>
+    <div class="field"><label for="schedStartDate">Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
+    <div class="field"><label for="schedStartTime">Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
+    <div class="field"><label for="schedEndTime">End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
     ${SCHED_REPEAT!=='none' ? `
     <div class="field"><label for="schedEndDate">Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
     <div class="fieldSchedNote">Each ${SCHED_REPEAT==='weekly'?'week':'day'} in the repeat only books the Start Time to End Time window above, not the full day${SCHED_REPEAT==='weekly'?', always on the same day of the week as the start date':''}.</div>` : ''}
@@ -6657,13 +6661,44 @@ function phoneField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" maxlength="14" value="${esc(val)}" oninput="onPhoneFieldInput(this)" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
 }
 function addressField(key,label,val){
+  /* A saved address keeps its unit inline ("123 Main St #4, San Diego, CA").
+     For editing, the unit is pulled out into its own box and put back right
+     after the street on save (see combineAddressUnit). */
+  const ex=extractUnit(String(val||''));
+  const streetVal=ex.unit ? ex.rest : (val||'');
   return `<div class="kv" style="position:relative;">
     <b>${label}</b>
-    <input id="cf_${key}" type="text" autocomplete="off" value="${esc(val)}"
+    <input id="cf_${key}" type="text" autocomplete="off" value="${esc(streetVal)}"
       style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"
       oninput="onAddressFieldInput(this)" onblur="scheduleHideAddressSuggestions()">
     <div id="addrSuggest_${key}" class="addrSuggest" style="display:none;"></div>
-  </div>`;
+  </div>
+  <div class="kv"><b>Unit or Suite (optional)</b><input id="cf_${key}Unit" type="text" autocomplete="off" placeholder="Apt 4, Suite 200, #4B" value="${esc(ex.unit)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
+}
+/* Turns what was typed in the unit box into a consistent label:
+   "suite 200" -> "Suite 200", "apt. 4" -> "Apt 4", "4B" -> "#4B". */
+function normalizeUnit(raw){
+  const v=String(raw||'').trim();
+  if(!v) return '';
+  const m=extractUnit('x '+v);
+  if(m.unit && m.rest==='x') return m.unit;
+  if(/^[A-Za-z0-9-]+$/.test(v)) return '#'+v;
+  return v;
+}
+/* Puts the unit right after the street: "123 Main St Suite 200, San Diego, CA 92101".
+   With no unit, the address is saved exactly as entered. */
+function combineAddressUnit(addrRaw, unitRaw){
+  const addr=String(addrRaw||'').trim();
+  const unit=normalizeUnit(unitRaw);
+  if(!unit) return addr;
+  const rest=extractUnit(addr).rest.trim();
+  if(!rest) return unit;
+  const comma=rest.indexOf(',');
+  if(comma>-1) return rest.slice(0,comma).trim()+' '+unit+', '+rest.slice(comma+1).trim();
+  let p=null;
+  try{ p=splitAddress(rest); }catch(e){ p=null; }
+  if(p && p.street && p.line2 && p.street!==rest) return p.street+' '+unit+', '+p.line2;
+  return rest+' '+unit;
 }
 /* ---- Phone number formatting: always normalized to (XXX) XXX-XXXX ---- */
 /* Renders a stored phone number as a tap-to-call link. The visible text keeps
@@ -6759,45 +6794,128 @@ function formatPhoneNumber(raw){
 function onPhoneFieldInput(el){
   el.value=formatPhoneNumber(el.value);
 }
-/* ---- Address autocomplete (OpenStreetMap Nominatim) ---- */
+/* ---- Address autocomplete (Google Places) ----
+   Suggestions come from Google's Place Autocomplete, limited to US street
+   addresses and weighted toward San Diego County. Typing requests and the
+   final lookup of the chosen address share one session token so Google
+   bills them as a single address lookup. The Google script only loads the
+   first time someone types in an address field. The key below is locked in
+   Google Cloud to this site's web address and to the two services it needs. */
+const GOOGLE_PLACES_KEY='AIzaSyAWv7NV3687qF-_wcGaDGFHnL83T2PCxeM';
+const ADDR_BIAS={center:{lat:32.7157,lng:-117.1611},radius:50000};
 let ADDR_DEBOUNCE_TIMER=null;
 let ADDR_HIDE_TIMER=null;
+let ADDR_PLACES_PROMISE=null;
+let ADDR_SESSION_TOKEN=null;
+let ADDR_PREDICTIONS=[];
+let ADDR_REQ_SEQ=0;
+function loadGooglePlaces(){
+  if(ADDR_PLACES_PROMISE) return ADDR_PLACES_PROMISE;
+  ADDR_PLACES_PROMISE=new Promise((resolve,reject)=>{
+    if(window.google && google.maps && google.maps.importLibrary){
+      google.maps.importLibrary('places').then(resolve,reject); return;
+    }
+    window.__gHandyPlacesReady=()=>{ google.maps.importLibrary('places').then(resolve,reject); };
+    const s=document.createElement('script');
+    s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(GOOGLE_PLACES_KEY)+'&v=weekly&loading=async&callback=__gHandyPlacesReady';
+    s.async=true;
+    s.onerror=()=>reject(new Error('Google Places failed to load'));
+    document.head.appendChild(s);
+  }).catch(err=>{ ADDR_PLACES_PROMISE=null; throw err; });
+  return ADDR_PLACES_PROMISE;
+}
 function onAddressFieldInput(el){
   const key=el.id.replace('cf_','');
   const q=el.value.trim();
   clearTimeout(ADDR_DEBOUNCE_TIMER);
-  if(q.length<4){ hideAddressSuggestions(); return; }
-  ADDR_DEBOUNCE_TIMER=setTimeout(()=>fetchAddressSuggestions(q,key), 350);
+  if(q.length<4){ hideAddressSuggestions(true); return; }
+  ADDR_DEBOUNCE_TIMER=setTimeout(()=>fetchAddressSuggestions(q,key), 300);
 }
 function fetchAddressSuggestions(q,key){
-  const url='https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q);
-  fetch(url,{headers:{'Accept':'application/json'}})
-    .then(r=>r.ok?r.json():[])
-    .then(results=>renderAddressSuggestions(results||[],key))
-    .catch(()=>hideAddressSuggestions());
+  const seq=++ADDR_REQ_SEQ;
+  loadGooglePlaces().then(places=>{
+    if(!ADDR_SESSION_TOKEN) ADDR_SESSION_TOKEN=new places.AutocompleteSessionToken();
+    return places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+      input:q,
+      sessionToken:ADDR_SESSION_TOKEN,
+      includedRegionCodes:['us'],
+      includedPrimaryTypes:['street_address','premise','subpremise'],
+      locationBias:ADDR_BIAS,
+      language:'en'
+    });
+  }).then(res=>{
+    if(seq!==ADDR_REQ_SEQ) return;
+    const preds=((res&&res.suggestions)||[]).map(s=>s.placePrediction).filter(Boolean).slice(0,5);
+    renderAddressSuggestions(preds,key);
+  }).catch(()=>{ if(seq===ADDR_REQ_SEQ) hideAddressSuggestions(true); });
 }
-function renderAddressSuggestions(results,key){
+/* "123 Main St, San Diego, CA, USA" -> "123 Main St, San Diego, CA" */
+function predictionLabel(p){
+  const txt=(p.text && p.text.toString ? p.text.toString() : String(p.text||''));
+  return txt.replace(/,\s*(USA|United States)$/i,'').trim();
+}
+function renderAddressSuggestions(preds,key){
   const box=document.getElementById('addrSuggest_'+key);
   if(!box) return;
-  if(!results.length){ box.style.display='none'; box.innerHTML=''; return; }
-  box.innerHTML=results.map(r=>{
-    const label=esc(r.display_name||'');
-    return `<div class="addrSuggestItem" onmousedown="selectAddressSuggestion('${key}', this)" data-val="${label}">${label}</div>`;
-  }).join('');
+  ADDR_PREDICTIONS=preds;
+  if(!preds.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.innerHTML=preds.map((p,i)=>{
+    const label=esc(predictionLabel(p));
+    return `<div class="addrSuggestItem" onmousedown="selectAddressSuggestion('${key}', ${i})">${label}</div>`;
+  }).join('')+`<div class="addrSuggestAttr" onmousedown="event.preventDefault()">Google Maps</div>`;
   box.style.display='block';
 }
-function selectAddressSuggestion(key, itemEl){
+/* Builds {address:"123 Main St, San Diego, CA 92101", unit:"#4"} from Google's address parts. */
+function buildCleanAddress(place){
+  const comps=place.addressComponents||[];
+  const get=(type,short)=>{
+    const c=comps.find(x=>(x.types||[]).includes(type));
+    return c ? ((short ? c.shortText : c.longText)||'') : '';
+  };
+  const street=[get('street_number'), get('route',true)].filter(Boolean).join(' ');
+  const unitRaw=get('subpremise');
+  const unit=unitRaw ? (/^[a-z]/i.test(unitRaw) ? unitRaw : '#'+unitRaw) : '';
+  const city=get('locality') || get('postal_town') || get('sublocality') || get('neighborhood');
+  const state=get('administrative_area_level_1',true);
+  const zip=get('postal_code');
+  if(!street || !city){
+    const ex=extractUnit(String(place.formattedAddress||'').replace(/,\s*(USA|United States)$/i,'').trim());
+    return {address:ex.rest, unit:ex.unit};
+  }
+  return {address:[street, city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', '), unit};
+}
+function selectAddressSuggestion(key, idx){
   const el=document.getElementById('cf_'+key);
-  const val=itemEl.getAttribute('data-val');
-  if(el && val!==null){ el.value=val; }
-  hideAddressSuggestions();
+  const pred=ADDR_PREDICTIONS[idx];
+  if(!el || !pred){ hideAddressSuggestions(true); return; }
+  const setUnit=(u)=>{
+    const uf=document.getElementById('cf_'+key+'Unit');
+    if(u && uf && !uf.value.trim()) uf.value=u;
+  };
+  const first=extractUnit(predictionLabel(pred));
+  const interim=first.rest;
+  el.value=interim;
+  setUnit(first.unit);
+  hideAddressSuggestions(false);
+  const place=pred.toPlace();
+  ADDR_SESSION_TOKEN=null;
+  place.fetchFields({fields:['addressComponents','formattedAddress']}).then(()=>{
+    const full=buildCleanAddress(place);
+    const cur=document.getElementById('cf_'+key);
+    if(full.address && cur && cur.value===interim) cur.value=full.address;
+    setUnit(full.unit);
+  }).catch(()=>{});
 }
 function scheduleHideAddressSuggestions(){
   clearTimeout(ADDR_HIDE_TIMER);
-  ADDR_HIDE_TIMER=setTimeout(hideAddressSuggestions,150);
+  ADDR_HIDE_TIMER=setTimeout(()=>hideAddressSuggestions(false),150);
 }
-function hideAddressSuggestions(){
+/* endSession: true when the person is done with the field without picking a
+   suggestion, so the next round of typing starts a fresh Google session. */
+function hideAddressSuggestions(endSession){
   document.querySelectorAll('.addrSuggest').forEach(b=>{ b.style.display='none'; b.innerHTML=''; });
+  ADDR_PREDICTIONS=[];
+  if(endSession!==false) ADDR_SESSION_TOKEN=null;
 }
 function saveCustomer(id){
   const wo=getWO(id);
@@ -6806,6 +6924,8 @@ function saveCustomer(id){
     const field=document.getElementById('cf_'+k);
     wo.customer[k]= field ? field.value.trim() : (wo.customer[k]||'');
   });
+  const unitField=document.getElementById('cf_addressUnit');
+  if(unitField){ wo.customer.address=combineAddressUnit(wo.customer.address, unitField.value); }
   wo.customer.phone = formatPhoneNumber(wo.customer.phone);
   wo.customer.altPhone = wo.customer.altPhone ? formatPhoneNumber(wo.customer.altPhone) : '';
   wo.customer.homeownerPhone = wo.customer.homeownerPhone ? formatPhoneNumber(wo.customer.homeownerPhone) : '';
