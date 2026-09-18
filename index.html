@@ -6179,9 +6179,9 @@ function fieldModeHTML(wo){
      it, so the thing being edited is not also shown read-only above it. */
   return `<div class="fieldMode">
     ${WO_CUST_EDIT ? fieldCustEditHTML(wo) : fieldGridHTML(wo)}
+    ${fieldJobSecHTML(wo)}
     ${fieldScheduleSecHTML(wo)}
     ${fieldCheckHTML(wo)}
-    ${fieldJobSecHTML(wo)}
     <div class="fieldActions">
       <button class="fieldBtn" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
       <button class="fieldBtn" onclick="openFieldNote(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
