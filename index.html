@@ -970,9 +970,48 @@ html.hc .woRow.checkedInGlow{
   border-color:var(--neon-rail);border-left-color:var(--neon-rail);
   border-left-width:10px;box-shadow:none;animation:none;
 }
-.checkInOutRow{display:flex;flex-wrap:wrap;gap:14px;margin-top:6px;}
+.checkInOutRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px;}
 .checkInOutRow .jcCheck{white-space:nowrap;}
 .checkInOutRow .jcCheck input:disabled{opacity:.6;}
+/* ---- The check in / check out button ----
+   One button, not two boxes, and it shows only the action that is actually
+   available: Check In when nobody is on site, Check Out once someone is. The
+   same action can never be taken twice in a row, which is what lets a single
+   day hold several separate visits. Sized to the footprint the two boxes
+   used, so nothing on the card moves. */
+.ciBtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;
+  font-family:inherit;font-size:.82em;font-weight:700;letter-spacing:.02em;
+  padding:8px 15px;min-height:36px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--line);background:var(--cream);color:var(--navy);
+  cursor:pointer;box-sizing:border-box;
+}
+.ciBtn .ic{width:15px;height:15px;opacity:.85;}
+.ciBtn.in{border-color:var(--neon-rail);}
+.ciBtn.out{background:var(--navy);color:#fff;border-color:var(--navy);}
+.ciBtn.out .ic{opacity:1;}
+.ciBtn:hover{filter:brightness(1.05);}
+.ciBtn:active{transform:scale(.96);}
+html.hc .ciBtn{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
+/* ---- The per-visit log ----
+   One line per trip to the property: who logged it, the time in, the time out,
+   and what that visit came to. Admins get a pencil on each stamp so a mistyped
+   time is fixable without disturbing any of the other visits that day. */
+.visitLog{display:flex;flex-direction:column;gap:5px;flex:1 0 100%;margin-top:4px;}
+.visitRow{
+  display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:6px 10px;font-size:.84em;
+}
+.visitNum{
+  flex:0 0 auto;min-width:21px;height:21px;padding:0 5px;box-sizing:border-box;
+  border-radius:999px;background:var(--navy);color:#fff;font-size:.76em;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.visitBy{font-weight:700;color:var(--navy);}
+.visitTimes{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums;}
+.visitOpen{font-style:italic;opacity:.75;font-variant-numeric:normal;}
+.dayTotalTag{margin-left:auto;}
 .checkStampBox{
   background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:12px 14px;margin:10px 0;font-size:.85em;
@@ -1225,6 +1264,8 @@ html.hc .woRow.checkedInGlow{
   .dateFieldWrap .calBtn{min-height:48px;min-width:44px;}
   .noteEntryRow textarea{min-height:48px;}
   .jcCheck{min-height:48px;padding:10px 16px;gap:12px;}
+  .ciBtn{min-height:46px;padding:11px 18px;font-size:.9em;}
+  .visitRow{font-size:.9em;}
   .noteItem .noteActions{gap:20px;}
   .noteItem .noteActions button{min-height:40px;font-size:.88em;padding:8px 4px;white-space:nowrap;}
   .docRow{flex-direction:column;align-items:stretch;gap:12px;padding:16px;}
@@ -2547,7 +2588,7 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   header.top,.globalSearchBar,.tabsBarWrap,nav.tabs,#toastStack,#modalGhost,
   .newWoBtn,.closeX,.headerTabs,.settingsWrap,.syncPill,.logoutBtn,
   .sortWrap,.editLink,.adminViewLink,.copyIcon,.docActions,.btnRow,
-  .checkInOutRow,.estDecisionRow,.jcCheck{display:none !important;}
+  .checkInOutRow,.estDecisionRow,.jcCheck,.ciBtn,.fsEdit{display:none !important;}
   /* An open modal becomes the printed page. Without this the scrim prints as
      a full-bleed grey block and the sheet is clipped to the viewport. */
   .overlay,.confirmBox{
@@ -3423,8 +3464,13 @@ function normalizeWO(wo){
     if(!sd.repeat) sd.repeat = (sd.endDate && sd.endDate!==sd.startDate) ? 'daily' : 'none';
     if(sd.repeat==='weekdays') sd.repeat='daily';
     if(!Array.isArray(sd.dayLogs) || sd.dayLogs.length===0){
-      sd.dayLogs=expandRepeatDates(sd.startDate, sd.endDate||sd.startDate, sd.repeat).map(date=>({date, checkIn:null, checkOut:null}));
+      sd.dayLogs=expandRepeatDates(sd.startDate, sd.endDate||sd.startDate, sd.repeat).map(date=>newDayLog(date));
     }
+    /* A day used to hold exactly one check-in and one check-out. It now holds
+       a list of visits, so the same day can be entered and left more than
+       once. Anything saved under the old shape becomes that day's first
+       visit, so no previously logged time is lost. */
+    sd.dayLogs.forEach(dl=>migrateDayLogSessions(dl));
   });
   return wo;
 }
@@ -3519,6 +3565,10 @@ function fixLegacyUserDisplayNames(db){
       (sd.dayLogs||[]).forEach(dl=>{
         if(dl.checkIn){ const fixed=resolve(dl.checkIn.by); if(fixed!==dl.checkIn.by){ dl.checkIn.by=fixed; changed=true; } }
         if(dl.checkOut){ const fixed=resolve(dl.checkOut.by); if(fixed!==dl.checkOut.by){ dl.checkOut.by=fixed; changed=true; } }
+        (dl.sessions||[]).forEach(sess=>{
+          if(sess.in){ const fixed=resolve(sess.in.by); if(fixed!==sess.in.by){ sess.in.by=fixed; changed=true; } }
+          if(sess.out){ const fixed=resolve(sess.out.by); if(fixed!==sess.out.by){ sess.out.by=fixed; changed=true; } }
+        });
       });
     });
   });
@@ -4255,7 +4305,7 @@ function rowHTML(wo, opts){
   opts=opts||{};
   const cls=statusClass(wo);
   const todayLog = todaysDayLog(wo);
-  const anyOpenCheckIn = allDayLogsSorted(wo).some(({log})=>log.checkIn && !log.checkOut);
+  const anyOpenCheckIn = allDayLogsSorted(wo).some(({log})=>openSession(log));
   const glowCls = anyOpenCheckIn ? ' checkedInGlow' : '';
   const openFn = opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})`
     : (opts.openMode==='estimate') ? `openEstimateSplit(${wo.id})`
@@ -4282,8 +4332,7 @@ function rowHTML(wo, opts){
     : '';
   const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? `<div class="checkInOutRow" onclick="event.stopPropagation()">
-         <label class="jcCheck"><input type="checkbox" ${todayLog.log.checkIn?'checked disabled':''} onchange="checkInDay(${wo.id}, '${todayLog.log.date}', this)">${icon('login')} In${todayLog.log.checkIn?` (${todayLog.log.checkIn.time})`:''}</label>
-         <label class="jcCheck"><input type="checkbox" ${!todayLog.log.checkIn||todayLog.log.checkOut?'disabled':''} ${todayLog.log.checkOut?'checked':''} onchange="checkOutDay(${wo.id}, '${todayLog.log.date}', this)">${icon('logout')} Out${todayLog.log.checkOut?` (${todayLog.log.checkOut.time})`:''}</label>
+         ${checkBtnHTML(wo.id, todayLog.log)}
        </div>`
     : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today. See Job Details for other days.</div>' : '');
   return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
@@ -4381,15 +4430,61 @@ function saveCheckOutTime(id){
 /* =========================================================================
    PER-DAY CHECK IN / CHECK OUT
    Every individual day a work order is scheduled for (each date produced by
-   the Schedule Date(s) feature) gets its own independent check-in and
-   check-out stamp, stored on that day's entry in scheduleDates[].dayLogs.
+   the Schedule Date(s) feature) keeps its own list of visits. A visit is one
+   check-in together with the check-out that closes it, so a day that needed
+   three separate trips to the property carries three visits and the hours add
+   up across all of them. The list lives on that day's entry in
+   scheduleDates[].dayLogs.
 ========================================================================= */
+function newSessionId(){
+  return 's'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+}
+function newDayLog(date){
+  return {date, sessions:[], checkIn:null, checkOut:null};
+}
+/* Days saved before visits existed held a single checkIn/checkOut pair. That
+   pair becomes the day's first visit, so nothing already logged is lost. */
+function migrateDayLogSessions(log){
+  if(!log) return log;
+  if(!Array.isArray(log.sessions)){
+    log.sessions = log.checkIn ? [{id:newSessionId(), in:log.checkIn, out:log.checkOut||null}] : [];
+  }
+  syncDayLogLegacy(log);
+  return log;
+}
+/* checkIn/checkOut stay on the day as a mirror of the first check-in and the
+   last check-out. They exist only so anything still reading the old shape
+   sees a sensible value; the visit list is the real record. */
+function syncDayLogLegacy(log){
+  const ss=logSessions(log);
+  log.checkIn = ss.length ? (ss[0].in||null) : null;
+  log.checkOut = ss.length ? (ss[ss.length-1].out||null) : null;
+}
+function logSessions(log){
+  return (log && Array.isArray(log.sessions)) ? log.sessions : [];
+}
+/* The visit that has been checked into but not yet checked out of, if there
+   is one. Its presence is what makes the button read Check Out instead of
+   Check In, and what stops a second check-in landing on top of the first. */
+function openSession(log){
+  return logSessions(log).find(s=>s.in && !s.out) || null;
+}
+/* A day with at least one finished visit and nobody currently on site. */
+function dayFullyClosed(log){
+  return logSessions(log).length>0 && !openSession(log);
+}
 function findDayLog(wo, date){
   for(const entry of (wo.scheduleDates||[])){
     const log=(entry.dayLogs||[]).find(l=>l.date===date);
     if(log) return {entry, log};
   }
   return null;
+}
+function findSession(wo, date, sessionId){
+  const found=findDayLog(wo, date);
+  if(!found) return null;
+  const session=logSessions(found.log).find(x=>x.id===sessionId);
+  return session ? {entry:found.entry, log:found.log, session} : null;
 }
 function allDayLogsSorted(wo){
   const out=[];
@@ -4411,17 +4506,28 @@ function parseClockTime(str){
   if(/PM/i.test(m[3])) h+=12;
   return h*60+parseInt(m[2],10);
 }
-/* Hours worked for one day's log, null unless it has BOTH a check-in and a
-   check-out, so a day that's only half-logged never counts toward a total.
-   A check-out clock time earlier than check-in is treated as crossing
-   midnight (added shift) rather than negative hours. */
-function dayLogHours(log){
-  if(!log || !log.checkIn || !log.checkOut) return null;
-  const inMin=parseClockTime(log.checkIn.time), outMin=parseClockTime(log.checkOut.time);
+/* Hours for one visit, null unless it has both a check-in and a check-out, so
+   a visit still open never counts toward a total. A check-out clock time
+   earlier than its own check-in is treated as crossing midnight (a late
+   finish) rather than as negative hours. */
+function sessionHours(s){
+  if(!s || !s.in || !s.out) return null;
+  const inMin=parseClockTime(s.in.time), outMin=parseClockTime(s.out.time);
   if(inMin==null || outMin==null) return null;
   let diff=outMin-inMin;
   if(diff<0) diff+=24*60;
   return diff/60;
+}
+/* Hours for a whole day: every finished visit on it added together. Null when
+   the day has no finished visit at all, so a day that is only half logged
+   still contributes nothing to any total. */
+function dayLogHours(log){
+  let total=0, any=false;
+  logSessions(log).forEach(s=>{
+    const h=sessionHours(s);
+    if(h!=null){ total+=h; any=true; }
+  });
+  return any ? total : null;
 }
 /* Formats fractional hours as "Xh Ym" for display, dropping whichever unit
    is zero so a whole-hour day reads "8h" instead of "8h 0m". */
@@ -4432,9 +4538,9 @@ function formatHoursMinutes(hours){
   if(h) return `${h}h`;
   return `${m}m`;
 }
-/* Sums every completed (checked in AND out) day log in a list into a running
-   total: total hours worked plus how many days contributed to it. Grows on
-   its own as more days get checked in/out, nothing to recompute by hand. */
+/* Sums a list of days into a running total: total hours worked plus how many
+   days contributed to it. Grows on its own as visits get logged, nothing to
+   recompute by hand. */
 function sumDayLogHours(logs){
   let total=0, count=0;
   (logs||[]).forEach(log=>{
@@ -4446,127 +4552,145 @@ function sumDayLogHours(logs){
 function todaysDayLog(wo){
   return findDayLog(wo, isoToday());
 }
-function checkInDay(woId, date, checkboxEl){
+/* Opens a new visit on that day. Refused while one is already open, which is
+   what makes checking in twice in a row impossible. */
+function checkInDay(woId, date){
   const wo=getWO(woId);
   if(!wo) return;
   const found=findDayLog(wo, date);
-  if(!found || found.log.checkIn){ return; }
-  if(checkboxEl) checkboxEl.checked=false; // don't visually check until confirmed
-  askYesNo('Confirm you are checking in on site for '+date+'?', (yes)=>{
-    if(yes){
-      const ts=nowStamp();
-      found.log.checkIn={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
-      addAdminLog(wo, 'Checked in on site for '+date+' at '+ts.time+' on '+ts.date+'.');
-      saveDB(DB);
-      renderTabCounts();
-      renderMain();
-      if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
-      toast('Checked in. Time logged for '+date+'.');
-    }
+  if(!found) return;
+  if(openSession(found.log)){ toast('Already checked in. Check out first.'); return; }
+  askYesNo('Confirm you are checking in on site for '+formatDateDisplay(date)+'?', (yes)=>{
+    if(!yes) return;
+    const live=getWO(woId);
+    const target=live && findDayLog(live, date);
+    if(!target || openSession(target.log)) return;
+    if(!Array.isArray(target.log.sessions)) target.log.sessions=[];
+    const ts=nowStamp();
+    target.log.sessions.push({
+      id:newSessionId(),
+      in:{date:ts.date, time:ts.time, by:CURRENT_USER.displayName},
+      out:null
+    });
+    syncDayLogLegacy(target.log);
+    addAdminLog(live, 'Checked in on site for '+date+' at '+ts.time+' on '+ts.date+'.');
+    saveDB(DB);
+    renderTabCounts();
+    renderMain();
+    if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
+    toast('Checked in. Time logged for '+formatDateDisplay(date)+'.');
   });
 }
-function checkOutDay(woId, date, checkboxEl){
+/* Closes whichever visit is currently open. The day stays available, so the
+   next arrival simply opens another visit on the same date. */
+function checkOutDay(woId, date){
   const wo=getWO(woId);
   if(!wo) return;
   const found=findDayLog(wo, date);
-  if(!found || !found.log.checkIn || found.log.checkOut){ return; }
-  if(checkboxEl) checkboxEl.checked=false;
-  askYesNo('Confirm you are checking out, leaving the job site for '+date+'?', (yes)=>{
-    if(yes){
-      const ts=nowStamp();
-      found.log.checkOut={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
-      addAdminLog(wo, 'Checked out from site for '+date+' at '+ts.time+' on '+ts.date+'.');
-      saveDB(DB);
-      renderTabCounts();
-      renderMain();
-      if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
-      toast('Checked out. Time logged for '+date+'.');
-    }
+  if(!found || !openSession(found.log)){ toast('Not checked in yet.'); return; }
+  askYesNo('Confirm you are checking out, leaving the job site for '+formatDateDisplay(date)+'?', (yes)=>{
+    if(!yes) return;
+    const live=getWO(woId);
+    const target=live && findDayLog(live, date);
+    const open=target && openSession(target.log);
+    if(!open) return;
+    const ts=nowStamp();
+    open.out={date:ts.date, time:ts.time, by:CURRENT_USER.displayName};
+    syncDayLogLegacy(target.log);
+    addAdminLog(live, 'Checked out from site for '+date+' at '+ts.time+' on '+ts.date+'.');
+    saveDB(DB);
+    renderTabCounts();
+    renderMain();
+    if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
+    toast('Checked out. Time logged for '+formatDateDisplay(date)+'.');
   });
 }
-function editCheckInDayTime(woId, date){
+/* Admin correction of one stamp on one visit. Scoped to a single visit id, so
+   fixing the second trip of the day leaves the first one alone. */
+function editSessionTime(woId, date, sessionId, which){
   const wo=getWO(woId);
-  const found=findDayLog(wo, date);
-  if(!found || !found.log.checkIn) return;
+  const found=wo && findSession(wo, date, sessionId);
+  if(!found || !found.session[which]) return;
+  const stamp=found.session[which];
+  const label = which==='in' ? 'Check In' : 'Check Out';
   const root=document.getElementById('confirmRoot');
   root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
-    <h3>Edit Check In Time, ${date}</h3>
-    <div class="field"><label>Date</label><input type="text" id="editDayCheckInDate" value="${esc(found.log.checkIn.date)}"></div>
-    <div class="field"><label>Time</label><input type="text" id="editDayCheckInTimeVal" value="${esc(found.log.checkIn.time)}"></div>
+    <h3>Edit ${label} Time, ${formatDateDisplay(date)}</h3>
+    <div class="field"><label>Date</label><input type="text" id="editSessDate" value="${esc(stamp.date)}"></div>
+    <div class="field"><label>Time</label><input type="text" id="editSessTime" value="${esc(stamp.time)}"></div>
     <div class="btnRow">
-      <button class="btn" onclick="saveCheckInDayTime(${woId}, '${date}')">Save</button>
+      <button class="btn" onclick="saveSessionTime(${woId}, '${date}', '${sessionId}', '${which}')">Save</button>
       <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
     </div>
   </div></div>`;
 }
-function saveCheckInDayTime(woId, date){
+function saveSessionTime(woId, date, sessionId, which){
   const wo=getWO(woId);
-  const found=findDayLog(wo, date);
-  if(!found || !found.log.checkIn) return;
-  const newDate=document.getElementById('editDayCheckInDate').value.trim();
-  const newTime=document.getElementById('editDayCheckInTimeVal').value.trim();
+  const found=wo && findSession(wo, date, sessionId);
+  if(!found || !found.session[which]) return;
+  const newDate=document.getElementById('editSessDate').value.trim();
+  const newTime=document.getElementById('editSessTime').value.trim();
   if(!newDate || !newTime){ toast('Date and time are required.'); return; }
-  const oldDate=found.log.checkIn.date, oldTime=found.log.checkIn.time;
-  found.log.checkIn.date=newDate;
-  found.log.checkIn.time=newTime;
-  addAdminLog(wo, 'Check-in time for '+date+' edited from '+oldDate+' '+oldTime+' to '+newDate+' '+newTime+'.');
+  const stamp=found.session[which];
+  const oldDate=stamp.date, oldTime=stamp.time;
+  stamp.date=newDate;
+  stamp.time=newTime;
+  syncDayLogLegacy(found.log);
+  const word = which==='in' ? 'Check-in' : 'Check-out';
+  addAdminLog(wo, word+' time for '+date+' edited from '+oldDate+' '+oldTime+' to '+newDate+' '+newTime+'.');
   saveDB(DB);
   document.getElementById('confirmRoot').innerHTML='';
   renderMain();
   renderWorkOrderModal(woId);
-  toast('Check-in time updated.');
+  toast(word+' time updated.');
 }
-function editCheckOutDayTime(woId, date){
-  const wo=getWO(woId);
-  const found=findDayLog(wo, date);
-  if(!found || !found.log.checkOut) return;
-  const root=document.getElementById('confirmRoot');
-  root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
-    <h3>Edit Check Out Time, ${date}</h3>
-    <div class="field"><label>Date</label><input type="text" id="editDayCheckOutDate" value="${esc(found.log.checkOut.date)}"></div>
-    <div class="field"><label>Time</label><input type="text" id="editDayCheckOutTimeVal" value="${esc(found.log.checkOut.time)}"></div>
-    <div class="btnRow">
-      <button class="btn" onclick="saveCheckOutDayTime(${woId}, '${date}')">Save</button>
-      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
-    </div>
-  </div></div>`;
+/* The only control a day carries is one button, and it is always whichever
+   action is actually available. Same footprint as the two boxes it replaced,
+   so nothing around it shifts. */
+function checkBtnHTML(woId, log){
+  const open=openSession(log);
+  return open
+    ? `<button type="button" class="ciBtn out" title="Log the time you are leaving the site" onclick="event.stopPropagation();checkOutDay(${woId}, '${log.date}')">${icon('logout')} Check Out</button>`
+    : `<button type="button" class="ciBtn in" title="Log the time you arrived on site" onclick="event.stopPropagation();checkInDay(${woId}, '${log.date}')">${icon('login')} Check In</button>`;
 }
-function saveCheckOutDayTime(woId, date){
-  const wo=getWO(woId);
-  const found=findDayLog(wo, date);
-  if(!found || !found.log.checkOut) return;
-  const newDate=document.getElementById('editDayCheckOutDate').value.trim();
-  const newTime=document.getElementById('editDayCheckOutTimeVal').value.trim();
-  if(!newDate || !newTime){ toast('Date and time are required.'); return; }
-  const oldDate=found.log.checkOut.date, oldTime=found.log.checkOut.time;
-  found.log.checkOut.date=newDate;
-  found.log.checkOut.time=newTime;
-  addAdminLog(wo, 'Check-out time for '+date+' edited from '+oldDate+' '+oldTime+' to '+newDate+' '+newTime+'.');
-  saveDB(DB);
-  document.getElementById('confirmRoot').innerHTML='';
-  renderMain();
-  renderWorkOrderModal(woId);
-  toast('Check-out time updated.');
+/* Every visit made that day, in the order they happened: who logged it, in,
+   out, and the hours that visit came to. A visit still open reads as on site
+   now rather than borrowing a time it doesn't have yet. */
+function sessionLogHTML(woId, log, isAdmin){
+  const ss=logSessions(log);
+  if(!ss.length) return '';
+  return `<div class="visitLog">${ss.map((s,i)=>{
+    const h=sessionHours(s);
+    const inPencil = (isAdmin && s.in)
+      ? `<button class="fsEdit" title="Edit check-in time" onclick="event.stopPropagation();editSessionTime(${woId}, '${log.date}', '${s.id}', 'in')">${icon('pencil')}</button>` : '';
+    const outPencil = (isAdmin && s.out)
+      ? `<button class="fsEdit" title="Edit check-out time" onclick="event.stopPropagation();editSessionTime(${woId}, '${log.date}', '${s.id}', 'out')">${icon('pencil')}</button>` : '';
+    const outText = s.out ? esc(s.out.time) : '<span class="visitOpen">on site now</span>';
+    return `<div class="visitRow">
+      <span class="visitNum">${i+1}</span>
+      <span class="visitBy">${esc((s.in && s.in.by) || 'Unknown')}</span>
+      <span class="visitTimes">${icon('login')}${esc(s.in ? s.in.time : 'n/a')}${inPencil} &rarr; ${icon('logout')}${outText}${outPencil}</span>
+      ${h!=null ? `<span class="schedHoursTag">${formatHoursMinutes(h)}</span>` : ''}
+    </div>`;
+  }).join('')}</div>`;
 }
-/* One scheduled day: the date, an In box, an Out box, and the hours once both
-   are stamped. Pulled out of the list so the check in/out card can pin today's
-   copy of it above the fold. */
+/* One scheduled day: the date, how many visits it holds, the single available
+   button, the day's total, and the visit log itself. */
 function dayLogRowHTML(woId, log, isAdmin){
-  const inDone = !!log.checkIn;
-  const outDone = !!log.checkOut;
-  const hrs = dayLogHours(log);
-  const hrsNote = hrs!=null ? `<span class="schedHoursTag" title="Hours for ${formatDateDisplay(log.date)}">${formatHoursMinutes(hrs)}</span>` : '';
+  const count=logSessions(log).length;
+  const hrs=dayLogHours(log);
+  const totalTag = hrs!=null
+    ? `<span class="schedHoursTag dayTotalTag" title="Total hours for ${formatDateDisplay(log.date)}">${formatHoursMinutes(hrs)} total</span>`
+    : '';
   return `<div class="dayLogRow">
-      <div class="dayLogDate">${formatDateDisplay(log.date)}</div>
-      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${woId}, '${log.date}', this)">${icon('login')} In${inDone?` (${log.checkIn.time})`:''}</label>
-      ${(isAdmin && inDone) ? `<button class="editLink" onclick="editCheckInDayTime(${woId}, '${log.date}')">Edit</button>` : ''}
-      <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${woId}, '${log.date}', this)">${icon('logout')} Out${outDone?` (${log.checkOut.time})`:''}</label>
-      ${(isAdmin && outDone) ? `<button class="editLink" onclick="editCheckOutDayTime(${woId}, '${log.date}')">Edit</button>` : ''}
-      ${hrsNote}
+      <div class="dayLogDate">${formatDateDisplay(log.date)}${count?` <span class="small">(${count} visit${count>1?'s':''})</span>`:''}</div>
+      ${checkBtnHTML(woId, log)}
+      ${totalTag}
+      ${sessionLogHTML(woId, log, isAdmin)}
     </div>`;
 }
-/* skipDate drops one day from the list, which is how the field card avoids
-   printing today twice when today is already pinned above it. */
+/* skipDate drops one day from the list. Kept for callers that pin a day
+   elsewhere on the same screen and don't want it printed twice. */
 function dayLogsSectionHTML(wo, skipDate){
   const rows=allDayLogsSorted(wo).filter(r=>r.log.date!==skipDate);
   const isAdmin = !!(CURRENT_USER && CURRENT_USER.isAdmin);
@@ -4803,7 +4927,7 @@ function schedRowHTML(woId, d, inline){
   const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
   // Days that already have a check-in are called out, so it's obvious before
   // editing that changing the dates could affect logged time.
-  const logged=(d.dayLogs||[]).filter(l=>l.checkIn).length;
+  const logged=(d.dayLogs||[]).filter(l=>logSessions(l).length).length;
   const loggedNote = logged ? `<span class="schedLoggedTag" title="This date has logged time">${logged} day${logged>1?'s':''} logged</span>` : '';
   // Running total of hours actually worked on this date range, built from
   // whichever of its days already have both a check-in and a check-out.
@@ -4850,8 +4974,7 @@ function remapDayLogs(existing, startDate, endDate, repeat){
   const old={};
   (existing||[]).forEach(l=>{ old[l.date]=l; });
   return expandRepeatDates(startDate, endDate||startDate, repeat).map(date=>
-    old[date] ? {date, checkIn:old[date].checkIn||null, checkOut:old[date].checkOut||null}
-              : {date, checkIn:null, checkOut:null}
+    old[date] ? migrateDayLogSessions(old[date]) : newDayLog(date)
   );
 }
 
@@ -4885,7 +5008,7 @@ function saveScheduleEdit(){
     // Warn before silently discarding logged time on days leaving the range
     // that are no longer in range.
     const kept=expandRepeatDates(startDate, endDate, repeat);
-    const losing=(d.dayLogs||[]).filter(l=>l.checkIn && kept.indexOf(l.date)===-1);
+    const losing=(d.dayLogs||[]).filter(l=>logSessions(l).length && kept.indexOf(l.date)===-1);
     const commit=()=>applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, overridden);
     if(losing.length){
       askYesNo(`This removes ${losing.length} day${losing.length>1?'s':''} that already ${losing.length>1?'have':'has'} logged time (${losing.map(l=>formatDateDisplay(l.date)).join(', ')}). That time log will be deleted. Continue?`,
@@ -5368,7 +5491,7 @@ function finalizeScheduleDates(){
   const wo=getWO(SCHED_WO_ID);
   if(!SCHED_PENDING.length) return;
   SCHED_PENDING.forEach(entry=>{
-    entry.dayLogs=expandRepeatDates(entry.startDate, entry.endDate||entry.startDate, entry.repeat).map(date=>({date, checkIn:null, checkOut:null}));
+    entry.dayLogs=expandRepeatDates(entry.startDate, entry.endDate||entry.startDate, entry.repeat).map(date=>newDayLog(date));
   });
   wo.scheduleDates=(wo.scheduleDates||[]).concat(SCHED_PENDING);
   const dbl=SCHED_PENDING.filter(e=>e.overridden).length;
@@ -5753,7 +5876,7 @@ try{ FIELD_MODE = localStorage.getItem(FIELD_MODE_KEY)==='1'; }catch(e){}
 let FIELD_VIEW_OVERRIDE=null;   // null = decide automatically, true/false = pinned for this open job
 
 function isCheckedInNow(wo){
-  return allDayLogsSorted(wo).some(({log})=>log.checkIn && !log.checkOut);
+  return allDayLogsSorted(wo).some(({log})=>openSession(log));
 }
 function fieldModeFor(wo){
   if(FIELD_VIEW_OVERRIDE!==null) return FIELD_VIEW_OVERRIDE;
@@ -5788,10 +5911,10 @@ function syncFieldModeBtn(){
 function fieldFocusLog(wo){
   const rows=allDayLogsSorted(wo);
   if(!rows.length) return null;
-  const open=rows.find(r=>r.log.checkIn && !r.log.checkOut);
+  const open=rows.find(r=>openSession(r.log));
   if(open) return open.log;
   const today=new Date().toISOString().slice(0,10);
-  const next=rows.find(r=>r.log.date>=today && !r.log.checkOut);
+  const next=rows.find(r=>r.log.date>=today && !dayFullyClosed(r.log));
   return next ? next.log : rows[rows.length-1].log;
 }
 function fieldGridHTML(wo){
@@ -5825,10 +5948,10 @@ function fieldGridHTML(wo){
   </div>` : ''}`;
 }
 /* Check in and check out are the same button in two states, and it only
-   appears on a day the job is actually scheduled for. The strip underneath is
-   today's status; tapping it unfolds every other scheduled day, which is where
-   a missed stamp gets corrected. Once the day is closed out, all that is left
-   is the strip. */
+   appears on a day the job is actually scheduled for. Tapping it logs a time;
+   tapping the strip unfolds every scheduled day, today included, which is
+   where the visits themselves and their hours are read, and where a missed
+   stamp gets corrected. */
 function fieldCheckHTML(wo){
   const id=wo.id;
   const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
@@ -5841,15 +5964,16 @@ function fieldCheckHTML(wo){
      opening anything; every other day is history and lives behind the chevron.
      Where the next visit falls is on the schedule card, which is the card that
      question belongs to. */
-  const expandable=rows.length>(entry?1:0) || !!(wo.checkIn || wo.checkOut);
+  /* Today is no longer skipped in the panel: the pinned button shows only the
+     next action, so the day's own visit log has to be readable below it. */
+  const expandable=rows.length>0 || !!(wo.checkIn || wo.checkOut);
   const chev=expandable ? `<span class="fieldSecChev fsChev" aria-hidden="true">${open?'&minus;':'+'}</span>` : '';
 
-  /* Today's boxes ride on the title row, centred, the same way the schedule
-     card carries its next-visit line. A compact build of the day row rather
-     than the list one: no group heading, no hours tag, and the admin time edits
-     are the small pencils instead of text links, because this has to share a
-     line with the title and the chevron. It stops its own clicks from reaching
-     the strip so stamping a box never also folds the card. */
+  /* Today's button rides on the title row, centred, the same way the schedule
+     card carries its next-visit line. Nothing but the date and the one
+     available action, because this has to share a line with the title and the
+     chevron. It stops its own clicks from reaching the strip so logging a time
+     never also folds the card. */
   const todayHTML=entry ? fieldTodayInlineHTML(id, entry.log, isAdmin) : '';
 
   const legacy = (wo.checkIn || wo.checkOut) ? `<div class="fsList" style="margin-top:14px;">
@@ -5858,7 +5982,7 @@ function fieldCheckHTML(wo){
       <div class="fsRow"><span class="fsKey">Out</span>${wo.checkOut ? esc(wo.checkOut.date+' '+wo.checkOut.time+', '+wo.checkOut.by) : 'n/a'}${(isAdmin && wo.checkOut) ? ` <button class="editLink" onclick="editCheckOutTime(${id})">Edit</button>` : ''}</div>
     </div>` : '';
   const panel=(expandable && open)
-    ? `<div class="fieldCheckSub fieldDayPanel">${dayLogsSectionHTML(wo, entry?today:null)}${legacy}</div>`
+    ? `<div class="fieldCheckSub fieldDayPanel">${dayLogsSectionHTML(wo)}${legacy}</div>`
     : '';
 
   const cls=`fieldStatus${todayHTML?' withToday':''}${panel?' hasBelow':''}`;
@@ -5876,13 +6000,9 @@ function fieldCheckHTML(wo){
   </div>`;
 }
 function fieldTodayInlineHTML(woId, log, isAdmin){
-  const inDone=!!log.checkIn, outDone=!!log.checkOut;
   return `<span class="fsToday" onclick="event.stopPropagation()">
       <span class="fsTodayDate">${formatDateDisplay(log.date)}</span>
-      <label class="jcCheck"><input type="checkbox" ${inDone?'checked disabled':''} onchange="checkInDay(${woId}, '${log.date}', this)">${icon('login')} In${inDone?` (${log.checkIn.time})`:''}</label>
-      ${(isAdmin && inDone) ? `<button class="fsEdit" title="Edit check-in time" onclick="editCheckInDayTime(${woId}, '${log.date}')">${icon('pencil')}</button>` : ''}
-      <label class="jcCheck"><input type="checkbox" ${!inDone||outDone?'disabled':''} ${outDone?'checked':''} onchange="checkOutDay(${woId}, '${log.date}', this)">${icon('logout')} Out${outDone?` (${log.checkOut.time})`:''}</label>
-      ${(isAdmin && outDone) ? `<button class="fsEdit" title="Edit check-out time" onclick="editCheckOutDayTime(${woId}, '${log.date}')">${icon('pencil')}</button>` : ''}
+      ${checkBtnHTML(woId, log)}
     </span>`;
 }
 /* The line that used to sit on the chartreuse strip. */
