@@ -7090,6 +7090,38 @@ function openJobDetailsEdit(id){
     disclaimers: (src.disclaimers||[]).slice(),
     exclusions: (src.exclusions||[]).slice()
   };
+  /* The walkthrough output is loaded into the same edit state as everything
+     else, so the two pre-site pills are edited in this one form rather than
+     getting a second editor of their own. Flat string arrays on purpose: the
+     add / remove / drag-to-reorder machinery below is keyed off JD_EDIT[key],
+     so these lists get all of it for free. */
+  const p = src.presite || null;
+  JD_EDIT.psOn = !!p;
+  JD_EDIT.psScope = p ? psScopeLines(p) : [];
+  JD_EDIT.psTranscript = p ? (p.transcript||'') : '';
+  JD_EDIT.psLevel = (p && p.readiness && p.readiness.level) || 'ready';
+  JD_EDIT.psMessage = (p && p.readiness && p.readiness.message) || '';
+  JD_EDIT.psOpen = (p && p.readiness && (p.readiness.open||[]).slice()) || [];
+  JD_EDIT.psWaved = p ? (p.wavedOff||[]).map(w=>typeof w==='string'?w:(w.item||'')) : [];
+  /* Each waved-off entry also records the parent item it was dismissed from.
+     Nothing on screen shows it, so it is parked here by name and reattached on
+     save instead of being quietly dropped by the round trip. */
+  JD_EDIT.psWavedFrom = {};
+  if(p) (p.wavedOff||[]).forEach(w=>{ if(w && w.item && w.from) JD_EDIT.psWavedFrom[w.item]=w.from; });
+  const t = (p && p.totals) || {};
+  /* Older pre-site records stored the tax amount but not the rate it came
+     from. Backing the rate out of the amount keeps their tax intact once the
+     figures start recalculating; without it, the first edit would zero it. */
+  let taxPct = t.taxPct;
+  if(taxPct===undefined || taxPct===null || taxPct===''){
+    taxPct = (Number(t.materialsCost)>0) ? Math.round(((Number(t.tax)||0)/Number(t.materialsCost))*10000)/100 : 0;
+  }
+  JD_EDIT.psTotals = {
+    labor: Number(t.labor)||0,
+    materialsCost: Number(t.materialsCost)||0,
+    markupPct: Number(t.markupPct)||0,
+    taxPct: Number(taxPct)||0
+  };
   JD_COLLAPSED={};
   WO_JOB_EDIT=true;
   renderWorkOrderModal(id);
@@ -7118,6 +7150,43 @@ function saveJobDetailsEdit(id){
     disclaimers: JD_EDIT.disclaimers.filter(t=>t && t.trim()),
     exclusions: (JD_EDIT.exclusions||[]).filter(t=>t && t.trim())
   };
+  /* Merge over the record the walkthrough wrote rather than replacing it: it
+     also carries capturedAt, mode, yearBuilt, jobType and the structured scope
+     rows, none of which this form shows. */
+  if(JD_EDIT.psOn){
+    const prev = (wo.jobDetails||{}).presite || {};
+    const c = jdPsCalc();
+    const trim = arr => (arr||[]).map(s=>String(s||'').trim()).filter(Boolean);
+    const scopeLines = trim(JD_EDIT.psScope);
+    cleaned.presite = {
+      ...prev,
+      transcript: (JD_EDIT.psTranscript||'').trim(),
+      scopeText: scopeLines.join('\n'),
+      /* psScopeLines() falls back to the structured scope rows whenever
+         scopeText is blank, so deleting every line has to clear those rows
+         too or the removed wording reappears on the next render. */
+      scope: scopeLines.length ? (prev.scope||[]) : [],
+      readiness: {
+        ...(prev.readiness||{}),
+        level: JD_EDIT.psLevel||'ready',
+        message: (JD_EDIT.psMessage||'').trim(),
+        open: trim(JD_EDIT.psOpen)
+      },
+      wavedOff: trim(JD_EDIT.psWaved).map(item=>{
+        const from=JD_EDIT.psWavedFrom[item];
+        return from ? {item, from} : {item};
+      }),
+      totals: {
+        ...(prev.totals||{}),
+        labor: c.labor, materialsCost: c.materialsCost,
+        markupPct: c.markupPct, markupAmount: c.markupAmount,
+        taxPct: c.taxPct, tax: c.tax,
+        materialsBilled: c.materialsBilled, grandTotal: c.grandTotal
+      },
+      editedAt: new Date().toISOString(),
+      editedBy: (CURRENT_USER && CURRENT_USER.displayName) || ''
+    };
+  }
   wo.jobDetails=cleaned;
   saveDB(DB);
   WO_JOB_EDIT=false;
@@ -7304,7 +7373,41 @@ function addJDItem(id, key){
   const input=document.getElementById(`jdIn-${key}-${JD_EDIT[key].length-1}`);
   if(input){ input.focus(); input.scrollIntoView({block:'nearest'}); }
 }
-function jdEditSection(id, key, label, isPriced){
+/* ---- Pre-site summary maths ----
+   Same rule the walkthrough itself uses: markup and tax are both figured off
+   the RAW material cost and tax is not charged on the markup. Four figures are
+   typed (labor, material cost, markup %, tax %) and the other four fall out of
+   them, so the edited summary can never disagree with itself. */
+function jdPsCalc(){
+  const t=(JD_EDIT && JD_EDIT.psTotals) || {};
+  const r2=n=>Math.round(n*100)/100;
+  const labor=Number(t.labor)||0;
+  const materialsCost=Number(t.materialsCost)||0;
+  const markupPct=Number(t.markupPct)||0;
+  const taxPct=Number(t.taxPct)||0;
+  const markupAmount=r2(materialsCost*(markupPct/100));
+  const tax=r2(materialsCost*(taxPct/100));
+  const materialsBilled=r2(materialsCost+markupAmount+tax);
+  return {labor:r2(labor), materialsCost:r2(materialsCost), markupPct, taxPct,
+          markupAmount, tax, materialsBilled, grandTotal:r2(labor+materialsBilled)};
+}
+function jdMoney(n){ return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+/* Only the four derived readouts are rewritten, not the whole form. Re-rendering
+   the modal on every keystroke would throw away the caret mid-number. */
+function jdPsRefresh(){
+  const c=jdPsCalc();
+  const set=(elId,txt)=>{ const el=document.getElementById(elId); if(el) el.textContent=txt; };
+  set('jdPsMarkupAmt', jdMoney(c.markupAmount));
+  set('jdPsTax', jdMoney(c.tax));
+  set('jdPsBilled', jdMoney(c.materialsBilled));
+  set('jdPsGrand', jdMoney(c.grandTotal));
+}
+function updateJDPsTotal(field, val){
+  if(!JD_EDIT || !JD_EDIT.psTotals) return;
+  JD_EDIT.psTotals[field] = (val==='' ? 0 : (Number(val)||0));
+  jdPsRefresh();
+}
+function jdEditSection(id, key, label, isPriced, extraHTML){
   const items=JD_EDIT[key]||[];
   /* The grip is a real button so the list is still reorderable without a
      pointer: focus it and use the arrow keys. Sighted mouse and touch users
@@ -7334,6 +7437,7 @@ function jdEditSection(id, key, label, isPriced){
     <div id="jdBody-${key}"${collapsed?' hidden':''}>
       <div class="jdRows" id="jdRows-${key}">${rows}</div>
       <button class="btn secondary" onclick="addJDItem(${id},'${key}')" style="margin-top:6px;">+ Add Item</button>
+      ${extraHTML||''}
     </div>
   </div>`;
 }
@@ -7353,6 +7457,68 @@ function toggleJDSection(key){
   }
   if(body) body.hidden=collapsed;
 }
+/* The two pre-site pills, made editable. They render as ordinary sections of
+   this form, so field view and the office view get them from the same place
+   and there is still only one job details editor in the app. Jobs with no
+   walkthrough on file show nothing here. */
+function jdPresiteEditHTML(id){
+  if(!JD_EDIT || !JD_EDIT.psOn) return '';
+  const t=JD_EDIT.psTotals, c=jdPsCalc();
+  const collapsed=!!JD_COLLAPSED.psSummary;
+  const num=(field,label,suffix)=>`<label class="small" style="display:flex;flex-direction:column;gap:3px;">
+      <span>${label}</span>
+      <input type="number" step="0.01" min="0" value="${esc(String(t[field]))}"
+        oninput="updateJDPsTotal('${field}',this.value)"
+        style="width:100%;padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;">
+      ${suffix?`<span style="color:var(--muted)">${suffix}</span>`:''}
+    </label>`;
+  const transcript=`<label class="small" style="display:block;margin-top:10px;">
+      <span>Walkthrough notes</span>
+      <textarea style="width:100%;min-height:90px;max-height:50vh;padding:8px;border-radius:8px;border:1.5px solid var(--line);margin-top:4px;font-family:inherit;font-size:.9em;resize:vertical;"
+        oninput="JD_EDIT.psTranscript=this.value">${esc(JD_EDIT.psTranscript)}</textarea>
+    </label>`;
+  const levels=[['ready','Ready'],['caution','Caution'],['risk','Risk']];
+  return `
+    ${jdEditSection(id,'psScope','Pre-Site Scope', false, transcript)}
+    <div class="listEditor" style="margin-top:10px;">
+      <button type="button" class="jdToggle${collapsed?' collapsed':''}" id="jdTog-psSummary"
+        aria-expanded="${collapsed?'false':'true'}" aria-controls="jdBody-psSummary"
+        onclick="toggleJDSection('psSummary')">
+        <span class="jdChev" aria-hidden="true"></span>
+        <h5>Pre-Site Summary</h5>
+      </button>
+      <div id="jdBody-psSummary"${collapsed?' hidden':''}>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:6px;">
+          ${num('labor','Labor total ($)','')}
+          ${num('materialsCost','Materials cost ($)','')}
+          ${num('markupPct','Markup (%)','')}
+          ${num('taxPct','Tax (%)','')}
+        </div>
+        <div class="small" style="margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--well);">
+          Markup <b id="jdPsMarkupAmt">${jdMoney(c.markupAmount)}</b> &nbsp;|&nbsp;
+          Tax <b id="jdPsTax">${jdMoney(c.tax)}</b> &nbsp;|&nbsp;
+          Materials billed <b id="jdPsBilled">${jdMoney(c.materialsBilled)}</b> &nbsp;|&nbsp;
+          Total <b id="jdPsGrand">${jdMoney(c.grandTotal)}</b>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <label class="small" style="display:flex;flex-direction:column;gap:3px;flex:0 0 130px;">
+            <span>Readiness</span>
+            <select onchange="JD_EDIT.psLevel=this.value"
+              style="padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;">
+              ${levels.map(([v,l])=>`<option value="${v}"${JD_EDIT.psLevel===v?' selected':''}>${l}</option>`).join('')}
+            </select>
+          </label>
+          <label class="small" style="display:flex;flex-direction:column;gap:3px;flex:1 1 200px;">
+            <span>Readiness note</span>
+            <input value="${esc(JD_EDIT.psMessage)}" oninput="JD_EDIT.psMessage=this.value"
+              style="padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;">
+          </label>
+        </div>
+        ${jdEditSection(id,'psOpen','Open Items', false)}
+        ${jdEditSection(id,'psWaved','Waved Off at Walkthrough', false)}
+      </div>
+    </div>`;
+}
 function jobDetailsEditHTML(id){
   if(!JD_EDIT) return '';
   return `
@@ -7366,6 +7532,7 @@ function jobDetailsEditHTML(id){
     ${jdEditSection(id,'issues','Potential Unforeseen Issues', false)}
     ${jdEditSection(id,'exclusions','Exclusions', false)}
     ${jdEditSection(id,'disclaimers','Disclaimers', false)}
+    ${jdPresiteEditHTML(id)}
     <div class="btnRow" style="margin-top:12px;">
       <button class="btn" onclick="saveJobDetailsEdit(${id})">Save Job Details</button>
       <button class="btn secondary" onclick="cancelJobDetailsEdit(${id})">Cancel</button>
