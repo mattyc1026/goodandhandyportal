@@ -1391,6 +1391,10 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fsList{margin-bottom:12px;}
 .fsList:last-child{margin-bottom:0;}
 .fsNote{padding:7px 0;}
+/* The PRESITE note is written as a multi-line receipt of the walkthrough, so
+   the field view has to honour its line breaks the way the office list does.
+   Without this the whole thing collapsed into one unreadable paragraph. */
+.fsNote > div:last-child{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
 .fsNote + .fsNote{border-top:1px solid var(--line-soft);}
 .fsNoteHead{
   font-size:.68em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
@@ -6123,7 +6127,7 @@ function fieldJobSecHTML(wo){
      do about it rather than just reporting an empty description; with lists but
      no description, the pills already carry the content and a "no description"
      line is only noise. */
-  const hasAny = (jd.description && jd.description.trim()) || lists.length || !!jd.presite;
+  const hasAny = (jd.description && jd.description.trim()) || lists.length;
   const body = jd.description
     ? esc(jd.description)
     : (hasAny ? '' : '<div class="small">No job details yet. Use Edit Job Details below to add them, or complete a pre-site inspection.</div>');
@@ -6132,27 +6136,19 @@ function fieldJobSecHTML(wo){
   const presitePrompt = inPresiteList(wo)
     ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>'
     : '';
-  /* The walkthrough output gets pills of its own rather than being dumped into
-     the card: the scope can run long, and the summary is a different kind of
-     thing from a line item list. */
-  const psScope = jd.presite ? psScopeLines(jd.presite) : [];
-  const extras=[];
-  if(jd.presite && (psScope.length || jd.presite.transcript)) extras.push(['psScope','Pre-Site Scope']);
-  if(jd.presite) extras.push(['psSummary','Pre-Site Summary']);
+  /* The walkthrough's own wording, totals and readiness are NOT repeated here.
+     These lists are compiled from that walkthrough, so showing the scope text
+     beside them was the same information written twice; the full record lives
+     in the PRESITE note under Notes instead. */
   const pillFor=(key, label, count)=>{
     const on = FIELD_JOB_LIST===key;
     return `<button type="button" class="fieldMoreBtn${on?' on':''}" aria-pressed="${on}" onclick="toggleFieldJobList(${id},'${key}')">${esc(label)}${count!=null?` (${count})`:''}</button>`;
   };
-  const pills=(lists.length || extras.length) ? `<div class="fieldPillRow">
+  const pills=lists.length ? `<div class="fieldPillRow">
       ${lists.map(([key, title, list])=>pillFor(key, title, list.length)).join('')}
-      ${extras.map(([key, label])=>pillFor(key, label, null)).join('')}
     </div>` : '';
   let card='';
-  if(FIELD_JOB_LIST==='psScope'){
-    card=`<div class="fieldSubPanel">${presiteScopeHTML(jd)}</div>`;
-  } else if(FIELD_JOB_LIST==='psSummary'){
-    card=`<div class="fieldSubPanel">${presiteSummaryHTML(jd)}</div>`;
-  } else {
+  {
     const active=lists.find(entry=>entry[0]===FIELD_JOB_LIST);
     if(active){
       card=`<div class="fieldSubPanel">
@@ -6997,59 +6993,21 @@ function priceLineRow(entry){
 function plainLineRow(text){
   return copyLineRow(esc(text), String(text||''));
 }
-/* Pre-site scope block. Sits under the job description and above the labor
-   lists, which is where the walkthrough wording used to end up back when it
-   was pasted into the description itself. Older work orders were saved before
-   scopeText existed, so their wording is rebuilt from the structured scope
-   entries rather than showing nothing. */
-function psScopeLines(p){
-  if(!p) return [];
-  if(p.scopeText && p.scopeText.trim()) return p.scopeText.split('\n').filter(l=>l.trim());
-  return (p.scope||[]).map(r=>{
-    const bits=[r.item];
-    if(r.qty) bits.push(String(r.qty));
-    if(r.ask) bits.push(r.ask);
-    if(r.note) bits.push(r.note);
-    return bits.filter(Boolean).join(', ');
-  }).filter(l=>l.trim());
-}
-function presiteScopeHTML(jd){
-  const p=jd.presite; if(!p) return '';
-  const lines=psScopeLines(p);
-  if(!lines.length && !p.transcript) return '';
-  return `<div style="margin:10px 0 4px;">
-    <h4 style="font-size:.82em;color:var(--navy);margin:6px 0;">Pre-Site Scope</h4>
-    ${lines.length ? lines.map(plainLineRow).join('') : '<div class="small">No scope captured.</div>'}
-    ${p.transcript?`<details style="margin-top:6px"><summary class="small">Walkthrough notes</summary><div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(p.transcript)}</div></details>`:''}
-  </div>`;
-}
-/* Pre-site summary block: totals, readiness and what was waved off, so the
-   estimator can see the inspector's intent without reading the whole scope. */
-function presiteSummaryHTML(jd){
-  const p=jd.presite; if(!p) return '';
-  const t=p.totals||{}; const r=p.readiness||{};
-  const money=n=>'$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const colors={ready:'#1d6b34',caution:'#8a6100',risk:'#9b2226'};
-  return `<div style="margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--well)">
-    <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#7a8699;font-weight:700;margin-bottom:6px">From the pre-site</div>
-    <div class="small">Labor ${money(t.labor)} &nbsp;|&nbsp; Materials ${money(t.materialsBilled)} (cost ${money(t.materialsCost)} + ${t.markupPct||0}% markup ${money(t.markupAmount)} + tax ${money(t.tax)}) &nbsp;|&nbsp; <b>Total ${money(t.grandTotal)}</b></div>
-    ${r.message?`<div class="small" style="margin-top:6px;color:${colors[r.level]||'#5b6675'};font-weight:600">${esc(r.message)}</div>`:''}
-    ${(r.open&&r.open.length)?`<div class="small" style="margin-top:4px">Open items: ${r.open.map(esc).join('; ')}</div>`:''}
-    ${(p.wavedOff&&p.wavedOff.length)?`<div class="small" style="margin-top:6px">Waved off at walkthrough: ${p.wavedOff.map(w=>esc(w.item)).join('; ')}</div>`:''}
-  </div>`;
-}
+/* The walkthrough's wording, totals and readiness used to be rendered here as
+   two extra blocks. They are gone: these lists ARE the walkthrough's output,
+   so the blocks restated what was already on screen. The full record is kept
+   as the PRESITE note under Notes, which is one place, editable, and dated. */
 function jobListsHTML(wo){
   const jd=wo.jobDetails;
   const hasAny = (jd.description && jd.description.trim())
     || (jd.labor&&jd.labor.length) || (jd.materials&&jd.materials.length)
     || (jd.tools&&jd.tools.length) || (jd.issues&&jd.issues.length) || (jd.disclaimers&&jd.disclaimers.length)
-    || (jd.exclusions&&jd.exclusions.length) || !!jd.presite;
+    || (jd.exclusions&&jd.exclusions.length);
   if(!hasAny){
     return '<div class="small">No job details yet. Select "Edit job details" to add them, or complete a pre-site inspection.</div>';
   }
   return `
     ${jd.description ? `<div class="descParagraph">${esc(jd.description)}</div>` : ''}
-    ${presiteScopeHTML(jd)}
     <div class="sideBySide">
       <details ${jobListOpen('labor')?'open':''} ontoggle="rememberJobList('labor',this)">
         <summary>Labor Line Items (${(jd.labor||[]).length})</summary>
@@ -7065,8 +7023,7 @@ function jobListsHTML(wo){
       <details ${jobListOpen('issues')?'open':''} ontoggle="rememberJobList('issues',this)"><summary>Potential Issues (${(jd.issues||[]).length})</summary>${(jd.issues||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
       <details ${jobListOpen('exclusions')?'open':''} ontoggle="rememberJobList('exclusions',this)"><summary>Exclusions (${(jd.exclusions||[]).length})</summary>${(jd.exclusions||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
       <details ${jobListOpen('disclaimers')?'open':''} ontoggle="rememberJobList('disclaimers',this)"><summary>Disclaimers (${(jd.disclaimers||[]).length})</summary>${(jd.disclaimers||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-    </div>
-    ${presiteSummaryHTML(jd)}`;
+    </div>`;
 }
 
 /* ---- Job Details: edit mode ---- */
@@ -7089,38 +7046,6 @@ function openJobDetailsEdit(id){
     issues: (src.issues||[]).slice(),
     disclaimers: (src.disclaimers||[]).slice(),
     exclusions: (src.exclusions||[]).slice()
-  };
-  /* The walkthrough output is loaded into the same edit state as everything
-     else, so the two pre-site pills are edited in this one form rather than
-     getting a second editor of their own. Flat string arrays on purpose: the
-     add / remove / drag-to-reorder machinery below is keyed off JD_EDIT[key],
-     so these lists get all of it for free. */
-  const p = src.presite || null;
-  JD_EDIT.psOn = !!p;
-  JD_EDIT.psScope = p ? psScopeLines(p) : [];
-  JD_EDIT.psTranscript = p ? (p.transcript||'') : '';
-  JD_EDIT.psLevel = (p && p.readiness && p.readiness.level) || 'ready';
-  JD_EDIT.psMessage = (p && p.readiness && p.readiness.message) || '';
-  JD_EDIT.psOpen = (p && p.readiness && (p.readiness.open||[]).slice()) || [];
-  JD_EDIT.psWaved = p ? (p.wavedOff||[]).map(w=>typeof w==='string'?w:(w.item||'')) : [];
-  /* Each waved-off entry also records the parent item it was dismissed from.
-     Nothing on screen shows it, so it is parked here by name and reattached on
-     save instead of being quietly dropped by the round trip. */
-  JD_EDIT.psWavedFrom = {};
-  if(p) (p.wavedOff||[]).forEach(w=>{ if(w && w.item && w.from) JD_EDIT.psWavedFrom[w.item]=w.from; });
-  const t = (p && p.totals) || {};
-  /* Older pre-site records stored the tax amount but not the rate it came
-     from. Backing the rate out of the amount keeps their tax intact once the
-     figures start recalculating; without it, the first edit would zero it. */
-  let taxPct = t.taxPct;
-  if(taxPct===undefined || taxPct===null || taxPct===''){
-    taxPct = (Number(t.materialsCost)>0) ? Math.round(((Number(t.tax)||0)/Number(t.materialsCost))*10000)/100 : 0;
-  }
-  JD_EDIT.psTotals = {
-    labor: Number(t.labor)||0,
-    materialsCost: Number(t.materialsCost)||0,
-    markupPct: Number(t.markupPct)||0,
-    taxPct: Number(taxPct)||0
   };
   JD_COLLAPSED={};
   WO_JOB_EDIT=true;
@@ -7150,43 +7075,6 @@ function saveJobDetailsEdit(id){
     disclaimers: JD_EDIT.disclaimers.filter(t=>t && t.trim()),
     exclusions: (JD_EDIT.exclusions||[]).filter(t=>t && t.trim())
   };
-  /* Merge over the record the walkthrough wrote rather than replacing it: it
-     also carries capturedAt, mode, yearBuilt, jobType and the structured scope
-     rows, none of which this form shows. */
-  if(JD_EDIT.psOn){
-    const prev = (wo.jobDetails||{}).presite || {};
-    const c = jdPsCalc();
-    const trim = arr => (arr||[]).map(s=>String(s||'').trim()).filter(Boolean);
-    const scopeLines = trim(JD_EDIT.psScope);
-    cleaned.presite = {
-      ...prev,
-      transcript: (JD_EDIT.psTranscript||'').trim(),
-      scopeText: scopeLines.join('\n'),
-      /* psScopeLines() falls back to the structured scope rows whenever
-         scopeText is blank, so deleting every line has to clear those rows
-         too or the removed wording reappears on the next render. */
-      scope: scopeLines.length ? (prev.scope||[]) : [],
-      readiness: {
-        ...(prev.readiness||{}),
-        level: JD_EDIT.psLevel||'ready',
-        message: (JD_EDIT.psMessage||'').trim(),
-        open: trim(JD_EDIT.psOpen)
-      },
-      wavedOff: trim(JD_EDIT.psWaved).map(item=>{
-        const from=JD_EDIT.psWavedFrom[item];
-        return from ? {item, from} : {item};
-      }),
-      totals: {
-        ...(prev.totals||{}),
-        labor: c.labor, materialsCost: c.materialsCost,
-        markupPct: c.markupPct, markupAmount: c.markupAmount,
-        taxPct: c.taxPct, tax: c.tax,
-        materialsBilled: c.materialsBilled, grandTotal: c.grandTotal
-      },
-      editedAt: new Date().toISOString(),
-      editedBy: (CURRENT_USER && CURRENT_USER.displayName) || ''
-    };
-  }
   wo.jobDetails=cleaned;
   saveDB(DB);
   WO_JOB_EDIT=false;
@@ -7373,41 +7261,7 @@ function addJDItem(id, key){
   const input=document.getElementById(`jdIn-${key}-${JD_EDIT[key].length-1}`);
   if(input){ input.focus(); input.scrollIntoView({block:'nearest'}); }
 }
-/* ---- Pre-site summary maths ----
-   Same rule the walkthrough itself uses: markup and tax are both figured off
-   the RAW material cost and tax is not charged on the markup. Four figures are
-   typed (labor, material cost, markup %, tax %) and the other four fall out of
-   them, so the edited summary can never disagree with itself. */
-function jdPsCalc(){
-  const t=(JD_EDIT && JD_EDIT.psTotals) || {};
-  const r2=n=>Math.round(n*100)/100;
-  const labor=Number(t.labor)||0;
-  const materialsCost=Number(t.materialsCost)||0;
-  const markupPct=Number(t.markupPct)||0;
-  const taxPct=Number(t.taxPct)||0;
-  const markupAmount=r2(materialsCost*(markupPct/100));
-  const tax=r2(materialsCost*(taxPct/100));
-  const materialsBilled=r2(materialsCost+markupAmount+tax);
-  return {labor:r2(labor), materialsCost:r2(materialsCost), markupPct, taxPct,
-          markupAmount, tax, materialsBilled, grandTotal:r2(labor+materialsBilled)};
-}
-function jdMoney(n){ return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-/* Only the four derived readouts are rewritten, not the whole form. Re-rendering
-   the modal on every keystroke would throw away the caret mid-number. */
-function jdPsRefresh(){
-  const c=jdPsCalc();
-  const set=(elId,txt)=>{ const el=document.getElementById(elId); if(el) el.textContent=txt; };
-  set('jdPsMarkupAmt', jdMoney(c.markupAmount));
-  set('jdPsTax', jdMoney(c.tax));
-  set('jdPsBilled', jdMoney(c.materialsBilled));
-  set('jdPsGrand', jdMoney(c.grandTotal));
-}
-function updateJDPsTotal(field, val){
-  if(!JD_EDIT || !JD_EDIT.psTotals) return;
-  JD_EDIT.psTotals[field] = (val==='' ? 0 : (Number(val)||0));
-  jdPsRefresh();
-}
-function jdEditSection(id, key, label, isPriced, extraHTML){
+function jdEditSection(id, key, label, isPriced){
   const items=JD_EDIT[key]||[];
   /* The grip is a real button so the list is still reorderable without a
      pointer: focus it and use the arrow keys. Sighted mouse and touch users
@@ -7437,7 +7291,6 @@ function jdEditSection(id, key, label, isPriced, extraHTML){
     <div id="jdBody-${key}"${collapsed?' hidden':''}>
       <div class="jdRows" id="jdRows-${key}">${rows}</div>
       <button class="btn secondary" onclick="addJDItem(${id},'${key}')" style="margin-top:6px;">+ Add Item</button>
-      ${extraHTML||''}
     </div>
   </div>`;
 }
@@ -7457,68 +7310,6 @@ function toggleJDSection(key){
   }
   if(body) body.hidden=collapsed;
 }
-/* The two pre-site pills, made editable. They render as ordinary sections of
-   this form, so field view and the office view get them from the same place
-   and there is still only one job details editor in the app. Jobs with no
-   walkthrough on file show nothing here. */
-function jdPresiteEditHTML(id){
-  if(!JD_EDIT || !JD_EDIT.psOn) return '';
-  const t=JD_EDIT.psTotals, c=jdPsCalc();
-  const collapsed=!!JD_COLLAPSED.psSummary;
-  const num=(field,label,suffix)=>`<label class="small" style="display:flex;flex-direction:column;gap:3px;">
-      <span>${label}</span>
-      <input type="number" step="0.01" min="0" value="${esc(String(t[field]))}"
-        oninput="updateJDPsTotal('${field}',this.value)"
-        style="width:100%;padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;">
-      ${suffix?`<span style="color:var(--muted)">${suffix}</span>`:''}
-    </label>`;
-  const transcript=`<label class="small" style="display:block;margin-top:10px;">
-      <span>Walkthrough notes</span>
-      <textarea style="width:100%;min-height:90px;max-height:50vh;padding:8px;border-radius:8px;border:1.5px solid var(--line);margin-top:4px;font-family:inherit;font-size:.9em;resize:vertical;"
-        oninput="JD_EDIT.psTranscript=this.value">${esc(JD_EDIT.psTranscript)}</textarea>
-    </label>`;
-  const levels=[['ready','Ready'],['caution','Caution'],['risk','Risk']];
-  return `
-    ${jdEditSection(id,'psScope','Pre-Site Scope', false, transcript)}
-    <div class="listEditor" style="margin-top:10px;">
-      <button type="button" class="jdToggle${collapsed?' collapsed':''}" id="jdTog-psSummary"
-        aria-expanded="${collapsed?'false':'true'}" aria-controls="jdBody-psSummary"
-        onclick="toggleJDSection('psSummary')">
-        <span class="jdChev" aria-hidden="true"></span>
-        <h5>Pre-Site Summary</h5>
-      </button>
-      <div id="jdBody-psSummary"${collapsed?' hidden':''}>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:6px;">
-          ${num('labor','Labor total ($)','')}
-          ${num('materialsCost','Materials cost ($)','')}
-          ${num('markupPct','Markup (%)','')}
-          ${num('taxPct','Tax (%)','')}
-        </div>
-        <div class="small" style="margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--well);">
-          Markup <b id="jdPsMarkupAmt">${jdMoney(c.markupAmount)}</b> &nbsp;|&nbsp;
-          Tax <b id="jdPsTax">${jdMoney(c.tax)}</b> &nbsp;|&nbsp;
-          Materials billed <b id="jdPsBilled">${jdMoney(c.materialsBilled)}</b> &nbsp;|&nbsp;
-          Total <b id="jdPsGrand">${jdMoney(c.grandTotal)}</b>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-          <label class="small" style="display:flex;flex-direction:column;gap:3px;flex:0 0 130px;">
-            <span>Readiness</span>
-            <select onchange="JD_EDIT.psLevel=this.value"
-              style="padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;">
-              ${levels.map(([v,l])=>`<option value="${v}"${JD_EDIT.psLevel===v?' selected':''}>${l}</option>`).join('')}
-            </select>
-          </label>
-          <label class="small" style="display:flex;flex-direction:column;gap:3px;flex:1 1 200px;">
-            <span>Readiness note</span>
-            <input value="${esc(JD_EDIT.psMessage)}" oninput="JD_EDIT.psMessage=this.value"
-              style="padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;">
-          </label>
-        </div>
-        ${jdEditSection(id,'psOpen','Open Items', false)}
-        ${jdEditSection(id,'psWaved','Waved Off at Walkthrough', false)}
-      </div>
-    </div>`;
-}
 function jobDetailsEditHTML(id){
   if(!JD_EDIT) return '';
   return `
@@ -7532,7 +7323,6 @@ function jobDetailsEditHTML(id){
     ${jdEditSection(id,'issues','Potential Unforeseen Issues', false)}
     ${jdEditSection(id,'exclusions','Exclusions', false)}
     ${jdEditSection(id,'disclaimers','Disclaimers', false)}
-    ${jdPresiteEditHTML(id)}
     <div class="btnRow" style="margin-top:12px;">
       <button class="btn" onclick="saveJobDetailsEdit(${id})">Save Job Details</button>
       <button class="btn secondary" onclick="cancelJobDetailsEdit(${id})">Cancel</button>
@@ -9339,8 +9129,8 @@ function psCompile(){
 function psTotals(lists){
   const laborTotal = lists.labor.reduce((s,l)=>s+(Number(l.qty)||0)*(Number(l.unit)||0),0);
   const matsRaw    = lists.materials.reduce((s,m)=>s+(Number(m.qty)||0)*(Number(m.unit)||0),0);
-  const markup     = Number(PRESITE_STATE.markup)||20;
-  const taxRate    = Number(PRESITE_STATE.taxRate)||0;
+  const markup     = MATERIALS_MARKUP_PCT;
+  const taxRate    = CA_SALES_TAX_RATE*100;
   /* Markup and tax are BOTH calculated off the raw material cost, then the
      three figures are added together. Tax is not charged on the markup. */
   const markupAmt  = matsRaw*(markup/100);
@@ -9409,7 +9199,8 @@ function openPresiteTool(woId){
     yearBuilt:null, jobType:null,
     scope:[], dismissed:[],
     transcript:'', audioURL:null, recording:false,
-    markup:20, taxRate:7.75,
+    /* Markup and tax are no longer per job. They are fixed app-wide so the
+       walkthrough and the estimate builder always produce the same number. */
     lists:null, editIdx:0
   };
   PS_UID=1;
@@ -9460,7 +9251,7 @@ function psStartHTML(){
       <button class="psTile" ${ready?'':'disabled'} onclick="psSetMode('tap')"><div style="font-size:15px">Tap through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Pick what the customer wants. The tool prompts you with everything that rides along.</div></button>
       <button class="psTile" ${ready?'':'disabled'} onclick="psSetMode('voice')"><div style="font-size:15px">Talk through it</div><div class="psSub" style="margin-top:5px;font-weight:400">Record the walkthrough out loud. The recording is saved and the tool suggests items from it.</div></button>
     </div>
-    <div class="psSub" style="margin-top:14px">Rates, markup and tax are set under <a href="#" onclick="psGo('rates');return false;">rate settings</a>. They carry over to every job.</div>
+    <div class="psSub" style="margin-top:14px">Labor rates are set under <a href="#" onclick="psGo('rates');return false;">rate settings</a>. Materials markup is fixed at ${MATERIALS_MARKUP_PCT}% and sales tax at ${CA_SALES_TAX_RATE*100}%.</div>
   </div>`;
 }
 function psSetYear(k){ PRESITE_STATE.yearBuilt=k; renderPresiteBody(); }
@@ -9719,8 +9510,6 @@ function psReviewHTML(){
       <div>Estimate total<b>${psMoney(T.grand)}</b></div>
     </div>
     <div class="psFieldRow">
-      <label>Materials markup %</label><input type="number" step="any" style="width:80px" value="${S.markup}" onchange="PRESITE_STATE.markup=Number(this.value);renderPresiteBody()">
-      <label>Sales tax %</label><input type="number" step="any" style="width:80px" value="${S.taxRate}" onchange="PRESITE_STATE.taxRate=Number(this.value);renderPresiteBody()">
       <button class="psMini" onclick="psGo('rates')">Edit labor rates</button>
     </div>
     ${priced('labor','Labor line items','These print on the estimate as scope wording. The customer sees one labor total, not each price.')}
@@ -9784,11 +9573,6 @@ function psFinish(){
     return bits.join(', ');
   }).join('\n');
 
-  /* The generated scope wording used to be written straight into
-     jd.description, which meant finishing a walkthrough silently erased
-     whatever the office had typed there. It lives on the presite record now
-     and renders as its own section, so the two no longer compete. */
-
   jd.labor       = L.labor.filter(x=>x.item && x.item.trim());
   jd.materials   = L.materials.filter(x=>x.item && x.item.trim());
   jd.tools       = L.tools.filter(x=>String(x).trim());
@@ -9796,35 +9580,46 @@ function psFinish(){
   jd.disclaimers = L.disclaimers.filter(x=>String(x).trim());
   jd.exclusions  = L.exclusions.filter(x=>String(x).trim());
 
-  jd.presite = {
-    capturedAt: new Date().toISOString(),
-    mode: S.mode,
-    yearBuilt: S.yearBuilt,
-    jobType: S.jobType,
-    transcript: S.transcript || '',
-    scopeText: scopeText,
-    scope: S.scope.map(r=>({item:psItem(r.itemId).label, itemId:r.itemId, ...r.ans, source:r.source})),
-    wavedOff: S.dismissed.map(d=>({item:(psItem(d.itemId)||{}).label||d.itemId, from:d.parentLabel})),
-    readiness: {level:rd.level, message:rd.msg, open:rd.open},
-    totals: {
-      labor: Math.round(T.laborTotal*100)/100,
-      materialsCost: Math.round(T.matsRaw*100)/100,
-      markupPct: T.markup,
-      markupAmount: Math.round(T.markupAmt*100)/100,
-      taxPct: T.taxRate,
-      tax: Math.round(T.tax*100)/100,
-      materialsBilled: Math.round(T.matsBilled*100)/100,
-      grandTotal: Math.round(T.grand*100)/100
-    }
-  };
+  /* The walkthrough no longer leaves a hidden record on the work order. The
+     six lists above ARE its output, and everything else it produced now goes
+     into this one note: scope wording, spoken notes, money, readiness, open
+     questions and anything waved off. One copy, visible, dated, editable. */
+  delete jd.presite;
 
-  const lines=[
-    'Pre-site inspection complete.',
-    'Labor '+psMoney(T.laborTotal)+', materials '+psMoney(T.matsBilled)+' (cost '+psMoney(T.matsRaw)+' plus '+T.markup+'% markup '+psMoney(T.markupAmt)+' plus tax '+psMoney(T.tax)+'). Total '+psMoney(T.grand)+'.',
-    'Readiness: '+rd.level+'. '+rd.msg
-  ];
-  if(S.dismissed.length) lines.push('Waved off at walkthrough: '+S.dismissed.map(d=>(psItem(d.itemId)||{}).label||d.itemId).join('; ')+'.');
-  addNote(wo,'PRESITE', lines.join(' '));
+  const money=n=>psMoney(n);
+  const parts=[];
+  parts.push('Pre-site inspection complete.');
+  if(S.jobType) parts.push('Job type: '+S.jobType+'.');
+  if(S.yearBuilt) parts.push('Year built: '+S.yearBuilt+'.');
+  if(scopeText.trim()){
+    parts.push('');
+    parts.push('SCOPE CAPTURED');
+    parts.push(scopeText);
+  }
+  parts.push('');
+  parts.push('PRICING');
+  parts.push('Labor '+money(T.laborTotal)+'.');
+  parts.push('Materials '+money(T.matsBilled)+' (cost '+money(T.matsRaw)+' plus '+T.markup+'% markup '+money(T.markupAmt)+' plus '+T.taxRate+'% tax '+money(T.tax)+').');
+  parts.push('Total '+money(T.grand)+'.');
+  parts.push('');
+  parts.push('READINESS: '+String(rd.level).toUpperCase());
+  parts.push(rd.msg);
+  if(rd.open && rd.open.length){
+    parts.push('');
+    parts.push('OPEN ITEMS');
+    rd.open.forEach(o=>parts.push('- '+o));
+  }
+  if(S.dismissed.length){
+    parts.push('');
+    parts.push('WAVED OFF AT WALKTHROUGH');
+    S.dismissed.forEach(d=>parts.push('- '+((psItem(d.itemId)||{}).label||d.itemId)));
+  }
+  if(S.transcript && S.transcript.trim()){
+    parts.push('');
+    parts.push('WALKTHROUGH NOTES');
+    parts.push(S.transcript.trim());
+  }
+  addNote(wo,'PRESITE', parts.join('\n'));
 
   saveDB(DB);
   PRESITE_STATE=null;
@@ -9859,7 +9654,6 @@ function openSplit(id, kind){
             <div class="kv"><b>Phone</b>${phoneLink(wo.customer.phone)}</div>
             <div class="kv"><b>Address</b>${addressLink(wo.customer.address, undefined, true)}</div>
             ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${esc(jd.description)}</div>` : ''}
-            ${presiteScopeHTML(jd)}
 
             <div class="panelTitle" style="margin-top:16px;">Labor Line Items</div>
             <div class="laborPick">${(jd.labor&&jd.labor.length) ? jd.labor.map(priceLineRow).join('') : '<div class="small">No labor items on file.</div>'}</div>
@@ -9957,25 +9751,23 @@ function parsePriceRange(str){
   return [Math.min(...vals), Math.max(...vals)];
 }
 
-/* California statewide base sales tax rate. Local district add-ons vary by
-   jurisdiction and aren't accounted for here, this uses the base rate. */
-const CA_SALES_TAX_RATE = 0.0725;
+/* San Diego County sales tax rate, and the standard materials markup. Both are
+   the same figures the pre-site wizard starts from, kept in one place so the
+   walkthrough and the estimate builder can never disagree. The builder used to
+   read a saved figure off the work order instead; that figure was the only
+   thing left on the hidden pre-site record, and this replaces it. */
+const CA_SALES_TAX_RATE = 0.0775;
+const MATERIALS_MARKUP_PCT = 20;
 
 /* Sum every priced material into a single low/high range, then combine three
-   pieces into one final number: the raw materials sum, a 20% markup
-   (waste/overage/handling) on that sum, and CA sales tax calculated on the
+   pieces into one final number: the raw materials sum, the markup
+   (waste/overage/handling) on that sum, and sales tax calculated on the
    raw materials sum (before the markup is added). Returns one combined line
    item labeled "Materials" instead of the individual entries. */
-function buildMaterialsLineItem(materials, presite){
+function buildMaterialsLineItem(materials){
   const fmt = n => '$' + n.toFixed(2).replace(/\.00$/,'');
-  /* Pre-site v2 already computed this exactly: cost, then markup, then tax on
-     the marked-up figure. Prefer it over re-deriving from price strings. */
-  if(presite && presite.totals && presite.totals.materialsBilled!==undefined){
-    /* materialsBilled already equals cost + markup + tax. */
-    return [{ item:'Materials', price: fmt(Number(presite.totals.materialsBilled)||0) }];
-  }
-  /* Fallback for older work orders. Sum qty x unit where available, otherwise
-     fall back to parsing the price string. */
+  /* Sum qty x unit where the walkthrough supplied them, otherwise fall back to
+     parsing the price string a person typed. */
   let lowSum=0, highSum=0, any=false;
   (materials||[]).forEach(m=>{
     if(m && m.qty!==undefined && m.unit!==undefined && !isNaN(Number(m.unit))){
@@ -9987,8 +9779,9 @@ function buildMaterialsLineItem(materials, presite){
   });
   if(!any) return [];
   /* Markup and tax are both taken off the raw cost, then added to it. */
-  const lowFinal   = lowSum  * (1 + 0.2 + CA_SALES_TAX_RATE);
-  const highFinal  = highSum * (1 + 0.2 + CA_SALES_TAX_RATE);
+  const rate = 1 + (MATERIALS_MARKUP_PCT/100) + CA_SALES_TAX_RATE;
+  const lowFinal   = lowSum  * rate;
+  const highFinal  = highSum * rate;
   const price = (Math.round(lowFinal*100)===Math.round(highFinal*100))
     ? fmt(lowFinal)
     : `${fmt(lowFinal)}\u2013${fmt(highFinal)}`;
@@ -10073,18 +9866,17 @@ function sendJobDataToBuilder(iframeEl, id, kind){
       state:addr.state,
       zip:addr.zip
     },
-    /* The builder's description field used to receive the walkthrough wording
-       because the pre-site wrote it into jd.description. Now that the two are
-       stored separately, send both, typed description first, so the generated
-       document reads the same as it did before. */
-    description: [jd.description||'', psScopeLines(jd.presite).join('\n')].filter(s=>s.trim()).join('\n\n'),
+    /* Just the typed description now. The walkthrough wording used to be
+       appended from the hidden pre-site record; that record is gone, and the
+       line items below already carry what it was describing. */
+    description: jd.description||'',
     labor: buildLaborLineItems(jd.labor),
     laborDetail: jd.labor||[],
-    materials: buildMaterialsLineItem(jd.materials, jd.presite),
+    materials: buildMaterialsLineItem(jd.materials),
     issues: jd.issues||[],
     exclusions: jd.exclusions||[],
     disclaimers: jd.disclaimers||[],
-    totals: (jd.presite && jd.presite.totals) || null
+    totals: null
   };
   try{
     // Tell the builder to wipe any prior estimate before this work order's
