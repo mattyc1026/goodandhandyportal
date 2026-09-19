@@ -7939,9 +7939,37 @@ function adminTabHTML(wo){
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'surveys')">Send to Surveys</button>
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'jobhistory')">Send to Job History</button>
     </div>
+    <h4 style="margin-top:14px;">Duplicate</h4>
+    <div class="small" style="margin-bottom:8px;">Create a new work order with this customer's information copied over. Everything else starts blank.</div>
+    <div class="btnRow" style="flex-wrap:wrap;">
+      <button class="btn secondary" onclick="adminDuplicateWorkOrder(${wo.id})">Duplicate Work Order</button>
+    </div>
     <h4 style="margin-top:14px;">Admin Log</h4>
     ${logHTML}
   </div>`;
+}
+/* Makes a brand new work order for the same customer. Only the customer block
+   is carried over (name, phones, email, address, homeowner). Notes, job
+   details, schedule, documents, stage and the admin log all start empty, and
+   the new job begins in the Work Orders tab like any other new one. */
+function adminDuplicateWorkOrder(id){
+  const src=getWO(id);
+  if(!src) return;
+  const newId=newWorkOrderId();
+  const wo={
+    id:newId, createdAt:Date.now(),
+    customer:Object.assign({name:'',phone:'',altPhone:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer),
+    jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
+    notes:[], adminLog:[], docs:[], scheduleDates:[],
+    presiteDone:false, estimateDone:false, invoiceDone:false,
+    presiteScheduled:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
+    checkIn:null, checkOut:null
+  };
+  DB.workOrders.push(wo);
+  saveDB(DB);
+  renderTabCounts(); renderMain();
+  openWorkOrder(newId);
+  toast('Duplicated. This is the new work order.');
 }
 function adminSetStage(id, target){
   const wo=getWO(id);
