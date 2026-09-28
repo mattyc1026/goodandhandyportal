@@ -1699,6 +1699,8 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fgCell{position:relative;box-shadow:var(--sh-1);transition:transform var(--t-press) var(--e-out);}
 .fgCell:active{transform:translateY(1px);}
 .fgHit:active{background:rgba(232,121,26,.13);}
+.fgHit.fgStatic{cursor:default;}
+.fgHit.fgStatic:active{background:none;}
 
 /* The name is the masthead of the whole screen, so it gets the brand slab. */
 .fieldGrid .fgCell.fgName{
@@ -4240,7 +4242,7 @@ function renderMain(){
   if(ACTIVE_TAB==='workorders'){
     const dueList = followUpDueList();
     const list = sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
-    html+=`<div class="listHeader"><div><h2>Work Orders</h2><p>All active jobs, plus closed jobs still holding a date on the calendar. Highlight shows overall progress.</p></div>${sortDropdownHTML()}</div>`;
+    html+=`<div class="listHeader"><div><h2>Work Orders</h2></div>${sortDropdownHTML()}</div>`;
     html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}Create New Work Order</button>`;
     if(dueList.length){
       html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
@@ -4251,33 +4253,33 @@ function renderMain(){
   } else if(ACTIVE_TAB==='presite'){
     const incomplete=DB.workOrders.filter(inPresiteIncompleteList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inPresiteScheduledList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Pre-Site Inspections</h2><p>Jobs with customer info on file, awaiting a completed pre-site inspection.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Pre-Site Inspections</h2></div></div>`;
     html+=subGroupHTML('Pre-Site Incomplete', incomplete, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'search'});
     html+=subGroupHTML('Pre-Site Scheduled', scheduled, {emptyText:'Nothing currently scheduled.', emptyIcon:'search'});
   } else if(ACTIVE_TAB==='estimates'){
     const build=DB.workOrders.filter(inBuildEstimateList).sort((a,b)=>a.id-b.id);
     const pending=DB.workOrders.filter(inEstimatePendingApprovalList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Estimates</h2><p>Pre-site is complete. Build the estimate and get a decision. Approved jobs move to the In Progress tab to be scheduled.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Estimates</h2></div></div>`;
     html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', emptyIcon:'file-text', openMode:'estimate'});
     html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', emptyIcon:'file-text', showEstimateDecision:true});
   } else if(ACTIVE_TAB==='inprogress'){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
     const inProgress=DB.workOrders.filter(inInvoiceInProgressList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>In Progress</h2><p>Estimate approved and job underway. Schedule the job, then check in/out as work happens on site.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>In Progress</h2></div></div>`;
     html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'activity'});
     html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', emptyIcon:'activity', showJobComplete:true, showCheckInOut:true});
   } else if(ACTIVE_TAB==='invoices'){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Invoices</h2><p>Job complete. Build and send the invoice.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Invoices</h2></div></div>`;
     html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', emptyIcon:'receipt', openMode:'invoice'});
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Surveys</h2><p>Invoice complete. Awaiting a customer survey. Enter a SURVEY note on a job to move it to Job History.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Surveys</h2></div></div>`;
     html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>'
       : emptyStateHTML('Nothing awaiting a survey right now.', {icon:'star'});
   } else {
     const list=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
-    html+=`<div class="listHeader"><div><h2>Job History</h2><p>Completed jobs are kept here for 2 years, then automatically removed.</p></div></div>`;
+    html+=`<div class="listHeader"><div><h2>Job History</h2></div></div>`;
     html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>'
       : emptyStateHTML('No completed jobs on file yet.', {icon:'archive'});
   }
@@ -5951,13 +5953,13 @@ function fieldGridHTML(wo){
     </div>
     ${cell('fgTap', c.phone
       ? `<button type="button" class="fgHit" onclick="openPhoneAction('${esc(c.phone)}')"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
-      : `<div class="fgLabel">Phone</div><div class="fgValue muted">None</div>`)}
+      : `<div class="fgHit fgStatic"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}None</div></div>`)}
     ${cell('fgTap', addrText
       ? `<a class="fgHit" href="${directionsUrl(c.address)}" target="_blank" rel="noopener"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}${esc(addrText)}</div></a>`
-      : `<div class="fgLabel">Address</div><div class="fgValue muted">None</div>`)}
+      : `<div class="fgHit fgStatic"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
     ${cell('fgTap', c.email
       ? `<a class="fgHit" href="mailto:${esc(c.email)}"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></a>`
-      : `<div class="fgLabel">Email</div><div class="fgValue muted">None</div>`)}
+      : `<div class="fgHit fgStatic"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}None</div></div>`)}
   </div>
   ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
   ${(hasExtras && FIELD_SEC.extras) ? `<div class="fieldSubPanel">
@@ -6150,7 +6152,7 @@ function fieldCustEditHTML(wo){
     ${custField('homeownerName','Homeowner Name (optional)', c.homeownerName)}
     ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', c.homeownerPhone)}
     ${addressField('address','Address', c.address)}
-    ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
+    ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
     <div class="fieldNoteBtns">
       <button class="btn" onclick="saveFieldCustomer(${id})">Save</button>
       ${hasRequiredInfo(wo) ? `<button class="btn secondary" onclick="cancelFieldCustEdit(${id})">Cancel</button>` : ''}
@@ -6739,8 +6741,11 @@ function renderWorkOrderModal(id){
           ${custField('homeownerName','Homeowner Name (optional)', wo.customer.homeownerName)}
           ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', wo.customer.homeownerPhone)}
           ${addressField('address','Address', wo.customer.address)}
-          ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to move this job into Pre-Site Inspections.</div>' : ''}
-          <div class="small">Tap outside this box to save and close.</div>
+          ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
+          <div class="fieldNoteBtns">
+            <button class="btn" onclick="saveFieldCustomer(${id})">Save</button>
+            ${hasRequiredInfo(wo) ? `<button class="btn secondary" onclick="cancelFieldCustEdit(${id})">Cancel</button>` : ''}
+          </div>
         </div>` : `
         <div class="modalHeadCust" id="modalHeadCust" title="Double-click (or long-press) to edit"
           ondblclick="startHeaderCustEdit(${id})"
@@ -7079,6 +7084,15 @@ function hideAddressSuggestions(endSession){
 }
 function saveCustomer(id){
   const wo=getWO(id);
+  /* Name, phone, and address must be filled in before anything is saved.
+     The check reads what is typed in the boxes right now. If one is empty,
+     nothing changes, the boxes stay open, and the person is told why. */
+  const typed=k=>{ const f=document.getElementById('cf_'+k); return f ? String(f.value||'').trim() : String((wo.customer&&wo.customer[k])||'').trim(); };
+  if(!typed('name') || !typed('phone') || !typed('address')){
+    toast('Name, phone, and address are required to save.');
+    if(WO_CUST_EDIT) attachHeaderCustOutsideClickHandler(id);
+    return;
+  }
   const wasEligible=inPresiteList(wo);
   ['name','phone','altPhone','email','address','homeownerName','homeownerPhone'].forEach(k=>{
     const field=document.getElementById('cf_'+k);
