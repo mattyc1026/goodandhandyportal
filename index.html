@@ -5232,10 +5232,10 @@ function renderScheduleWidget(){
               </select>
             </div>
             <div class="schedRepeatNote">Set this field first if scheduling a job that runs more than one day.</div>
-            ${SCHED_REPEAT!=='none' ? `
-            <div class="field"><label>Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
-            ` : ''}
             <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
+            ${SCHED_REPEAT!=='none' ? `
+            <div class="field"><label>End Date (Repeats Until)</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
+            ` : ''}
             <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
             <div class="field"><label>End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
             ${SCHED_EDIT_ID ? '' : `<button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>`}
@@ -6076,7 +6076,7 @@ function fieldCheckHTML(wo){
 
   return `<div class="fieldCheckCard">
     <div${headAttrs}>
-      <span class="fsTitle">Check In / Check Out</span>
+      <span class="fsTitle">Check In/Out</span>
       ${todayHTML}
       ${chev}
     </div>
@@ -6269,9 +6269,9 @@ function fieldSchedFormHTML(){
       </select>
     </div>
     <div class="fieldSchedNote" style="margin-top:-4px;margin-bottom:10px;">Set this field first if scheduling a job that runs more than one day.</div>
-    ${SCHED_REPEAT!=='none' ? `
-    <div class="field"><label for="schedEndDate">Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>` : ''}
     <div class="field"><label for="schedStartDate">Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
+    ${SCHED_REPEAT!=='none' ? `
+    <div class="field"><label for="schedEndDate">End Date (Repeats Until)</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>` : ''}
     <div class="field"><label for="schedStartTime">Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
     <div class="field"><label for="schedEndTime">End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
     ${(!editing && SCHED_PENDING.length) ? `<div class="fsList" style="margin-top:14px;">
@@ -6740,7 +6740,7 @@ function renderWorkOrderModal(id){
           <div class="custPanel">
             ${scheduleDatesSectionHTML(wo, id)}
             <div class="schedSection">
-              <div class="panelTitle">Check In / Check Out</div>
+              <div class="panelTitle">Check In/Out</div>
               <div class="checkStampBox">
                 ${dayLogsSectionHTML(wo)}
               </div>
