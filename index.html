@@ -2808,7 +2808,7 @@ window._bootSafety = setTimeout(function(){
     <button class="searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders">
       <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span>Search</span>
     </button>
-    <input type="text" id="globalSearchInput" placeholder="Search work orders by name, number, or address..." autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
+    <input type="text" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
     <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
   </div>
   <div class="tabsBarWrap" id="tabsBarWrap">
@@ -3175,6 +3175,11 @@ function openDataConnection(){
             if(OPEN_WO_ID!==null && String(OPEN_WO_ID)===id) touchedOpenWO=true;
             return;
           }
+          // A write this device just sent shows up here before the server has
+          // confirmed it. It is this device's own change, not someone else's,
+          // so it is skipped. Changes from other devices always arrive already
+          // confirmed and are unaffected.
+          if(change.doc.metadata && change.doc.metadata.hasPendingWrites) return;
           const json=change.doc.data().wo;
           if(!json) return;
           // A document echoing back a change this device just made needs no
@@ -3376,9 +3381,7 @@ function openSyncModal(){
     <div class="modal" style="max-width:520px;">
       <div class="modalHead"><h2>Multi-Device Sync</h2><button class="closeX" onclick="closeModal()">&times;</button></div>
       <div class="modalBody">
-        <p class="small">Paste your Firebase project's web config to keep this portal in sync across every phone, tablet, and computer in real time. Create a free Firebase project at <b>firebase.google.com</b>, enable <b>Firestore</b>, and copy the config object from Project Settings.</p>
-        <p class="small">Paste it exactly as Firebase shows it. Quoted or unquoted keys both work.</p>
-        <textarea id="syncCfgInput" placeholder='{ apiKey: "...", authDomain: "...", projectId: "...", storageBucket: "...", messagingSenderId: "...", appId: "..." }'>${cfg?JSON.stringify(cfg,null,2):''}</textarea>
+        <textarea id="syncCfgInput">${cfg?JSON.stringify(cfg,null,2):''}</textarea>
         <div class="errMsg" id="syncErr"></div>
         <div class="btnRow">
           <button class="btn" style="flex:1" onclick="saveSyncConfig()">Connect &amp; Sync</button>
@@ -3884,7 +3887,7 @@ function openChangePassword(){
         <div class="field"><label>Confirm New Password</label>
           <input id="cpNew2" type="password" autocomplete="new-password"
             onkeydown="if(event.key==='Enter'){event.preventDefault();submitChangePassword();}"></div>
-        <div class="small">At least 8 characters. Do not reuse the one you were given.</div>
+        <div class="small">At least 8 characters.</div>
         <div class="errMsg" id="cpErr"></div>
         <div class="btnRow">
           <button class="btn" id="cpBtn" onclick="submitChangePassword()">Save Password</button>
@@ -4758,7 +4761,23 @@ function declineEstimate(id, checkboxEl){
 /* =========================================================================
    NEW WORK ORDER
 ========================================================================= */
+/* A new work order only becomes real once name, phone, and address are saved.
+   Until then it lives in memory only, and closing it throws it away. */
+let NEW_WO_PENDING=null;
+function discardPendingNewWO(){
+  if(NEW_WO_PENDING===null) return;
+  const pid=NEW_WO_PENDING;
+  NEW_WO_PENDING=null;
+  const wo=getWO(pid);
+  if(wo && !hasRequiredInfo(wo)){
+    DB.workOrders=DB.workOrders.filter(w=>String(w.id)!==String(pid));
+    saveDB(DB);
+    renderTabCounts();
+    renderMain();
+  }
+}
 function openNewWorkOrder(){
+  discardPendingNewWO();
   const id=newWorkOrderId();
   const wo={
     id, createdAt:Date.now(),
@@ -4770,7 +4789,7 @@ function openNewWorkOrder(){
     checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
-  saveDB(DB);
+  NEW_WO_PENDING=id;
   openWorkOrder(id); // openWorkOrder takes only an id; a stray 2nd arg was ignored
 }
 
@@ -5167,16 +5186,14 @@ function renderScheduleWidget(){
               </select>
             </div>
             <div class="schedRepeatNote">Set this field first if scheduling a job that runs more than one day.</div>
+            ${SCHED_REPEAT!=='none' ? `
+            <div class="field"><label>Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
+            ` : ''}
             <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
             <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
             <div class="field"><label>End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
-            ${SCHED_REPEAT!=='none' ? `
-            <div class="field"><label>Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
-            <div class="schedRepeatNote">Each day in the repeat only books the Start Time–End Time window above, not the full day.</div>
-            ` : ''}
             ${SCHED_EDIT_ID ? '' : `<button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>`}
 
-            ${SCHED_EDIT_ID ? `<div class="small" style="margin-top:12px;">Adjust the date, time, or type above, then click Save Changes. Any logged check-in time on days that stay in range is kept.</div>` : ''}
             ${(!SCHED_EDIT_ID && SCHED_PENDING.length) ? `
               <div class="schedPendingList">
                 <div class="panelTitle" style="margin-top:16px;">Dates to Add</div>
@@ -5187,7 +5204,7 @@ function renderScheduleWidget(){
                   </div>
                 `).join('')}
               </div>
-            ` : (SCHED_EDIT_ID ? '' : '<div class="small" style="margin-top:12px;">Pick dates/times above and click "Add This Date" for each visit, then Add to Calendar when done.</div>')}
+            ` : ''}
           </div>
         </div>
       </div>
@@ -5248,7 +5265,7 @@ function buildJobDaysMap(excludeDateId){
       // would always report a double-booking.
       if(excludeDateId && d.id===excludeDateId) return;
       const info={
-        customer: (w.customer && w.customer.name) ? w.customer.name : 'Unnamed customer',
+        customer: (w.customer && w.customer.name) ? w.customer.name : 'None',
         type: d.type==='presite' ? 'Pre-Site' : 'Whole Job',
         startTime: d.startTime, endTime: d.endTime
       };
@@ -5300,7 +5317,7 @@ function findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDa
       Object.assign({customer:'another date you just added', type:'Pending'}, b)));
     bookings.forEach(b=>{
       if(timesOverlap(startTime, endTime, b.startTime, b.endTime)){
-        out.push({date:iso, customer:b.customer||'Unnamed customer', type:b.type||'', startTime:b.startTime, endTime:b.endTime});
+        out.push({date:iso, customer:b.customer||'None', type:b.type||'', startTime:b.startTime, endTime:b.endTime});
       }
     });
   });
@@ -5708,7 +5725,7 @@ function priorJobsTabHTML(wo){
     const desc=(w.jobDetails && w.jobDetails.description) ? w.jobDetails.description.trim() : '';
     return `<div class="priorRow">
       <div class="priorMain">
-        <div class="priorTitle">#${esc(woCode(w))} &middot; ${esc(w.customer.name||'Unnamed customer')}<span class="priorWhy">${why==='phone'?'Same phone':'Same address'}</span></div>
+        <div class="priorTitle">#${esc(woCode(w))} &middot; ${esc(w.customer.name||'None')}<span class="priorWhy">${why==='phone'?'Same phone':'Same address'}</span></div>
         <div class="small">${esc(stageLabelFor(w))}${when?' &middot; opened '+esc(when):''}${desc?' &middot; '+esc(desc.slice(0,70))+(desc.length>70?'…':''):''}</div>
       </div>
       <button class="btn secondary" onclick="openWorkOrder(${w.id})">Open</button>
@@ -5949,7 +5966,7 @@ function fieldGridHTML(wo){
       title="Double-click, or press and hold on a phone, to edit customer info"
       ondblclick="startHeaderCustEdit(${wo.id})"
       ontouchstart="headerCustTouchStart(${wo.id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
-      <div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'Unnamed customer')}</div>
+      <div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'None')}</div>
     </div>
     ${cell('fgTap', c.phone
       ? `<button type="button" class="fgHit" onclick="openPhoneAction('${esc(c.phone)}')"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
@@ -6050,7 +6067,7 @@ function fieldNoteComposerHTML(id){
     </select>
     ${isPre ? `<div class="small" style="margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>` : `
     <label class="fieldNoteLabel" for="fieldNoteText">Note</label>
-    <textarea id="fieldNoteText" rows="5" placeholder="What happened on site..." oninput="fieldNoteInput(${id}, this.value, ${editing?'true':'false'})">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
+    <textarea id="fieldNoteText" rows="5" oninput="fieldNoteInput(${id}, this.value, ${editing?'true':'false'})">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
     <label class="fieldNoteLabel" for="fieldNoteFollow">Follow-up date (optional)</label>
     <input type="date" id="fieldNoteFollow" value="${esc(FIELD_NOTE_DRAFT.follow||'')}" oninput="FIELD_NOTE_DRAFT.follow=this.value">`}
     <div class="fieldNoteBtns">
@@ -6176,9 +6193,16 @@ function cancelFieldCustEdit(id){
    element ids, because those functions read the values straight off them. */
 function fieldSchedGroupHTML(id, title, list){
   if(!list.length) return '';
+  const today=new Date().toISOString().slice(0,10);
+  const past=list.filter(d=>(d.endDate||d.startDate) < today);
+  const rest=list.filter(d=>(d.endDate||d.startDate) >= today);
+  const pastHTML = (past.length && rest.length)
+    ? `<details class="schedPast"><summary>${past.length} earlier date${past.length>1?'s':''}</summary>${past.map(d=>schedRowHTML(id, d, true)).join('')}</details>`
+    : past.map(d=>schedRowHTML(id, d, true)).join('');
   return `<div class="fsList">
     <div class="fsKey">${esc(title)}</div>
-    ${list.map(d=>schedRowHTML(id, d, true)).join('')}
+    ${pastHTML}
+    ${rest.map(d=>schedRowHTML(id, d, true)).join('')}
   </div>`;
 }
 function fieldSchedFormHTML(){
@@ -6199,12 +6223,11 @@ function fieldSchedFormHTML(){
       </select>
     </div>
     <div class="fieldSchedNote" style="margin-top:-4px;margin-bottom:10px;">Set this field first if scheduling a job that runs more than one day.</div>
+    ${SCHED_REPEAT!=='none' ? `
+    <div class="field"><label for="schedEndDate">Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>` : ''}
     <div class="field"><label for="schedStartDate">Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
     <div class="field"><label for="schedStartTime">Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="SCHED_STIME=this.value"></div>
     <div class="field"><label for="schedEndTime">End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="SCHED_ETIME=this.value"></div>
-    ${SCHED_REPEAT!=='none' ? `
-    <div class="field"><label for="schedEndDate">Repeat Until</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
-    <div class="fieldSchedNote">Each day in the repeat only books the Start Time to End Time window above, not the full day.</div>` : ''}
     ${(!editing && SCHED_PENDING.length) ? `<div class="fsList" style="margin-top:14px;">
       <div class="fsKey">Dates to add</div>
       ${SCHED_PENDING.map((pd,i)=>`<div class="schedPendingItem">
@@ -6219,7 +6242,6 @@ function fieldSchedFormHTML(){
            <button class="btn" ${SCHED_PENDING.length?'':'disabled'} onclick="finalizeScheduleDates()">Save${SCHED_PENDING.length?' ('+SCHED_PENDING.length+')':''}</button>`}
       <button class="btn secondary" onclick="cancelScheduleWidget()">Cancel</button>
     </div>
-    ${editing ? '<div class="fieldSchedNote">Logged check-in time on days that stay in range is kept.</div>' : ''}
   </div>`;
 }
 function fieldScheduleSecHTML(wo){
@@ -6296,7 +6318,7 @@ function fieldJobSecHTML(wo){
   const hasAny = (jd.description && jd.description.trim()) || lists.length;
   const body = jd.description
     ? esc(jd.description)
-    : (hasAny ? '' : '<div class="small">No job details yet. Use Edit Job Details below to add them, or complete a pre-site inspection.</div>');
+    : (hasAny ? '' : '<div class="small">No job details yet. Select "Edit Job Details" to add them, or complete a pre-site inspection.</div>');
   /* A job sitting in Pre-Site Inspections has no details until the walkthrough
      is done, so the card points at the way to get them. */
   const presitePrompt = inPresiteList(wo)
@@ -6371,6 +6393,8 @@ function handleFieldCamera(inputEl){
 
 let OPEN_WO_ID=null;   // work order currently shown in the modal, if any
 function openWorkOrder(id){
+  if(NEW_WO_PENDING!==null && String(NEW_WO_PENDING)!==String(id)) discardPendingNewWO();
+  CUST_DRAFT=null;
   const wo=getWO(id);
   if(!wo){ toast('That work order no longer exists.'); renderTabCounts(); renderMain(); return; }
   WO_CUST_EDIT = !hasRequiredInfo(wo);
@@ -6563,7 +6587,27 @@ function splitAddress(rawAddr){
     state: state||'', zip: zip||''
   };
 }
+/* What has been typed into the customer boxes but not saved yet. Anything
+   that redraws the work order (a tab, a section, a toggle) used to rebuild
+   the boxes from the saved record and wipe what was typed. */
+let CUST_DRAFT=null;
+function captureCustDraft(id){
+  if(!WO_CUST_EDIT) return;
+  const ids=['name','phone','altPhone','email','homeownerName','homeownerPhone','address','addressUnit'];
+  const found={};
+  let any=false;
+  ids.forEach(k=>{ const f=document.getElementById('cf_'+k); if(f){ found[k]=f.value; any=true; } });
+  if(any) CUST_DRAFT={id:String(id), values:found};
+}
+function restoreCustDraft(id){
+  if(!WO_CUST_EDIT || !CUST_DRAFT || CUST_DRAFT.id!==String(id)){ CUST_DRAFT=null; return; }
+  Object.keys(CUST_DRAFT.values).forEach(k=>{
+    const f=document.getElementById('cf_'+k);
+    if(f) f.value=CUST_DRAFT.values[k];
+  });
+}
 function renderWorkOrderModal(id){
+  captureCustDraft(id);
   OPEN_WO_ID=id;
   const wo=getWO(id);
   if(!wo || !CURRENT_USER){ closeModal(); return; }
@@ -6664,7 +6708,7 @@ function renderWorkOrderModal(id){
           <div class="jobPanel">
             <div class="panelTitle" style="display:flex;justify-content:space-between;align-items:center;">
               <span>Job Details</span>
-              ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit job details</button>` : ''}
+              ${!WO_JOB_EDIT ? `<button class="editLink" onclick="openJobDetailsEdit(${id})">Edit Job Details</button>` : ''}
             </div>
             ${WO_JOB_EDIT ? jobDetailsEditHTML(id) : jobListsHTML(wo)}
             ${(!WO_JOB_EDIT && inPresiteList(wo)) ? '<div class="small">Enter a PRESITE note below to open the inspection tool.</div>' : ''}
@@ -6692,7 +6736,6 @@ function renderWorkOrderModal(id){
               <span>${editingNote ? 'Edit Note' : 'Add Note'}</span>
               <button class="btn secondary" onclick="closeNoteSheet(${id})">Done</button>
             </div>
-            ${editingNote ? '<div class="small" style="color:var(--orange);font-weight:700;">Editing note. Save Edit to update it, or Cancel to discard changes.</div>' : ''}
             <div class="noteEntryTop">
               <div class="noteFieldGroup">
                 <label for="noteType">Note Type</label>
@@ -6701,7 +6744,7 @@ function renderWorkOrderModal(id){
               <div class="noteFieldGroup" id="noteFollowGroup" style="display:${isPreInit?'none':''}">
                 <label for="noteFollowUp">Follow-up date (optional)</label>
                 <div class="dateFieldWrap">
-                  <input type="text" id="noteFollowUp" placeholder="MM/DD/YYYY" title="Follow-up date (optional). Type in any common format" autocomplete="off" value="${followUpVal}" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
+                  <input type="text" id="noteFollowUp" title="Follow-up date (optional). Type in any common format" autocomplete="off" value="${followUpVal}" oninput="clearDateInvalid(this)" onblur="normalizeFollowUpDisplay()">
                   <div class="calWrap" onclick="openFollowUpPicker()">
                     <button type="button" class="calBtn" tabindex="-1" aria-hidden="true">
                       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6717,7 +6760,7 @@ function renderWorkOrderModal(id){
               </div>
             </div>
             <div class="small" id="noteTypeHint" style="display:${isPreInit?'block':'none'};margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>
-            <textarea id="noteText" placeholder="Enter note..." rows="4" style="display:${isPreInit?'none':''}" oninput="${editingNote ? '' : `saveNoteDraft(${id}, this.value)`}">${esc(textVal)}</textarea>
+            <textarea id="noteText" rows="4" style="display:${isPreInit?'none':''}" oninput="${editingNote ? '' : `saveNoteDraft(${id}, this.value)`}">${esc(textVal)}</textarea>
             <div class="btnRow">
               <button class="btn" id="noteSubmitBtn" onclick="${editingNote ? `saveNoteEdit(${id})` : `submitNote(${id})`}">${editingNote ? 'Save Edit' : (isPreInit ? 'Start Pre-Site' : 'Add Note')}</button>
               ${editingNote ? `<button class="btn secondary" onclick="cancelNoteEdit(${id})">Cancel</button>` : ''}
@@ -6752,14 +6795,14 @@ function renderWorkOrderModal(id){
           ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
           <div class="mhCols">
             <div class="mhColA">
-              <div class="mhName">${esc(wo.customer.name) || 'New Work Order'}${headerSuffix}</div>
-              <div class="mhPrimary">${phoneLink(wo.customer.phone)}</div>
+              <div class="mhName">${esc(wo.customer.name) || 'None'}${headerSuffix}</div>
+              <div class="mhPrimary">${phoneLink(wo.customer.phone) || `<span class="telLink">${icon('phone')}None</span>`}</div>
               <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
             </div>
             <div class="mhColB">
-              <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1, true)}</div>
+              <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1, true) || `<span class="mapLink hasIcon">${icon('map-pin')}None</span>`}</div>
               <div class="mhAddr2">${addressLink(wo.customer.address, addr.line2, 'spacer')}</div>
-              <div class="mhEmail">${emailLink(wo.customer.email)}</div>
+              <div class="mhEmail">${emailLink(wo.customer.email) || `<span class="mailLink">${icon('mail')}None</span>`}</div>
             </div>
           </div>
           ${homeownerLine(wo)}
@@ -6806,6 +6849,7 @@ function renderWorkOrderModal(id){
     const nextOverlay=modal.querySelector('.overlay');
     if(nextOverlay) nextOverlay.scrollTop=prevOverlayScroll;
   }
+  restoreCustDraft(id);
 }
 /* The homeowner row spans the full width beneath the two columns and is
    omitted entirely when both fields are blank, so a job where the customer is
@@ -6823,7 +6867,7 @@ function custField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${esc(val)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
 }
 function phoneField(key,label,val){
-  return `<div class="kv"><b>${label}</b><input id="cf_${key}" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" maxlength="14" value="${esc(val)}" oninput="onPhoneFieldInput(this)" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
+  return `<div class="kv"><b>${label}</b><input id="cf_${key}" type="tel" inputmode="tel" autocomplete="tel" maxlength="14" value="${esc(val)}" oninput="onPhoneFieldInput(this)" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
 }
 function addressField(key,label,val){
   /* A saved address keeps its unit inline ("123 Main St #4, San Diego, CA").
@@ -6838,7 +6882,7 @@ function addressField(key,label,val){
       oninput="onAddressFieldInput(this)" onblur="scheduleHideAddressSuggestions()">
     <div id="addrSuggest_${key}" class="addrSuggest" style="display:none;"></div>
   </div>
-  <div class="kv"><b>Unit or Suite (optional)</b><input id="cf_${key}Unit" type="text" autocomplete="off" placeholder="Apt 4, Suite 200, #4B" value="${esc(ex.unit)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
+  <div class="kv"><b>Unit or Suite (optional)</b><input id="cf_${key}Unit" type="text" autocomplete="off" value="${esc(ex.unit)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
 }
 /* Turns what was typed in the unit box into a consistent label:
    "suite 200" -> "Suite 200", "apt. 4" -> "Apt 4", "4B" -> "#4B". */
@@ -7103,6 +7147,7 @@ function saveCustomer(id){
   wo.customer.phone = formatPhoneNumber(wo.customer.phone);
   wo.customer.altPhone = wo.customer.altPhone ? formatPhoneNumber(wo.customer.altPhone) : '';
   wo.customer.homeownerPhone = wo.customer.homeownerPhone ? formatPhoneNumber(wo.customer.homeownerPhone) : '';
+  if(String(NEW_WO_PENDING)===String(id)) NEW_WO_PENDING=null;
   saveDB(DB);
   const nowEligible=inPresiteList(wo);
   WO_CUST_EDIT=false;
@@ -7125,7 +7170,7 @@ function warnIfDuplicateCustomer(id){
   saveDB(DB);
   const byPhone=prior.filter(x=>x.why==='phone').length;
   const how = byPhone ? 'the same phone number' : 'the same street address';
-  const list=prior.slice(0,5).map(x=>'#'+woCode(x.wo)+'  '+(x.wo.customer.name||'Unnamed customer')+'  ('+stageLabelFor(x.wo)+')').join('\n');
+  const list=prior.slice(0,5).map(x=>'#'+woCode(x.wo)+'  '+(x.wo.customer.name||'None')+'  ('+stageLabelFor(x.wo)+')').join('\n');
   const more = prior.length>5 ? ('\nand '+(prior.length-5)+' more') : '';
   askYesNo(
     'This customer already has '+prior.length+' work order'+(prior.length>1?'s':'')+' on file, matched on '+how+':\n\n'+list+more+
@@ -7182,26 +7227,16 @@ function jobListsHTML(wo){
     || (jd.tools&&jd.tools.length) || (jd.issues&&jd.issues.length) || (jd.disclaimers&&jd.disclaimers.length)
     || (jd.exclusions&&jd.exclusions.length);
   if(!hasAny){
-    return '<div class="small">No job details yet. Select "Edit job details" to add them, or complete a pre-site inspection.</div>';
+    return '<div class="small">No job details yet. Select "Edit Job Details" to add them, or complete a pre-site inspection.</div>';
   }
+  const has=k=>Array.isArray(jd[k]) && jd[k].length;
+  const box=(k,title,row)=>has(k) ? `<details ${jobListOpen(k)?'open':''} ontoggle="rememberJobList('${k}',this)"><summary>${title} (${jd[k].length})</summary>${jd[k].map(row).join('')}</details>` : '';
+  const priced=box('labor','Labor Line Items',priceLineRow)+box('materials','Materials',priceLineRow);
+  const plain=box('tools','Required Tools',plainLineRow)+box('issues','Potential Issues',plainLineRow)+box('exclusions','Exclusions',plainLineRow)+box('disclaimers','Disclaimers',plainLineRow);
   return `
     ${jd.description ? `<div class="descParagraph">${esc(jd.description)}</div>` : ''}
-    <div class="sideBySide">
-      <details ${jobListOpen('labor')?'open':''} ontoggle="rememberJobList('labor',this)">
-        <summary>Labor Line Items (${(jd.labor||[]).length})</summary>
-        ${(jd.labor&&jd.labor.length) ? jd.labor.map(priceLineRow).join('') : '<div class="small">None</div>'}
-      </details>
-      <details ${jobListOpen('materials')?'open':''} ontoggle="rememberJobList('materials',this)">
-        <summary>Materials (${(jd.materials||[]).length})</summary>
-        ${(jd.materials&&jd.materials.length) ? jd.materials.map(priceLineRow).join('') : '<div class="small">None</div>'}
-      </details>
-    </div>
-    <div class="expandLinks">
-      <details ${jobListOpen('tools')?'open':''} ontoggle="rememberJobList('tools',this)"><summary>Required Tools (${(jd.tools||[]).length})</summary>${(jd.tools||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-      <details ${jobListOpen('issues')?'open':''} ontoggle="rememberJobList('issues',this)"><summary>Potential Issues (${(jd.issues||[]).length})</summary>${(jd.issues||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-      <details ${jobListOpen('exclusions')?'open':''} ontoggle="rememberJobList('exclusions',this)"><summary>Exclusions (${(jd.exclusions||[]).length})</summary>${(jd.exclusions||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-      <details ${jobListOpen('disclaimers')?'open':''} ontoggle="rememberJobList('disclaimers',this)"><summary>Disclaimers (${(jd.disclaimers||[]).length})</summary>${(jd.disclaimers||[]).map(plainLineRow).join('') || '<div class="small">None</div>'}</details>
-    </div>`;
+    ${priced ? `<div class="sideBySide">${priced}</div>` : ''}
+    ${plain ? `<div class="expandLinks">${plain}</div>` : ''}`;
 }
 
 /* ---- Job Details: edit mode ---- */
@@ -7452,7 +7487,7 @@ function jdEditSection(id, key, label, isPriced){
     if(isPriced){
       const itemVal=esc(it.item);
       const priceVal=esc(it.price);
-      return `<div class="editRow" data-jd-row="${key}-${i}" data-jd-idx="${i}">${grip(i)}<input id="jdIn-${key}-${i}" value="${itemVal}" placeholder="Item" style="flex:2" onchange="updateJDItem('${key}',${i},this.value,'item')"><input value="${priceVal}" placeholder="Price range" style="flex:1" onchange="updateJDItem('${key}',${i},this.value,'price')"><button class="jdDel" title="Remove" aria-label="Remove" onclick="removeJDItem(${id},'${key}',${i})">&#10005;</button></div>`;
+      return `<div class="editRow" data-jd-row="${key}-${i}" data-jd-idx="${i}">${grip(i)}<input id="jdIn-${key}-${i}" value="${itemVal}" style="flex:2" onchange="updateJDItem('${key}',${i},this.value,'item')"><input value="${priceVal}" style="flex:1" onchange="updateJDItem('${key}',${i},this.value,'price')"><button class="jdDel" title="Remove" aria-label="Remove" onclick="removeJDItem(${id},'${key}',${i})">&#10005;</button></div>`;
     }
     const val=esc(it);
     return `<div class="editRow" data-jd-row="${key}-${i}" data-jd-idx="${i}">${grip(i)}<input id="jdIn-${key}-${i}" value="${val}" onchange="updateJDItem('${key}',${i},this.value)"><button class="jdDel" title="Remove" aria-label="Remove" onclick="removeJDItem(${id},'${key}',${i})">&#10005;</button></div>`;
@@ -7944,7 +7979,7 @@ function adminTabHTML(wo){
     : '<div class="small">No admin overrides on this work order.</div>';
   return `<div class="adminTab">
     <h4>Admin Controls</h4>
-    <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow. The job resumes normally from wherever you place it.</div>
+    <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow.</div>
     <div class="btnRow" style="flex-wrap:wrap;">
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'presite')">Send to Pre-Site Inspections</button>
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'estimates')">Send to Estimates</button>
@@ -7954,7 +7989,6 @@ function adminTabHTML(wo){
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'jobhistory')">Send to Job History</button>
     </div>
     <h4 style="margin-top:14px;">Duplicate</h4>
-    <div class="small" style="margin-bottom:8px;">Create a new work order with this customer's information copied over. Everything else starts blank.</div>
     <div class="btnRow" style="flex-wrap:wrap;">
       <button class="btn secondary" onclick="adminDuplicateWorkOrder(${wo.id})">Duplicate Work Order</button>
     </div>
@@ -8258,6 +8292,8 @@ function closeModal(){
   MODAL_PRESENTED=false;
   ghostOutModal(root);
   root.innerHTML='';
+  CUST_DRAFT=null;
+  discardPendingNewWO();
   detachHeaderCustOutsideClickHandler();
   hideAddressSuggestions();
   OPEN_WO_ID=null;
@@ -9637,7 +9673,7 @@ function psScopeHTML(){
             ${def.askOpts.map(o=>`<option ${row.ans.ask===o?'selected':''}>${esc(o)}</option>`).join('')}
           </select>`:''}
       </div>
-      ${def.note?`<div class="psFieldRow"><input style="flex:1;min-width:240px" placeholder="Describe it" value="${esc(row.ans.note||'')}" onchange="psSetAns(${row.uid},'note',this.value)"></div>`:''}
+      ${def.note?`<div class="psFieldRow"><input style="flex:1;min-width:240px" value="${esc(row.ans.note||'')}" onchange="psSetAns(${row.uid},'note',this.value)"></div>`:''}
       ${kids.map(k=>psPromptHTML(k)).join('')}
     </div>`;
   }).join('');
@@ -9880,7 +9916,6 @@ function openSplit(id, kind){
             <div class="panelTitle" style="margin-top:16px;">Disclaimers</div>
             <div class="laborPick">${(jd.disclaimers&&jd.disclaimers.length) ? jd.disclaimers.map(plainLineRow).join('') : '<div class="small">None on file.</div>'}</div>
 
-            <p class="small" style="margin-top:12px;">Click the ⧉ icon next to any line to copy it, then paste into the builder on the right. It opens in its own tab when you click Generate/Print. Close this window when you're done to record the result.</p>
           </div>
           <div class="splitRight">
             <iframe src="${url}" title="${kind} builder" onload="sendJobDataToBuilder(this, ${id}, '${kind}')"></iframe>
