@@ -2635,6 +2635,45 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<style>
+/* ---- Dashboard side panel ----
+   The live dashboard is loaded from its own site inside a frame, so its code
+   stays separate. Desktop: docked on the left, pushing the portal over.
+   Phone: slides over the portal from the hamburger button. */
+:root{--dashW:clamp(280px,22vw,380px);}
+.dashToggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.06);color:#fff;cursor:pointer;padding:0;flex:0 0 auto;
+}
+.dashToggle:hover{background:rgba(255,255,255,.14);}
+.dashToggle svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;stroke-linecap:round;fill:none;}
+#dashPanel{
+  position:fixed;top:0;left:0;bottom:0;width:var(--dashW);
+  background:#0f2a47;z-index:40;
+  transform:translateX(-100%);transition:transform .25s ease;
+  box-shadow:2px 0 18px rgba(0,0,0,.25);
+}
+#dashPanel iframe{display:block;width:100%;height:100%;border:0;}
+#appScreen{transition:margin-left .25s ease;}
+#dashBackdrop{display:none;}
+@media (min-width:901px){
+  body.dashOpen #dashPanel{transform:none;}
+  body.dashOpen #appScreen{margin-left:var(--dashW);}
+}
+@media (max-width:900px){
+  #dashPanel{width:min(86vw,380px);z-index:95;}
+  body.dashOpen #dashPanel{transform:none;}
+  body.dashOpen #dashBackdrop{display:block;position:fixed;inset:0;background:rgba(10,24,45,.55);z-index:94;}
+}
+@media (prefers-reduced-motion: reduce){
+  #dashPanel,#appScreen{transition:none;}
+}
+@media print{
+  #dashPanel,#dashBackdrop,.dashToggle{display:none !important;}
+  body.dashOpen #appScreen{margin-left:0 !important;}
+}
+</style>
 </head>
 <body>
 
@@ -2756,8 +2795,15 @@ window._bootSafety = setTimeout(function(){
 
 <!-- ============ MAIN APP ============ -->
 <div id="appScreen" class="hidden">
+  <aside id="dashPanel" aria-label="Dashboard">
+    <iframe id="dashFrame" title="Good &amp; Handy Dashboard"></iframe>
+  </aside>
+  <div id="dashBackdrop" onclick="setDashOpen(false)"></div>
   <header class="top">
     <div class="brand" style="display:flex;align-items:center;gap:10px;">
+      <button class="dashToggle" id="dashToggle" onclick="setDashOpen(!document.body.classList.contains('dashOpen'))" aria-label="Dashboard" aria-controls="dashPanel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
       <img id="headerLogo" alt="Good &amp; Handy" style="width:46px;height:46px;object-fit:contain;display:block;image-rendering:auto;">
     </div>
     <div class="userBadge">
@@ -10761,6 +10807,58 @@ setInterval(srSave, 5000);
   }).observe(document.body, {childList:true, subtree:true});
 })();
 
+</script>
+<script>
+/* ---- Dashboard side panel ---- */
+(function(){
+  const DASH_URL='https://mattyc1026.github.io/ghdashboard/';
+  const KEY='gh_dash_open';
+  const phoneMQ=window.matchMedia('(max-width:900px)');
+  const isPhone=()=>phoneMQ.matches;
+  const frame=document.getElementById('dashFrame');
+  const btn=document.getElementById('dashToggle');
+
+  window.setDashOpen=function(open){
+    document.body.classList.toggle('dashOpen', !!open);
+    if(btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if(open && frame && !frame.getAttribute('src')) frame.setAttribute('src', DASH_URL);
+    if(!isPhone()){ try{ localStorage.setItem(KEY, open ? '1' : '0'); }catch(e){} }
+  };
+
+  function desktopPref(){
+    try{ return localStorage.getItem(KEY)!=='0'; }catch(e){ return true; }
+  }
+  function applyForSize(){
+    const open = isPhone() ? false : desktopPref();
+    document.body.classList.toggle('dashOpen', open);
+    if(btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if(open && frame && !frame.getAttribute('src')) frame.setAttribute('src', DASH_URL);
+  }
+  applyForSize();
+  if(phoneMQ.addEventListener) phoneMQ.addEventListener('change', applyForSize);
+  else if(phoneMQ.addListener) phoneMQ.addListener(applyForSize);
+
+  /* Tiles open in a new tab. The Work Portal tile does nothing here since
+     the portal is already open, other than closing the panel on a phone.
+     This only works when both sites share an address, which they do once
+     deployed; otherwise the dashboard simply behaves as it does on its own. */
+  if(frame) frame.addEventListener('load', function(){
+    let doc=null;
+    try{ doc=frame.contentDocument; }catch(e){ doc=null; }
+    if(!doc) return;
+    doc.querySelectorAll('a.card').forEach(a=>{ a.target='_blank'; a.rel='noopener'; });
+    doc.addEventListener('click', function(e){
+      const a=e.target && e.target.closest ? e.target.closest('a.card') : null;
+      if(!a) return;
+      if(/goodandhandyportal/i.test(a.href||'')) e.preventDefault();
+      if(isPhone()) setDashOpen(false);
+    });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape' && isPhone() && document.body.classList.contains('dashOpen')) setDashOpen(false);
+  });
+})();
 </script>
 </body>
 </html>
