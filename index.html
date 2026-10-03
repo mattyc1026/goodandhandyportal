@@ -1336,6 +1336,7 @@ html.hc .schedDblTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid
 }
 .schedHoursTotal .small{font-weight:400;}
 html.hc .schedHoursTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
+.mileTag:empty{display:none;}
 html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 /* Tap-to-act contact details. The address opens the device's default maps app
    and the email opens a new message, same treatment as .telLink so all three
@@ -4658,6 +4659,7 @@ function checkOutDay(woId, date){
     syncDayLogLegacy(target.log);
     addAdminLog(live, 'Checked out from site for '+date+' at '+ts.time+' on '+ts.date+'.');
     saveDB(DB);
+    queueMileage(woId);
     renderTabCounts();
     renderMain();
     if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
@@ -4715,6 +4717,65 @@ function checkBtnHTML(woId, log){
 /* Every visit made that day, in the order they happened: who logged it, in,
    out, and the hours that visit came to. A visit still open reads as on site
    now rather than borrowing a time it doesn't have yet. */
+/* ---- Mileage ----
+   Each finished visit (a check in plus its check out) gets the round trip
+   driving distance: home, to the job address, and back home. Google Maps
+   (Routes API) does the math. The figure is stored on the visit itself, so it
+   is only looked up once, and visits logged before this existed get filled in
+   the first time they are shown. */
+const MILEAGE_HOME='13067 War Bonnet St, San Diego, CA 92129';
+const MILEAGE_KEY='AIzaSyDEnMD-Ok3YupmoEzMML1jyJtN52aXS3GI';
+const MILEAGE_CACHE={};      // address -> Promise of round trip miles
+const MILEAGE_FAILED={};     // address -> true, so a failed lookup is not retried until reload
+const MILEAGE_QUEUED={};     // work order id -> true while a lookup is running
+async function routeMeters(from, to){
+  const res=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Goog-Api-Key':MILEAGE_KEY,'X-Goog-FieldMask':'routes.distanceMeters'},
+    body:JSON.stringify({origin:{address:from}, destination:{address:to}, travelMode:'DRIVE', routingPreference:'TRAFFIC_UNAWARE'})
+  });
+  if(!res.ok) throw new Error('Routes API '+res.status);
+  const data=await res.json();
+  const m=data && data.routes && data.routes[0] && data.routes[0].distanceMeters;
+  if(typeof m!=='number') throw new Error('No route found');
+  return m;
+}
+function roundTripMiles(address){
+  const key=address.trim().toLowerCase();
+  if(!MILEAGE_CACHE[key]){
+    MILEAGE_CACHE[key]=Promise.all([routeMeters(MILEAGE_HOME,address), routeMeters(address,MILEAGE_HOME)])
+      .then(([a,b])=>Math.round(((a+b)/1609.344)*10)/10)
+      .catch(err=>{ delete MILEAGE_CACHE[key]; MILEAGE_FAILED[key]=true; throw err; });
+  }
+  return MILEAGE_CACHE[key];
+}
+function queueMileage(woId){
+  if(MILEAGE_QUEUED[woId]) return;
+  const wo=getWO(woId);
+  const address=wo && wo.customer && String(wo.customer.address||'').trim();
+  if(!address || MILEAGE_FAILED[address.toLowerCase()]) return;
+  MILEAGE_QUEUED[woId]=true;
+  roundTripMiles(address).then(miles=>{
+    const live=getWO(woId);
+    if(!live) return;
+    let changed=false;
+    allDayLogsSorted(live).forEach(({log})=>{
+      logSessions(log).forEach(sess=>{
+        if(sess.out && typeof sess.miles!=='number'){ sess.miles=miles; sess.milesAddr=address; changed=true; }
+      });
+    });
+    if(!changed) return;
+    saveDB(DB);
+    document.querySelectorAll(`.mileTag[data-wo="${woId}"]`).forEach(el=>{ el.textContent=miles.toFixed(1)+' mi'; });
+  }).catch(err=>{ console.warn('Mileage lookup failed:', err); })
+    .finally(()=>{ delete MILEAGE_QUEUED[woId]; });
+}
+function mileTagHTML(woId, s){
+  if(!s.out) return '';
+  if(typeof s.miles==='number') return `<span class="schedHoursTag mileTag" title="Round trip from home">${s.miles.toFixed(1)} mi</span>`;
+  setTimeout(()=>queueMileage(woId), 0);
+  return `<span class="schedHoursTag mileTag" data-wo="${woId}" title="Round trip from home"></span>`;
+}
 function sessionLogHTML(woId, log, isAdmin){
   const ss=logSessions(log);
   if(!ss.length) return '';
@@ -4730,6 +4791,7 @@ function sessionLogHTML(woId, log, isAdmin){
       <span class="visitBy">${esc((s.in && s.in.by) || 'Unknown')}</span>
       <span class="visitTimes">${icon('login')}${esc(s.in ? s.in.time : 'n/a')}${inPencil} &rarr; ${icon('logout')}${outText}${outPencil}</span>
       ${h!=null ? `<span class="schedHoursTag">${formatHoursMinutes(h)}</span>` : ''}
+      ${mileTagHTML(woId, s)}
     </div>`;
   }).join('')}</div>`;
 }
