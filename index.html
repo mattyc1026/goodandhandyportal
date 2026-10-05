@@ -919,6 +919,28 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .expandLinks details,.sideBySide>details{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 13px;}
 .expandLinks summary,.sideBySide>details>summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:.78em;text-transform:uppercase;letter-spacing:.06em;}
 .sideBySide>details>summary{margin-bottom:2px;}
+.accessFields{display:flex;flex-direction:column;gap:6px;margin:4px 0 2px;}
+.accChk{display:flex;align-items:center;gap:9px;font-size:.9em;font-weight:600;color:var(--navy);cursor:pointer;padding:4px 0;}
+.accChk input{width:20px;height:20px;margin:0;accent-color:var(--orange);flex:0 0 auto;}
+.accSub{display:flex;flex-direction:column;gap:6px;margin-left:29px;}
+.accInput{width:100%;box-sizing:border-box;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;font-size:.9em;resize:vertical;}
+.accessInfo{border-left:4px solid var(--orange);background:var(--well);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:8px;font-size:.9em;line-height:1.5;}
+.accessInfo div{white-space:pre-wrap;overflow-wrap:anywhere;}
+.accessInfo div + div{margin-top:4px;}
+.accessInfo b{color:var(--navy);}
+.richText b,.rtToolbar b,.accessInfo b{display:inline;font-size:inherit;text-transform:none;letter-spacing:normal;margin:0;font-weight:700;}
+.richText b{color:inherit;}
+.richText ul,.richText ol{margin:4px 0;padding-left:1.5em;}
+.richText blockquote{margin:0 0 0 1.6em;padding:0;border:none;}
+.richText p{margin:0;}
+.plainText{white-space:pre-wrap;}
+.rtToolbar{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;padding:5px;border:1.5px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;background:var(--well);}
+.rtToolbar button{min-width:34px;height:32px;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--navy);font-family:inherit;font-size:.9em;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}
+.rtToolbar button:active{background:var(--line);}
+.rtToolbar svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;}
+.rtSep{width:1px;background:var(--line);margin:3px 2px;}
+.rtEditor{min-height:110px;max-height:55vh;overflow-y:auto;padding:9px 10px;border:1.5px solid var(--line);border-radius:0 0 8px 8px;background:var(--paper);font-size:.92em;line-height:1.55;outline:none;overflow-wrap:anywhere;}
+.rtEditor:focus{border-color:var(--orange);}
 .descParagraph{background:var(--paper);border-radius:var(--radius-sm);padding:13px 15px;font-size:.88em;line-height:1.6;margin-bottom:6px;border:1px solid var(--line);}
 .expandLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;align-items:start;}
 .expandLinks details{min-width:0;}
@@ -6420,6 +6442,7 @@ function fieldCustEditHTML(wo){
     ${custField('homeownerName','Homeowner Name (optional)', c.homeownerName)}
     ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', c.homeownerPhone)}
     ${addressField('address','Address', c.address)}
+    ${accessFieldsHTML(c)}
     ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
     <div class="fieldNoteBtns">
       <button class="btn" onclick="saveFieldCustomer(${id})">Save</button>
@@ -6567,9 +6590,9 @@ function fieldJobSecHTML(wo){
      no description, the pills already carry the content and a "no description"
      line is only noise. */
   const hasAny = (jd.description && jd.description.trim()) || lists.length;
-  const body = jd.description
-    ? esc(jd.description)
-    : (hasAny ? '' : '<div class="small">No job details yet. Select "Edit Job Details" to add them, or complete a pre-site inspection.</div>');
+  const body = accessInfoHTML(wo) + (jd.description
+    ? richDescHTML(jd)
+    : (hasAny ? '' : '<div class="small">No job details yet. Select "Edit Job Details" to add them, or complete a pre-site inspection.</div>'));
   /* A job sitting in Pre-Site Inspections has no details until the walkthrough
      is done, so the card points at the way to get them. */
   const presitePrompt = inPresiteList(wo)
@@ -6844,18 +6867,22 @@ function splitAddress(rawAddr){
 let CUST_DRAFT=null;
 function captureCustDraft(id){
   if(!WO_CUST_EDIT) return;
-  const ids=['name','phone','altPhone','email','homeownerName','homeownerPhone','address','addressUnit'];
+  const ids=['name','phone','altPhone','email','homeownerName','homeownerPhone','address','addressUnit',
+    'acc_gated','acc_gateCodeOn','acc_gateCode','acc_attendantOn','acc_attendant','acc_parkingOn','acc_parking','acc_petsOn','acc_pets'];
   const found={};
   let any=false;
-  ids.forEach(k=>{ const f=document.getElementById('cf_'+k); if(f){ found[k]=f.value; any=true; } });
+  ids.forEach(k=>{ const f=document.getElementById('cf_'+k); if(f){ found[k]= f.type==='checkbox' ? {checked:f.checked} : f.value; any=true; } });
   if(any) CUST_DRAFT={id:String(id), values:found};
 }
 function restoreCustDraft(id){
   if(!WO_CUST_EDIT || !CUST_DRAFT || CUST_DRAFT.id!==String(id)){ CUST_DRAFT=null; return; }
   Object.keys(CUST_DRAFT.values).forEach(k=>{
     const f=document.getElementById('cf_'+k);
-    if(f) f.value=CUST_DRAFT.values[k];
+    const v=CUST_DRAFT.values[k];
+    if(!f) return;
+    if(f.type==='checkbox') f.checked=!!(v&&v.checked); else f.value=v;
   });
+  syncAccessFields();
 }
 function renderWorkOrderModal(id){
   captureCustDraft(id);
@@ -7035,6 +7062,7 @@ function renderWorkOrderModal(id){
           ${custField('homeownerName','Homeowner Name (optional)', wo.customer.homeownerName)}
           ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', wo.customer.homeownerPhone)}
           ${addressField('address','Address', wo.customer.address)}
+          ${accessFieldsHTML(wo.customer)}
           ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
           <div class="fieldNoteBtns">
             <button class="btn" onclick="saveFieldCustomer(${id})">Save</button>
@@ -7111,6 +7139,68 @@ function homeownerLine(wo){
   if(nm) bits.push(esc(nm));
   if(ph) bits.push(phoneLink(ph));
   return `<div class="mhHomeowner"><span class="mhHomeownerTag">Homeowner</span>${bits.join('<span class="mhHomeownerSep">&middot;</span>')}</div>`;
+}
+/* Site access: gated community (gate code / attendant), parking, and pets.
+   Unchecked items hide their boxes and are cleared on save. */
+function accessFieldsHTML(c){
+  const a=(c&&c.access)||{};
+  const chk=(k,label,on)=>`<label class="accChk"><input type="checkbox" id="cf_acc_${k}" ${on?'checked':''} onchange="syncAccessFields()">${label}</label>`;
+  const hid=on=>on?'':'hidden';
+  return `<div class="kv accessFields">
+    ${chk('gated','Gated community',a.gated)}
+    <div class="accSub" id="acc_gated_sub" ${hid(a.gated)}>
+      ${chk('gateCodeOn','Gate code',a.gateCodeOn)}
+      <input id="cf_acc_gateCode" class="accInput" value="${esc(a.gateCode||'')}" ${hid(a.gateCodeOn)}>
+      ${chk('attendantOn','Attendant',a.attendantOn)}
+      <textarea id="cf_acc_attendant" class="accInput" rows="2" ${hid(a.attendantOn)}>${esc(a.attendant||'')}</textarea>
+    </div>
+    ${chk('parkingOn','Parking instructions',a.parkingOn)}
+    <textarea id="cf_acc_parking" class="accInput" rows="2" ${hid(a.parkingOn)}>${esc(a.parking||'')}</textarea>
+    ${chk('petsOn','Pets',a.petsOn)}
+    <textarea id="cf_acc_pets" class="accInput" rows="2" ${hid(a.petsOn)}>${esc(a.pets||'')}</textarea>
+  </div>`;
+}
+function syncAccessFields(){
+  const on=k=>{ const f=document.getElementById('cf_acc_'+k); return !!(f && f.checked); };
+  const show=(id,v)=>{ const el=document.getElementById(id); if(el) el.hidden=!v; };
+  show('acc_gated_sub', on('gated'));
+  show('cf_acc_gateCode', on('gateCodeOn'));
+  show('cf_acc_attendant', on('attendantOn'));
+  show('cf_acc_parking', on('parkingOn'));
+  show('cf_acc_pets', on('petsOn'));
+}
+function readAccessFields(prev){
+  const box=document.getElementById('cf_acc_gated');
+  if(!box) return prev||{};
+  const on=k=>!!(document.getElementById('cf_acc_'+k)||{}).checked;
+  const val=k=>String((document.getElementById('cf_acc_'+k)||{}).value||'').trim();
+  const gated=on('gated');
+  const a={
+    gated,
+    gateCodeOn: gated && on('gateCodeOn'),
+    attendantOn: gated && on('attendantOn'),
+    parkingOn: on('parkingOn'),
+    petsOn: on('petsOn')
+  };
+  a.gateCode = a.gateCodeOn ? val('gateCode') : '';
+  a.attendant = a.attendantOn ? val('attendant') : '';
+  a.parking = a.parkingOn ? val('parking') : '';
+  a.pets = a.petsOn ? val('pets') : '';
+  return a;
+}
+/* Shown at the top of Job Details, ahead of everything else on the job. */
+function accessInfoHTML(wo){
+  const a=(wo.customer&&wo.customer.access)||{};
+  const rows=[];
+  if(a.gated){
+    if(a.gateCodeOn && a.gateCode) rows.push(['Gate Code', a.gateCode]);
+    if(a.attendantOn && a.attendant) rows.push(['Attendant', a.attendant]);
+    if(!rows.length) rows.push(['Gated Community', '']);
+  }
+  if(a.parkingOn && a.parking) rows.push(['Parking', a.parking]);
+  if(a.petsOn && a.pets) rows.push(['Pets', a.pets]);
+  if(!rows.length) return '';
+  return `<div class="accessInfo">${rows.map(([k,v])=>`<div><b>${k}${v?':':''}</b>${v?' '+esc(v):''}</div>`).join('')}</div>`;
 }
 function custField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${esc(val)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
@@ -7436,6 +7526,7 @@ function saveCustomer(id){
   });
   const unitField=document.getElementById('cf_addressUnit');
   if(unitField){ wo.customer.address=combineAddressUnit(wo.customer.address, unitField.value); }
+  wo.customer.access=readAccessFields(wo.customer.access);
   wo.customer.phone = formatPhoneNumber(wo.customer.phone);
   wo.customer.altPhone = wo.customer.altPhone ? formatPhoneNumber(wo.customer.altPhone) : '';
   wo.customer.homeownerPhone = wo.customer.homeownerPhone ? formatPhoneNumber(wo.customer.homeownerPhone) : '';
@@ -7519,14 +7610,15 @@ function jobListsHTML(wo){
     || (jd.tools&&jd.tools.length) || (jd.issues&&jd.issues.length) || (jd.disclaimers&&jd.disclaimers.length)
     || (jd.exclusions&&jd.exclusions.length);
   if(!hasAny){
-    return '<div class="small">No job details yet. Select "Edit Job Details" to add them, or complete a pre-site inspection.</div>';
+    return accessInfoHTML(wo)+'<div class="small">No job details yet. Select "Edit Job Details" to add them, or complete a pre-site inspection.</div>';
   }
   const has=k=>Array.isArray(jd[k]) && jd[k].length;
   const box=(k,title,row)=>has(k) ? `<details ${jobListOpen(k)?'open':''} ontoggle="rememberJobList('${k}',this)"><summary>${title} (${jd[k].length})</summary>${jd[k].map(row).join('')}</details>` : '';
   const priced=box('labor','Labor Line Items',priceLineRow)+box('materials','Materials',priceLineRow);
   const plain=box('tools','Required Tools',plainLineRow)+box('issues','Potential Issues',plainLineRow)+box('exclusions','Exclusions',plainLineRow)+box('disclaimers','Disclaimers',plainLineRow);
   return `
-    ${jd.description ? `<div class="descParagraph">${esc(jd.description)}</div>` : ''}
+    ${accessInfoHTML(wo)}
+    ${jd.description ? `<div class="descParagraph">${richDescHTML(jd)}</div>` : ''}
     ${priced ? `<div class="sideBySide">${priced}</div>` : ''}
     ${plain ? `<div class="expandLinks">${plain}</div>` : ''}`;
 }
@@ -7545,6 +7637,7 @@ function openJobDetailsEdit(id){
      job and saving quietly flattened its pricing breakdown. */
   JD_EDIT={
     description: src.description||'',
+    descriptionHtml: (src.descriptionHtml && src.descriptionHtmlSrc===src.description) ? src.descriptionHtml : null,
     labor: (src.labor||[]).map(e=>typeof e==='string'?{item:e,price:''}:{...e, item:e.item||'', price:e.price||''}),
     materials: (src.materials||[]).map(e=>typeof e==='string'?{item:e,price:''}:{...e, item:e.item||'', price:e.price||''}),
     tools: (src.tools||[]).slice(),
@@ -7564,7 +7657,9 @@ function cancelJobDetailsEdit(id){
 function saveJobDetailsEdit(id){
   const wo=getWO(id);
   const descEl=document.getElementById('jdDescription');
-  JD_EDIT.description = descEl ? descEl.value.trim() : JD_EDIT.description;
+  if(descEl) JD_EDIT.descriptionHtml=descEl.innerHTML;
+  const richHtml = JD_EDIT.descriptionHtml!=null ? sanitizeRich(JD_EDIT.descriptionHtml) : plainToRich(JD_EDIT.description);
+  JD_EDIT.description = richToPlain(richHtml);
   /* Merge over the existing object rather than replacing it. The edit form only
      covers the lists it renders, but jobDetails also carries the pre-site
      wizard's `presite` block (answers, totals, readiness) that nothing here
@@ -7573,6 +7668,8 @@ function saveJobDetailsEdit(id){
   const cleaned={
     ...(wo.jobDetails||{}),
     description: JD_EDIT.description,
+    descriptionHtml: JD_EDIT.description ? richHtml : '',
+    descriptionHtmlSrc: JD_EDIT.description,
     labor: JD_EDIT.labor.filter(e=>e.item && e.item.trim()),
     materials: JD_EDIT.materials.filter(e=>e.item && e.item.trim()),
     tools: JD_EDIT.tools.filter(t=>t && t.trim()),
@@ -7815,12 +7912,153 @@ function toggleJDSection(key){
   }
   if(body) body.hidden=collapsed;
 }
+/* ---- Job description formatting ----
+   The description is kept two ways: formatted (descriptionHtml) for display,
+   and plain text (description) for everything else that reads it (list cards,
+   calendar files, search, the estimate builder). The formatted copy is only
+   used while it still matches the plain text, so if anything else rewrites
+   the description, the plain version wins rather than showing stale text. */
+const RT_BLOCK={DIV:1,P:1,LI:1,UL:1,OL:1,BLOCKQUOTE:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,TR:1};
+function sanitizeRich(html){
+  const doc=new DOMParser().parseFromString('<div>'+String(html||'')+'</div>','text/html');
+  const out=document.createElement('div');
+  const align=el=>{
+    const m=/text-align\s*:\s*(left|center|right|justify)/i.exec(el.getAttribute&&el.getAttribute('style')||'') || [null, el.getAttribute&&el.getAttribute('align')];
+    return m[1] && /^(left|center|right|justify)$/i.test(m[1]) ? m[1].toLowerCase() : '';
+  };
+  const walk=(src, dst)=>{
+    src.childNodes.forEach(n=>{
+      if(n.nodeType===3){ dst.appendChild(document.createTextNode(n.nodeValue.replace(/[\r\n\t]+/g,' '))); return; }
+      if(n.nodeType!==1) return;
+      const tag=n.tagName;
+      if(/^(SCRIPT|STYLE|META|LINK|TITLE|HEAD|IFRAME|OBJECT|SVG|IMG|INPUT|BUTTON|SELECT|TEXTAREA)$/.test(tag)) return;
+      const st=(n.getAttribute('style')||'').toLowerCase();
+      let el=null;
+      if(tag==='B'||tag==='STRONG'){ if(!/font-weight\s*:\s*(normal|[1-5]00)/.test(st)) el=document.createElement('b'); }
+      else if(tag==='I'||tag==='EM') el=document.createElement('i');
+      else if(tag==='U') el=document.createElement('u');
+      else if(tag==='BR'){ dst.appendChild(document.createElement('br')); return; }
+      else if(tag==='UL'||tag==='OL'||tag==='LI'||tag==='BLOCKQUOTE') el=document.createElement(tag.toLowerCase());
+      else if(RT_BLOCK[tag]) el=document.createElement('div');
+      if(el && RT_BLOCK[tag]){ const a=align(n); if(a) el.style.textAlign=a; }
+      let target=el||dst;
+      if(el) dst.appendChild(el);
+      /* Formatting pasted from other apps often comes as styled spans. */
+      if(!el || !/^(B|STRONG)$/.test(tag)){
+        if(/font-weight\s*:\s*(bold|[6-9]00)/.test(st)){ const b=document.createElement('b'); target.appendChild(b); target=b; }
+      }
+      if(/font-style\s*:\s*italic/.test(st)){ const i=document.createElement('i'); target.appendChild(i); target=i; }
+      if(/text-decoration[^;]*underline/.test(st) && tag!=='U'){ const u=document.createElement('u'); target.appendChild(u); target=u; }
+      if(/^H[1-6]$/.test(tag)){ const b=document.createElement('b'); target.appendChild(b); target=b; }
+      walk(n, target);
+    });
+  };
+  walk(doc.body.firstChild||doc.body, out);
+  // Lists must only hold list items; stray text gets wrapped.
+  out.querySelectorAll('ul,ol').forEach(list=>{
+    Array.from(list.childNodes).forEach(ch=>{
+      if(ch.nodeType===1 && /^(LI|UL|OL)$/.test(ch.tagName)) return;
+      if(ch.nodeType===3 && !ch.nodeValue.trim()){ ch.remove(); return; }
+      const li=document.createElement('li'); list.insertBefore(li, ch); li.appendChild(ch);
+    });
+  });
+  return out.innerHTML.trim();
+}
+function richToPlain(html){
+  const box=document.createElement('div');
+  box.innerHTML=sanitizeRich(html);
+  const lines=[];
+  let cur='';
+  const flush=()=>{ lines.push(cur); cur=''; };
+  const walk=(node, listCtx)=>{
+    node.childNodes.forEach(n=>{
+      if(n.nodeType===3){ cur+=n.nodeValue; return; }
+      if(n.nodeType!==1) return;
+      const tag=n.tagName;
+      if(tag==='BR'){ flush(); return; }
+      if(tag==='UL'||tag==='OL'){
+        if(cur) flush();
+        const ctx={ordered:tag==='OL', n:0, depth:(listCtx?listCtx.depth+1:0)};
+        walk(n, ctx);
+        return;
+      }
+      if(tag==='LI'){
+        if(cur) flush();
+        const lc=listCtx||{ordered:false,n:0,depth:0};
+        lc.n++;
+        cur='  '.repeat(lc.depth)+(lc.ordered ? lc.n+'. ' : '\u2022 ');
+        walk(n, listCtx);
+        if(cur) flush();
+        return;
+      }
+      if(RT_BLOCK[tag]){
+        if(cur) flush();
+        walk(n, listCtx);
+        if(cur) flush();
+        return;
+      }
+      walk(n, listCtx);
+    });
+  };
+  walk(box, null);
+  if(cur) flush();
+  return lines.join('\n').replace(/\u00a0/g,' ').replace(/\n{3,}/g,'\n\n').trim();
+}
+function plainToRich(text){
+  return String(text||'').split('\n').map(l=>l ? '<div>'+esc(l)+'</div>' : '<div><br></div>').join('');
+}
+function richDescHTML(jd){
+  if(!jd || !jd.description) return '';
+  if(jd.descriptionHtml && jd.descriptionHtmlSrc===jd.description) return `<div class="richText">${sanitizeRich(jd.descriptionHtml)}</div>`;
+  return `<div class="plainText">${esc(jd.description)}</div>`;
+}
+const RT_ICONS={
+  ul:'<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg>',
+  ol:'<svg viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 5l1.5-1v5M3.5 14.5c.5-1 2.5-1 2.5.3 0 1-2.5 2-2.5 3.2H6.2"/></svg>',
+  indent:'<svg viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M4 9l3 3-3 3"/></svg>',
+  outdent:'<svg viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M7 9l-3 3 3 3"/></svg>',
+  left:'<svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg>',
+  center:'<svg viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg>',
+  right:'<svg viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg>'
+};
+function richCmd(cmd){
+  const ed=document.getElementById('jdDescription');
+  if(!ed) return;
+  ed.focus();
+  try{ document.execCommand('styleWithCSS', false, false); }catch(e){}
+  document.execCommand(cmd, false, null);
+  if(JD_EDIT) JD_EDIT.descriptionHtml=ed.innerHTML;
+}
+function richPaste(e){
+  e.preventDefault();
+  const cd=e.clipboardData||window.clipboardData;
+  if(!cd) return;
+  const html=cd.getData('text/html');
+  const text=cd.getData('text/plain');
+  const clean = html ? sanitizeRich(html) : plainToRich(text);
+  document.execCommand('insertHTML', false, clean);
+  if(JD_EDIT) JD_EDIT.descriptionHtml=e.target.closest('#jdDescription').innerHTML;
+}
+function richEditorHTML(){
+  const b=(cmd,label,inner)=>`<button type="button" title="${label}" aria-label="${label}" onmousedown="event.preventDefault()" onclick="richCmd('${cmd}')">${inner}</button>`;
+  const start = JD_EDIT.descriptionHtml!=null ? sanitizeRich(JD_EDIT.descriptionHtml) : plainToRich(JD_EDIT.description);
+  return `<div class="rtToolbar" role="toolbar" aria-label="Formatting">
+      ${b('bold','Bold','<b>B</b>')}${b('italic','Italic','<i>I</i>')}${b('underline','Underline','<u>U</u>')}
+      <span class="rtSep"></span>
+      ${b('insertUnorderedList','Bulleted list',RT_ICONS.ul)}${b('insertOrderedList','Numbered list',RT_ICONS.ol)}
+      ${b('outdent','Decrease indent',RT_ICONS.outdent)}${b('indent','Increase indent',RT_ICONS.indent)}
+      <span class="rtSep"></span>
+      ${b('justifyLeft','Align left',RT_ICONS.left)}${b('justifyCenter','Align center',RT_ICONS.center)}${b('justifyRight','Align right',RT_ICONS.right)}
+    </div>
+    <div id="jdDescription" class="rtEditor richText" contenteditable="true" role="textbox" aria-multiline="true"
+      onfocus="try{document.execCommand('defaultParagraphSeparator',false,'div')}catch(e){}" oninput="JD_EDIT.descriptionHtml=this.innerHTML" onpaste="richPaste(event)">${start}</div>`;
+}
 function jobDetailsEditHTML(id){
   if(!JD_EDIT) return '';
   return `
     <div class="kv">
       <b>Job Description</b>
-      <textarea id="jdDescription" style="width:100%;min-height:70px;max-height:50vh;padding:8px;border-radius:8px;border:1.5px solid var(--line);margin-top:4px;font-family:inherit;font-size:.9em;resize:vertical;" oninput="JD_EDIT.description=this.value">${esc(JD_EDIT.description)}</textarea>
+      ${richEditorHTML()}
     </div>
     ${jdEditSection(id,'labor','Labor Line Items', true)}
     ${jdEditSection(id,'materials','Materials', true)}
@@ -10191,7 +10429,7 @@ function openSplit(id, kind){
             <div class="kv"><b>Customer</b>${esc(wo.customer.name)}</div>
             <div class="kv"><b>Phone</b>${phoneLink(wo.customer.phone)}</div>
             <div class="kv"><b>Address</b>${addressLink(wo.customer.address, undefined, true)}</div>
-            ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${esc(jd.description)}</div>` : ''}
+            ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${richDescHTML(jd)}</div>` : ''}
 
             <div class="panelTitle" style="margin-top:16px;">Labor Line Items</div>
             <div class="laborPick">${(jd.labor&&jd.labor.length) ? jd.labor.map(priceLineRow).join('') : '<div class="small">No labor items on file.</div>'}</div>
