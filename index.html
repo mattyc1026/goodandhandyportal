@@ -919,11 +919,19 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .expandLinks details,.sideBySide>details{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 13px;}
 .expandLinks summary,.sideBySide>details>summary{cursor:pointer;font-weight:700;color:var(--navy);font-size:.78em;text-transform:uppercase;letter-spacing:.06em;}
 .sideBySide>details>summary{margin-bottom:2px;}
-.accessFields{display:flex;flex-direction:column;gap:6px;margin:4px 0 2px;}
-.accChk{display:flex;align-items:center;gap:9px;font-size:.9em;font-weight:600;color:var(--navy);cursor:pointer;padding:4px 0;}
-.accChk input{width:20px;height:20px;margin:0;accent-color:var(--orange);flex:0 0 auto;}
-.accSub{display:flex;flex-direction:column;gap:6px;margin-left:29px;}
-.accInput{width:100%;box-sizing:border-box;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;font-size:.9em;resize:vertical;}
+.accessFields{display:flex;flex-direction:column;align-items:flex-start;gap:5px;margin:4px 0 2px;}
+.accessFields > .accRow{align-self:stretch;}
+.accChk{display:inline-flex;align-items:center;gap:6px;font-size:.84em;font-weight:600;color:var(--navy);cursor:pointer;padding:3px 0;}
+.accChk input{width:14px;height:14px;margin:0;accent-color:var(--orange);flex:0 0 auto;}
+.accRow{display:flex;flex-wrap:wrap;align-items:center;column-gap:18px;row-gap:2px;}
+.accInline{display:inline-flex;flex-wrap:wrap;align-items:center;column-gap:18px;}
+.accInline[hidden]{display:none;}
+.accField{display:flex;flex-direction:column;gap:2px;width:33%;min-width:180px;max-width:100%;}
+.accField .accInput{width:100%;min-width:0;}
+.accField[hidden]{display:none;}
+.accField span{font-size:.72em;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.accInput{width:33%;min-width:180px;max-width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;font-size:.86em;resize:vertical;}
+.accInput[hidden]{display:none;}
 .accessInfo{border-left:4px solid var(--orange);background:var(--well);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:8px;font-size:.9em;line-height:1.5;}
 .accessInfo div{white-space:pre-wrap;overflow-wrap:anywhere;}
 .accessInfo div + div{margin-top:4px;}
@@ -7147,13 +7155,17 @@ function accessFieldsHTML(c){
   const chk=(k,label,on)=>`<label class="accChk"><input type="checkbox" id="cf_acc_${k}" ${on?'checked':''} onchange="syncAccessFields()">${label}</label>`;
   const hid=on=>on?'':'hidden';
   return `<div class="kv accessFields">
-    ${chk('gated','Gated community',a.gated)}
-    <div class="accSub" id="acc_gated_sub" ${hid(a.gated)}>
-      ${chk('gateCodeOn','Gate code',a.gateCodeOn)}
-      <input id="cf_acc_gateCode" class="accInput" value="${esc(a.gateCode||'')}" ${hid(a.gateCodeOn)}>
-      ${chk('attendantOn','Attendant',a.attendantOn)}
-      <textarea id="cf_acc_attendant" class="accInput" rows="2" ${hid(a.attendantOn)}>${esc(a.attendant||'')}</textarea>
+    <div class="accRow">
+      ${chk('gated','Gated community',a.gated)}
+      <span class="accInline" id="acc_gated_sub" ${hid(a.gated)}>
+        ${chk('gateCodeOn','Gate code',a.gateCodeOn)}
+        ${chk('attendantOn','Attendant',a.attendantOn)}
+      </span>
     </div>
+    <label class="accField" id="acc_gateCode_wrap" ${hid(a.gated&&a.gateCodeOn)}><span>Gate code</span>
+      <input id="cf_acc_gateCode" class="accInput" value="${esc(a.gateCode||'')}"></label>
+    <label class="accField" id="acc_attendant_wrap" ${hid(a.gated&&a.attendantOn)}><span>Attendant</span>
+      <textarea id="cf_acc_attendant" class="accInput" rows="2">${esc(a.attendant||'')}</textarea></label>
     ${chk('parkingOn','Parking instructions',a.parkingOn)}
     <textarea id="cf_acc_parking" class="accInput" rows="2" ${hid(a.parkingOn)}>${esc(a.parking||'')}</textarea>
     ${chk('petsOn','Pets',a.petsOn)}
@@ -7164,8 +7176,8 @@ function syncAccessFields(){
   const on=k=>{ const f=document.getElementById('cf_acc_'+k); return !!(f && f.checked); };
   const show=(id,v)=>{ const el=document.getElementById(id); if(el) el.hidden=!v; };
   show('acc_gated_sub', on('gated'));
-  show('cf_acc_gateCode', on('gateCodeOn'));
-  show('cf_acc_attendant', on('attendantOn'));
+  show('acc_gateCode_wrap', on('gated') && on('gateCodeOn'));
+  show('acc_attendant_wrap', on('gated') && on('attendantOn'));
   show('cf_acc_parking', on('parkingOn'));
   show('cf_acc_pets', on('petsOn'));
 }
