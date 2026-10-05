@@ -5200,6 +5200,9 @@ function applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, ov
     } else {
       toast('Schedule updated.');
     }
+    const w2=getWO(woId);
+    const entry2=w2 && (w2.scheduleDates||[]).find(x=>x.id===editedId);
+    if(entry2) offerApptEmails(woId, [entry2], true);
   });
 }
 function deleteScheduleDate(woId, dateId){
@@ -5646,10 +5649,117 @@ function finalizeScheduleDates(){
   saveDB(DB);
   downloadICS(wo, SCHED_PENDING);
   const doneId=SCHED_WO_ID;
+  const added=SCHED_PENDING.slice();
   SCHED_PENDING=[]; SCHED_WO_ID=null; SCHED_INLINE=false;
   toast('Schedule dates saved. The .ics file downloaded. Open it to add to Apple Calendar.');
   renderWorkOrderModal(doneId);
   renderMain();
+  offerApptEmails(doneId, added, false);
+}
+
+/* ---- Appointment confirmation emails ----
+   After dates are added or changed, the portal asks whether to email the
+   customer. A Google Apps Script on the business Gmail builds and sends the
+   branded email; the portal only sends it the details.
+   Pre-site: one email per pre-site date.
+   Whole job: one email listing every upcoming whole job date on the job. */
+const APPT_EMAIL_URL='https://script.google.com/macros/s/AKfycbx9ekiy2JYKRr0XER-f-4soSq0KAEADQu3_MBfleVg8azs6rv7mCTslj_WNC1RbvKMj/exec';
+function apptLongDate(iso){
+  return new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+function apptClock(h,m){
+  const d=new Date(2000,0,1,h,m);
+  return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+function apptWindowText(hhmm){
+  if(!hhmm) return '';
+  const [h,m]=hhmm.split(':').map(Number);
+  return 'between '+apptClock(h,m)+' and '+apptClock(h+1,m);
+}
+function apptNextIso(iso){
+  const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+/* Every upcoming whole job day, earliest start kept if two land on one day,
+   with back-to-back days at the same time folded into one "through" line. */
+function apptWholeJobWhen(wo){
+  const today=todayLocalISO();
+  const byDay={};
+  (wo.scheduleDates||[]).filter(e=>(e.type||'full')==='full').forEach(e=>{
+    expandRepeatDates(e.startDate, e.endDate||e.startDate, e.repeat).forEach(date=>{
+      if(date<today) return;
+      if(!byDay[date] || (e.startTime||'') < byDay[date]) byDay[date]=e.startTime||'';
+    });
+  });
+  const days=Object.keys(byDay).sort();
+  const runs=[];
+  days.forEach(date=>{
+    const last=runs[runs.length-1];
+    if(last && last.time===byDay[date] && apptNextIso(last.end)===date) last.end=date;
+    else runs.push({start:date, end:date, time:byDay[date]});
+  });
+  return runs.map(r=>({
+    dateText: r.start===r.end ? apptLongDate(r.start) : apptLongDate(r.start)+' through '+apptLongDate(r.end),
+    windowText: apptWindowText(r.time)
+  }));
+}
+function apptBuildEmails(wo, entries, updated){
+  const c=wo.customer||{};
+  const addr=splitAddress(c.address||'');
+  const base={
+    to:(c.email||'').trim(),
+    firstName:((c.name||'').trim().split(/\s+/)[0])||'',
+    addressLine1:addr.line1||c.address||'',
+    addressLine2:addr.line2||'',
+    updated:!!updated
+  };
+  const emails=[];
+  const today=todayLocalISO();
+  entries.filter(e=>e.type==='presite').forEach(e=>{
+    expandRepeatDates(e.startDate, e.endDate||e.startDate, e.repeat).forEach(date=>{
+      if(date<today) return;
+      emails.push(Object.assign({}, base, {kind:'presite', when:[{dateText:apptLongDate(date), windowText:apptWindowText(e.startTime)}]}));
+    });
+  });
+  if(entries.some(e=>(e.type||'full')==='full')){
+    const when=apptWholeJobWhen(wo);
+    if(when.length) emails.push(Object.assign({}, base, {kind:'full', when}));
+  }
+  return emails;
+}
+function offerApptEmails(woId, entries, updated){
+  if(!APPT_EMAIL_URL) return;
+  const wo=getWO(woId);
+  if(!wo) return;
+  const to=((wo.customer||{}).email||'').trim();
+  if(!to){ toast('No email on file, so no confirmation email was sent.'); return; }
+  const emails=apptBuildEmails(wo, entries, updated);
+  if(!emails.length) return;
+  const n=emails.length;
+  const q=(updated?'Send an updated appointment email':'Send '+(n>1?n+' appointment confirmation emails':'the appointment confirmation email'))+' to '+to+'?';
+  askYesNo(q, yes=>{
+    if(!yes) return;
+    sendApptEmails(woId, emails);
+  }, {yes:'Send', no:"Don't Send"});
+}
+async function sendApptEmails(woId, emails){
+  let sent=0;
+  for(const payload of emails){
+    try{
+      const res=await fetch(APPT_EMAIL_URL,{method:'POST', body:JSON.stringify(payload)});
+      const data=await res.json();
+      if(data && data.ok) sent++;
+      else console.warn('Appointment email failed:', data && data.error);
+    }catch(err){ console.warn('Appointment email failed:', err); }
+  }
+  const wo=getWO(woId);
+  if(sent && wo){
+    addAdminLog(wo, (sent>1?sent+' appointment emails':'Appointment email')+(emails[0].updated?' (updated)':'')+' sent to '+emails[0].to+'.');
+    saveDB(DB);
+  }
+  if(sent===emails.length) toast(sent>1?'Appointment emails sent.':'Appointment email sent.');
+  else if(sent) toast(sent+' of '+emails.length+' appointment emails sent. The rest could not be sent.');
+  else toast('The appointment email could not be sent.');
 }
 
 /* ---- .ics generation ---- */
