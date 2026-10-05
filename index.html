@@ -31,7 +31,7 @@
      is not a job stage, it is "when someone is due here", so it must not read
      as another shade of the lifecycle greens or blues. */
   --chartreuse:#e3f7a4; --chartreuse-ink:#4c7708; --chartreuse-line:#c8ea6e;
-  --purple:#ece3fb; --purple-ink:#6b4bb0; --purple-line:#d4c3f2;
+  --purple:#ece3fb; --purple-ink:#6b4bb0; --purple-line:#d4c3f2; --pink:#fde1ee; --pink-ink:#c2185b;
   --cyan:#d3f3f7; --cyan-ink:#0b7285;
   --phone-green:#dcf2dc; --phone-green-ink:#2e7d32;
   --yellow-lite:#fff7dc;
@@ -123,7 +123,7 @@ html.dark{
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
   --chartreuse:#1e2a10; --chartreuse-ink:#b7e254; --chartreuse-line:#3a4d1c;
-  --purple:#231c33; --purple-ink:#b39cec; --purple-line:#3b3055;
+  --purple:#231c33; --purple-ink:#b39cec; --purple-line:#3b3055; --pink:#36192a; --pink-ink:#f48fb8;
   --cyan:#0f2c33; --cyan-ink:#5ed8e8;
   --phone-green:#16301a; --phone-green-ink:#6cc070;
   --yellow-lite:#403720;
@@ -156,7 +156,7 @@ html.hc{
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
   --chartreuse:#eaffb3; --chartreuse-ink:#2d4700; --chartreuse-line:#000000;
-  --purple:#e6dcff; --purple-ink:#3b1a80; --purple-line:#000000;
+  --purple:#e6dcff; --purple-ink:#3b1a80; --purple-line:#000000; --pink:#ffd6e9; --pink-ink:#8a0045;
   --cyan:#c4f1f7; --cyan-ink:#004d59;
   --phone-green:#c3edc4; --phone-green-ink:#14521a;
   --yellow-lite:#fff9e4;
@@ -186,7 +186,7 @@ html.dark.hc{
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
   --grey:#242424; --greyb:#e0e0e0;
   --chartreuse:#1a2600; --chartreuse-ink:#d6ff6d; --chartreuse-line:#ffffff;
-  --purple:#1b1230; --purple-ink:#cbb2ff; --purple-line:#ffffff;
+  --purple:#1b1230; --purple-ink:#cbb2ff; --purple-line:#ffffff; --pink:#3d0d26; --pink-ink:#ff9ccb;
   --cyan:#002630; --cyan-ink:#8ef0ff;
   --phone-green:#02330a; --phone-green-ink:#7bf08a;
   --yellow-lite:#463800;
@@ -1885,7 +1885,28 @@ html.hc .fieldGrid .fgCell:nth-child(4) .fgLabel{color:var(--hc-fg);}
 /* A little air before the email, so it reads as its own thing rather than a
    third line of the address. */
 .modalHeadCust .mhEmail{margin-top:5px;}
-.phoneActionRow{display:flex;gap:10px;justify-content:center;}
+.phoneActionRow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+button.mapLink,button.mailLink{background:none;border:none;border-bottom:1px dotted rgba(232,121,26,.5);font:inherit;cursor:pointer;text-align:left;}
+.mhNameBtn{background:none;border:none;padding:0;margin:0;font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;text-align:left;}
+button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
+.fieldGrid .fgCell.fgName{cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.fieldSec--homeowner{
+  border-top:4px solid var(--pink-ink);
+  background:linear-gradient(90deg,var(--pink) 0%,var(--paper) 62%);
+}
+.fieldSec--homeowner .fieldSecHead{cursor:default;}
+.fieldSec--homeowner .fieldSecHead > span:first-child{color:var(--pink-ink);}
+.hoFace{display:inline-flex;align-items:center;justify-content:center;gap:12px;max-width:100%;}
+.hoFace button{background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap;}
+.hoFace button:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+.hoFace .hoPhone{flex:0 0 auto;}
+.hoFace .hoPhone{color:var(--pink-ink);}
+.fieldSec--homeowner .fieldSecHead > span:first-child{overflow:visible;}
+@media (max-width:560px){
+  .fieldSec--homeowner .fieldSecHead--withFace{grid-template-columns:1fr;row-gap:8px;}
+  .fieldSec--homeowner .fieldSecHead--withFace > span:last-child{display:none;}
+  .hoFace{gap:8px;font-size:.95em;}
+}
 .phoneActionRow .btn{display:inline-flex;align-items:center;gap:7px;}
 .mapLink,.mailLink{
   color:inherit;text-decoration:none;
@@ -6177,31 +6198,43 @@ function fieldGridHTML(wo){
   const c=wo.customer||{};
   const addr=splitAddress(c.address);
   const addrText=[addr.line1, addr.line2].filter(Boolean).join(', ') || (c.address||'');
-  const hasExtras = !!(String(c.altPhone||'').trim() || String(c.homeownerName||'').trim() || String(c.homeownerPhone||'').trim());
+  const hasExtras = !!String(c.altPhone||'').trim();
   const cell=(cls, inner)=>`<div class="fgCell ${cls}">${inner}</div>`;
   return `<div class="fieldGrid">
-    <div class="fgCell fgName fgEditable"
-      title="Double-click, or press and hold on a phone, to edit customer info"
-      ondblclick="startHeaderCustEdit(${wo.id})"
-      ontouchstart="headerCustTouchStart(${wo.id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
+    <div class="fgCell fgName" role="button" tabindex="0" onclick="openNameAction(${wo.id})">
       <div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'None')}</div>
     </div>
     ${cell('fgTap', c.phone
-      ? `<button type="button" class="fgHit" onclick="openPhoneAction('${esc(c.phone)}')"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
+      ? `<button type="button" class="fgHit" data-v="${esc(c.phone)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}None</div></div>`)}
     ${cell('fgTap', addrText
-      ? `<a class="fgHit" href="${directionsUrl(c.address)}" target="_blank" rel="noopener"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}${esc(addrText)}</div></a>`
+      ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}${esc(addrText)}</div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
     ${cell('fgTap', c.email
-      ? `<a class="fgHit" href="mailto:${esc(c.email)}"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></a>`
+      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}None</div></div>`)}
   </div>
   ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
   ${(hasExtras && FIELD_SEC.extras) ? `<div class="fieldSubPanel">
     ${c.altPhone?`<div class="fsRow"><span class="fsKey">Alternate</span>${phoneLink(c.altPhone)}</div>`:''}
-    ${c.homeownerName?`<div class="fsRow"><span class="fsKey">Homeowner</span>${esc(c.homeownerName)}</div>`:''}
-    ${c.homeownerPhone?`<div class="fsRow"><span class="fsKey">Homeowner Phone</span>${phoneLink(c.homeownerPhone)}</div>`:''}
-  </div>` : ''}`;
+  </div>` : ''}
+  ${fieldHomeownerHTML(wo)}`;
+}
+function fieldHomeownerHTML(wo){
+  const c=wo.customer||{};
+  const nm=String(c.homeownerName||'').trim();
+  const ph=String(c.homeownerPhone||'').trim();
+  if(!nm && !ph) return '';
+  return `<div class="fieldSec fieldSec--homeowner">
+    <div class="fieldSecHead fieldSecHead--withFace">
+      <span>Homeowner</span>
+      <span class="fieldSecFace"><span class="hoFace">
+        ${nm ? `<button type="button" data-v="${esc(nm)}" onclick="openCopyOnly(this.dataset.v)">${esc(nm)}</button>` : ''}
+        ${ph ? `<button type="button" class="hoPhone" data-v="${esc(ph)}" onclick="openPhoneAction(this.dataset.v)">${esc(ph)}</button>` : ''}
+      </span></span>
+      <span></span>
+    </div>
+  </div>`;
 }
 /* Check in and check out are the same button in two states, and it only
    appears on a day the job is actually scheduled for. Tapping it logs a time;
@@ -7008,12 +7041,10 @@ function renderWorkOrderModal(id){
             ${hasRequiredInfo(wo) ? `<button class="btn secondary" onclick="cancelFieldCustEdit(${id})">Cancel</button>` : ''}
           </div>
         </div>` : `
-        <div class="modalHeadCust" id="modalHeadCust" title="Double-click (or long-press) to edit"
-          ondblclick="startHeaderCustEdit(${id})"
-          ontouchstart="headerCustTouchStart(${id})" ontouchend="headerCustTouchEnd()" ontouchmove="headerCustTouchEnd()">
+        <div class="modalHeadCust" id="modalHeadCust">
           <div class="mhCols">
             <div class="mhColA">
-              <div class="mhName">${esc(wo.customer.name) || 'None'}${headerSuffix}</div>
+              <div class="mhName"><button type="button" class="mhNameBtn" onclick="openNameAction(${id})">${esc(wo.customer.name) || 'None'}</button>${headerSuffix}</div>
               <div class="mhPrimary">${phoneLink(wo.customer.phone) || `<span class="telLink">${icon('phone')}None</span>`}</div>
               <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
             </div>
@@ -7144,32 +7175,77 @@ function phoneLink(raw){
   const digits=shown.replace(/\D/g,'');
   if(!digits) return esc(shown);
   return `<button type="button" class="telLink" title="Call or text ${esc(shown)}" aria-label="Call or text ${esc(shown)}"`
-    + ` onclick="event.stopPropagation();openPhoneAction('${esc(shown)}')"`
-    + ` ondblclick="event.stopPropagation()" ontouchstart="event.stopPropagation()">${icon('phone')}${esc(shown)}</button>`;
+    + ` data-v="${esc(shown)}" onclick="event.stopPropagation();openPhoneAction(this.dataset.v)">${icon('phone')}${esc(shown)}</button>`;
 }
 function telHref(digits){ return 'tel:'+(digits.length===10 ? '+1'+digits : digits); }
 function smsHref(digits){ return 'sms:'+(digits.length===10 ? '+1'+digits : digits); }
-function openPhoneAction(shown){
-  const digits=String(shown||'').replace(/\D/g,'');
-  if(!digits) return;
+function copyText(text){
+  const done=()=>toast('Copied.');
+  const fallback=()=>{
+    const t=document.createElement('textarea');
+    t.value=text; t.setAttribute('readonly',''); t.style.position='fixed'; t.style.opacity='0';
+    document.body.appendChild(t); t.select();
+    try{ document.execCommand('copy'); done(); }catch(e){ toast('Could not copy.'); }
+    t.remove();
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, fallback);
+  } else fallback();
+}
+/* One sheet for every customer detail: Copy, plus whatever that detail is
+   for. Values ride on data attributes rather than inside the onclick text, so
+   an apostrophe in a name or street can't break the markup. */
+function openActionSheet(title, value, actionsHTML){
   const root=document.getElementById('confirmRoot');
   if(!root) return;
-  // Clearing the overlay on the next tick rather than during the click, so
-  // the link the finger is on still exists when the browser hands off to the
-  // phone or messages app.
-  const dismiss='setTimeout(closePhoneAction,0)';
   root.innerHTML=`<div class="confirmBox" onclick="if(event.target===this)closePhoneAction()">
     <div class="confirmCard">
-      <h3>${esc(shown)}</h3>
+      <h3>${esc(title)}</h3>
       <div class="btnRow phoneActionRow">
-        <a class="btn" href="${telHref(digits)}" onclick="${dismiss}">${icon('phone')}Call</a>
-        <a class="btn secondary" href="${smsHref(digits)}" onclick="${dismiss}">${icon('message')}Text</a>
+        <button class="btn secondary" data-v="${esc(value)}" onclick="copyText(this.dataset.v);closePhoneAction()">Copy</button>
+        ${actionsHTML}
       </div>
       <div class="btnRow" style="margin-top:8px;">
         <button class="btn secondary" onclick="closePhoneAction()">Cancel</button>
       </div>
     </div>
   </div>`;
+}
+function openPhoneAction(shown){
+  const digits=String(shown||'').replace(/\D/g,'');
+  if(!digits) return;
+  // Clearing the overlay on the next tick rather than during the click, so
+  // the link the finger is on still exists when the browser hands off to the
+  // phone or messages app.
+  const dismiss='setTimeout(closePhoneAction,0)';
+  openActionSheet(shown, shown,
+    `<a class="btn" href="${telHref(digits)}" onclick="${dismiss}">${icon('phone')}Call</a>
+     <a class="btn" href="${smsHref(digits)}" onclick="${dismiss}">${icon('message')}Text</a>`);
+}
+function openAddressAction(full){
+  full=String(full||'').trim();
+  if(!full) return;
+  openActionSheet(full, full,
+    `<a class="btn" href="${directionsUrl(full)}" target="_blank" rel="noopener" onclick="setTimeout(closePhoneAction,0)">${icon('map-pin')}Get Directions</a>`);
+}
+function openEmailAction(email){
+  email=String(email||'').trim();
+  if(!email) return;
+  const href='mailto:'+encodeURIComponent(email).replace(/%40/g,'@');
+  openActionSheet(email, email,
+    `<a class="btn" href="${href}" onclick="setTimeout(closePhoneAction,0)">${icon('mail')}Send Email</a>`);
+}
+function openNameAction(id){
+  const wo=getWO(id);
+  if(!wo) return;
+  const name=(wo.customer&&wo.customer.name||'').trim();
+  const actions=`<button class="btn" onclick="closePhoneAction();startHeaderCustEdit(${id})">${icon('pencil')}Edit Customer Info</button>`;
+  if(name) openActionSheet(name, name, actions);
+  else { closePhoneAction(); startHeaderCustEdit(id); }
+}
+function openCopyOnly(text){
+  text=String(text||'').trim();
+  if(text) openActionSheet(text, text, '');
 }
 function closePhoneAction(){
   const root=document.getElementById('confirmRoot');
@@ -7190,10 +7266,9 @@ function addressLink(fullAddress, text, withIcon){
   /* 'spacer' draws the same pin but hidden, which holds the second line of an
      address in exact alignment with the first without hard-coding a width. */
   const lead = withIcon==='spacer' ? icon('map-pin','spacer') : (withIcon ? icon('map-pin') : '');
-  return `<a class="mapLink${withIcon?' hasIcon':''}" href="${directionsUrl(full)}" target="_blank" rel="noopener"`
-    + ` title="Directions to ${esc(full)}" aria-label="Directions to ${esc(full)}"`
-    + ` onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"`
-    + ` ontouchstart="event.stopPropagation()">${lead}${esc(shown)}</a>`;
+  return `<button type="button" class="mapLink${withIcon?' hasIcon':''}" data-v="${esc(full)}"`
+    + ` aria-label="Copy or get directions to ${esc(full)}"`
+    + ` onclick="event.stopPropagation();openAddressAction(this.dataset.v)">${lead}${esc(shown)}</button>`;
 }
 /* Renders an email as a tap-to-compose link, opening a new message in the
    device's default mail app. */
@@ -7204,10 +7279,9 @@ function emailLink(raw){
   // The @ is legal literal in a mailto: and some mail clients handle a
   // percent-encoded one poorly, so it's restored after encoding.
   const href='mailto:'+encodeURIComponent(shown).replace(/%40/g,'@');
-  return `<a class="mailLink" href="${href}"`
-    + ` title="Email ${esc(shown)}" aria-label="Email ${esc(shown)}"`
-    + ` onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"`
-    + ` ontouchstart="event.stopPropagation()">${icon('mail')}${esc(shown)}</a>`;
+  return `<button type="button" class="mailLink" data-v="${esc(shown)}"`
+    + ` aria-label="Copy or email ${esc(shown)}"`
+    + ` onclick="event.stopPropagation();openEmailAction(this.dataset.v)">${icon('mail')}${esc(shown)}</button>`;
 }
 function formatPhoneNumber(raw){
   let d=(raw||'').replace(/\D/g,'');
