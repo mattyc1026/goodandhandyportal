@@ -932,10 +932,10 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .accField span{font-size:.72em;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
 .accInput{width:33%;min-width:180px;max-width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1.5px solid var(--line);font-family:inherit;font-size:.86em;resize:vertical;}
 .accInput[hidden]{display:none;}
-.accessInfo{border-left:4px solid var(--orange);background:var(--well);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:8px;font-size:.9em;line-height:1.5;}
+.accessInfo{border-left:4px solid var(--blueb);background:var(--blue);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:8px;font-size:.9em;line-height:1.5;}
 .accessInfo div{white-space:pre-wrap;overflow-wrap:anywhere;}
 .accessInfo div + div{margin-top:4px;}
-.accessInfo b{color:var(--navy);}
+.accessInfo b{color:var(--blueb);}
 .richText b,.rtToolbar b,.accessInfo b{display:inline;font-size:inherit;text-transform:none;letter-spacing:normal;margin:0;font-weight:700;}
 .richText b{color:inherit;}
 .richText ul,.richText ol{margin:4px 0;padding-left:1.5em;}
@@ -7203,16 +7203,18 @@ function readAccessFields(prev){
 /* Shown at the top of Job Details, ahead of everything else on the job. */
 function accessInfoHTML(wo){
   const a=(wo.customer&&wo.customer.access)||{};
+  const end=t=>{ t=String(t||'').trim(); return /[.!?]$/.test(t) ? t : t+'.'; };
   const rows=[];
   if(a.gated){
-    if(a.gateCodeOn && a.gateCode) rows.push(['Gate Code', a.gateCode]);
-    if(a.attendantOn && a.attendant) rows.push(['Attendant', a.attendant]);
-    if(!rows.length) rows.push(['Gated Community', '']);
+    let line='This is in a gated community.';
+    if(a.gateCodeOn && a.gateCode) line+=' The gate code is '+esc(end(a.gateCode));
+    if(a.attendantOn && a.attendant) line+=' See attendant: '+esc(end(a.attendant));
+    rows.push(line);
   }
-  if(a.parkingOn && a.parking) rows.push(['Parking', a.parking]);
-  if(a.petsOn && a.pets) rows.push(['Pets', a.pets]);
+  if(a.parkingOn && a.parking) rows.push('<b>Parking Instructions:</b> '+esc(end(a.parking)));
+  if(a.petsOn && a.pets) rows.push('<b>Pets:</b> '+esc(end(a.pets)));
   if(!rows.length) return '';
-  return `<div class="accessInfo">${rows.map(([k,v])=>`<div><b>${k}${v?':':''}</b>${v?' '+esc(v):''}</div>`).join('')}</div>`;
+  return `<div class="accessInfo">${rows.map(r=>`<div>${r}</div>`).join('')}</div>`;
 }
 function custField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${esc(val)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
