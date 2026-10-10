@@ -5731,8 +5731,8 @@ function apptNextIso(iso){
   const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+1);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-/* Every upcoming whole job day, earliest start kept if two land on one day,
-   with back-to-back days at the same time folded into one "through" line. */
+/* Whole job: the first upcoming whole job day through the last one, with
+   the arrival window of that first day. */
 function apptWholeJobWhen(wo){
   const today=todayLocalISO();
   const byDay={};
@@ -5743,16 +5743,12 @@ function apptWholeJobWhen(wo){
     });
   });
   const days=Object.keys(byDay).sort();
-  const runs=[];
-  days.forEach(date=>{
-    const last=runs[runs.length-1];
-    if(last && last.time===byDay[date] && apptNextIso(last.end)===date) last.end=date;
-    else runs.push({start:date, end:date, time:byDay[date]});
-  });
-  return runs.map(r=>({
-    dateText: r.start===r.end ? apptLongDate(r.start) : apptLongDate(r.start)+' through '+apptLongDate(r.end),
-    windowText: apptWindowText(r.time)
-  }));
+  if(!days.length) return [];
+  const first=days[0], last=days[days.length-1];
+  return [{
+    dateText: first===last ? apptLongDate(first) : apptLongDate(first)+' to '+apptLongDate(last),
+    windowText: apptWindowText(byDay[first])
+  }];
 }
 function apptBuildEmails(wo, entries, updated){
   const c=wo.customer||{};
