@@ -770,6 +770,13 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .jobList ul{margin:0;padding-left:18px;font-size:.85em;line-height:1.6;}
 .notesSection{margin-top:24px;border-top:1px solid var(--line);padding-top:18px;}
 .noteEntryRow{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
+.surveyScript{border:1px solid var(--line);border-left:4px solid var(--blueb);background:var(--blue);border-radius:var(--radius-sm);padding:12px 14px;font-size:.9em;line-height:1.55;color:var(--ink);margin-bottom:10px;}
+.surveyScript p{margin:0 0 8px;}
+.surveyScript p:last-child{margin-bottom:0;}
+.surveyScript .ssBranch{margin:8px 0 0;padding-left:12px;border-left:2px solid var(--blueb);}
+.surveyScript .ssTag{display:inline-block;font-size:.72em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--blueb);border-radius:5px;padding:1px 7px;margin-right:6px;vertical-align:1px;}
+.surveyScript .ssTag.no{background:var(--redb);}
+.surveyScript .ssDir{font-style:italic;color:var(--muted);}
 .noteEntryTop{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;}
 .noteFieldGroup{display:flex;flex-direction:column;gap:5px;}
 .noteFieldGroup label{font-size:.68em;color:var(--muted);font-weight:700;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em;}
@@ -6465,6 +6472,7 @@ function fieldNoteComposerHTML(id){
       ${NOTE_TYPES.map(t=>`<option value="${esc(t)}" ${t===FIELD_NOTE_TYPE?'selected':''}>${esc(t)}</option>`).join('')}
     </select>
     ${isPre ? `<div class="small" style="margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>` : `
+    ${FIELD_NOTE_TYPE==='SURVEY' ? surveyScriptHTML(wo) : ''}
     <label class="fieldNoteLabel" for="fieldNoteText">Note</label>
     <textarea id="fieldNoteText" rows="5" oninput="fieldNoteInput(${id}, this.value, ${editing?'true':'false'})">${esc(FIELD_NOTE_DRAFT.text||'')}</textarea>
     <label class="fieldNoteLabel" for="fieldNoteFollow">Follow-up date (optional)</label>
@@ -7165,6 +7173,7 @@ function renderWorkOrderModal(id){
               </div>
             </div>
             <div class="small" id="noteTypeHint" style="display:${isPreInit?'block':'none'};margin-bottom:10px;">This opens the pre-site inspection tool. It writes its own note when you save the walkthrough.</div>
+            <div id="noteSurveyScript" style="display:${typeVal==='SURVEY'?'block':'none'}">${surveyScriptHTML(wo)}</div>
             <textarea id="noteText" rows="4" style="display:${isPreInit?'none':''}" oninput="${editingNote ? '' : `saveNoteDraft(${id}, this.value)`}">${esc(textVal)}</textarea>
             <div class="btnRow">
               <button class="btn" id="noteSubmitBtn" onclick="${editingNote ? `saveNoteEdit(${id})` : `submitNote(${id})`}">${editingNote ? 'Save Edit' : (isPreInit ? 'Start Pre-Site' : 'Add Note')}</button>
@@ -8738,6 +8747,31 @@ function clearNoteDraft(id){
    and follow-up date (the walkthrough supplies both) and turns Add Note into
    Start Pre-Site. Editing an existing note is left alone: that form is for
    correcting text already on the record, not for launching the tool. */
+/* The survey call script, shown whenever SURVEY is the note type so the caller
+   can read from it while typing their notes underneath. */
+function surveyScriptHTML(wo){
+  const first=s=>String(s||'').trim().split(/\s+/)[0]||'';
+  const cust=esc(first(wo && wo.customer && wo.customer.name)) || '[Customer]';
+  const me=esc(first(CURRENT_USER && CURRENT_USER.displayName)) || '[Name]';
+  const tag=(t,cls)=>`<span class="ssTag${cls?' '+cls:''}">${t}</span>`;
+  const dir=t=>`<span class="ssDir">${t}</span>`;
+  return `<div class="surveyScript">
+    <p>"Hi ${cust}, it’s ${me} with Good &amp; Handy. I just wanted to say thank you for having us out and make sure everything went well."</p>
+    <div class="ssBranch">
+      <p>${tag('Yes')}"Great, I’m glad to hear that. If you’d like to help us out, leaving us a recommendation on Nextdoor ${dir('[or a review on Yelp! Or a review on Google]')} is greatly appreciated. Even just a few words is a big help."</p>
+      <div class="ssBranch">
+        <p>${tag('After customer responds')}"Alright, and please keep us in mind if you or anyone you know needs help with any projects or work in the future, and once again, thank you for choosing Good &amp; Handy. I hope you have a great rest of your day!"</p>
+      </div>
+    </div>
+    <div class="ssBranch">
+      <p>${tag('No','no')}"Okay, I’m sorry to hear that. So ${dir('[repeat the issue back to them]')}, am I understanding correctly?"</p>
+      <div class="ssBranch">
+        <p>${tag('Yes')}"Alright. We want to make it right for you and make sure you’re satisfied."</p>
+        <p>${dir('Then, either tell them')} "I will follow up with the team for a resolution and give you a call back with an update as soon as I’m able." ${dir('or, if no additional information is needed, go ahead and schedule the follow up service.')}</p>
+      </div>
+    </div>
+  </div>`;
+}
 function noteTypeChanged(id){
   const sel=document.getElementById('noteType');
   if(!sel) return;
@@ -8748,6 +8782,8 @@ function noteTypeChanged(id){
   const ta=document.getElementById('noteText');
   const btn=document.getElementById('noteSubmitBtn');
   if(hint) hint.style.display = isPre ? 'block' : 'none';
+  const script=document.getElementById('noteSurveyScript');
+  if(script) script.style.display = sel.value==='SURVEY' ? 'block' : 'none';
   if(follow) follow.style.display = isPre ? 'none' : '';
   if(ta) ta.style.display = isPre ? 'none' : '';
   if(btn) btn.textContent = editing ? 'Save Edit' : (isPre ? 'Start Pre-Site' : 'Add Note');
