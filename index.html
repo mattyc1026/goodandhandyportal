@@ -2826,7 +2826,7 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   position:relative;margin:0 0 18px;
   perspective:1150px;perspective-origin:50% 50%;
   touch-action:none;-webkit-user-select:none;user-select:none;
-  outline:none;cursor:grab;
+  outline:none;cursor:grab;overflow:hidden;
   -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--peekTop,100px)*.62),#000 calc(100% - var(--peekBot,50px)*.9),transparent 100%);
           mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--peekTop,100px)*.62),#000 calc(100% - var(--peekBot,50px)*.9),transparent 100%);
 }
@@ -4580,6 +4580,17 @@ function syncRolodexBtn(){
   b.classList.toggle('on', ROLODEX);
   b.textContent = ROLODEX ? 'On' : 'Off';
 }
+/* Every wheel scroll on the page passes through here and is handed to the
+   rolodex under the cursor. A listener on each drum is not enough: Chrome
+   decides ahead of time which parts of the page have a blocking scroll
+   listener, and on a fresh load it can decide before the drums exist, so it
+   scrolls the page straight past them. A page-level listener is always
+   honoured. */
+document.addEventListener('wheel', e=>{
+  if(!ROLODEX) return;
+  const drum=e.target && e.target.closest ? e.target.closest('.rolo') : null;
+  if(drum && drum.__roloWheel) drum.__roloWheel(e);
+}, {passive:false, capture:true});
 function initRolodexes(root){
   if(!ROLODEX) return;
   (root||document).querySelectorAll('.rolo').forEach(el=>{ try{ makeRolodex(el); }catch(e){ console.error('Rolodex failed', e); } });
@@ -4764,7 +4775,7 @@ function makeRolodex(drum){
      that starts at the end goes to the page. */
   const GESTURE_GAP=300;   // ms of quiet that ends a gesture
   let wheelTimer=0, lastWheelT=0, gesture={drum:false, page:false};
-  drum.addEventListener('wheel', e=>{
+  drum.__roloWheel = e=>{
     if(e.ctrlKey) return;
     let dy=e.deltaY;
     if(e.deltaMode===1) dy*=33; else if(e.deltaMode===2) dy*=400;
@@ -4783,7 +4794,7 @@ function makeRolodex(drum){
     run(140, 19);
     clearTimeout(wheelTimer);
     wheelTimer=setTimeout(()=>goTo(Math.round(target), 120, 16), 130);
-  }, {passive:false});
+  };
 
   /* ---- keyboard ---- */
   drum.addEventListener('keydown', e=>{
@@ -4802,9 +4813,19 @@ function makeRolodex(drum){
 
   measure(); paint();
   if(window.ResizeObserver){
-    let w=drum.clientWidth;
-    new ResizeObserver(()=>{ if(drum.clientWidth!==w){ w=drum.clientWidth; measure(); paint(); } }).observe(drum);
+    let w=drum.clientWidth, h=cards.map(c=>c.offsetHeight).join(','), queued=false;
+    const ro=new ResizeObserver(()=>{
+      if(queued) return; queued=true;
+      requestAnimationFrame(()=>{
+        queued=false;
+        if(!drum.isConnected){ ro.disconnect(); return; }
+        const nh=cards.map(c=>c.offsetHeight).join(',');
+        if(drum.clientWidth!==w || nh!==h){ w=drum.clientWidth; h=nh; measure(); paint(); }
+      });
+    });
+    ro.observe(drum); cards.forEach(c=>ro.observe(c));
   }
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if(drum.isConnected){ measure(); paint(); } });
 }
 
 function subGroupHTML(label, list, opts){
