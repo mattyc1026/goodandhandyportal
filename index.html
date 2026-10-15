@@ -6713,12 +6713,12 @@ function fieldCustEditHTML(wo){
   return `<div class="modalHeadCust editing" id="modalHeadCust">
     ${custField('name','Full Name', c.name)}
     ${phoneField('phone','Primary Phone Number', c.phone)}
+    ${custField('email','Email (optional)', c.email)}
+    ${addressField('address','Address', c.address)}
     ${phoneField('altPhone','Alternate Phone Number (optional)', c.altPhone)}
     ${altContactFieldsHTML(c)}
-    ${custField('email','Email (optional)', c.email)}
     ${custField('homeownerName','Homeowner Name (optional)', c.homeownerName)}
     ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', c.homeownerPhone)}
-    ${addressField('address','Address', c.address)}
     ${accessFieldsHTML(c)}
     ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
     <div class="fieldNoteBtns">
@@ -7337,12 +7337,12 @@ function renderWorkOrderModal(id){
         <div class="modalHeadCust editing" id="modalHeadCust">
           ${custField('name','Full Name', wo.customer.name)}
           ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
+          ${custField('email','Email (optional)', wo.customer.email)}
+          ${addressField('address','Address', wo.customer.address)}
           ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
           ${altContactFieldsHTML(wo.customer)}
-          ${custField('email','Email (optional)', wo.customer.email)}
           ${custField('homeownerName','Homeowner Name (optional)', wo.customer.homeownerName)}
           ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', wo.customer.homeownerPhone)}
-          ${addressField('address','Address', wo.customer.address)}
           ${accessFieldsHTML(wo.customer)}
           ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
           <div class="fieldNoteBtns">
