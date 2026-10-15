@@ -23,6 +23,8 @@
      wash disappears against white and the stage stops being readable at a
      glance. High-contrast mode pushes these further still. */
   --red:#ffd9d9; --redb:#c0392b; --red-bold:#ffb3b3;
+  /* Pre-Site Complete: a paler red than Pre-Site Scheduled. */
+  --red-lite:#fff0ef; --red-liteb:#e8968d;
   --yellow:#fff1c4; --yellowb:#a5710a; --yellow-bold:#ffe08a;
   --green:#d2f2df; --greenb:#1f8a55; --green-bold:#a8ecc4;
   --blue:#d8e6ff; --blueb:#1f5aa8; --blue-bold:#aecdfa;
@@ -118,6 +120,7 @@ html.dark{
   --cream:#0e1522; --paper:#161f30; --ink:#e7edf7; --muted:#94a3bb;
   --line:#2b3a54; --line-soft:#1f2c42;
   --red:#38202a; --redb:#ff8f7d; --red-bold:#4b2733;
+  --red-lite:#2a1d24; --red-liteb:#d99a92;
   --yellow:#372f19; --yellowb:#f3c65c; --yellow-bold:#4a3f1e;
   --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
@@ -151,6 +154,7 @@ html.hc{
   --cream:#ffffff; --paper:#ffffff; --ink:#000000; --muted:#2b2b2b;
   --line:#000000; --line-soft:#000000;
   --red:#ffbfbf; --redb:#a30000; --red-bold:#ff8f8f;
+  --red-lite:#ffe3e3; --red-liteb:#c43c3c;
   --yellow:#ffe89a; --yellowb:#6b5400; --yellow-bold:#ffcf3d;
   --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
@@ -181,6 +185,7 @@ html.dark.hc{
   --cream:#000000; --paper:#000000; --ink:#ffffff; --muted:#e8e8e8;
   --line:#ffffff; --line-soft:#ffffff;
   --red:#4a0d0d; --redb:#ff9a90; --red-bold:#6b1212;
+  --red-lite:#2e0a0a; --red-liteb:#ffbab3;
   --yellow:#3d3000; --yellowb:#ffd54a; --yellow-bold:#584600;
   --green:#00331d; --greenb:#63f0a6; --green-bold:#004d2c;
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
@@ -433,6 +438,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
    is handled by the stage meter further down, which sizes the wash by how far
    along the job is rather than giving every stage the same width. */
 .woRow.st-red{border-left-color:var(--redb);}
+.woRow.st-red-lite{border-left-color:var(--red-liteb);}
 .woRow.st-red-bold{border-color:var(--redb);border-left-color:var(--redb);border-left-width:8px;}
 .woRow.st-yellow{border-left-color:var(--yellowb);}
 .woRow.st-yellow-bold{border-color:var(--yellowb);border-left-color:var(--yellowb);border-left-width:8px;}
@@ -475,6 +481,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 .tag.build-inv{background:var(--blueb);color:#fff;}
 /* in flight, outlined */
 .tag.sched{background:var(--red);color:var(--redb);border-color:var(--redb);}
+.tag.presite-done{background:var(--red-lite);color:var(--redb);border-color:var(--red-liteb);}
 .tag.awaiting-approval{background:var(--yellow);color:var(--yellowb);border-color:var(--yellowb);}
 .tag.in-prog{background:var(--green);color:var(--greenb);border-color:var(--greenb);}
 .tag.survey{background:var(--blue);color:var(--blueb);border-color:var(--blueb);}
@@ -532,10 +539,14 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg
 .docName{font-weight:600;color:var(--navy);word-break:break-word;}
 .docActions{display:flex;gap:12px;flex-wrap:wrap;}
 .docActions .btn{padding:9px 16px;font-size:.88em;min-height:40px;}
+.woTitleRow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.woTitleRow h2{margin:0;}
+/* Compact pill that sits beside the Work Orders title. */
 .newWoBtn{
-  width:100%;border:1.5px dashed var(--orange);background:var(--paper);
-  color:var(--orange);border-radius:var(--radius);padding:17px;font-weight:700;
-  font-size:.95em;margin-bottom:18px;font-family:inherit;letter-spacing:.01em;
+  display:inline-flex;align-items:center;gap:6px;width:auto;
+  border:1.5px solid var(--orange);background:var(--paper);
+  color:var(--orange);border-radius:999px;padding:6px 14px;font-weight:700;
+  font-size:.82em;margin:0;font-family:inherit;letter-spacing:.01em;white-space:nowrap;
   transition:background .15s,border-color .15s;
 }
 .newWoBtn:hover{background:rgba(232,121,26,.07);border-color:var(--orange2);}
@@ -733,7 +744,7 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .schedCalNav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .schedCalNav button{background:var(--cream);border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:7px 13px;font-weight:700;color:var(--navy);font-family:inherit;transition:border-color .15s,background .15s;}
 .schedCalNav button:hover{border-color:var(--navy);background:var(--paper);}
-.schedCalGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.schedCalGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
 .schedCalGrid .dow{font-size:.66em;text-transform:uppercase;color:var(--muted);text-align:center;font-weight:700;padding-bottom:6px;letter-spacing:.08em;}
 .schedCalDay{
   position:relative;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
@@ -746,6 +757,21 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .schedCalDay.past{color:#aab3c2;cursor:not-allowed;background:var(--cream);}
 .schedCalDay.hasJob{background:var(--yellow);border-color:var(--yellowb);cursor:pointer;}
 .schedCalDay.hasJob::after{content:'';position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--yellowb);}
+/* Today: an orange ring and bold number. Drawn as an inset shadow so it sits
+   on top of the booked shading or the selected fill without replacing them. */
+.schedCalDay.today{box-shadow:inset 0 0 0 2px var(--orange);font-weight:800;}
+/* What is booked on the day last tapped, directly under the calendar. */
+.schedDayInfo{
+  margin-top:10px;padding:8px 12px;border:1px solid var(--line);
+  border-left:3px solid var(--yellowb);border-radius:var(--radius-sm);
+  background:var(--paper);font-size:.85em;line-height:1.45;
+}
+.schedDayInfo.empty{border-left-color:var(--line);}
+.schedDayInfo .sdiDate{font-weight:700;color:var(--navy);}
+.schedDayInfo .sdiRow{overflow-wrap:anywhere;}
+.schedDayInfo .sdiRow span{white-space:nowrap;}
+.schedDayInfo .sdiRow b{font-weight:700;color:var(--ink);}
+.schedDayInfo .sdiNone{color:var(--muted);}
 .schedCalDay.selStart,.schedCalDay.selEnd{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:500;}
 .schedCalDay.inRange{background:rgba(15,38,71,.12);border-color:rgba(15,38,71,.2);}
 .schedCalDay.skipDay{background:repeating-linear-gradient(45deg,rgba(15,38,71,.06),rgba(15,38,71,.06) 4px,transparent 4px,transparent 8px);color:var(--muted);}
@@ -1193,7 +1219,7 @@ html.hc .dayTodayTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid
   .woRow .woMeta{flex-wrap:wrap;gap:12px;row-gap:12px;font-size:.92em;line-height:1.4;}
   .woRow .woLastNote{font-size:.92em;line-height:1.45;}
   .tag{padding:6px 13px;font-size:.88em;}
-  .newWoBtn{padding:20px;font-size:1.05em;min-height:56px;}
+  .newWoBtn{padding:8px 14px;font-size:.85em;min-height:40px;}
 
   /* ---- modals: sticky head/footer so key actions are always reachable
      without hunting through a scrolling page ---- */
@@ -1506,6 +1532,22 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   text-transform:uppercase;color:var(--muted);
 }
 .fieldSecChev{font-size:1.3em;line-height:1;color:var(--orange);}
+/* Collapsed-card preview: 3 lines at normal size, cut off with an ellipsis.
+   Tapping it opens the card, same as the title row. */
+.fieldSecPreview{
+  display:block;width:100%;box-sizing:border-box;text-align:left;
+  margin-top:-10px;padding:0 24px 18px;background:none;border:none;cursor:pointer;
+  font-family:inherit;color:var(--ink);-webkit-tap-highlight-color:transparent;
+}
+.fieldSecPreview .fspMeta{
+  font-size:.68em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:3px;
+}
+.fieldSecPreview .fspText{
+  font-size:.92em;line-height:1.45;white-space:pre-line;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;
+  overflow:hidden;
+}
 .fieldSecBody{
   display:flex;flex-direction:column;
   padding:0 24px 24px;line-height:1.55;overflow-wrap:anywhere;
@@ -2388,6 +2430,7 @@ html.hc body{background-image:none;}
   transition:width var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out);
 }
 .woRow.st-red::before{background:var(--redb);}
+.woRow.st-red-lite::before{background:var(--red-liteb);}
 .woRow.st-yellow::before{background:var(--yellowb);}
 .woRow.st-green::before{background:var(--greenb);}
 .woRow.st-blue::before{background:var(--blueb);}
@@ -2403,6 +2446,7 @@ html.hc body{background-image:none;}
 /* Proportional tint. Bold states run the wash further and start it heavier,
    which is what keeps "waiting on me" distinct from "waiting on them". */
 .woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 42%);}
+.woRow.st-red-lite{background-image:linear-gradient(90deg,var(--red-lite),var(--paper) 42%);}
 .woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 42%);}
 .woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 42%);}
 .woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 42%);}
@@ -2453,8 +2497,9 @@ html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
   .woRow{padding-left:26px;border-left-width:1px;}
   .woRow .woMeta{flex-direction:row;align-items:center;text-align:left;padding-left:0;flex-wrap:wrap;}
   .woRow .woName{font-size:1.35em;}
-  .woRow.st-red,.woRow.st-yellow,.woRow.st-green,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
+  .woRow.st-red,.woRow.st-red-lite,.woRow.st-yellow,.woRow.st-green,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
   .woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 72%);}
+  .woRow.st-red-lite{background-image:linear-gradient(90deg,var(--red-lite),var(--paper) 72%);}
   .woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 72%);}
   .woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 72%);}
   .woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 72%);}
@@ -2698,6 +2743,46 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   .sideBySide>details > *:not(summary){display:block !important;}
   .emptyState{border:1px solid #bbb !important;}
   .subListHeader{break-after:avoid;page-break-after:avoid;}
+}
+
+/* ---- Date and time fields on phones and tablets ----
+   iPhone and iPad give date and time inputs a built-in minimum width that
+   ignores width:100%, so they ran past the right edge of their card. Dropping
+   the native styling lets them size to their box like every other field. The
+   invisible picker over the follow-up calendar button is left alone. */
+@media (max-width:900px), (pointer:coarse){
+  input[type="date"]:not(.calNativeOverlay),
+  input[type="time"],
+  input[type="datetime-local"]{
+    -webkit-appearance:none;appearance:none;
+    display:block;min-width:0;max-width:100%;box-sizing:border-box;
+    min-height:46px;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value{text-align:left;}
+  .calNativeOverlay{min-width:0;max-width:100%;}
+}
+
+/* ---- Dropdown arrow ----
+   The native arrow sat hard against the right edge of the box. Every dropdown
+   now draws its own arrow, inset 12px, in the muted text colour. */
+select:not([multiple]):not([size]){
+  -webkit-appearance:none !important;appearance:none !important;-moz-appearance:none !important;
+  padding-right:34px !important;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6e87' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
+  background-repeat:no-repeat !important;
+  background-position:right 12px center !important;
+  background-size:13px !important;
+}
+select::-ms-expand{display:none;}
+html.dark select:not([multiple]):not([size]){
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3bb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
+}
+html.hc select:not([multiple]):not([size]){
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
+}
+html.dark.hc select:not([multiple]):not([size]){
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
 }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -3063,7 +3148,7 @@ function setWoSort(val){
 }
 /* Progression order matches stage: bold red -> red -> bold yellow -> yellow
    -> bold green -> green -> bold blue -> blue (earliest to latest stage) */
-const PROGRESSION_ORDER=['st-red-bold','st-red','st-yellow-bold','st-yellow','st-green-bold','st-green','st-blue-bold','st-blue','st-grey'];
+const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','st-yellow','st-green-bold','st-green','st-blue-bold','st-blue','st-grey'];
 /* Applies a stage change, saves, then re-renders so the job moves into its new
    tab. Callers pass a function that mutates the work order. Kept as one helper
    so every stage transition saves, recounts and re-renders in the same order
@@ -3148,6 +3233,7 @@ function workOrderCurrentTab(wo){
   if(inScheduleJobList(wo)) return 'inprogress';
   if(inEstimatePendingApprovalList(wo)) return 'estimates';
   if(inBuildEstimateList(wo)) return 'estimates';
+  if(inPresiteCompleteList(wo)) return 'presite';
   if(inPresiteScheduledList(wo)) return 'presite';
   if(inPresiteIncompleteList(wo)) return 'presite';
   return 'workorders';
@@ -3571,6 +3657,7 @@ function normalizeWO(wo){
   if(!Array.isArray(wo.notes)) wo.notes=[];
   if(!Array.isArray(wo.adminLog)) wo.adminLog=[];
   if(wo.presiteScheduled===undefined) wo.presiteScheduled=false;
+  if(wo.presiteComplete===undefined) wo.presiteComplete=false;
   if(wo.estimateApproved===undefined) wo.estimateApproved=false;
   if(wo.estimateDeclined===undefined) wo.estimateDeclined=false;
   if(wo.jobScheduled===undefined) wo.jobScheduled=!!wo.invoiceApproved; // migrate from prior workflow version
@@ -4093,6 +4180,7 @@ function statusClass(wo){
   if(wo.estimateApproved) return 'st-green-bold';       // In Progress > Schedule Job
   if(wo.estimateDone) return 'st-yellow';                // Estimates > Pending Approval
   if(wo.presiteDone) return 'st-yellow-bold';           // Estimates > Build Estimate
+  if(wo.presiteComplete) return 'st-red-lite';           // Pre-Site > Complete
   if(wo.presiteScheduled) return 'st-red';               // Pre-Site > Scheduled
   return 'st-red-bold';                                  // Pre-Site > Incomplete
 }
@@ -4109,6 +4197,7 @@ function statusTag(wo){
   if(wo.estimateApproved) return '<span class="tag go">Schedule Job</span>';
   if(wo.estimateDone) return '<span class="tag awaiting-approval">Pending Approval</span>';
   if(wo.presiteDone) return '<span class="tag build-est">Build Estimate</span>';
+  if(wo.presiteComplete) return '<span class="tag presite-done">Pre-Site Complete</span>';
   if(wo.presiteScheduled) return '<span class="tag sched">Pre-Site Scheduled</span>';
   return '<span class="tag pending">Incomplete</span>';
 }
@@ -4140,8 +4229,11 @@ function inInvoicesList(wo){ return !!wo.jobScheduled && !wo.invoiceDone && !wo.
 function inWorkOrdersList(wo){ return !wo.movedToHistoryAt || hasUpcomingSchedule(wo); }
 
 /* Pre-Site sub-lists */
-function inPresiteIncompleteList(wo){ return inPresiteList(wo) && !wo.presiteScheduled; }
-function inPresiteScheduledList(wo){ return inPresiteList(wo) && !!wo.presiteScheduled; }
+function inPresiteIncompleteList(wo){ return inPresiteList(wo) && !wo.presiteScheduled && !wo.presiteComplete; }
+function inPresiteScheduledList(wo){ return inPresiteList(wo) && !!wo.presiteScheduled && !wo.presiteComplete; }
+/* Walkthrough done on site, write-up not saved yet. Saving the PRESITE
+   walkthrough sets presiteDone, which moves the job on to Build Estimate. */
+function inPresiteCompleteList(wo){ return inPresiteList(wo) && !!wo.presiteComplete; }
 
 /* Estimates sub-lists */
 function inBuildEstimateList(wo){ return inEstimatesList(wo) && !wo.estimateDone; }
@@ -4360,8 +4452,7 @@ function renderMain(){
   if(ACTIVE_TAB==='workorders'){
     const dueList = followUpDueList();
     const list = sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
-    html+=`<div class="listHeader"><div><h2>Work Orders</h2></div>${sortDropdownHTML()}</div>`;
-    html+=`<button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}Create New Work Order</button>`;
+    html+=`<div class="listHeader"><div class="woTitleRow"><h2>Work Orders</h2><button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}Create New Work Order</button></div>${sortDropdownHTML()}</div>`;
     if(dueList.length){
       html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
     }
@@ -4374,6 +4465,7 @@ function renderMain(){
     html+=`<div class="listHeader"><div><h2>Pre-Site Inspections</h2></div></div>`;
     html+=subGroupHTML('Pre-Site Incomplete', incomplete, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'search'});
     html+=subGroupHTML('Pre-Site Scheduled', scheduled, {emptyText:'Nothing currently scheduled.', emptyIcon:'search'});
+    html+=subGroupHTML('Pre-Site Complete', DB.workOrders.filter(inPresiteCompleteList).sort((a,b)=>a.id-b.id), {emptyText:'No completed pre-sites right now.', emptyIcon:'search'});
   } else if(ACTIVE_TAB==='estimates'){
     const build=DB.workOrders.filter(inBuildEstimateList).sort((a,b)=>a.id-b.id);
     const pending=DB.workOrders.filter(inEstimatePendingApprovalList).sort((a,b)=>a.id-b.id);
@@ -4732,6 +4824,26 @@ function checkOutDay(woId, date){
     renderMain();
     if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
     toast('Checked out. Time logged for '+formatDateDisplay(date)+'.');
+    // Checking out on a pre-site inspection date asks whether it is done.
+    if(target.entry && target.entry.type==='presite' && inPresiteList(live) && !live.presiteComplete){
+      askPresiteComplete(woId);
+    }
+  });
+}
+function askPresiteComplete(woId){
+  askYesNo('Is this pre-site inspection complete?', (yes)=>{
+    const w=getWO(woId);
+    if(!w) return;
+    w.presiteScheduled=true;
+    if(yes){
+      w.presiteComplete=true;
+      addAdminLog(w, 'Pre-site inspection marked complete at check-out.');
+    }
+    saveDB(DB);
+    renderTabCounts();
+    renderMain();
+    if(document.getElementById('modalRoot').innerHTML) renderWorkOrderModal(woId);
+    toast(yes ? 'Moved to Pre-Site Complete.' : 'Left in Pre-Site Scheduled.');
   });
 }
 /* Admin correction of one stamp on one visit. Scoped to a single visit id, so
@@ -4961,7 +5073,7 @@ function openNewWorkOrder(){
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
-    presiteScheduled:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
+    presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
@@ -5156,7 +5268,8 @@ function captureSchedFields(){
   if(et!==null) SCHED_ETIME=et||'';
   if(rp!==null) SCHED_REPEAT=rp||'none';
 }
-let SCHED_LONGPRESS_TIMER=null, SCHED_LONGPRESS_FIRED=false;
+/* The day whose bookings are listed under the calendar, set by tapping it. */
+let SCHED_INFO_DAY=null;
 
 /* Picks a maps link based on the device: Apple Maps for iPhone/iPad/Mac
    (maps.apple.com hands off to the Maps app there), Google Maps for
@@ -5241,6 +5354,7 @@ function openScheduleEdit(woId, dateId, inline){
   SCHED_WO_ID=woId;
   SCHED_EDIT_ID=dateId;
   SCHED_PENDING=[];
+  SCHED_INFO_DAY=null;
   SCHED_TYPE=d.type||'full';
   SCHED_START=d.startDate;
   SCHED_END=d.endDate||d.startDate;
@@ -5398,14 +5512,22 @@ function minSchedDate(){
   return (d && d.startDate < isoToday()) ? d.startDate : isoToday();
 }
 
+/* Scheduling starts on Pre-Site until a pre-site inspection has been put on
+   the calendar (or the job is already past that point), then on Whole Job. */
+function hasPresiteScheduled(wo){
+  if(!wo) return false;
+  if(wo.presiteScheduled || wo.presiteComplete || wo.presiteDone) return true;
+  return (wo.scheduleDates||[]).some(d=>d.type==='presite');
+}
 function openScheduleWidget(id, inline){
   SCHED_INLINE=!!inline;
   if(SCHED_INLINE) FIELD_SEC.sched=true;
   SCHED_WO_ID=id;
   SCHED_EDIT_ID=null;
+  SCHED_INFO_DAY=null;
   const today=new Date();
   SCHED_CAL_MONTH=new Date(today.getFullYear(), today.getMonth(), 1);
-  SCHED_TYPE='full';
+  SCHED_TYPE=hasPresiteScheduled(getWO(id)) ? 'full' : 'presite';
   SCHED_START=null; SCHED_END=null;
   SCHED_STIME=''; SCHED_ETIME='';
   SCHED_REPEAT='none';
@@ -5478,6 +5600,7 @@ function cancelScheduleWidget(){
   const id=SCHED_WO_ID;
   // Leaving edit mode set would make the next "+ Add" open as an edit.
   SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
+  SCHED_INFO_DAY=null;
   SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
   SCHED_INLINE=false;
   renderWorkOrderModal(id);
@@ -5623,8 +5746,8 @@ function isFinePointer(){
 }
 function schedCalendarHint(){
   return isFinePointer()
-    ? "Click an open date to set the start date, then click a later date to set the end date. Shaded days already have a job scheduled. Hover over any shaded day to see what's booked."
-    : "Tap an open date to set the start date, then tap a later date to set the end date. Shaded days already have a job scheduled. Long press on any shaded day to see what's booked.";
+    ? "Click a date to set the start, then a later date for the end. Shaded days have a job booked. Hover over one for a quick look, or click any day to see its bookings below. Today is circled in orange."
+    : "Tap a date to set the start, then a later date for the end. Shaded days have a job booked. Tap any day to see its bookings below. Today is circled in orange.";
 }
 function scheduleCalendarHTML(){
   const month=SCHED_CAL_MONTH;
@@ -5658,6 +5781,7 @@ function scheduleCalendarHTML(){
     const booked = jobDays[iso];
     const cls=['schedCalDay'];
     if(isPast) cls.push('past');
+    if(iso===todayIso) cls.push('today');
     if(booked) cls.push('hasJob');
     if(isStart) cls.push('selStart');
     if(isEnd) cls.push('selEnd');
@@ -5671,14 +5795,10 @@ function scheduleCalendarHTML(){
       </div>`;
     }
     if(!isPast){
-      // Booked ("has job") days need to both select the date (tap) and reveal
-      // the info popup (press-and-hold), since a single tap can't do both on
-      // a touch device. Non-booked days just select on tap as before.
-      clickAttr = booked
-        ? `onclick="schedDayClick('${iso}')" onpointerdown="schedDayPointerDown('${iso}', this)" onpointerup="schedDayPointerUp()" onpointerleave="schedDayPointerUp()" onpointercancel="schedDayPointerUp()"`
-        : `onclick="pickSchedDay('${iso}')"`;
+      // One tap selects the day and lists what is booked on it below the grid.
+      clickAttr = `onclick="pickSchedDay('${iso}')"`;
     }
-    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${booked?'Already has a job that day. Tap to pick this day, or press and hold for details. You can still schedule here if your time doesn\u2019t conflict.':''}">${day}${popup}</div>`;
+    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${iso===todayIso?'Today. ':''}${booked?'Already has a job that day. You can still schedule here if your time doesn\u2019t conflict.':''}">${day}${popup}</div>`;
   }
 
   return `
@@ -5691,7 +5811,32 @@ function scheduleCalendarHTML(){
       <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
       ${cells}
     </div>
+    ${schedDayInfoHTML(jobDays)}
     <div class="small" style="margin-top:8px;">${schedCalendarHint()}</div>`;
+}
+/* Lists the bookings on the last day tapped. Nothing is drawn until a day has
+   been tapped, so the box takes no room until it is wanted. */
+/* "9:00"-"10:00" -> "9-10 AM", "11:30"-"13:00" -> "11:30 AM-1 PM". */
+function compactTimeRange(st, et){
+  const part=t=>{ const [h,m]=String(t).split(':').map(Number); return {h12:(h%12)||12, m, ap:h<12?'AM':'PM'}; };
+  const txt=x=>x.h12+(x.m?':'+String(x.m).padStart(2,'0'):'');
+  if(!st) return 'Time not set';
+  const a=part(st);
+  if(!et || et===st) return txt(a)+' '+a.ap;
+  const b=part(et);
+  return a.ap===b.ap ? txt(a)+'\u2013'+txt(b)+' '+b.ap : txt(a)+' '+a.ap+'\u2013'+txt(b)+' '+b.ap;
+}
+function schedDayInfoHTML(jobDays){
+  const iso=SCHED_INFO_DAY;
+  if(!iso) return '';
+  const label=new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const list=(jobDays||{})[iso]||[];
+  const rows=list.length
+    ? list.slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||''))).map(b=>{
+        return `<div class="sdiRow"><b>${esc(b.customer)}</b> \u00b7 <span>${esc(b.type)}</span> \u00b7 <span>${compactTimeRange(b.startTime, b.endTime)}</span></div>`;
+      }).join('')
+    : '<div class="sdiNone">Nothing scheduled.</div>';
+  return `<div class="schedDayInfo${list.length?'':' empty'}" aria-live="polite"><div class="sdiDate">${label}</div>${rows}</div>`;
 }
 /* Re-renders only the calendar column, leaving the form fields (and the
    rest of the page) untouched so typing/tapping in the date & time inputs
@@ -5705,27 +5850,9 @@ function changeSchedMonth(delta){
   SCHED_CAL_MONTH=new Date(SCHED_CAL_MONTH.getFullYear(), SCHED_CAL_MONTH.getMonth()+delta, 1);
   refreshSchedCalendar();
 }
-/* Long-press support for "has job" calendar cells on touch devices: a plain
-   tap selects the date (same as any open day), while a press-and-hold
-   reveals the info popup showing what's already booked that day. Desktop
-   still gets the popup on hover regardless. */
-function schedDayPointerDown(iso, el){
-  SCHED_LONGPRESS_FIRED=false;
-  clearTimeout(SCHED_LONGPRESS_TIMER);
-  SCHED_LONGPRESS_TIMER=setTimeout(()=>{
-    SCHED_LONGPRESS_FIRED=true;
-    if(el) el.classList.add('showInfo');
-  }, 450);
-}
-function schedDayPointerUp(){
-  clearTimeout(SCHED_LONGPRESS_TIMER);
-}
-function schedDayClick(iso){
-  if(SCHED_LONGPRESS_FIRED){ SCHED_LONGPRESS_FIRED=false; return; }
-  pickSchedDay(iso);
-}
 function pickSchedDay(iso){
   captureSchedFields();
+  SCHED_INFO_DAY=iso;
   if(SCHED_REPEAT==='none'){
     // No repeat chosen, the calendar just picks a single occurrence day.
     SCHED_START=iso; SCHED_END=iso;
@@ -5776,6 +5903,7 @@ function addPendingScheduleDate(){
       overridden: !!overridden
     };
     SCHED_PENDING.push(entry);
+    if(entry.type==='presite') SCHED_TYPE='full';
     SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
     // Keep the times so back-to-back visits at the same hour don't need retyping.
     SCHED_START=null; SCHED_END=null;
@@ -6521,13 +6649,24 @@ function cancelFieldNoteEdit(id){
 /* moreAlign: where the section's own pill sits on its row. 'end' puts it on
    the right of the card, which is where the all-notes pill belongs; anything
    else leaves it on the left, where the customer block's More still is. */
-function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign){
+/* Preview shown under a folded card's title. Nothing is drawn when there is
+   no text, so an empty card stays as just its title. */
+function fieldSecPreviewHTML(id, key, text, meta){
+  text=String(text||'').trim();
+  if(!text) return '';
+  return `<button type="button" class="fieldSecPreview" onclick="toggleFieldSec(${id},'${key}')" tabindex="-1">
+    ${meta?`<div class="fspMeta">${esc(meta)}</div>`:''}
+    <div class="fspText">${esc(text)}</div>
+  </button>`;
+}
+function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview){
   const open=!!FIELD_SEC[key];
   const moreCls = moreAlign==='end' ? ' alignEnd' : '';
   return `<div class="fieldSec fieldSec--${key}${open?' open':''}">
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
       <span>${esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
+    ${(!open && preview) ? preview : ''}
     ${open?`<div class="fieldSecBody">
       ${body}
       ${morePanel!==undefined && morePanel!=='' ? `<button class="fieldMoreBtn${moreCls}" onclick="toggleFieldSec(${id},'${moreKey}')">${FIELD_SEC[moreKey]?'Less':esc(moreLabel)}</button>` : ''}
@@ -6559,7 +6698,8 @@ function fieldNotesSecHTML(wo){
      name of the section rather than what was in it. */
   return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0], 0),
     'notesMore', `All notes (${notes.length})`,
-    rest.length ? rest.map((n,i)=>one(n, i+1)).join('') : '', 'end');
+    rest.length ? rest.map((n,i)=>one(n, i+1)).join('') : '', 'end',
+    fieldSecPreviewHTML(wo.id, 'note', notes[0].text, [notes[0].type, notes[0].date].filter(Boolean).join(' \u00b7 ')));
 }
 /* ---- Customer editing, inline ----
    The same fields and the same saveCustomer() the office view uses. It keeps
@@ -6760,6 +6900,7 @@ function fieldJobSecHTML(wo){
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="${open}">
       <span>Job Details</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
+    ${open ? '' : fieldSecPreviewHTML(id, 'job', jd.description)}
     ${open?`<div class="fieldSecBody">
       ${body}
       ${presitePrompt}
@@ -8654,7 +8795,9 @@ function adminTabHTML(wo){
     <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow.</div>
     <div class="btnRow" style="flex-wrap:wrap;">
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'presite')">Send to Pre-Site Inspections</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'presitecomplete')">Send to Pre-Site Complete</button>
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'estimates')">Send to Estimates</button>
+      <button class="btn secondary" onclick="adminSetStage(${wo.id},'schedulejob')">Send to Schedule Job</button>
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'inprogress')">Send to In Progress</button>
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'invoices')">Send to Invoices</button>
       <button class="btn secondary" onclick="adminSetStage(${wo.id},'surveys')">Send to Surveys</button>
@@ -8682,7 +8825,7 @@ function adminDuplicateWorkOrder(id){
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
-    presiteScheduled:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
+    presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
@@ -8693,10 +8836,21 @@ function adminDuplicateWorkOrder(id){
 }
 function adminSetStage(id, target){
   const wo=getWO(id);
+  // Every stage past Pre-Site Complete implies the inspection happened.
+  wo.presiteComplete = target!=='presite';
   if(target==='presite'){
     wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false;
     wo.presiteScheduled=false; wo.estimateApproved=false; wo.estimateDeclined=false;
     wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='presitecomplete'){
+    wo.presiteScheduled=true; wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false;
+    wo.estimateApproved=false; wo.estimateDeclined=false;
+    wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='schedulejob'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
+    wo.jobScheduled=false; wo.jobComplete=false; wo.invoiceDone=false; wo.movedToHistoryAt=null;
   }
   if(target==='estimates'){
     wo.presiteDone=true; wo.estimateDone=false; wo.invoiceDone=false;
