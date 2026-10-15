@@ -841,6 +841,15 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .adminStageBtns .stageBtn{flex:1 1 0;min-width:0;justify-content:center;text-align:center;}
 @media (min-width:901px){ .adminStageBtns .stageBtn{white-space:nowrap;padding-left:13px;padding-right:9px;} }
 .adminPillRow{display:flex;margin:4px 0 6px;}
+/* The log scrolls inside its own box so a long history doesn't stretch the tab. */
+.adminLogBox{
+  max-height:min(320px,45vh);overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);
+  padding:10px 14px;
+}
+.adminLogBox .adminLogRow{padding:5px 0;margin:0;border-bottom:1px solid var(--line-soft);}
+.adminLogBox .adminLogRow:last-child{border-bottom:none;}
 .stageBtn.pillNeutral::before{background:var(--navy);}
 .stageBtn{
   position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:6px;
@@ -9221,7 +9230,7 @@ function adminTabHTML(wo){
       <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id})">Duplicate Work Order</button>
     </div>
     <h4 style="margin-top:14px;">Admin Log</h4>
-    ${logHTML}
+    <div class="adminLogBox">${logHTML}</div>
   </div>`;
 }
 /* Makes a brand new work order for the same customer. Only the customer block
