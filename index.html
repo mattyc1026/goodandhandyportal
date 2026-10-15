@@ -4783,14 +4783,17 @@ function makeRolodex(drum){
     if(now-lastWheelT>GESTURE_GAP) gesture={drum:false, page:false};
     lastWheelT=now;
     if(gesture.page) return;                   // this gesture already belongs to the page
-    const atStart=target<=0.001 && dy<0, atEnd=target>=n-1-0.001 && dy>0;
+    // Natural scrolling: the cards travel the same way the fingers do, the
+    // same as dragging. Fingers moving down (deltaY below zero) pull the next
+    // card down over the top, so the drum position moves against deltaY.
+    const atStart=target<=0.001 && dy>0, atEnd=target>=n-1-0.001 && dy<0;
     if(atStart || atEnd){
       if(gesture.drum){ e.preventDefault(); return; }   // hold the page still
       gesture.page=true; return;               // fresh gesture at the end: scroll the page
     }
     gesture.drum=true;
     e.preventDefault();
-    target=clampT(target+dy/110);
+    target=clampT(target-dy/110);
     run(140, 19);
     clearTimeout(wheelTimer);
     wheelTimer=setTimeout(()=>goTo(Math.round(target), 120, 16), 130);
