@@ -631,6 +631,8 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 }
 .modalHeadCust .mhPrimary,.modalHeadCust .mhAlt{font-size:.92em;color:var(--ink);font-family:var(--f-data);font-size:.86em;}
 .modalHeadCust .mhEmail{font-size:.88em;color:var(--muted);}
+.altPhoneName{font-family:var(--f-body);font-weight:700;color:var(--navy);margin-right:4px;}
+.altPhoneNote{font-family:var(--f-body);font-size:.85em;font-style:italic;color:var(--muted);line-height:1.4;margin-top:2px;white-space:pre-wrap;overflow-wrap:anywhere;flex-basis:100%;}
 .modalHeadCust .mhHomeownerTag{
   display:inline-block;margin-right:8px;padding:1px 7px;border-radius:999px;
   background:var(--line-soft);border:1px solid var(--line);color:var(--muted);
@@ -3647,7 +3649,7 @@ function normalizeWO(wo){
      job the customer on the account is not the person who answers the door.
      Older work orders simply have no key, so they get an empty one rather
      than an undefined that would print as "undefined" in the header. */
-  ['name','phone','altPhone','email','address','homeownerName','homeownerPhone'].forEach(k=>{
+  ['name','phone','altPhone','altPhoneName','altPhoneNote','email','address','homeownerName','homeownerPhone'].forEach(k=>{
     if(typeof wo.customer[k]!=='string') wo.customer[k]='';
   });
   if(!wo.jobDetails || typeof wo.jobDetails!=='object') wo.jobDetails={description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]};
@@ -5069,7 +5071,7 @@ function openNewWorkOrder(){
   const id=newWorkOrderId();
   const wo={
     id, createdAt:Date.now(),
-    customer:{name:'',phone:'',altPhone:'',email:'',address:'',homeownerName:'',homeownerPhone:''},
+    customer:{name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
@@ -6499,7 +6501,7 @@ function fieldGridHTML(wo){
   </div>
   ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
   ${(hasExtras && FIELD_SEC.extras) ? `<div class="fieldSubPanel">
-    ${c.altPhone?`<div class="fsRow"><span class="fsKey">Alternate</span>${phoneLink(c.altPhone)}</div>`:''}
+    ${c.altPhone?`<div class="fsRow"><span class="fsKey">Alternate</span>${altPhoneInlineHTML(c)}</div>${c.altPhoneNote?`<div class="altPhoneNote">${esc(c.altPhoneNote)}</div>`:''}`:''}
   </div>` : ''}
   ${fieldHomeownerHTML(wo)}`;
 }
@@ -6712,6 +6714,7 @@ function fieldCustEditHTML(wo){
     ${custField('name','Full Name', c.name)}
     ${phoneField('phone','Primary Phone Number', c.phone)}
     ${phoneField('altPhone','Alternate Phone Number (optional)', c.altPhone)}
+    ${altContactFieldsHTML(c)}
     ${custField('email','Email (optional)', c.email)}
     ${custField('homeownerName','Homeowner Name (optional)', c.homeownerName)}
     ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', c.homeownerPhone)}
@@ -7143,7 +7146,7 @@ function splitAddress(rawAddr){
 let CUST_DRAFT=null;
 function captureCustDraft(id){
   if(!WO_CUST_EDIT) return;
-  const ids=['name','phone','altPhone','email','homeownerName','homeownerPhone','address','addressUnit',
+  const ids=['name','phone','altPhone','altPhoneName','altPhoneNote','email','homeownerName','homeownerPhone','address','addressUnit',
     'acc_gated','acc_gateCodeOn','acc_gateCode','acc_attendantOn','acc_attendant','acc_parkingOn','acc_parking','acc_petsOn','acc_pets'];
   const found={};
   let any=false;
@@ -7335,6 +7338,7 @@ function renderWorkOrderModal(id){
           ${custField('name','Full Name', wo.customer.name)}
           ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
           ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
+          ${altContactFieldsHTML(wo.customer)}
           ${custField('email','Email (optional)', wo.customer.email)}
           ${custField('homeownerName','Homeowner Name (optional)', wo.customer.homeownerName)}
           ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', wo.customer.homeownerPhone)}
@@ -7351,7 +7355,7 @@ function renderWorkOrderModal(id){
             <div class="mhColA">
               <div class="mhName"><button type="button" class="mhNameBtn" onclick="openNameAction(${id})">${esc(wo.customer.name) || 'None'}</button>${headerSuffix}</div>
               <div class="mhPrimary">${phoneLink(wo.customer.phone) || `<span class="telLink">${icon('phone')}None</span>`}</div>
-              <div class="mhAlt">${phoneLink(wo.customer.altPhone)}</div>
+              ${altPhoneDisplayHTML(wo.customer, 'mhAlt')}
             </div>
             <div class="mhColB">
               <div class="mhAddr1">${addressLink(wo.customer.address, addr.line1, true) || `<span class="mapLink hasIcon">${icon('map-pin')}None</span>`}</div>
@@ -7484,6 +7488,24 @@ function accessInfoHTML(wo){
   if(a.petsOn && a.pets) rows.push('<b>Pets:</b> '+esc(end(a.pets)));
   if(!rows.length) return '';
   return `<div class="accessInfo">${rows.map(r=>`<div>${r}</div>`).join('')}</div>`;
+}
+/* Alternate contact: an optional name and an optional note ride along with
+   the alternate number. With no name the number shows on its own, as before. */
+function altContactFieldsHTML(c){
+  c=c||{};
+  return `${custField('altPhoneName','Alternate Contact Name (optional)', c.altPhoneName)}
+  <div class="kv"><b>Alternate Contact Note (optional)</b><textarea id="cf_altPhoneNote" rows="2" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;resize:vertical;box-sizing:border-box;">${esc(c.altPhoneNote||'')}</textarea></div>`;
+}
+/* Name then number, e.g. "Sarah (619) 555-1212". Just the number with no name. */
+function altPhoneInlineHTML(c){
+  const nm=String((c&&c.altPhoneName)||'').trim();
+  const link=phoneLink(c&&c.altPhone);
+  return nm ? `<span class="altPhoneName">${esc(nm)}</span> ${link}` : link;
+}
+function altPhoneDisplayHTML(c, cls){
+  if(!c || !String(c.altPhone||'').trim()) return `<div class="${cls}"></div>`;
+  const note=String(c.altPhoneNote||'').trim();
+  return `<div class="${cls}">${altPhoneInlineHTML(c)}${note?`<div class="altPhoneNote">${esc(note)}</div>`:''}</div>`;
 }
 function custField(key,label,val){
   return `<div class="kv"><b>${label}</b><input id="cf_${key}" value="${esc(val)}" style="width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;"></div>`;
@@ -7803,7 +7825,7 @@ function saveCustomer(id){
     return;
   }
   const wasEligible=inPresiteList(wo);
-  ['name','phone','altPhone','email','address','homeownerName','homeownerPhone'].forEach(k=>{
+  ['name','phone','altPhone','altPhoneName','altPhoneNote','email','address','homeownerName','homeownerPhone'].forEach(k=>{
     const field=document.getElementById('cf_'+k);
     wo.customer[k]= field ? field.value.trim() : (wo.customer[k]||'');
   });
@@ -8821,7 +8843,7 @@ function adminDuplicateWorkOrder(id){
   const newId=newWorkOrderId();
   const wo={
     id:newId, createdAt:Date.now(),
-    customer:Object.assign({name:'',phone:'',altPhone:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer),
+    customer:Object.assign({name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer),
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
@@ -11999,7 +12021,6 @@ function sendJobDataToBuilder(iframeEl, id, kind){
     customer:{
       name:wo.customer.name,
       phone:wo.customer.phone,
-      altPhone:wo.customer.altPhone||'',
       homeownerName:wo.customer.homeownerName||'',
       homeownerPhone:wo.customer.homeownerPhone||'',
       // The builder's Bill To block has its own email field. It was never
