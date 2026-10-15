@@ -827,6 +827,56 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .noteItem .noteActions{display:flex;gap:16px;}
 .noteItem .noteActions button{background:none;border:none;font-size:.82em;color:var(--redb);padding:6px 4px;min-height:32px;font-weight:600;white-space:nowrap;word-break:normal;overflow-wrap:normal;font-family:inherit;}
 .adminTab{background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);border-radius:var(--radius);padding:16px 18px;}
+/* Force-stage buttons: small versions of the work order cards, same rail,
+   tint and border as a card sitting in that sub-list. Laid out as a
+   two-column table, nav tab on the left, its sub-lists on the right. */
+.adminStageList{
+  display:grid;grid-template-columns:max-content 1fr;align-items:center;
+  column-gap:16px;row-gap:8px;margin:4px 0 6px;
+  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;
+}
+.adminStageTab{font-size:.66em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.adminStageBtns{display:flex;flex-wrap:wrap;gap:6px;}
+.stageBtn{
+  position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:6px;
+  min-height:30px;padding:5px 11px 5px 15px;border-radius:8px;
+  border:1px solid var(--line);background-color:var(--paper);
+  font-family:inherit;font-size:.78em;font-weight:700;color:var(--navy);
+  cursor:pointer;box-shadow:var(--sh-1);
+  max-width:100%;flex-wrap:wrap;text-align:left;line-height:1.25;
+}
+.stageBtn::before{content:'';position:absolute;left:4px;top:5px;bottom:5px;width:3px;border-radius:3px;background:var(--line);}
+.stageBtn:hover{box-shadow:var(--sh-2);transform:translateY(-1px);}
+.stageBtn.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 80%);}
+.stageBtn.st-red::before{background:var(--redb);}
+.stageBtn.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 95%);border-color:var(--redb);}
+.stageBtn.st-red-bold::before{background:var(--redb);width:4px;}
+.stageBtn.st-red-lite{background-image:linear-gradient(90deg,var(--red-lite),var(--paper) 80%);}
+.stageBtn.st-red-lite::before{background:var(--red-liteb);}
+.stageBtn.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 80%);}
+.stageBtn.st-yellow::before{background:var(--yellowb);}
+.stageBtn.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 95%);border-color:var(--yellowb);}
+.stageBtn.st-yellow-bold::before{background:var(--yellowb);width:4px;}
+.stageBtn.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 80%);}
+.stageBtn.st-green::before{background:var(--greenb);}
+.stageBtn.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 95%);border-color:var(--greenb);}
+.stageBtn.st-green-bold::before{background:var(--greenb);width:4px;}
+.stageBtn.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 80%);}
+.stageBtn.st-blue::before{background:var(--blueb);}
+.stageBtn.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 95%);border-color:var(--blueb);}
+.stageBtn.st-blue-bold::before{background:var(--blueb);width:4px;}
+.stageBtn.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 80%);}
+.stageBtn.st-grey::before{background:var(--greyb);}
+/* The stage the job is in now: ringed and not clickable. */
+.stageBtn.current{box-shadow:0 0 0 2px var(--navy);cursor:default;transform:none;}
+.stageBtn:disabled{opacity:1;}
+.stageCur{font-size:.78em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
+html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
+@media (max-width:600px){
+  .adminStageList{grid-template-columns:1fr;row-gap:4px;}
+  .adminStageTab{margin-top:6px;}
+  .adminStageTab:first-child{margin-top:0;}
+}
 .adminTab h4{margin:0 0 10px;color:#8a5a00;font-size:.72em;text-transform:uppercase;letter-spacing:.09em;font-family:var(--f-body);}
 .adminLogRow{font-size:.78em;color:#6b5320;margin-bottom:6px;line-height:1.5;}
 .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:100%;}
@@ -8815,15 +8865,8 @@ function adminTabHTML(wo){
   return `<div class="adminTab">
     <h4>Admin Controls</h4>
     <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow.</div>
-    <div class="btnRow" style="flex-wrap:wrap;">
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'presite')">Send to Pre-Site Inspections</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'presitecomplete')">Send to Pre-Site Complete</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'estimates')">Send to Estimates</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'schedulejob')">Send to Schedule Job</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'inprogress')">Send to In Progress</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'invoices')">Send to Invoices</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'surveys')">Send to Surveys</button>
-      <button class="btn secondary" onclick="adminSetStage(${wo.id},'jobhistory')">Send to Job History</button>
+    <div class="adminStageList">
+      ${adminStageButtonsHTML(wo.id)}
     </div>
     <h4 style="margin-top:14px;">Duplicate</h4>
     <div class="btnRow" style="flex-wrap:wrap;">
@@ -8856,14 +8899,45 @@ function adminDuplicateWorkOrder(id){
   openWorkOrder(newId);
   toast('Duplicated. This is the new work order.');
 }
+/* One force button per sub-list, grouped by the nav tab it lives under. */
+/* [key, label, card colour class, test for "the job is in this sub-list"] */
+const ADMIN_STAGE_GROUPS=[
+  ['Pre-Site Inspections',[['presite','Pre-Site Incomplete','st-red-bold',w=>inPresiteIncompleteList(w)],['presitescheduled','Pre-Site Scheduled','st-red',w=>inPresiteScheduledList(w)],['presitecomplete','Pre-Site Complete','st-red-lite',w=>inPresiteCompleteList(w)]]],
+  ['Estimates',[['estimates','Build Estimate','st-yellow-bold',w=>inBuildEstimateList(w)],['pendingapproval','Pending Approval','st-yellow',w=>inEstimatePendingApprovalList(w)]]],
+  ['In Progress',[['schedulejob','Schedule Job','st-green-bold',w=>inScheduleJobList(w)],['inprogress','In Progress','st-green',w=>inInvoiceInProgressList(w)]]],
+  ['Invoices',[['invoices','Build Invoice','st-blue-bold',w=>inBuildInvoiceList(w)]]],
+  ['Surveys',[['surveys','Surveys','st-blue',w=>inSurveysList(w)]]],
+  ['Job History',[['jobhistory','Job History','st-grey',w=>inJobHistoryList(w)]]]
+];
+function adminStageLabel(target){
+  for(const [,list] of ADMIN_STAGE_GROUPS) for(const [k,l] of list) if(k===target) return l;
+  return target;
+}
+function adminStageButtonsHTML(id){
+  const wo=getWO(id);
+  return ADMIN_STAGE_GROUPS.map(([tab,list])=>`<div class="adminStageTab">${esc(tab)}</div>
+    <div class="adminStageBtns">${list.map(([k,l,cls,test])=>{
+      const cur=!!(wo && test(wo));
+      return `<button type="button" class="stageBtn ${cls}${cur?' current':''}" ${cur?'aria-current="true" disabled':''} onclick="adminSetStage(${id},'${k}')">${esc(l)}${cur?'<span class="stageCur">Current</span>':''}</button>`;
+    }).join('')}</div>`).join('');
+}
 function adminSetStage(id, target){
   const wo=getWO(id);
   // Every stage past Pre-Site Complete implies the inspection happened.
-  wo.presiteComplete = target!=='presite';
+  wo.presiteComplete = !(target==='presite' || target==='presitescheduled');
   if(target==='presite'){
     wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false;
     wo.presiteScheduled=false; wo.estimateApproved=false; wo.estimateDeclined=false;
     wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='presitescheduled'){
+    wo.presiteScheduled=true; wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false;
+    wo.estimateApproved=false; wo.estimateDeclined=false;
+    wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
+  if(target==='pendingapproval'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=false; wo.estimateDeclined=false;
+    wo.jobScheduled=false; wo.jobComplete=false; wo.invoiceDone=false; wo.movedToHistoryAt=null;
   }
   if(target==='presitecomplete'){
     wo.presiteScheduled=true; wo.presiteDone=false; wo.estimateDone=false; wo.invoiceDone=false;
@@ -8895,7 +8969,7 @@ function adminSetStage(id, target){
     wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
     wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=Date.now();
   }
-  addAdminLog(wo, `Overrode workflow, forced job to stage: ${target}`);
+  addAdminLog(wo, `Overrode workflow, forced job to stage: ${adminStageLabel(target)}`);
   saveDB(DB);
   renderWorkOrderModal(id);
   renderTabCounts(); renderMain();
