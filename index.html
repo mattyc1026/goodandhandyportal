@@ -4757,13 +4757,27 @@ function makeRolodex(drum){
   }, true);
 
   /* ---- wheel and trackpad ---- */
-  let wheelTimer=0;
+  /* A wheel or trackpad gesture is one unbroken run of wheel events, including
+     the momentum a hard flick keeps sending after the fingers lift. A gesture
+     that moved the drum stays with the drum even after it hits the first or
+     last card, so the page never takes over mid-swipe. Only a fresh gesture
+     that starts at the end goes to the page. */
+  const GESTURE_GAP=300;   // ms of quiet that ends a gesture
+  let wheelTimer=0, lastWheelT=0, gesture={drum:false, page:false};
   drum.addEventListener('wheel', e=>{
     if(e.ctrlKey) return;
     let dy=e.deltaY;
     if(e.deltaMode===1) dy*=33; else if(e.deltaMode===2) dy*=400;
+    const now=performance.now();
+    if(now-lastWheelT>GESTURE_GAP) gesture={drum:false, page:false};
+    lastWheelT=now;
+    if(gesture.page) return;                   // this gesture already belongs to the page
     const atStart=target<=0.001 && dy<0, atEnd=target>=n-1-0.001 && dy>0;
-    if(atStart || atEnd) return;               // let the page carry on scrolling
+    if(atStart || atEnd){
+      if(gesture.drum){ e.preventDefault(); return; }   // hold the page still
+      gesture.page=true; return;               // fresh gesture at the end: scroll the page
+    }
+    gesture.drum=true;
     e.preventDefault();
     target=clampT(target+dy/110);
     run(140, 19);
