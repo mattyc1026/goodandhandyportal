@@ -2825,16 +2825,36 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
 .rolo{
   position:relative;margin:0 0 18px;
   perspective:1150px;perspective-origin:50% 50%;
-  touch-action:none;-webkit-user-select:none;user-select:none;
-  outline:none;cursor:grab;overflow:hidden;
+  touch-action:pan-y;-webkit-user-select:none;user-select:none;
+  outline:none;overflow:hidden;
   -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--peekTop,100px)*.62),#000 calc(100% - var(--peekBot,50px)*.9),transparent 100%);
           mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--peekTop,100px)*.62),#000 calc(100% - var(--peekBot,50px)*.9),transparent 100%);
 }
-.rolo.grabbing{cursor:grabbing;}
+.rolo.grabbing .roloZone,.rolo.grabbing .roloCard.front{cursor:grabbing;}
+/* The grab zone frame. It sits behind the cards, so only its thin rim shows
+   around the front card, and it glides to each card's height as you roll. */
+.roloZone{
+  position:absolute;left:2px;right:2px;z-index:1500;  /* over the resting neighbours, under the front card */
+  border-radius:calc(var(--radius) + 8px);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--orange) 12%,transparent),color-mix(in srgb,var(--navy) 8%,transparent));
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+  border:1.5px solid color-mix(in srgb,var(--orange) 55%,var(--line));
+  box-shadow:inset 0 1px 6px rgba(15,38,71,.08), 0 2px 10px rgba(15,38,71,.06);
+  touch-action:none;cursor:grab;
+  transition:top var(--t-med) var(--e-spring),height var(--t-med) var(--e-spring);
+}
+.roloZone.single{background:color-mix(in srgb,var(--navy) 4%,transparent);border-color:var(--line);cursor:default;}
+/* Position bar in the right-hand rim. */
+.roloTrack{position:absolute;right:4px;top:16px;bottom:16px;width:4px;border-radius:4px;background:color-mix(in srgb,var(--navy) 10%,transparent);}
+.roloThumb{position:absolute;left:0;right:0;border-radius:4px;background:var(--orange);opacity:.75;}
+.roloZone.single .roloTrack{display:none;}
+.rolo .roloCard.front{touch-action:none;cursor:grab;}
+html.hc .roloZone{background:transparent;border:2px solid var(--hc-fg);box-shadow:none;}
+html.hc .roloThumb{background:var(--hc-fg);opacity:1;}
 .rolo:focus-visible{outline:none;}
 .rolo:focus-visible .roloCard.front{box-shadow:0 0 0 3px rgba(232,121,26,.45), var(--sh-3) !important;}
 .rolo .woRow.roloCard{
-  position:absolute;left:8px;right:8px;top:0;margin:0;
+  position:absolute;left:14px;right:14px;top:0;margin:0;
   transform-origin:50% 50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;
   will-change:transform,opacity;
   transition:none !important;animation:none !important;
@@ -4606,6 +4626,27 @@ function makeRolodex(drum){
   const VISIBLE=3.4;                  // cards beyond this are faded out
 
   let R=200, stepPx=80, maxH=120;
+  /* The grab zone: a soft frame around the front card, a thin edge wider
+     than the card itself. Only touches, drags and wheel scrolls that start
+     inside it move the rolodex; everywhere else scrolls the page. A slim
+     bar down its right side shows where you are in the list. */
+  const EDGE=10;
+  const zone=document.createElement('div');
+  zone.className='roloZone';
+  zone.innerHTML='<div class="roloTrack"><div class="roloThumb"></div></div>';
+  drum.insertBefore(zone, drum.firstChild);
+  const thumb=zone.querySelector('.roloThumb');
+  if(n<2) zone.classList.add('single');
+  let tops=[], hts=[];
+  function placeZone(i){
+    if(tops[i]==null) return;
+    zone.style.top=(tops[i]-EDGE)+'px';
+    zone.style.height=(hts[i]+EDGE*2)+'px';
+  }
+  function inZone(x,y){
+    const r=zone.getBoundingClientRect();
+    return x>=r.left && x<=r.right && y>=r.top && y<=r.bottom;
+  }
   // The counter sits just under the drum, outside its edge fade.
   const pos=document.createElement('div');
   pos.className='roloPos';
@@ -4624,7 +4665,9 @@ function makeRolodex(drum){
     drum.style.setProperty('--peekBot', peekBot+'px');
     drum.style.height=(maxH+peekTop+peekBot)+'px';
     drum.style.perspectiveOrigin='50% '+(peekTop+maxH/2)+'px';
-    cards.forEach((c,i)=>{ c.style.top=(peekTop+(maxH-hs[i])/2)+'px'; });
+    tops=hs.map(h=>peekTop+(maxH-h)/2); hts=hs;
+    cards.forEach((c,i)=>{ c.style.top=tops[i]+'px'; });
+    placeZone(lastFront>=0 ? lastFront : Math.round(clampT(p)));
   }
 
   let p=0, v=0, target=0;
@@ -4658,7 +4701,9 @@ function makeRolodex(drum){
       c.style.opacity=(ad>lim ? Math.max(0,(lim+0.6-ad)/0.6) : 1).toFixed(3);
       const haze=Math.min(70, Math.round(ad*26));
       c.style.boxShadow = ad<0.35 ? '' : `inset 0 0 0 9999px color-mix(in srgb, var(--cream) ${haze}%, transparent), 0 ${Math.round(4+ad*2)}px ${Math.round(14+ad*6)}px rgba(15,38,71,${(0.10-ad*0.02).toFixed(3)})`;
-      c.style.zIndex=String(1000-Math.round(ad*100));
+      // Cards in motion near the front ride above the grab frame (z 1500);
+      // the resting neighbours sit under it so the frame's rim stays visible.
+      c.style.zIndex=String(ad<0.98 ? 2000-Math.round(ad*100) : 1000-Math.round(ad*100));
     }
     if(front!==lastFront){
       if(cards[lastFront]) cards[lastFront].classList.remove('front');
@@ -4667,6 +4712,12 @@ function makeRolodex(drum){
       lastFront=front;
       ROLO_FRONT[key]=cards[front].dataset.woId;
       pos.textContent=(front+1)+' / '+n;
+      placeZone(front);
+    }
+    if(n>1){
+      const frac=Math.max(0.14, 1/n);
+      thumb.style.height=(frac*100)+'%';
+      thumb.style.top=((clampT(p)/(n-1))*(1-frac)*100)+'%';
     }
   }
 
@@ -4693,6 +4744,7 @@ function makeRolodex(drum){
   let drag=null, suppressClick=false, pageFling=0;
   drum.addEventListener('pointerdown', e=>{
     if(e.button!==undefined && e.button!==0) return;
+    if(!inZone(e.clientX, e.clientY)){ drag=null; return; }   // outside the frame: leave it to the page
     if(pageFling){ cancelAnimationFrame(pageFling); pageFling=0; }
     drag={id:e.pointerId, touch:e.pointerType==='touch', y0:e.clientY, lastY:e.clientY, p0:p, raw:p, moved:false, paging:false, samples:[{t:performance.now(), y:e.clientY}]};
     suppressClick=false;
@@ -4780,7 +4832,9 @@ function makeRolodex(drum){
     let dy=e.deltaY;
     if(e.deltaMode===1) dy*=33; else if(e.deltaMode===2) dy*=400;
     const now=performance.now();
-    if(now-lastWheelT>GESTURE_GAP) gesture={drum:false, page:false};
+    if(now-lastWheelT>GESTURE_GAP){
+      gesture={drum:false, page:!inZone(e.clientX, e.clientY)};
+    }
     lastWheelT=now;
     if(gesture.page) return;                   // this gesture already belongs to the page
     // Natural scrolling: the cards travel the same way the fingers do, the
