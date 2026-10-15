@@ -836,7 +836,12 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
   background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;
 }
 .adminStageTab{font-size:.66em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
-.adminStageBtns{display:flex;flex-wrap:wrap;gap:6px;}
+.adminStageBtns{display:flex;gap:6px;min-width:0;}
+/* Every row spans the full width: one button stretches as far as three. */
+.adminStageBtns .stageBtn{flex:1 1 0;min-width:0;justify-content:center;text-align:center;}
+@media (min-width:901px){ .adminStageBtns .stageBtn{white-space:nowrap;padding-left:13px;padding-right:9px;} }
+.adminPillRow{display:flex;margin:4px 0 6px;}
+.stageBtn.pillNeutral::before{background:var(--navy);}
 .stageBtn{
   position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:6px;
   min-height:30px;padding:5px 11px 5px 15px;border-radius:8px;
@@ -872,8 +877,10 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .stageBtn:disabled{opacity:1;}
 .stageCur{font-size:.78em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
 html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
-@media (max-width:600px){
-  .adminStageList{grid-template-columns:1fr;row-gap:4px;}
+@media (max-width:900px){
+  .adminStageList{grid-template-columns:minmax(0,1fr);row-gap:4px;}
+  .adminStageBtns{flex-direction:column;}
+  .adminStageBtns .stageBtn{flex:none;width:100%;}
   .adminStageTab{margin-top:6px;}
   .adminStageTab:first-child{margin-top:0;}
 }
@@ -2797,6 +2804,49 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   .subListHeader{break-after:avoid;page-break-after:avoid;}
 }
 
+/* =========================================================================
+   ROLODEX VIEW
+   Each sub-list becomes a drum of full work order cards turning on a
+   horizontal axis. The card facing you is flat and full size; the ones
+   ahead of and behind it tip away over the top and bottom of the drum and
+   fade into the paper. Every transform is written per frame from a spring,
+   so the stylesheet's own transitions and entrance animations are switched
+   off on these cards; they would fight the physics.
+========================================================================= */
+.rolo{
+  position:relative;margin:0 0 18px;
+  perspective:1150px;perspective-origin:50% 50%;
+  touch-action:none;-webkit-user-select:none;user-select:none;
+  outline:none;cursor:grab;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--peekTop,100px)*.62),#000 calc(100% - var(--peekBot,50px)*.9),transparent 100%);
+          mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--peekTop,100px)*.62),#000 calc(100% - var(--peekBot,50px)*.9),transparent 100%);
+}
+.rolo.grabbing{cursor:grabbing;}
+.rolo:focus-visible{outline:none;}
+.rolo:focus-visible .roloCard.front{box-shadow:0 0 0 3px rgba(232,121,26,.45), var(--sh-3) !important;}
+.rolo .woRow.roloCard{
+  position:absolute;left:8px;right:8px;top:0;margin:0;
+  transform-origin:50% 50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  will-change:transform,opacity;
+  transition:none !important;animation:none !important;
+}
+.rolo .woRow.roloCard.checkedInGlow{animation:checkedInPulse 2.2s ease-in-out infinite !important;}
+.rolo .woRow.roloCard.front{box-shadow:var(--sh-3);}
+.rolo .woRow.roloCard:not(.front){cursor:pointer;}
+.rolo .woRow.roloCard:not(.front) *{pointer-events:none;}
+.roloPos{
+  margin:-14px 10px 16px;text-align:right;
+  font-family:var(--f-data);font-size:.7em;color:var(--muted);
+  pointer-events:none;font-variant-numeric:tabular-nums;
+}
+html.hc .rolo{-webkit-mask-image:none;mask-image:none;}
+.rolodexBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
+@media print{
+  .rolo{height:auto !important;-webkit-mask-image:none;mask-image:none;perspective:none;}
+  .rolo .woRow.roloCard{position:static;transform:none !important;opacity:1 !important;margin-bottom:6px;}
+  .roloPos{display:none;}
+}
+
 /* ---- Date and time fields on phones and tablets ----
    iPhone and iPad give date and time inputs a built-in minimum width that
    ignores width:100%, so they ran past the right edge of their card. Dropping
@@ -3042,6 +3092,10 @@ window._bootSafety = setTimeout(function(){
             <button class="hcToggleBtn fieldModeBtn" id="fieldModeBtn" onclick="toggleFieldMode()" title="Open work orders in the simplified on-site view" aria-pressed="false">Off</button>
           </div>
           <div class="settingsRow">
+            <span>Rolodex View</span>
+            <button class="hcToggleBtn rolodexBtn" id="rolodexBtn" onclick="toggleRolodex()" title="Show each list as a rolodex of cards" aria-pressed="false">Off</button>
+          </div>
+          <div class="settingsRow">
             <span>Password</span>
             <button class="editLink" id="changePwBtn" onclick="closeSettingsMenus(); openChangePassword()">Change</button>
           </div>
@@ -3205,9 +3259,19 @@ const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','
    tab. Callers pass a function that mutates the work order. Kept as one helper
    so every stage transition saves, recounts and re-renders in the same order
    rather than each call site repeating it slightly differently. */
-function advanceStage(id, mutate, message){
+/* Which sub-list a work order sits in, by name, for the admin log. */
+function stageNameOf(wo){
+  if(!wo) return 'Unknown';
+  for(const [,list] of ADMIN_STAGE_GROUPS) for(const [,label,,test] of list) if(test(wo)) return label;
+  return hasRequiredInfo(wo) ? 'Work Orders' : 'Work Orders (missing required info)';
+}
+function logStageChange(wo, before, reason){
+  const after=stageNameOf(wo);
+  if(after!==before) addAdminLog(wo, `Stage changed from ${before} to ${after}${reason?', '+reason:''}.`);
+}
+function advanceStage(id, mutate, message, reason){
   const wo=getWO(id);
-  if(wo){ mutate(wo); saveDB(DB); }
+  if(wo){ const before=stageNameOf(wo); mutate(wo); logStageChange(wo, before, reason); saveDB(DB); }
   renderTabCounts();
   renderMain();
   if(message) toast(message);
@@ -3298,6 +3362,7 @@ function goToWorkOrderInWorkflow(id){
   switchTab(workOrderCurrentTab(wo));
   setTimeout(()=>{
     const el=document.querySelector('.woRow[data-wo-id="'+id+'"]');
+    if(el && el.__rolo) el.__rolo.goToId(id);
     if(el){
       el.scrollIntoView({behavior:'smooth', block:'center'});
       el.classList.add('jumpHighlight');
@@ -4103,6 +4168,7 @@ function enterApp(u){
   ['siPass','suPass','suPass2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   switchTab(lastTab());
   syncFieldModeBtn();
+  syncRolodexBtn();
   restoreSession();
   hideBootSplash();
 }
@@ -4479,6 +4545,245 @@ function setCount(id, n){
   el.classList.add('bump');
   setTimeout(()=>el.classList.remove('bump'), 460);
 }
+
+/* =========================================================================
+   ROLODEX VIEW
+   Position is a continuous number: 0 is the first card facing you, 1.5 is
+   halfway between the second and third. A spring pulls it toward a target,
+   so a flick carries on, slows and settles with a slight, soft overshoot,
+   and a mouse wheel or trackpad moves it smoothly instead of in jumps.
+========================================================================= */
+var ROLODEX_KEY='gh_rolodex';
+var ROLODEX=false;
+try{ ROLODEX = localStorage.getItem(ROLODEX_KEY)==='1'; }catch(e){}
+var ROLO_FRONT={};   // drum key -> work order id at the front, kept across re-renders
+function toggleRolodex(){
+  ROLODEX=!ROLODEX;
+  try{ localStorage.setItem(ROLODEX_KEY, ROLODEX?'1':'0'); }catch(e){}
+  syncRolodexBtn();
+  renderMain();
+  toast(ROLODEX ? 'Rolodex view on.' : 'Rolodex view off.');
+}
+function syncRolodexBtn(){
+  const b=document.getElementById('rolodexBtn');
+  if(!b) return;
+  b.setAttribute('aria-pressed', ROLODEX?'true':'false');
+  b.classList.toggle('on', ROLODEX);
+  b.textContent = ROLODEX ? 'On' : 'Off';
+}
+function initRolodexes(root){
+  if(!ROLODEX) return;
+  (root||document).querySelectorAll('.rolo').forEach(el=>{ try{ makeRolodex(el); }catch(e){ console.error('Rolodex failed', e); } });
+}
+function makeRolodex(drum){
+  const key=drum.dataset.roloKey;
+  const cards=[...drum.querySelectorAll(':scope > .woRow')];
+  const n=cards.length;
+  if(!n) return;
+  cards.forEach(c=>c.classList.add('roloCard'));
+  const reduce=reducedMotion();
+  const STEP=24*Math.PI/180;          // angle between neighbouring cards
+  const VISIBLE=3.4;                  // cards beyond this are faded out
+
+  let R=200, stepPx=80, maxH=120;
+  // The counter sits just under the drum, outside its edge fade.
+  const pos=document.createElement('div');
+  pos.className='roloPos';
+  drum.after(pos);
+
+  function measure(){
+    maxH=0;
+    const hs=cards.map(c=>{ const h=c.offsetHeight; if(h>maxH) maxH=h; return h; });
+    R=Math.max(150, maxH*1.15);
+    stepPx=R*Math.sin(STEP);
+    // Upcoming cards stand above the front one with their names showing;
+    // cards already flipped past drop away underneath in a thinner strip.
+    const peekTop=Math.round(R*Math.sin(STEP*2.3)+16);
+    const peekBot=Math.round(R*Math.sin(STEP*1.0)+8);
+    drum.style.setProperty('--peekTop', peekTop+'px');
+    drum.style.setProperty('--peekBot', peekBot+'px');
+    drum.style.height=(maxH+peekTop+peekBot)+'px';
+    drum.style.perspectiveOrigin='50% '+(peekTop+maxH/2)+'px';
+    cards.forEach((c,i)=>{ c.style.top=(peekTop+(maxH-hs[i])/2)+'px'; });
+  }
+
+  let p=0, v=0, target=0;
+  const startId=ROLO_FRONT[key];
+  if(startId!=null){
+    const i=cards.findIndex(c=>String(c.dataset.woId)===String(startId));
+    if(i>=0){ p=target=i; }
+  }
+  const clampT=t=>Math.max(0, Math.min(n-1, t));
+  // Past either end the drum gives way less and less, like pulling against a spring.
+  const rubber=t=>{
+    if(t<0) return -(1-1/(1+(-t)*0.55))/0.55*0.6;
+    if(t>n-1){ const o=t-(n-1); return n-1+(1-1/(1+o*0.55))/0.55*0.6; }
+    return t;
+  };
+
+  let lastFront=-1;
+  function paint(){
+    const front=Math.round(clampT(p));
+    for(let i=0;i<n;i++){
+      const d=i-p, ad=Math.abs(d);
+      const c=cards[i];
+      const lim = d<0 ? 1.7 : VISIBLE;     // fewer flipped cards show below
+      if(ad>lim+0.6){ c.style.opacity='0'; c.style.visibility='hidden'; continue; }
+      c.style.visibility='';
+      const ang=d*STEP;                     // upcoming cards rise over the top
+      c.style.transform=`translate3d(0,0,${-R}px) rotateX(${ang}rad) translate3d(0,0,${R}px)`;
+      // Cards stay solid so nothing behind shows through; depth comes from a
+      // light haze laid over each card's background as it rolls away, and
+      // the drum's edge fade. They only go transparent as they leave the drum.
+      c.style.opacity=(ad>lim ? Math.max(0,(lim+0.6-ad)/0.6) : 1).toFixed(3);
+      const haze=Math.min(70, Math.round(ad*26));
+      c.style.boxShadow = ad<0.35 ? '' : `inset 0 0 0 9999px color-mix(in srgb, var(--cream) ${haze}%, transparent), 0 ${Math.round(4+ad*2)}px ${Math.round(14+ad*6)}px rgba(15,38,71,${(0.10-ad*0.02).toFixed(3)})`;
+      c.style.zIndex=String(1000-Math.round(ad*100));
+    }
+    if(front!==lastFront){
+      if(cards[lastFront]) cards[lastFront].classList.remove('front');
+      cards[front].classList.add('front');
+      cards.forEach((c,i)=>c.setAttribute('aria-selected', i===front?'true':'false'));
+      lastFront=front;
+      ROLO_FRONT[key]=cards[front].dataset.woId;
+      pos.textContent=(front+1)+' / '+n;
+    }
+  }
+
+  let raf=0, lastT=0, stiff=110, damp=17;
+  function frame(t){
+    raf=0;
+    if(!drum.isConnected) return;
+    const dt=Math.min(0.034, lastT ? (t-lastT)/1000 : 0.016);
+    lastT=t;
+    const a=stiff*(target-p)-damp*v;
+    v+=a*dt; p+=v*dt;
+    if(Math.abs(target-p)<0.0008 && Math.abs(v)<0.002){ p=target; v=0; paint(); lastT=0; return; }
+    paint();
+    raf=requestAnimationFrame(frame);
+  }
+  function run(k, c){
+    stiff=k||110; damp=c||17;
+    if(reduce){ p=target; v=0; paint(); return; }
+    if(!raf){ lastT=0; raf=requestAnimationFrame(frame); }
+  }
+  function goTo(i, k, c){ target=clampT(i); run(k, c); }
+
+  /* ---- drag and flick ---- */
+  let drag=null, suppressClick=false, pageFling=0;
+  drum.addEventListener('pointerdown', e=>{
+    if(e.button!==undefined && e.button!==0) return;
+    if(pageFling){ cancelAnimationFrame(pageFling); pageFling=0; }
+    drag={id:e.pointerId, touch:e.pointerType==='touch', y0:e.clientY, lastY:e.clientY, p0:p, raw:p, moved:false, paging:false, samples:[{t:performance.now(), y:e.clientY}]};
+    suppressClick=false;
+  });
+  drum.addEventListener('pointermove', e=>{
+    if(!drag || e.pointerId!==drag.id) return;
+    const dy=e.clientY-drag.y0;
+    if(!drag.moved){
+      if(Math.abs(dy)<6) return;
+      drag.moved=true; suppressClick=true;
+      try{ drum.setPointerCapture(e.pointerId); }catch(_){}
+      drum.classList.add('grabbing');
+      if(raf){ cancelAnimationFrame(raf); raf=0; }
+      v=0; drag.y0=e.clientY; drag.p0=p;
+    }
+    const k=stepPx*0.8;
+    drag.raw=drag.p0+(e.clientY-drag.y0)/k;
+    if(drag.touch && (drag.raw<0 || drag.raw>n-1)){
+      // Past either end on a touch screen, the same swipe carries on and
+      // scrolls the page, so a tall drum never traps the finger.
+      const bound=drag.raw<0 ? 0 : n-1;
+      window.scrollBy(0, -(e.clientY-drag.lastY));
+      drag.y0=e.clientY-(bound-drag.p0)*k;
+      drag.raw=bound; drag.paging=true;
+    } else if(drag.touch){
+      drag.paging=false;
+    }
+    drag.lastY=e.clientY;
+    p=rubber(drag.raw);
+    target=p;
+    const now=performance.now();
+    drag.samples.push({t:now, y:e.clientY});
+    while(drag.samples.length>2 && now-drag.samples[0].t>90) drag.samples.shift();
+    paint();
+  });
+  function endDrag(e){
+    if(!drag || (e && e.pointerId!==drag.id)) return;
+    const d=drag; drag=null;
+    drum.classList.remove('grabbing');
+    if(!d.moved) return;
+    const s0=d.samples[0], s1=d.samples[d.samples.length-1];
+    const dtS=Math.max(0.016,(s1.t-s0.t)/1000);
+    const vel=((s1.y-s0.y)/dtS)/(stepPx*0.8);      // cards per second
+    if(d.paging){
+      // Hand the flick to the page with the same easing-out a native scroll has.
+      let pv=-(s1.y-s0.y)/dtS, last=performance.now();
+      const step=t=>{
+        const dt=Math.min(0.034,(t-last)/1000); last=t;
+        pv*=Math.pow(0.04, dt);
+        if(Math.abs(pv)<20){ pageFling=0; return; }
+        window.scrollBy(0, pv*dt);
+        pageFling=requestAnimationFrame(step);
+      };
+      if(!reduce && Math.abs(pv)>120) pageFling=requestAnimationFrame(step);
+      v=0; goTo(Math.round(clampT(p)));
+      setTimeout(()=>{ suppressClick=false; }, 0);
+      return;
+    }
+    v=vel;
+    goTo(Math.round(clampT(p+vel*0.32)), 95, 15.5);
+    setTimeout(()=>{ suppressClick=false; }, 0);
+  }
+  drum.addEventListener('pointerup', endDrag);
+  drum.addEventListener('pointercancel', endDrag);
+
+  /* A tap on a card behind the front one rolls it forward instead of opening it. */
+  drum.addEventListener('click', e=>{
+    if(suppressClick){ e.preventDefault(); e.stopPropagation(); suppressClick=false; return; }
+    const card=e.target.closest('.roloCard');
+    if(!card) return;
+    const i=cards.indexOf(card);
+    if(i!==Math.round(clampT(p))){ e.preventDefault(); e.stopPropagation(); goTo(i); }
+  }, true);
+
+  /* ---- wheel and trackpad ---- */
+  let wheelTimer=0;
+  drum.addEventListener('wheel', e=>{
+    if(e.ctrlKey) return;
+    let dy=e.deltaY;
+    if(e.deltaMode===1) dy*=33; else if(e.deltaMode===2) dy*=400;
+    const atStart=target<=0.001 && dy<0, atEnd=target>=n-1-0.001 && dy>0;
+    if(atStart || atEnd) return;               // let the page carry on scrolling
+    e.preventDefault();
+    target=clampT(target+dy/110);
+    run(140, 19);
+    clearTimeout(wheelTimer);
+    wheelTimer=setTimeout(()=>goTo(Math.round(target), 120, 16), 130);
+  }, {passive:false});
+
+  /* ---- keyboard ---- */
+  drum.addEventListener('keydown', e=>{
+    const f=Math.round(target);
+    if(e.key==='ArrowDown'||e.key==='ArrowRight'){ e.preventDefault(); goTo(f+1); }
+    else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){ e.preventDefault(); goTo(f-1); }
+    else if(e.key==='PageDown'){ e.preventDefault(); goTo(f+5); }
+    else if(e.key==='PageUp'){ e.preventDefault(); goTo(f-5); }
+    else if(e.key==='Home'){ e.preventDefault(); goTo(0); }
+    else if(e.key==='End'){ e.preventDefault(); goTo(n-1); }
+    else if(e.key==='Enter' && e.target===drum){ e.preventDefault(); const c=cards[Math.round(clampT(p))]; if(c) c.click(); }
+  });
+
+  const api={ goToId(id){ const i=cards.findIndex(c=>String(c.dataset.woId)===String(id)); if(i>=0) goTo(i); } };
+  cards.forEach(c=>{ c.__rolo=api; });
+
+  measure(); paint();
+  if(window.ResizeObserver){
+    let w=drum.clientWidth;
+    new ResizeObserver(()=>{ if(drum.clientWidth!==w){ w=drum.clientWidth; measure(); paint(); } }).observe(drum);
+  }
+}
+
 function subGroupHTML(label, list, opts){
   opts=opts||{};
   let inner;
@@ -4486,9 +4791,15 @@ function subGroupHTML(label, list, opts){
     inner=emptyStateHTML(opts.emptyText||'Nothing here right now.',
       {icon:opts.emptyIcon, action:opts.emptyAction, style:'margin:0 0 18px;'});
   } else {
-    inner='<div>'+list.map(wo=>rowHTML(wo, opts)).join('')+'</div>';
+    inner=listBodyHTML(list, opts, ACTIVE_TAB+':'+label);
   }
   return `<h3 class="subListHeader">${label} <span class="count">${list.length}</span></h3>${inner}`;
+}
+/* A list of cards, either plain or as a rolodex drum when that view is on. */
+function listBodyHTML(list, opts, key){
+  const rows=list.map(wo=>rowHTML(wo, opts)).join('');
+  if(!ROLODEX) return '<div>'+rows+'</div>';
+  return `<div class="rolo" data-rolo-key="${esc(key)}" tabindex="0" role="listbox" aria-label="${esc(String(key).split(':').slice(1).join(':'))}">${rows}</div>`;
 }
 function renderMain(){
   const main=document.getElementById('mainArea');
@@ -4537,16 +4848,17 @@ function renderMain(){
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Surveys</h2></div></div>`;
-    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>'
+    html+= list.length ? listBodyHTML(list, {}, 'surveys:Surveys')
       : emptyStateHTML('Nothing awaiting a survey right now.', {icon:'star'});
   } else {
     const list=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
     html+=`<div class="listHeader"><div><h2>Job History</h2></div></div>`;
-    html+= list.length ? '<div>'+list.map(wo=>rowHTML(wo)).join('')+'</div>'
+    html+= list.length ? listBodyHTML(list, {}, 'jobhistory:Job History')
       : emptyStateHTML('No completed jobs on file yet.', {icon:'archive'});
   }
   main.innerHTML=html;
   applyListMotion(main);
+  initRolodexes(main);
 }
 /* Runs the entrance cascade on a freshly rendered board. Each row carries its
    own index as --i, which the stylesheet turns into a delay; the index is
@@ -4630,7 +4942,7 @@ function confirmJobComplete(id, checkboxEl){
   askYesNo('Confirm this job is complete and you\'re ready to generate an invoice?', (yes)=>{
     if(yes){
       closeModal();
-      advanceStage(id, w=>{ w.jobComplete=true; }, 'Job marked complete. Moved to Build Invoice.');
+      advanceStage(id, w=>{ w.jobComplete=true; }, 'Job marked complete. Moved to Build Invoice.', 'job marked complete');
     }
   });
 }
@@ -4886,11 +5198,10 @@ function askPresiteComplete(woId){
   askYesNo('Is this pre-site inspection complete?', (yes)=>{
     const w=getWO(woId);
     if(!w) return;
+    const before=stageNameOf(w);
     w.presiteScheduled=true;
-    if(yes){
-      w.presiteComplete=true;
-      addAdminLog(w, 'Pre-site inspection marked complete at check-out.');
-    }
+    if(yes) w.presiteComplete=true;
+    logStageChange(w, before, yes ? 'pre-site inspection marked complete at check-out' : 'pre-site answered not complete at check-out');
     saveDB(DB);
     renderTabCounts();
     renderMain();
@@ -5078,7 +5389,7 @@ function approveEstimate(id, checkboxEl){
   askYesNo('Confirm this estimate is approved? It will move to Schedule Job.', (yes)=>{
     if(yes){
       if(!getWO(id)) return;
-      advanceStage(id, w=>{ w.estimateApproved=true; }, 'Approved. Moved to Schedule Job.');
+      advanceStage(id, w=>{ w.estimateApproved=true; }, 'Approved. Moved to Schedule Job.', 'estimate approved');
     }
   });
 }
@@ -5093,7 +5404,7 @@ function declineEstimate(id, checkboxEl){
   askYesNo('Confirm this job is not proceeding? It will move to Job History.', (yes)=>{
     if(yes){
       if(!getWO(id)) return;
-      advanceStage(id, w=>{ w.estimateDeclined=true; w.movedToHistoryAt=Date.now(); }, 'Job declined. Moved to Job History.');
+      advanceStage(id, w=>{ w.estimateDeclined=true; w.movedToHistoryAt=Date.now(); }, 'Job declined. Moved to Job History.', 'estimate declined');
     }
   });
 }
@@ -5520,6 +5831,8 @@ function deleteScheduleDate(woId, dateId){
   if(!wo) return;
   askYesNo('Remove this scheduled date? This does not remove it from any calendar it was already added to.', (yes)=>{
     if(yes){
+      const gone=(wo.scheduleDates||[]).find(d=>d.id===dateId);
+      if(gone) addAdminLog(wo, `Removed a ${gone.type==='presite'?'pre-site':'whole job'} scheduled date: ${formatDateDisplay(gone.startDate)}${gone.multiDay?' to '+formatDateDisplay(gone.endDate):''} @ ${formatTime12(gone.startTime)}-${formatTime12(gone.endTime)}.`);
       wo.scheduleDates=(wo.scheduleDates||[]).filter(d=>d.id!==dateId);
       saveDB(DB);
       renderWorkOrderModal(woId);
@@ -6395,6 +6708,7 @@ function submitFieldNote(id){
     toast('Enter some note text before adding it.');
     return;
   }
+  const stageBefore=stageNameOf(wo);
   addNote(wo, type, text, followUp);
   let movedMsg=null;
   if(type==='SCHD PRESITE' && inPresiteIncompleteList(wo)){
@@ -6411,6 +6725,7 @@ function submitFieldNote(id){
       ? 'Job closed out. Staying in Work Orders until its last scheduled date passes.'
       : 'Moved to Job History.';
   }
+  logStageChange(wo, stageBefore, type+' note added');
   saveDB(DB);
   FIELD_NOTE_OPEN=false;
   FIELD_NOTE_DRAFT={text:'', follow:''};
@@ -7875,6 +8190,8 @@ function saveCustomer(id){
     return;
   }
   const wasEligible=inPresiteList(wo);
+  const custBefore=JSON.parse(JSON.stringify(wo.customer||{}));
+  const isNew=String(NEW_WO_PENDING)===String(id);
   ['name','phone','altPhone','altPhoneName','altPhoneNote','email','address','homeownerName','homeownerPhone'].forEach(k=>{
     const field=document.getElementById('cf_'+k);
     wo.customer[k]= field ? field.value.trim() : (wo.customer[k]||'');
@@ -7886,6 +8203,7 @@ function saveCustomer(id){
   wo.customer.altPhone = wo.customer.altPhone ? formatPhoneNumber(wo.customer.altPhone) : '';
   wo.customer.homeownerPhone = wo.customer.homeownerPhone ? formatPhoneNumber(wo.customer.homeownerPhone) : '';
   if(String(NEW_WO_PENDING)===String(id)) NEW_WO_PENDING=null;
+  logCustomerChanges(wo, custBefore, isNew);
   saveDB(DB);
   const nowEligible=inPresiteList(wo);
   WO_CUST_EDIT=false;
@@ -7894,6 +8212,19 @@ function saveCustomer(id){
   if(!wasEligible && nowEligible){ toast('Required info complete. Job added to Pre-Site Inspections.'); }
   renderMain();
   warnIfDuplicateCustomer(id);
+}
+const CUST_FIELD_LABELS={name:'Name',phone:'Primary phone',email:'Email',address:'Address',altPhone:'Alternate phone',
+  altPhoneName:'Alternate contact name',altPhoneNote:'Alternate contact note',homeownerName:'Homeowner name',homeownerPhone:'Homeowner phone'};
+function logCustomerChanges(wo, before, isNew){
+  if(isNew){ addAdminLog(wo, 'Work order created for '+(wo.customer.name||'None')+'.'); return; }
+  const show=v=>{ v=String(v||'').trim(); return v ? '"'+(v.length>60?v.slice(0,57)+'...':v)+'"' : 'blank'; };
+  const changes=[];
+  Object.keys(CUST_FIELD_LABELS).forEach(k=>{
+    if(String(before[k]||'').trim()!==String(wo.customer[k]||'').trim())
+      changes.push(`${CUST_FIELD_LABELS[k]} ${show(before[k])} to ${show(wo.customer[k])}`);
+  });
+  if(JSON.stringify(before.access||{})!==JSON.stringify(wo.customer.access||{})) changes.push('site access details updated');
+  if(changes.length) addAdminLog(wo, 'Customer info edited: '+changes.join('; ')+'.');
 }
 /* Raised once per work order, the first time its customer details land on an
    existing customer. It is a warning, not a gate: the second job at the same
@@ -8032,6 +8363,17 @@ function saveJobDetailsEdit(id){
     disclaimers: JD_EDIT.disclaimers.filter(t=>t && t.trim()),
     exclusions: (JD_EDIT.exclusions||[]).filter(t=>t && t.trim())
   };
+  {
+    const prev=wo.jobDetails||{};
+    const names={labor:'labor',materials:'materials',tools:'required tools',issues:'potential issues',exclusions:'exclusions',disclaimers:'disclaimers'};
+    const parts=[];
+    if(String(prev.description||'')!==String(cleaned.description||'')) parts.push('description');
+    Object.keys(names).forEach(k=>{
+      const a=prev[k]||[], b=cleaned[k]||[];
+      if(JSON.stringify(a)!==JSON.stringify(b)) parts.push(names[k]+(a.length!==b.length?` (${a.length} to ${b.length} items)`:''));
+    });
+    if(parts.length) addAdminLog(wo, 'Job details edited: '+parts.join(', ')+'.');
+  }
   wo.jobDetails=cleaned;
   saveDB(DB);
   WO_JOB_EDIT=false;
@@ -8467,7 +8809,9 @@ function setDocTag(woId, docId, tag){
   if(!wo) return;
   const d=getDoc(wo, docId);
   if(!d) return;
+  const oldTag=d.tag||'';
   d.tag = DOC_TAGS.includes(tag) ? tag : '';
+  if(oldTag!==d.tag) addAdminLog(wo, `Photo "${d.name}" label changed from ${oldTag||'none'} to ${d.tag||'none'}.`);
   saveDB(DB);
   renderWorkOrderModal(woId);
   toast(d.tag ? `Labeled "${d.tag}".` : 'Label removed.');
@@ -8763,6 +9107,8 @@ async function handleDocUpload(id, inputEl){
   }
   if(addedCount){
     LAST_DOC_ERROR=null;
+    const added=(wo.docs||[]).slice(-addedCount).map(d=>'"'+d.name+'"');
+    addAdminLog(wo, `Uploaded ${addedCount} file${addedCount>1?'s':''}: ${added.join(', ')}.`);
     await purgeStorageIfOverCap();
     saveDB(DB);
     renderWorkOrderModal(id);
@@ -8840,6 +9186,7 @@ function renameDoc(id, docId){
   if(!d) return;
   const newName=prompt('Rename file:', d.name);
   if(newName===null || !newName.trim()) return;
+  if(newName.trim()!==d.name) addAdminLog(wo, `Renamed file "${d.name}" to "${newName.trim()}".`);
   d.name=newName.trim();
   saveDB(DB); renderWorkOrderModal(id);
   toast('File renamed.');
@@ -8854,6 +9201,7 @@ function deleteDoc(id, docId){
       DB.storageUsedBytes=Math.max(0, (DB.storageUsedBytes||0)-(d.size||0));
     }
     wo.docs=(wo.docs||[]).filter(x=>x.id!==docId);
+    addAdminLog(wo, `Deleted file "${d.name||'Untitled'}".`);
     saveDB(DB); renderWorkOrderModal(id);
     toast('File deleted.');
   });
@@ -8869,8 +9217,8 @@ function adminTabHTML(wo){
       ${adminStageButtonsHTML(wo.id)}
     </div>
     <h4 style="margin-top:14px;">Duplicate</h4>
-    <div class="btnRow" style="flex-wrap:wrap;">
-      <button class="btn secondary" onclick="adminDuplicateWorkOrder(${wo.id})">Duplicate Work Order</button>
+    <div class="adminPillRow">
+      <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id})">Duplicate Work Order</button>
     </div>
     <h4 style="margin-top:14px;">Admin Log</h4>
     ${logHTML}
@@ -8894,6 +9242,8 @@ function adminDuplicateWorkOrder(id){
     checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
+  addAdminLog(wo, 'Work order created as a duplicate of #'+woCode(src)+'.');
+  addAdminLog(src, 'Duplicated into new work order #'+woCode(wo)+'.');
   saveDB(DB);
   renderTabCounts(); renderMain();
   openWorkOrder(newId);
@@ -8923,6 +9273,7 @@ function adminStageButtonsHTML(id){
 }
 function adminSetStage(id, target){
   const wo=getWO(id);
+  const stageBefore=stageNameOf(wo);
   // Every stage past Pre-Site Complete implies the inspection happened.
   wo.presiteComplete = !(target==='presite' || target==='presitescheduled');
   if(target==='presite'){
@@ -8969,7 +9320,7 @@ function adminSetStage(id, target){
     wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
     wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=Date.now();
   }
-  addAdminLog(wo, `Overrode workflow, forced job to stage: ${adminStageLabel(target)}`);
+  addAdminLog(wo, `Overrode workflow, forced job from ${stageBefore} to ${adminStageLabel(target)}.`);
   saveDB(DB);
   renderWorkOrderModal(id);
   renderTabCounts(); renderMain();
@@ -9067,6 +9418,7 @@ function submitNote(id){
     toast('Enter some note text before adding it.');
     return;
   }
+  const stageBefore=stageNameOf(wo);
   addNote(wo, type, text, followUp);
   clearNoteDraft(id);
   let movedMsg=null;
@@ -9084,6 +9436,7 @@ function submitNote(id){
       ? 'Job closed out. Staying in Work Orders until its last scheduled date passes.'
       : 'Moved to Job History.';
   }
+  logStageChange(wo, stageBefore, type+' note added');
   saveDB(DB);
   renderWorkOrderModal(id);
   renderTabCounts(); renderMain();
@@ -11873,7 +12226,8 @@ function psFinish(){
   saveDB(DB);
   PRESITE_STATE=null;
   closeModal();
-  advanceStage(wo.id, w=>{ w.presiteDone=true; }, 'Pre-site saved. Job moved to Estimates.');
+  addAdminLog(wo, 'Pre-site walkthrough saved. Estimate total '+psMoney(T.grand)+'.');
+  advanceStage(wo.id, w=>{ w.presiteDone=true; }, 'Pre-site saved. Job moved to Estimates.', 'pre-site walkthrough saved');
 }
 
 /* =========================================================================
@@ -11940,9 +12294,9 @@ function closeSplit(kind, id){
       closeModal();
       if(!yes){ saveDB(DB); renderTabCounts(); renderMain(); return; }
       if(kind==='estimate'){
-        advanceStage(id, w=>{ w.estimateDone=true; }, 'Estimate saved. Moved to Pending Approval.');
+        advanceStage(id, w=>{ w.estimateDone=true; }, 'Estimate saved. Moved to Pending Approval.', 'estimate marked complete');
       } else {
-        advanceStage(id, w=>{ w.invoiceDone=true; }, 'Invoice complete. Moved to Surveys.');
+        advanceStage(id, w=>{ w.invoiceDone=true; }, 'Invoice complete. Moved to Surveys.', 'invoice marked complete');
       }
     }
   );
