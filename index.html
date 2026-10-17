@@ -27,6 +27,23 @@
   --red-lite:#fff0ef; --red-liteb:#e8968d;
   --yellow:#fff1c4; --yellowb:#a5710a; --yellow-bold:#ffe08a;
   --green:#d2f2df; --greenb:#1f8a55; --green-bold:#a8ecc4;
+  /* In Progress: a paler green than Scheduled, the same step Pre-Site Complete takes off Pre-Site Scheduled. */
+  --green-lite:#ecfaf2; --green-liteb:#7cc9a0;
+  /* Job stage colours, one tint and one rail per sub-list. Pre-Site runs
+     bold red, coral, light orange; Estimates amber then light yellow; In
+     Progress bold green, green, seafoam; Invoices deep blue; Surveys
+     periwinkle. Kept apart from --red/--green etc. so alerts and buttons
+     that use those are unaffected. */
+  --s-pi:#ffb3b3; --s-pi-b:#c0392b;
+  --s-ps:#ffd0c2; --s-ps-b:#de5a3a;
+  --s-pc:#ffe5c9; --s-pc-b:#ec9a45;
+  --s-be:#ffd77e; --s-be-b:#cf8306;
+  --s-pa:#fff3bd; --s-pa-b:#d9b62e;
+  --s-sj:#a8ecc4; --s-sj-b:#1f8a55;
+  --s-js:#d0f0dc; --s-js-b:#36a066;
+  --s-ip:#d3f4ec; --s-ip-b:#3bb89a;
+  --s-bi:#aec4f0; --s-bi-b:#1a3c8c;
+  --s-sv:#e0e2fb; --s-sv-b:#7d82db;
   --blue:#d8e6ff; --blueb:#1f5aa8; --blue-bold:#aecdfa;
   --grey:#e9edf2; --greyb:#5f6e87;
   /* Chartreuse sits outside the status palette on purpose: the schedule strip
@@ -69,7 +86,7 @@
      progression greens (--green / --greenb) mean "this stage of the
      lifecycle", while this means "a human is physically on the job right
      now", so it must not read as another shade of the same thing. */
-  --neon:#00ff7a; --neon-rail:#00e36c; --neon-rgb:0,255,122;
+  --neon:#2ff5c8; --neon-rail:#1fdcb0; --neon-rgb:47,245,200;
 
   /* ---- Surface depth ----
      Three named levels, so a panel never has to guess which grey it is.
@@ -123,6 +140,17 @@ html.dark{
   --red-lite:#2a1d24; --red-liteb:#d99a92;
   --yellow:#372f19; --yellowb:#f3c65c; --yellow-bold:#4a3f1e;
   --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
+  --green-lite:#16261e; --green-liteb:#92cfae;
+  --s-pi:#4b2733; --s-pi-b:#ff8f7d;
+  --s-ps:#45292a; --s-ps-b:#ff9f7c;
+  --s-pc:#3b2c1f; --s-pc-b:#f5b77a;
+  --s-be:#4a3916; --s-be-b:#f2b13c;
+  --s-pa:#36321c; --s-pa-b:#ecd67a;
+  --s-sj:#1a4229; --s-sj-b:#4fd48a;
+  --s-js:#14321f; --s-js-b:#69d295;
+  --s-ip:#11312c; --s-ip-b:#62dcc1;
+  --s-bi:#1c2f5e; --s-bi-b:#7fa6ff;
+  --s-sv:#272a4f; --s-sv-b:#afb3ff;
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
   --chartreuse:#1e2a10; --chartreuse-ink:#b7e254; --chartreuse-line:#3a4d1c;
@@ -157,6 +185,17 @@ html.hc{
   --red-lite:#ffe3e3; --red-liteb:#c43c3c;
   --yellow:#ffe89a; --yellowb:#6b5400; --yellow-bold:#ffcf3d;
   --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
+  --green-lite:#dcf6e6; --green-liteb:#2f8a5a;
+  --s-pi:#ff8f8f; --s-pi-b:#a30000;
+  --s-ps:#ffb59c; --s-ps-b:#b5370e;
+  --s-pc:#ffd3a6; --s-pc-b:#a35200;
+  --s-be:#ffcf3d; --s-be-b:#7a4f00;
+  --s-pa:#fff09e; --s-pa-b:#6b5400;
+  --s-sj:#79e0a2; --s-sj-b:#0b5c34;
+  --s-js:#b3ecc8; --s-js-b:#13703f;
+  --s-ip:#a6efdc; --s-ip-b:#0a6652;
+  --s-bi:#87a8ec; --s-bi-b:#0a2a70;
+  --s-sv:#c9ccf7; --s-sv-b:#353aa3;
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
   --chartreuse:#eaffb3; --chartreuse-ink:#2d4700; --chartreuse-line:#000000;
@@ -164,8 +203,8 @@ html.hc{
   --cyan:#c4f1f7; --cyan-ink:#004d59;
   --phone-green:#c3edc4; --phone-green-ink:#14521a;
   --yellow-lite:#fff9e4;
-  /* High contrast trades the glow for a heavy, unambiguous green rail. */
-  --neon:#005c2a; --neon-rail:#005c2a; --neon-rgb:0,92,42;
+  /* High contrast trades the glow for a heavy, unambiguous seafoam rail. */
+  --neon:#00604c; --neon-rail:#00604c; --neon-rgb:0,96,76;
   --notice:#fff4d6; --notice-line:#6b5400; --notice-ink:#000000;
   --well:#ffffff; --field-ro:#ffffff; --accent-b:#0a3a86; --accent-b-soft:#dbe8ff;
   --sh-1:none; --sh-2:none; --sh-3:none; --sh-4:none;
@@ -188,6 +227,17 @@ html.dark.hc{
   --red-lite:#2e0a0a; --red-liteb:#ffbab3;
   --yellow:#3d3000; --yellowb:#ffd54a; --yellow-bold:#584600;
   --green:#00331d; --greenb:#63f0a6; --green-bold:#004d2c;
+  --green-lite:#00200f; --green-liteb:#a6f5c9;
+  --s-pi:#6b1212; --s-pi-b:#ff9a90;
+  --s-ps:#5a200f; --s-ps-b:#ffad8c;
+  --s-pc:#4a2a00; --s-pc-b:#ffc98a;
+  --s-be:#584600; --s-be-b:#ffc94a;
+  --s-pa:#3d3600; --s-pa-b:#fff08a;
+  --s-sj:#004d2c; --s-sj-b:#63f0a6;
+  --s-js:#00331d; --s-js-b:#7af5b4;
+  --s-ip:#003a30; --s-ip-b:#6ff5d8;
+  --s-bi:#00266b; --s-bi-b:#8fb3ff;
+  --s-sv:#1c1f55; --s-sv-b:#c3c6ff;
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
   --grey:#242424; --greyb:#e0e0e0;
   --chartreuse:#1a2600; --chartreuse-ink:#d6ff6d; --chartreuse-line:#ffffff;
@@ -195,7 +245,7 @@ html.dark.hc{
   --cyan:#002630; --cyan-ink:#8ef0ff;
   --phone-green:#02330a; --phone-green-ink:#7bf08a;
   --yellow-lite:#463800;
-  --neon:#5eff9f; --neon-rail:#5eff9f; --neon-rgb:94,255,159;
+  --neon:#62ffdb; --neon-rail:#62ffdb; --neon-rgb:98,255,219;
   --notice:#332600; --notice-line:#ffd54a; --notice-ink:#ffeab4;
   --well:#000000; --field-ro:#000000; --accent-b:#93bdff; --accent-b-soft:#001f4d;
   --sh-1:none; --sh-2:none; --sh-3:none; --sh-4:none;
@@ -437,15 +487,16 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 /* Stage colours here are the spine and border only. The tint across the card
    is handled by the stage meter further down, which sizes the wash by how far
    along the job is rather than giving every stage the same width. */
-.woRow.st-red{border-left-color:var(--redb);}
-.woRow.st-red-lite{border-left-color:var(--red-liteb);}
-.woRow.st-red-bold{border-color:var(--redb);border-left-color:var(--redb);border-left-width:8px;}
-.woRow.st-yellow{border-left-color:var(--yellowb);}
-.woRow.st-yellow-bold{border-color:var(--yellowb);border-left-color:var(--yellowb);border-left-width:8px;}
-.woRow.st-green{border-left-color:var(--greenb);}
-.woRow.st-green-bold{border-color:var(--greenb);border-left-color:var(--greenb);border-left-width:8px;}
-.woRow.st-blue{border-left-color:var(--blueb);}
-.woRow.st-blue-bold{border-color:var(--blueb);border-left-color:var(--blueb);border-left-width:8px;}
+.woRow.st-red{border-left-color:var(--s-ps-b);}
+.woRow.st-red-lite{border-left-color:var(--s-pc-b);}
+.woRow.st-red-bold{border-color:var(--s-pi-b);border-left-color:var(--s-pi-b);border-left-width:8px;}
+.woRow.st-yellow{border-left-color:var(--s-pa-b);}
+.woRow.st-yellow-bold{border-color:var(--s-be-b);border-left-color:var(--s-be-b);border-left-width:8px;}
+.woRow.st-green{border-left-color:var(--s-js-b);}
+.woRow.st-green-lite{border-left-color:var(--s-ip-b);}
+.woRow.st-green-bold{border-color:var(--s-sj-b);border-left-color:var(--s-sj-b);border-left-width:8px;}
+.woRow.st-blue{border-left-color:var(--s-sv-b);}
+.woRow.st-blue-bold{border-color:var(--s-bi-b);border-left-color:var(--s-bi-b);border-left-width:8px;}
 .woRow.st-grey{border-left-color:var(--greyb);}
 /* The bold tints are saturated enough that the default muted grey loses
    contrast against them, darken the supporting text on those rows so a
@@ -475,16 +526,17 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
   border:1.5px solid transparent;
 }
 /* needs doing, solid */
-.tag.pending{background:var(--redb);color:#fff;}
-.tag.build-est{background:var(--yellowb);color:#fff;}
-.tag.go{background:var(--greenb);color:#fff;}
-.tag.build-inv{background:var(--blueb);color:#fff;}
+.tag.pending{background:var(--s-pi-b);color:#fff;}
+.tag.build-est{background:var(--s-be-b);color:#fff;}
+.tag.go{background:var(--s-sj-b);color:#fff;}
+.tag.build-inv{background:var(--s-bi-b);color:#fff;}
 /* in flight, outlined */
-.tag.sched{background:var(--red);color:var(--redb);border-color:var(--redb);}
-.tag.presite-done{background:var(--red-lite);color:var(--redb);border-color:var(--red-liteb);}
-.tag.awaiting-approval{background:var(--yellow);color:var(--yellowb);border-color:var(--yellowb);}
-.tag.in-prog{background:var(--green);color:var(--greenb);border-color:var(--greenb);}
-.tag.survey{background:var(--blue);color:var(--blueb);border-color:var(--blueb);}
+.tag.sched{background:var(--s-ps);color:color-mix(in srgb,var(--s-ps-b) 75%,var(--ink));border-color:var(--s-ps-b);}
+.tag.presite-done{background:var(--s-pc);color:color-mix(in srgb,var(--s-pc-b) 55%,var(--ink));border-color:var(--s-pc-b);}
+.tag.awaiting-approval{background:var(--s-pa);color:color-mix(in srgb,var(--s-pa-b) 50%,var(--ink));border-color:var(--s-pa-b);}
+.tag.job-sched{background:var(--s-js);color:color-mix(in srgb,var(--s-js-b) 75%,var(--ink));border-color:var(--s-js-b);}
+.tag.in-prog{background:var(--s-ip);color:color-mix(in srgb,var(--s-ip-b) 70%,var(--ink));border-color:var(--s-ip-b);}
+.tag.survey{background:var(--s-sv);color:color-mix(in srgb,var(--s-sv-b) 70%,var(--ink));border-color:var(--s-sv-b);}
 /* closed */
 .tag.hist{background:var(--grey);color:var(--greyb);border-color:var(--line);}
 .tag.visit{background:var(--orange);color:#fff;}
@@ -881,24 +933,26 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 }
 .stageBtn::before{content:'';position:absolute;left:4px;top:5px;bottom:5px;width:3px;border-radius:3px;background:var(--line);}
 .stageBtn:hover{box-shadow:var(--sh-2);transform:translateY(-1px);}
-.stageBtn.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 80%);}
-.stageBtn.st-red::before{background:var(--redb);}
-.stageBtn.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 95%);border-color:var(--redb);}
-.stageBtn.st-red-bold::before{background:var(--redb);width:4px;}
-.stageBtn.st-red-lite{background-image:linear-gradient(90deg,var(--red-lite),var(--paper) 80%);}
-.stageBtn.st-red-lite::before{background:var(--red-liteb);}
-.stageBtn.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 80%);}
-.stageBtn.st-yellow::before{background:var(--yellowb);}
-.stageBtn.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 95%);border-color:var(--yellowb);}
-.stageBtn.st-yellow-bold::before{background:var(--yellowb);width:4px;}
-.stageBtn.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 80%);}
-.stageBtn.st-green::before{background:var(--greenb);}
-.stageBtn.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 95%);border-color:var(--greenb);}
-.stageBtn.st-green-bold::before{background:var(--greenb);width:4px;}
-.stageBtn.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 80%);}
-.stageBtn.st-blue::before{background:var(--blueb);}
-.stageBtn.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 95%);border-color:var(--blueb);}
-.stageBtn.st-blue-bold::before{background:var(--blueb);width:4px;}
+.stageBtn.st-red{background-image:linear-gradient(90deg,var(--s-ps),var(--paper) 80%);}
+.stageBtn.st-red::before{background:var(--s-ps-b);}
+.stageBtn.st-red-bold{background-image:linear-gradient(90deg,var(--s-pi),var(--paper) 95%);border-color:var(--s-pi-b);}
+.stageBtn.st-red-bold::before{background:var(--s-pi-b);width:4px;}
+.stageBtn.st-red-lite{background-image:linear-gradient(90deg,var(--s-pc),var(--paper) 80%);}
+.stageBtn.st-red-lite::before{background:var(--s-pc-b);}
+.stageBtn.st-yellow{background-image:linear-gradient(90deg,var(--s-pa),var(--paper) 80%);}
+.stageBtn.st-yellow::before{background:var(--s-pa-b);}
+.stageBtn.st-yellow-bold{background-image:linear-gradient(90deg,var(--s-be),var(--paper) 95%);border-color:var(--s-be-b);}
+.stageBtn.st-yellow-bold::before{background:var(--s-be-b);width:4px;}
+.stageBtn.st-green{background-image:linear-gradient(90deg,var(--s-js),var(--paper) 80%);}
+.stageBtn.st-green::before{background:var(--s-js-b);}
+.stageBtn.st-green-lite{background-image:linear-gradient(90deg,var(--s-ip),var(--paper) 80%);}
+.stageBtn.st-green-lite::before{background:var(--s-ip-b);}
+.stageBtn.st-green-bold{background-image:linear-gradient(90deg,var(--s-sj),var(--paper) 95%);border-color:var(--s-sj-b);}
+.stageBtn.st-green-bold::before{background:var(--s-sj-b);width:4px;}
+.stageBtn.st-blue{background-image:linear-gradient(90deg,var(--s-sv),var(--paper) 80%);}
+.stageBtn.st-blue::before{background:var(--s-sv-b);}
+.stageBtn.st-blue-bold{background-image:linear-gradient(90deg,var(--s-bi),var(--paper) 95%);border-color:var(--s-bi-b);}
+.stageBtn.st-blue-bold::before{background:var(--s-bi-b);width:4px;}
 .stageBtn.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 80%);}
 .stageBtn.st-grey::before{background:var(--greyb);}
 /* The stage the job is in now: ringed and not clickable. */
@@ -1115,8 +1169,8 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
 
 /* ---- Check-In / Check-Out (In Progress NAV tab) ----
    A crew currently on site is the single most time-sensitive thing on the
-   board, so it keeps a live pulse, retuned from raw neon to a saturated
-   emerald that still reads instantly but sits inside the palette. */
+   board, so it keeps a live pulse, in a bright seafoam that
+   matches the In Progress stage colour and still reads instantly. */
 .woRow.checkedInGlow{
   border-color:var(--neon-rail);border-left-color:var(--neon-rail);
   box-shadow:0 0 0 2px rgba(var(--neon-rgb),.55), 0 0 20px 3px rgba(var(--neon-rgb),.45), var(--sh-2);
@@ -2517,32 +2571,34 @@ html.hc body{background-image:none;}
   border-radius:4px;background:var(--line);
   transition:width var(--t-fast) var(--e-out),background var(--t-fast) var(--e-out);
 }
-.woRow.st-red::before{background:var(--redb);}
-.woRow.st-red-lite::before{background:var(--red-liteb);}
-.woRow.st-yellow::before{background:var(--yellowb);}
-.woRow.st-green::before{background:var(--greenb);}
-.woRow.st-blue::before{background:var(--blueb);}
+.woRow.st-red::before{background:var(--s-ps-b);}
+.woRow.st-red-lite::before{background:var(--s-pc-b);}
+.woRow.st-yellow::before{background:var(--s-pa-b);}
+.woRow.st-green::before{background:var(--s-js-b);}
+.woRow.st-green-lite::before{background:var(--s-ip-b);}
+.woRow.st-blue::before{background:var(--s-sv-b);}
 .woRow.st-grey::before{background:var(--greyb);}
-.woRow.st-red-bold::before{background:var(--redb);width:6px;}
-.woRow.st-yellow-bold::before{background:var(--yellowb);width:6px;}
-.woRow.st-green-bold::before{background:var(--greenb);width:6px;}
-.woRow.st-blue-bold::before{background:var(--blueb);width:6px;}
-.woRow.st-red-bold{border-color:var(--redb);}
-.woRow.st-yellow-bold{border-color:var(--yellowb);}
-.woRow.st-green-bold{border-color:var(--greenb);}
-.woRow.st-blue-bold{border-color:var(--blueb);}
+.woRow.st-red-bold::before{background:var(--s-pi-b);width:6px;}
+.woRow.st-yellow-bold::before{background:var(--s-be-b);width:6px;}
+.woRow.st-green-bold::before{background:var(--s-sj-b);width:6px;}
+.woRow.st-blue-bold::before{background:var(--s-bi-b);width:6px;}
+.woRow.st-red-bold{border-color:var(--s-pi-b);}
+.woRow.st-yellow-bold{border-color:var(--s-be-b);}
+.woRow.st-green-bold{border-color:var(--s-sj-b);}
+.woRow.st-blue-bold{border-color:var(--s-bi-b);}
 /* Proportional tint. Bold states run the wash further and start it heavier,
    which is what keeps "waiting on me" distinct from "waiting on them". */
-.woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 42%);}
-.woRow.st-red-lite{background-image:linear-gradient(90deg,var(--red-lite),var(--paper) 42%);}
-.woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 42%);}
-.woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 42%);}
-.woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 42%);}
+.woRow.st-red{background-image:linear-gradient(90deg,var(--s-ps),var(--paper) 42%);}
+.woRow.st-red-lite{background-image:linear-gradient(90deg,var(--s-pc),var(--paper) 42%);}
+.woRow.st-yellow{background-image:linear-gradient(90deg,var(--s-pa),var(--paper) 42%);}
+.woRow.st-green{background-image:linear-gradient(90deg,var(--s-js),var(--paper) 42%);}
+.woRow.st-green-lite{background-image:linear-gradient(90deg,var(--s-ip),var(--paper) 42%);}
+.woRow.st-blue{background-image:linear-gradient(90deg,var(--s-sv),var(--paper) 42%);}
 .woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 42%);}
-.woRow.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 58%);border-color:var(--redb);}
-.woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 58%);border-color:var(--yellowb);}
-.woRow.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 58%);border-color:var(--greenb);}
-.woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 58%);border-color:var(--blueb);}
+.woRow.st-red-bold{background-image:linear-gradient(90deg,var(--s-pi),var(--paper) 58%);border-color:var(--s-pi-b);}
+.woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--s-be),var(--paper) 58%);border-color:var(--s-be-b);}
+.woRow.st-green-bold{background-image:linear-gradient(90deg,var(--s-sj),var(--paper) 58%);border-color:var(--s-sj-b);}
+.woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--s-bi),var(--paper) 58%);border-color:var(--s-bi-b);}
 /* The neon rail wins over the stage colour: a crew on site outranks whatever
    lifecycle stage the job happens to be sitting in. */
 .woRow.checkedInGlow{border-left:1px solid var(--neon-rail);}
@@ -2585,17 +2641,18 @@ html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
   .woRow{padding-left:26px;border-left-width:1px;}
   .woRow .woMeta{flex-direction:row;align-items:center;text-align:left;padding-left:0;flex-wrap:wrap;}
   .woRow .woName{font-size:1.35em;}
-  .woRow.st-red,.woRow.st-red-lite,.woRow.st-yellow,.woRow.st-green,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
-  .woRow.st-red{background-image:linear-gradient(90deg,var(--red),var(--paper) 72%);}
-  .woRow.st-red-lite{background-image:linear-gradient(90deg,var(--red-lite),var(--paper) 72%);}
-  .woRow.st-yellow{background-image:linear-gradient(90deg,var(--yellow),var(--paper) 72%);}
-  .woRow.st-green{background-image:linear-gradient(90deg,var(--green),var(--paper) 72%);}
-  .woRow.st-blue{background-image:linear-gradient(90deg,var(--blue),var(--paper) 72%);}
+  .woRow.st-red,.woRow.st-red-lite,.woRow.st-yellow,.woRow.st-green,.woRow.st-green-lite,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
+  .woRow.st-red{background-image:linear-gradient(90deg,var(--s-ps),var(--paper) 72%);}
+  .woRow.st-red-lite{background-image:linear-gradient(90deg,var(--s-pc),var(--paper) 72%);}
+  .woRow.st-yellow{background-image:linear-gradient(90deg,var(--s-pa),var(--paper) 72%);}
+  .woRow.st-green{background-image:linear-gradient(90deg,var(--s-js),var(--paper) 72%);}
+  .woRow.st-green-lite{background-image:linear-gradient(90deg,var(--s-ip),var(--paper) 72%);}
+  .woRow.st-blue{background-image:linear-gradient(90deg,var(--s-sv),var(--paper) 72%);}
   .woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 72%);}
-  .woRow.st-red-bold{background-image:linear-gradient(90deg,var(--red-bold),var(--paper) 88%);}
-  .woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--yellow-bold),var(--paper) 88%);}
-  .woRow.st-green-bold{background-image:linear-gradient(90deg,var(--green-bold),var(--paper) 88%);}
-  .woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--blue-bold),var(--paper) 88%);}
+  .woRow.st-red-bold{background-image:linear-gradient(90deg,var(--s-pi),var(--paper) 88%);}
+  .woRow.st-yellow-bold{background-image:linear-gradient(90deg,var(--s-be),var(--paper) 88%);}
+  .woRow.st-green-bold{background-image:linear-gradient(90deg,var(--s-sj),var(--paper) 88%);}
+  .woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--s-bi),var(--paper) 88%);}
   /* Replace the rotated single-guillemet with a real chevron. The old one was
      a text glyph flipped 180 degrees, which rendered at a different weight
      and vertical offset in every font it landed in. */
@@ -3303,7 +3360,7 @@ function setWoSort(val){
 }
 /* Progression order matches stage: bold red -> red -> bold yellow -> yellow
    -> bold green -> green -> bold blue -> blue (earliest to latest stage) */
-const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','st-yellow','st-green-bold','st-green','st-blue-bold','st-blue','st-grey'];
+const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','st-yellow','st-green-bold','st-green','st-green-lite','st-blue-bold','st-blue','st-grey'];
 /* Applies a stage change, saves, then re-renders so the job moves into its new
    tab. Callers pass a function that mutates the work order. Kept as one helper
    so every stage transition saves, recounts and re-renders in the same order
@@ -3397,6 +3454,7 @@ function workOrderCurrentTab(wo){
   if(inSurveysList(wo)) return 'surveys';
   if(inBuildInvoiceList(wo)) return 'invoices';
   if(inInvoiceInProgressList(wo)) return 'inprogress';
+  if(inJobScheduledList(wo)) return 'inprogress';
   if(inScheduleJobList(wo)) return 'inprogress';
   if(inEstimatePendingApprovalList(wo)) return 'estimates';
   if(inBuildEstimateList(wo)) return 'estimates';
@@ -3830,6 +3888,18 @@ function normalizeWO(wo){
   if(wo.estimateDeclined===undefined) wo.estimateDeclined=false;
   if(wo.jobScheduled===undefined) wo.jobScheduled=!!wo.invoiceApproved; // migrate from prior workflow version
   if(wo.jobComplete===undefined) wo.jobComplete=false;
+  /* Scheduled came in after In Progress. A job already past Schedule Job
+     counts as started unless every Whole Job date on it is still ahead. */
+  if(wo.jobStarted===undefined){
+    if(!wo.jobScheduled) wo.jobStarted=false;
+    else if(wo.jobComplete || wo.invoiceDone || wo.movedToHistoryAt) wo.jobStarted=true;
+    else{
+      const today=isoToday();
+      const whole=(wo.scheduleDates||[]).filter(d=>d.type!=='presite' && d.startDate);
+      wo.jobStarted = !whole.length || whole.some(d=>d.startDate<=today);
+    }
+  }
+  if(wo.jobStartHold===undefined) wo.jobStartHold=null;
   if(wo.movedToHistoryAt===undefined) wo.movedToHistoryAt=null;
   if(wo.checkIn===undefined) wo.checkIn=null;
   if(wo.checkOut===undefined) wo.checkOut=null;
@@ -4345,7 +4415,8 @@ function statusClass(wo){
   if(wo.movedToHistoryAt) return 'st-grey';
   if(wo.invoiceDone) return 'st-blue';                 // Surveys
   if(wo.jobComplete) return 'st-blue-bold';            // Invoices > Build Invoice
-  if(wo.jobScheduled) return 'st-green';                // In Progress > In Progress
+  if(wo.jobScheduled && wo.jobStarted) return 'st-green-lite'; // In Progress > In Progress
+  if(wo.jobScheduled) return 'st-green';                // In Progress > Scheduled
   if(wo.estimateApproved) return 'st-green-bold';       // In Progress > Schedule Job
   if(wo.estimateDone) return 'st-yellow';                // Estimates > Pending Approval
   if(wo.presiteDone) return 'st-yellow-bold';           // Estimates > Build Estimate
@@ -4362,7 +4433,8 @@ function statusTag(wo){
     : '<span class="tag hist">Job History</span>';
   if(wo.invoiceDone) return '<span class="tag survey">Awaiting Survey</span>';
   if(wo.jobComplete) return '<span class="tag build-inv">Build Invoice</span>';
-  if(wo.jobScheduled) return '<span class="tag in-prog">In Progress</span>';
+  if(wo.jobScheduled && wo.jobStarted) return '<span class="tag in-prog">In Progress</span>';
+  if(wo.jobScheduled) return '<span class="tag job-sched">Scheduled</span>';
   if(wo.estimateApproved) return '<span class="tag go">Schedule Job</span>';
   if(wo.estimateDone) return '<span class="tag awaiting-approval">Pending Approval</span>';
   if(wo.presiteDone) return '<span class="tag build-est">Build Estimate</span>';
@@ -4410,7 +4482,42 @@ function inEstimatePendingApprovalList(wo){ return inEstimatesList(wo) && wo.est
 function inScheduleJobList(wo){ return inEstimatesList(wo) && !!wo.estimateApproved; }
 
 /* Invoices sub-lists */
-function inInvoiceInProgressList(wo){ return inInvoicesList(wo) && !wo.jobComplete; }
+/* In Progress sub-lists past Schedule Job. A SCHD note puts the job in
+   Scheduled; it moves to In Progress on its first Whole Job day. */
+function inJobScheduledList(wo){ return inInvoicesList(wo) && !wo.jobComplete && !wo.jobStarted; }
+function inInvoiceInProgressList(wo){ return inInvoicesList(wo) && !wo.jobComplete && !!wo.jobStarted; }
+function isoNextDay(iso){
+  const [y,m,d]=iso.split('-').map(Number);
+  const t=new Date(y, m-1, d+1);
+  return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+}
+/* True when a Whole Job day has arrived. An admin moving a job back to
+   Scheduled sets a hold for that day, so only a Whole Job day after it counts. */
+function wholeJobDayArrived(wo){
+  const today=isoToday();
+  const hold=wo.jobStartHold||null;
+  return (wo.scheduleDates||[]).some(d=>{
+    if(d.type==='presite' || !d.startDate) return false;
+    const end=d.endDate||d.startDate;
+    const lo=(hold && hold>=d.startDate) ? isoNextDay(hold) : d.startDate;
+    const hi=end<today ? end : today;
+    return lo<=hi;
+  });
+}
+function hasWholeJobDates(wo){ return (wo.scheduleDates||[]).some(d=>d.type!=='presite' && d.startDate); }
+/* Moves one job from Scheduled to In Progress if its day has come. */
+function maybeStartJob(wo, reason){
+  if(!wo || !inJobScheduledList(wo) || !wholeJobDayArrived(wo)) return false;
+  const before=stageNameOf(wo);
+  wo.jobStarted=true; wo.jobStartHold=null;
+  logStageChange(wo, before, reason||'first Whole Job day arrived');
+  return true;
+}
+function autoStartScheduledJobs(){
+  let changed=false;
+  (DB.workOrders||[]).forEach(wo=>{ if(maybeStartJob(wo)) changed=true; });
+  return changed;
+}
 function inBuildInvoiceList(wo){ return inInvoicesList(wo) && !!wo.jobComplete; }
 
 /* Surveys + Job History */
@@ -4572,11 +4679,12 @@ function renderTabCounts(){
     LAST_HISTORY_PURGE=Date.now();
     if(purgeOldHistory(DB)) saveDB(DB);
   }
+  if(CURRENT_USER && autoStartScheduledJobs()) saveDB(DB);
   setCount('cnt-workorders', DB.workOrders.filter(inWorkOrdersList).length);
   setCount('cnt-presite', DB.workOrders.filter(inPresiteList).length);
   setCount('cnt-estimates', DB.workOrders.filter(wo=>inEstimatesList(wo) && !inScheduleJobList(wo)).length);
-  setCount('cnt-inprogress', DB.workOrders.filter(wo=>inScheduleJobList(wo) || inInvoiceInProgressList(wo)).length);
-  setCount('cnt-invoices', DB.workOrders.filter(wo=>inInvoicesList(wo) && !inInvoiceInProgressList(wo)).length);
+  setCount('cnt-inprogress', DB.workOrders.filter(wo=>inScheduleJobList(wo) || inJobScheduledList(wo) || inInvoiceInProgressList(wo)).length);
+  setCount('cnt-invoices', DB.workOrders.filter(inBuildInvoiceList).length);
   setCount('cnt-surveys', DB.workOrders.filter(inSurveysList).length);
 }
 /* Writes a tab count and bumps the badge only when the number actually moved,
@@ -4960,9 +5068,11 @@ function renderMain(){
     html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', emptyIcon:'file-text', showEstimateDecision:true});
   } else if(ACTIVE_TAB==='inprogress'){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
+    const scheduled=DB.workOrders.filter(inJobScheduledList).sort((a,b)=>a.id-b.id);
     const inProgress=DB.workOrders.filter(inInvoiceInProgressList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>In Progress</h2></div></div>`;
     html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'activity'});
+    html+=subGroupHTML('Scheduled', scheduled, {emptyText:'Nothing scheduled and waiting to start right now.', emptyIcon:'activity'});
     html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', emptyIcon:'activity', showJobComplete:true, showCheckInOut:true});
   } else if(ACTIVE_TAB==='invoices'){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
@@ -5281,6 +5391,12 @@ function checkInDay(woId, date){
     });
     syncDayLogLegacy(target.log);
     addAdminLog(live, 'Checked in on site for '+date+' at '+ts.time+' on '+ts.date+'.');
+    // Crew on site for the job itself means the work has started.
+    if(target.entry && target.entry.type!=='presite' && inJobScheduledList(live)){
+      const before=stageNameOf(live);
+      live.jobStarted=true; live.jobStartHold=null;
+      logStageChange(live, before, 'checked in on site');
+    }
     saveDB(DB);
     renderTabCounts();
     renderMain();
@@ -5559,7 +5675,7 @@ function openNewWorkOrder(){
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
-    presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
+    presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobStarted:false, jobStartHold:null, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
@@ -6838,8 +6954,12 @@ function submitFieldNote(id){
     wo.presiteScheduled=true;
     movedMsg='Moved to Pre-Site Scheduled.';
   } else if(type==='SCHD' && inScheduleJobList(wo)){
-    wo.jobScheduled=true;
-    movedMsg='Job scheduled. Moved to In Progress.';
+    wo.jobScheduled=true; wo.jobStarted=false; wo.jobStartHold=null;
+    movedMsg='Job scheduled. Moved to Scheduled.';
+    if(wholeJobDayArrived(wo)){
+      wo.jobStarted=true;
+      movedMsg='Job scheduled. Its first Whole Job day is here, so it moved to In Progress.';
+    }
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
     /* Filing it away does not always take it off the board, so the toast
@@ -9361,7 +9481,7 @@ function adminDuplicateWorkOrder(id){
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, invoiceDone:false,
-    presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobComplete:false, movedToHistoryAt:null,
+    presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobStarted:false, jobStartHold:null, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
@@ -9377,7 +9497,7 @@ function adminDuplicateWorkOrder(id){
 const ADMIN_STAGE_GROUPS=[
   ['Pre-Site Inspections',[['presite','Pre-Site Incomplete','st-red-bold',w=>inPresiteIncompleteList(w)],['presitescheduled','Pre-Site Scheduled','st-red',w=>inPresiteScheduledList(w)],['presitecomplete','Pre-Site Complete','st-red-lite',w=>inPresiteCompleteList(w)]]],
   ['Estimates',[['estimates','Build Estimate','st-yellow-bold',w=>inBuildEstimateList(w)],['pendingapproval','Pending Approval','st-yellow',w=>inEstimatePendingApprovalList(w)]]],
-  ['In Progress',[['schedulejob','Schedule Job','st-green-bold',w=>inScheduleJobList(w)],['inprogress','In Progress','st-green',w=>inInvoiceInProgressList(w)]]],
+  ['In Progress',[['schedulejob','Schedule Job','st-green-bold',w=>inScheduleJobList(w)],['jobscheduled','Scheduled','st-green',w=>inJobScheduledList(w)],['inprogress','In Progress','st-green-lite',w=>inInvoiceInProgressList(w)]]],
   ['Invoices',[['invoices','Build Invoice','st-blue-bold',w=>inBuildInvoiceList(w)]]],
   ['Surveys',[['surveys','Surveys','st-blue',w=>inSurveysList(w)]]],
   ['Job History',[['jobhistory','Job History','st-grey',w=>inJobHistoryList(w)]]]
@@ -9427,6 +9547,10 @@ function adminSetStage(id, target){
     wo.estimateApproved=false; wo.estimateDeclined=false;
     wo.jobScheduled=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
   }
+  if(target==='jobscheduled'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
+    wo.jobScheduled=true; wo.invoiceDone=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
+  }
   if(target==='inprogress'){
     wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
     wo.jobScheduled=true; wo.invoiceDone=false; wo.jobComplete=false; wo.movedToHistoryAt=null;
@@ -9443,6 +9567,10 @@ function adminSetStage(id, target){
     wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
     wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=Date.now();
   }
+  /* Scheduled holds the job there through today, so it is not pushed straight
+     back to In Progress. It still moves on by itself on its next Whole Job day. */
+  wo.jobStarted = !['presite','presitescheduled','presitecomplete','estimates','pendingapproval','schedulejob','jobscheduled'].includes(target);
+  wo.jobStartHold = target==='jobscheduled' ? isoToday() : null;
   addAdminLog(wo, `Overrode workflow, forced job from ${stageBefore} to ${adminStageLabel(target)}.`);
   saveDB(DB);
   renderWorkOrderModal(id);
@@ -9549,8 +9677,12 @@ function submitNote(id){
     wo.presiteScheduled=true;
     movedMsg='Moved to Pre-Site Scheduled.';
   } else if(type==='SCHD' && inScheduleJobList(wo)){
-    wo.jobScheduled=true;
-    movedMsg='Job scheduled. Moved to In Progress.';
+    wo.jobScheduled=true; wo.jobStarted=false; wo.jobStartHold=null;
+    movedMsg='Job scheduled. Moved to Scheduled.';
+    if(wholeJobDayArrived(wo)){
+      wo.jobStarted=true;
+      movedMsg='Job scheduled. Its first Whole Job day is here, so it moved to In Progress.';
+    }
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
     /* Filing it away does not always take it off the board, so the toast
@@ -13155,6 +13287,13 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) srSave()
 window.addEventListener('pagehide', srSave);
 window.addEventListener('blur', srSave);
 setInterval(srSave, 5000);
+/* Catches a Scheduled job's first Whole Job day arriving while the app is
+   left open overnight. */
+setInterval(()=>{
+  try{
+    if(CURRENT_USER && autoStartScheduledJobs()){ saveDB(DB); renderTabCounts(); renderMain(); }
+  }catch(e){ console.error(e); }
+}, 60000);
 
 
 /* =========================================================================
