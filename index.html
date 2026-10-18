@@ -5376,7 +5376,7 @@ function renderMain(){
   if(ACTIVE_TAB==='workorders'){
     const dueList = followUpDueList();
     const list = sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
-    html+=`<div class="listHeader woHeader"><div class="woTitleRow"><h2>Work Orders</h2><button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}Create New Work Order</button></div>${sortDropdownHTML()}</div>`;
+    html+=`<div class="listHeader woHeader"><div class="woTitleRow"><h2>Work Orders</h2><button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}New Work Order</button></div>${sortDropdownHTML()}</div>`;
     if(dueList.length){
       html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
     }
