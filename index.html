@@ -3129,6 +3129,12 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
   <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.9-5.3-2.8-5.3 2.8 1-5.9L5.5 9.7l5.9-.9z"/></symbol>
+  <!-- Nav tab icons -->
+  <symbol id="i-nav-estimate" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 10.2v8.6"/><path d="M14.1 12.2c-.35-.6-1.1-1-2-1-1.2 0-2.1.6-2.1 1.45 0 2.2 4.3 1.25 4.3 3.4 0 .9-.95 1.55-2.2 1.55-.95 0-1.8-.4-2.2-1.05"/></symbol>
+  <symbol id="i-nav-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8 13.3h.01M12 13.3h.01M16 13.3h.01M8 16.8h.01M12 16.8h.01" stroke-width="2.4"/></symbol>
+  <symbol id="i-nav-invoice" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.8 14.6l2.2 2.2 4.3-4.4"/></symbol>
+  <symbol id="i-nav-surveys" viewBox="0 0 24 24"><path d="M12.00 0.80L12.97 3.37L15.71 3.49L13.57 5.21L14.29 7.86L12.00 6.35L9.71 7.86L10.43 5.21L8.29 3.49L11.03 3.37zM19.32 6.12L20.29 8.69L23.03 8.82L20.89 10.53L21.62 13.18L19.32 11.67L17.03 13.18L17.75 10.53L15.61 8.82L18.35 8.69zM16.53 14.73L17.50 17.29L20.24 17.42L18.10 19.14L18.82 21.78L16.53 20.28L14.23 21.78L14.96 19.14L12.82 17.42L15.56 17.29zM7.47 14.73L8.44 17.29L11.18 17.42L9.04 19.14L9.77 21.78L7.47 20.28L5.18 21.78L5.90 19.14L3.76 17.42L6.50 17.29zM4.68 6.12L5.65 8.69L8.39 8.82L6.25 10.53L6.97 13.18L4.68 11.67L2.38 13.18L3.11 10.53L0.97 8.82L3.71 8.69z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-nav-history" viewBox="0 0 24 24"><path d="M4.5 12a8 8 0 1 1 2.34 5.66"/><path d="M2.2 9.7l2.3 2.3 2.3-2.3"/><path d="M12.5 8v4.5l3 2"/></symbol>
   <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3h3l1.5 4-2 1.4a12 12 0 0 0 5.5 5.5l1.4-2 4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 4.6 5.2 2 2 0 0 1 6.6 3z"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.4 6.5L12 13l8.6-6.5"/></symbol>
@@ -3283,11 +3289,11 @@ window._bootSafety = setTimeout(function(){
     <nav class="tabs" id="tabsNav">
       <button data-tab="workorders" onclick="switchTab('workorders')"><svg class="ic" aria-hidden="true"><use href="#i-clipboard"/></svg><span class="tabLbl">Work Orders</span> <span class="count" id="cnt-workorders">0</span></button>
       <button data-tab="presite" onclick="switchTab('presite')"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="tabLbl"><span class="tabFull">Pre-Site Inspections</span><span class="tabShort">Pre-Site</span></span> <span class="count" id="cnt-presite">0</span></button>
-      <button data-tab="estimates" onclick="switchTab('estimates')"><svg class="ic" aria-hidden="true"><use href="#i-file-text"/></svg><span class="tabLbl">Estimates</span> <span class="count" id="cnt-estimates">0</span></button>
-      <button data-tab="inprogress" onclick="switchTab('inprogress')"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg><span class="tabLbl">Scheduling</span> <span class="count" id="cnt-inprogress">0</span></button>
-      <button data-tab="invoices" onclick="switchTab('invoices')"><svg class="ic" aria-hidden="true"><use href="#i-receipt"/></svg><span class="tabLbl">Invoices</span> <span class="count" id="cnt-invoices">0</span></button>
-      <button data-tab="surveys" onclick="switchTab('surveys')"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg><span class="tabLbl">Surveys</span> <span class="count" id="cnt-surveys">0</span></button>
-      <button data-tab="jobhistory" onclick="switchTab('jobhistory')"><svg class="ic" aria-hidden="true"><use href="#i-archive"/></svg><span class="tabLbl">Job History</span></button>
+      <button data-tab="estimates" onclick="switchTab('estimates')"><svg class="ic" aria-hidden="true"><use href="#i-nav-estimate"/></svg><span class="tabLbl">Estimates</span> <span class="count" id="cnt-estimates">0</span></button>
+      <button data-tab="inprogress" onclick="switchTab('inprogress')"><svg class="ic" aria-hidden="true"><use href="#i-nav-calendar"/></svg><span class="tabLbl">Scheduling</span> <span class="count" id="cnt-inprogress">0</span></button>
+      <button data-tab="invoices" onclick="switchTab('invoices')"><svg class="ic" aria-hidden="true"><use href="#i-nav-invoice"/></svg><span class="tabLbl">Invoices</span> <span class="count" id="cnt-invoices">0</span></button>
+      <button data-tab="surveys" onclick="switchTab('surveys')"><svg class="ic" aria-hidden="true"><use href="#i-nav-surveys"/></svg><span class="tabLbl">Surveys</span> <span class="count" id="cnt-surveys">0</span></button>
+      <button data-tab="jobhistory" onclick="switchTab('jobhistory')"><svg class="ic" aria-hidden="true"><use href="#i-nav-history"/></svg><span class="tabLbl">Job History</span></button>
     </nav>
   </div>
   <main id="mainArea"></main>
