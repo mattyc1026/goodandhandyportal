@@ -918,6 +918,13 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 }
 .adminStageTab{font-size:.66em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
 .adminStageBtns{display:flex;gap:6px;min-width:0;}
+.lostBox{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:10px;padding:10px 12px;}
+.lostBox ul{margin:4px 0 8px;padding-left:18px;}
+.lostBox li{margin:2px 0;}
+.lostHead{font-weight:700;margin-top:8px;}
+.lostBox .adminPillRow{margin-top:6px;}
+.visitAddBtn{margin-top:6px;}
+.fsDel{color:var(--redb);}
 /* Every row spans the full width: one button stretches as far as three. */
 .adminStageBtns .stageBtn{flex:1 1 0;min-width:0;justify-content:center;text-align:center;}
 @media (min-width:901px){ .adminStageBtns .stageBtn{white-space:nowrap;padding-left:13px;padding-right:9px;} }
@@ -3364,6 +3371,9 @@ function loadDB(){
    exactly what happens when a tab is closed inside the 250ms push debounce. */
 function saveDB(db){
   if(!applyingRemote) db.updatedAt=Date.now();
+  // DB is still being created on a first ever load, when this is called from loadDB().
+  let isMain=false; try{ isMain = db===DB; }catch(e){}
+  if(!applyingRemote && isMain) trackPendingChanges();
   localStorage.setItem(DB_KEY, JSON.stringify(db));
   if(!applyingRemote) pushToCloud();
 }
@@ -3377,6 +3387,11 @@ let DB = loadDB();
   const purged = purgeOldHistory(DB);
   if(normalized || purged) saveDB(DB);
 }
+/* What each job looked like on this device when the app opened, before
+   anything was changed this session. Used as the starting point for any
+   change made before the cloud's copy has arrived. */
+BOOT_COPY={};
+(DB.workOrders||[]).forEach(wo=>{ BOOT_COPY[String(wo.id)]=JSON.stringify(wo); });
 let CURRENT_USER = null; // {username, displayName, isAdmin}
 let ACTIVE_TAB='workorders';
 const WO_SORT_KEY='gh_wo_sort';
@@ -3577,6 +3592,9 @@ function openDataConnection(){
     SYNC_LOADING=true;
     if(CURRENT_USER && typeof renderMain==='function') renderMain();
     if(syncUnsub){ syncUnsub(); syncUnsub=null; }
+    /* Nothing is written to the cloud until this device has heard back what
+       the cloud currently holds. See flushToCloud. */
+    CLOUD_READY={meta:false, wos:false};
 
     const unsubs=[];
 
@@ -3586,6 +3604,7 @@ function openDataConnection(){
       if(!snap.exists){
         // Nothing in the cloud at all. Seed it from this device.
         CLOUD_MIRROR={meta:null, wos:{}};
+        CLOUD_READY={meta:true, wos:true};
         flushToCloud();
         setSyncPill('on');
         onDatabaseReady();
@@ -3609,6 +3628,7 @@ function openDataConnection(){
         }catch(err){ console.error('Bad meta payload', err); }
         applyingRemote=false;
       }
+      CLOUD_READY.meta=true;
       setSyncPill('on');
       if(CURRENT_USER){ renderTabCounts(); renderMain(); }
       onDatabaseReady();
@@ -3618,12 +3638,13 @@ function openDataConnection(){
     unsubs.push(woCollectionRef().onSnapshot(snap=>{
       SYNC_LOADING=false;
       if(MIGRATING) return;
-      let touchedOpenWO=false;
+      let touchedOpenWO=false, needPush=false, pendingDirty=false;
       applyingRemote=true;
       try{
         snap.docChanges().forEach(change=>{
           const id=change.doc.id;
           if(change.type==='removed'){
+            if(id in SYNC_PENDING){ delete SYNC_PENDING[id]; pendingDirty=true; }
             const at=DB.workOrders.findIndex(w=>String(w.id)===id);
             if(at>=0) DB.workOrders.splice(at,1);
             delete CLOUD_MIRROR.wos[id];
@@ -3642,8 +3663,31 @@ function openDataConnection(){
           if(CLOUD_MIRROR.wos[id]===json) return;
           let wo;
           try{ wo=JSON.parse(json); }catch(err){ console.error('Bad work order payload', id, err); return; }
-          normalizeWO(wo);
           const at=DB.workOrders.findIndex(w=>String(w.id)===id);
+          const local = at>=0 ? DB.workOrders[at] : null;
+          if(local && (id in SYNC_PENDING)){
+            /* This device has work on this job the cloud has not received yet.
+               If the cloud copy has not moved since that work started, keep it
+               and send it up. If it has, combine the two so neither side's
+               visits, notes or changes are thrown away. */
+            const base=SYNC_PENDING[id];
+            CLOUD_MIRROR.wos[id]=json;
+            needPush=true;
+            if(base===json) return;
+            let merged;
+            try{
+              merged=mergeWO3(base?JSON.parse(base):{}, JSON.parse(JSON.stringify(local)), wo);
+            }catch(err){ console.error('Merge failed, keeping this device copy', id, err); return; }
+            normalizeWO(merged);
+            allDayLogsSorted(merged).forEach(({log})=>syncDayLogLegacy(log));
+            DB.workOrders[at]=merged;
+            SYNC_PENDING[id]=json;
+            pendingDirty=true;
+            if(OPEN_WO_ID!==null && String(OPEN_WO_ID)===id) touchedOpenWO=true;
+            return;
+          }
+          normalizeWO(wo);
+          if(local) backupLostItems(local, wo);
           if(at>=0) DB.workOrders[at]=wo; else DB.workOrders.push(wo);
           CLOUD_MIRROR.wos[id]=json;
           if(OPEN_WO_ID!==null && String(OPEN_WO_ID)===id) touchedOpenWO=true;
@@ -3652,12 +3696,18 @@ function openDataConnection(){
       } finally {
         applyingRemote=false;
       }
+      if(pendingDirty) savePendingChanges();
+      const firstLoad=!CLOUD_READY.wos;
+      CLOUD_READY.wos=true;
       setSyncPill('on');
       if(CURRENT_USER){ renderTabCounts(); renderMain(); }
       // The open modal used to keep showing, and saving from, a copy of a work
       // order that somebody else had already changed underneath it.
       if(touchedOpenWO) refreshOpenWorkOrder();
       onDatabaseReady();
+      // Anything changed on this device before the cloud copy arrived was
+      // replaced by it above; send whatever is still genuinely different.
+      if(firstLoad || needPush) pushToCloud();
     }, syncErrorHandler));
 
     syncUnsub=()=>unsubs.forEach(u=>{ try{ u(); }catch(e){} });
@@ -3776,6 +3826,10 @@ function migrateToPerWorkOrderDocs(data){
 --------------------------------------------------------------------- */
 const WO_COLLECTION='workOrders';
 let CLOUD_MIRROR={meta:null, wos:{}};
+/* Whether this device has received the cloud's current users record and
+   work orders since connecting. Declared with var because sync can start
+   before execution reaches this line. */
+var CLOUD_READY={meta:false, wos:false};
 let MIGRATING=false;
 
 function metaPayload(){
@@ -3793,6 +3847,13 @@ function pushToCloud(){
 function flushToCloud(){
   if(!syncDb || applyingRemote || MIGRATING) return;
   if(!firebase.auth().currentUser) return;
+  /* A device opened after time away still holds its old copy of every job
+     until the cloud's copy arrives. Writing before then sent that old copy up
+     over everyone's newer work: check-ins, check-outs and notes made on
+     another device since this one was last open were erased. Saves made in
+     that window stay on this device, and this runs again once the cloud's
+     copy is in. */
+  if(!CLOUD_READY.meta || !CLOUD_READY.wos) return;
   const stamp=DB.updatedAt||Date.now();
   const batch=syncDb.batch();
   let writes=0;
@@ -3823,9 +3884,198 @@ function flushToCloud(){
   batch.commit().then(()=>{
     CLOUD_MIRROR.meta=meta;
     CLOUD_MIRROR.wos=written;
+    let ch=false;
+    Object.keys(SYNC_PENDING).forEach(id=>{
+      const wo=(DB.workOrders||[]).find(w=>String(w.id)===id);
+      if(!wo){ delete SYNC_PENDING[id]; ch=true; return; }
+      if(!(id in written)) return;
+      if(JSON.stringify(wo)===written[id]) delete SYNC_PENDING[id];
+      else SYNC_PENDING[id]=written[id];   // changed again since; the cloud now holds what was sent
+      ch=true;
+    });
+    if(ch) savePendingChanges();
   }).catch(e=>{
     console.error(e);
     toast('Could not sync latest change to the cloud.');
+  });
+}
+
+/* ---------------------------------------------------------------------
+   Unsynced work and merging.
+
+   SYNC_PENDING lists every job this device has changed that the cloud has
+   not confirmed yet, with the copy that change started from. It is kept in
+   storage, so a check-in made with no signal, or just before the phone
+   reloaded the page, is still known about the next time the app opens.
+
+   When the cloud's copy of one of those jobs arrives, mergeWO3 combines it
+   with this device's copy, using the starting copy to tell who changed what.
+   Visits, days, notes, log lines, photos and scheduled dates are matched up
+   one by one, so additions from both sides are kept.
+--------------------------------------------------------------------- */
+const SYNC_PENDING_KEY='gh_sync_pending_v1';
+var SYNC_PENDING=(function(){ try{ return JSON.parse(localStorage.getItem(SYNC_PENDING_KEY)||'{}')||{}; }catch(e){ return {}; } })();
+var BOOT_COPY=BOOT_COPY||{};
+function savePendingChanges(){
+  try{ localStorage.setItem(SYNC_PENDING_KEY, JSON.stringify(SYNC_PENDING)); }catch(e){}
+}
+function trackPendingChanges(){
+  if(typeof SYNC_PENDING!=='object' || !SYNC_PENDING) return;
+  if(typeof BOOT_COPY!=='object' || !BOOT_COPY) return;   // still loading
+  const ready = typeof CLOUD_READY==='object' && CLOUD_READY && CLOUD_READY.wos;
+  let ch=false;
+  (DB.workOrders||[]).forEach(wo=>{
+    const id=String(wo.id);
+    if(id in SYNC_PENDING) return;
+    const ref = ready ? CLOUD_MIRROR.wos[id] : BOOT_COPY[id];
+    const json=JSON.stringify(wo);
+    if(ref===json) return;
+    SYNC_PENDING[id]= ref===undefined ? null : ref;
+    ch=true;
+  });
+  if(ch) savePendingChanges();
+}
+function syncIsObj(x){ return x && typeof x==='object' && !Array.isArray(x); }
+function syncKey(e){
+  if(syncIsObj(e)){
+    if(e.id!=null) return 'i:'+e.id;
+    if(Array.isArray(e.sessions) && e.date) return 'd:'+e.date;
+  }
+  return 'j:'+JSON.stringify(e);
+}
+function mergeWO3(B, L, C){
+  const jb=JSON.stringify(B), jl=JSON.stringify(L), jc=JSON.stringify(C);
+  if(jl===jb) return C;
+  if(jc===jb || jc===jl) return L;
+  if(Array.isArray(L) && Array.isArray(C)){
+    const bm={}, lm={}, cm={};
+    (Array.isArray(B)?B:[]).forEach(e=>{ bm[syncKey(e)]=e; });
+    L.forEach(e=>{ lm[syncKey(e)]=e; });
+    C.forEach(e=>{ cm[syncKey(e)]=e; });
+    const out=[];
+    C.forEach(c=>{
+      const k=syncKey(c);
+      if(k in lm) out.push(mergeWO3(bm[k], lm[k], c));
+      else if(k in bm){ if(JSON.stringify(c)!==JSON.stringify(bm[k])) out.push(c); }   // removed here, changed there: keep
+      else out.push(c);                                                                 // added there
+    });
+    L.forEach(l=>{
+      const k=syncKey(l);
+      if(k in cm) return;
+      if(k in bm){ if(JSON.stringify(l)!==JSON.stringify(bm[k])) out.push(l); }
+      else out.push(l);                                                                 // added here
+    });
+    return out;
+  }
+  if(syncIsObj(L) && syncIsObj(C)){
+    const b=syncIsObj(B)?B:{}, out={};
+    new Set([...Object.keys(C), ...Object.keys(L)]).forEach(k=>{
+      const inL=k in L, inC=k in C, inB=k in b;
+      if(!inL){ if(inB && JSON.stringify(C[k])===JSON.stringify(b[k])) return; out[k]=C[k]; return; }
+      if(!inC){ if(inB && JSON.stringify(L[k])===JSON.stringify(b[k])) return; out[k]=L[k]; return; }
+      out[k]=mergeWO3(b[k], L[k], C[k]);
+    });
+    return out;
+  }
+  return C;
+}
+
+/* ---------------------------------------------------------------------
+   Safety net for visits and notes.
+
+   If a copy arriving from the cloud is missing a visit or a note this
+   device has, and nobody deliberately deleted it, the missing items are
+   set aside here. An admin can put them back from the Admin tab. A visit
+   whose whole day was taken off the schedule is not counted, because
+   removing a date is a deliberate change.
+--------------------------------------------------------------------- */
+const LOST_KEY='gh_lost_items_v1';
+function readLostItems(){ try{ return JSON.parse(localStorage.getItem(LOST_KEY)||'[]')||[]; }catch(e){ return []; } }
+function writeLostItems(list){ try{ localStorage.setItem(LOST_KEY, JSON.stringify(list.slice(-60))); }catch(e){} }
+function noteIdentity(n){ return [n.type,n.by,n.date,n.time,n.followUpDate||''].join('|'); }
+function backupLostItems(oldWo, newWo){
+  try{
+    const tomb=new Set(newWo.tombstones||[]);
+    const keptSess=new Set(), keptDays=new Set();
+    allDayLogsSorted(newWo).forEach(({log})=>{ keptDays.add(log.date); logSessions(log).forEach(s=>keptSess.add(s.id)); });
+    const sessions=[];
+    allDayLogsSorted(oldWo).forEach(({entry, log})=>{
+      if(!keptDays.has(log.date)) return;
+      logSessions(log).forEach(s=>{
+        if(!keptSess.has(s.id) && !tomb.has('s:'+s.id)) sessions.push({date:log.date, entryId:entry.id, session:s});
+      });
+    });
+    const keptNotes=new Set((newWo.notes||[]).map(noteIdentity));
+    const notes=(oldWo.notes||[]).filter(n=>!keptNotes.has(noteIdentity(n)) && !tomb.has('n:'+noteIdentity(n)));
+    if(!sessions.length && !notes.length) return;
+    const list=readLostItems();
+    list.push({woId:oldWo.id, at:Date.now(), sessions, notes});
+    writeLostItems(list);
+  }catch(e){ console.error('Could not set aside missing items', e); }
+}
+function lostItemsFor(woId){
+  const wo=getWO(woId);
+  if(!wo) return {sessions:[], notes:[]};
+  const haveSess=new Set(), haveNotes=new Set((wo.notes||[]).map(noteIdentity));
+  allDayLogsSorted(wo).forEach(({log})=>logSessions(log).forEach(s=>haveSess.add(s.id)));
+  const tomb=new Set(wo.tombstones||[]);
+  const sessions=[], notes=[], seenS=new Set(), seenN=new Set();
+  readLostItems().filter(x=>x.woId===woId).forEach(x=>{
+    (x.sessions||[]).forEach(it=>{
+      const id=it.session && it.session.id;
+      if(!id || haveSess.has(id) || seenS.has(id) || tomb.has('s:'+id)) return;
+      if(!findDayLog(wo, it.date)) return;
+      seenS.add(id); sessions.push(it);
+    });
+    (x.notes||[]).forEach(n=>{
+      const k=noteIdentity(n);
+      if(haveNotes.has(k) || seenN.has(k) || tomb.has('n:'+k)) return;
+      seenN.add(k); notes.push(n);
+    });
+  });
+  return {sessions, notes};
+}
+function lostItemsPanelHTML(woId){
+  const {sessions, notes}=lostItemsFor(woId);
+  if(!sessions.length && !notes.length) return '';
+  const sRows=sessions.map(it=>`<li>${esc(formatDateDisplay(it.date))}: ${esc((it.session.in&&it.session.in.by)||'Unknown')}, ${esc(it.session.in?it.session.in.time:'n/a')} to ${esc(it.session.out?it.session.out.time:'still open')}</li>`).join('');
+  const nRows=notes.map(n=>`<li>${esc(n.type)} note, ${esc(n.date||'')}: ${esc(String(n.text||'').slice(0,80))}</li>`).join('');
+  return `<h4>Recovered Items</h4>
+    <div class="lostBox">
+      <div class="small">These went missing from this job when another device sent an older copy.</div>
+      ${sRows?`<div class="lostHead">Visits</div><ul>${sRows}</ul>`:''}
+      ${nRows?`<div class="lostHead">Notes</div><ul>${nRows}</ul>`:''}
+      <div class="adminPillRow">
+        <button type="button" class="stageBtn pillNeutral" onclick="restoreLostItems(${woId})">Restore All</button>
+        <button type="button" class="stageBtn pillNeutral" onclick="dismissLostItems(${woId})">Dismiss</button>
+      </div>
+    </div>
+    <div style="height:14px"></div>`;
+}
+function restoreLostItems(woId){
+  const wo=getWO(woId);
+  if(!wo) return;
+  const {sessions, notes}=lostItemsFor(woId);
+  sessions.forEach(it=>{
+    const found=findDayLog(wo, it.date);
+    if(!found) return;
+    if(!Array.isArray(found.log.sessions)) found.log.sessions=[];
+    found.log.sessions.push(it.session);
+    found.log.sessions.sort((a,b)=>(parseClockTime(a.in&&a.in.time)||0)-(parseClockTime(b.in&&b.in.time)||0));
+    syncDayLogLegacy(found.log);
+  });
+  notes.forEach(n=>wo.notes.push(n));
+  addAdminLog(wo, `Restored ${sessions.length} visit${sessions.length===1?'':'s'} and ${notes.length} note${notes.length===1?'':'s'} that went missing in a sync.`);
+  writeLostItems(readLostItems().filter(x=>x.woId!==woId));
+  saveDB(DB);
+  renderWorkOrderModal(woId); renderTabCounts(); renderMain();
+  toast('Restored.');
+}
+function dismissLostItems(woId){
+  askYesNo('Dismiss these items? They will not be offered again.', yes=>{
+    if(!yes) return;
+    writeLostItems(readLostItems().filter(x=>x.woId!==woId));
+    renderWorkOrderModal(woId);
   });
 }
 function openSyncModal(){
@@ -5504,6 +5754,78 @@ function askPresiteComplete(woId){
     toast(yes ? 'Moved to Pre-Site Complete.' : 'Left in Pre-Site Scheduled.');
   });
 }
+/* Admin entry of a visit that was never logged, or was lost. Times are typed
+   in rather than taken from the clock. Leaving Check Out blank adds a visit
+   that is still open, which can then be closed with the normal button. */
+function hhmmTo12(v){
+  if(!v) return '';
+  const [h,m]=v.split(':').map(Number);
+  return new Date(2000,0,1,h,m).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+function isoToLocaleDate(iso){
+  const [y,m,d]=iso.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString();
+}
+function adminAddVisit(woId, date){
+  const wo=getWO(woId);
+  if(!wo || !findDayLog(wo, date)) return;
+  const me=CURRENT_USER ? CURRENT_USER.displayName : '';
+  const names=[...new Set([me, ...Object.values(DB.users||{}).map(u=>fullName(u))].filter(Boolean))];
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard">
+    <h3>Add Visit, ${formatDateDisplay(date)}</h3>
+    <div class="field"><label>Checked In By</label><select id="addVisitBy">${names.map(n=>`<option ${n===me?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
+    <div class="field"><label>Check In Time</label><input type="time" id="addVisitIn"></div>
+    <div class="field"><label>Check Out Time</label><input type="time" id="addVisitOut"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveAdminVisit(${woId}, '${date}')">Add Visit</button>
+      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function saveAdminVisit(woId, date){
+  const wo=getWO(woId);
+  const found=wo && findDayLog(wo, date);
+  if(!found) return;
+  const by=(document.getElementById('addVisitBy')||{}).value || (CURRENT_USER?CURRENT_USER.displayName:'');
+  const tin=(document.getElementById('addVisitIn')||{}).value;
+  const tout=(document.getElementById('addVisitOut')||{}).value;
+  if(!tin){ toast('Enter the check in time.'); return; }
+  if(!tout && openSession(found.log)){ toast('This day already has an open visit. Enter a check out time.'); return; }
+  const day=isoToLocaleDate(date);
+  const sess={id:newSessionId(), in:{date:day, time:hhmmTo12(tin), by}, out: tout ? {date:day, time:hhmmTo12(tout), by} : null, addedByAdmin:true};
+  if(!Array.isArray(found.log.sessions)) found.log.sessions=[];
+  found.log.sessions.push(sess);
+  found.log.sessions.sort((a,b)=>(parseClockTime(a.in&&a.in.time)||0)-(parseClockTime(b.in&&b.in.time)||0));
+  syncDayLogLegacy(found.log);
+  addAdminLog(wo, `Added a visit for ${date} by hand: ${by}, ${sess.in.time} to ${sess.out?sess.out.time:'still open'}.`);
+  saveDB(DB);
+  document.getElementById('confirmRoot').innerHTML='';
+  renderTabCounts(); renderMain();
+  renderWorkOrderModal(woId);
+  toast('Visit added.');
+}
+function adminDeleteVisit(woId, date, sessionId){
+  const wo=getWO(woId);
+  const found=wo && findSession(wo, date, sessionId);
+  if(!found) return;
+  const s=found.session;
+  askYesNo(`Delete this visit on ${formatDateDisplay(date)} (${s.in?s.in.time:'n/a'} to ${s.out?s.out.time:'still open'})? This cannot be undone.`, yes=>{
+    if(!yes) return;
+    const live=getWO(woId);
+    const f=live && findSession(live, date, sessionId);
+    if(!f) return;
+    f.log.sessions=f.log.sessions.filter(x=>x.id!==sessionId);
+    syncDayLogLegacy(f.log);
+    if(!Array.isArray(live.tombstones)) live.tombstones=[];
+    live.tombstones.push('s:'+sessionId);
+    addAdminLog(live, `Deleted a visit for ${date}: ${(f.session.in&&f.session.in.by)||'Unknown'}, ${f.session.in?f.session.in.time:'n/a'} to ${f.session.out?f.session.out.time:'still open'}.`);
+    saveDB(DB);
+    renderTabCounts(); renderMain();
+    renderWorkOrderModal(woId);
+    toast('Visit deleted.');
+  }, {yes:'Delete visit', no:'Cancel'});
+}
 /* Admin correction of one stamp on one visit. Scoped to a single visit id, so
    fixing the second trip of the day leaves the first one alone. */
 function editSessionTime(woId, date, sessionId, which){
@@ -5624,12 +5946,15 @@ function sessionLogHTML(woId, log, isAdmin){
     const outPencil = (isAdmin && s.out)
       ? `<button class="fsEdit" title="Edit check-out time" onclick="event.stopPropagation();editSessionTime(${woId}, '${log.date}', '${s.id}', 'out')">${icon('pencil')}</button>` : '';
     const outText = s.out ? esc(s.out.time) : '<span class="visitOpen">on site now</span>';
+    const delBtn = isAdmin
+      ? `<button class="fsEdit fsDel" title="Delete this visit" aria-label="Delete this visit" onclick="event.stopPropagation();adminDeleteVisit(${woId}, '${log.date}', '${s.id}')">${icon('trash')}</button>` : '';
     return `<div class="visitRow">
       <span class="visitNum">${i+1}</span>
       <span class="visitBy">${esc((s.in && s.in.by) || 'Unknown')}</span>
       <span class="visitTimes">${icon('login')}${esc(s.in ? s.in.time : 'n/a')}${inPencil} &rarr; ${icon('logout')}${outText}${outPencil}</span>
       ${h!=null ? `<span class="schedHoursTag">${formatHoursMinutes(h)}</span>` : ''}
       ${mileTagHTML(woId, s)}
+      ${delBtn}
     </div>`;
   }).join('')}</div>`;
 }
@@ -5657,6 +5982,7 @@ function dayLogRowHTML(woId, log, isAdmin){
       ${btn}
       ${totalTag}
       ${sessionLogHTML(woId, log, isAdmin)}
+      ${isAdmin ? `<button type="button" class="editLink visitAddBtn" onclick="event.stopPropagation();adminAddVisit(${woId}, '${log.date}')">+ Add Visit</button>` : ''}
     </div>`;
 }
 /* skipDate drops one day from the list. Kept for callers that pin a day
@@ -9553,6 +9879,7 @@ function adminTabHTML(wo){
     ? wo.adminLog.map(l=>`<div class="adminLogRow">${esc(l.date)} ${esc(l.time)}, <b>${esc(l.by)}</b>: ${esc(l.text)}</div>`).join('')
     : '<div class="small">No admin overrides on this work order.</div>';
   return `<div class="adminTab">
+    ${lostItemsPanelHTML(wo.id)}
     <h4>Admin Controls</h4>
     <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow.</div>
     <div class="adminStageList">
@@ -9885,6 +10212,8 @@ function adminDeleteNote(woId, idx){
     if(!yes) return;
     const n=wo.notes[idx];
     wo.notes.splice(idx,1);
+    if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+    wo.tombstones.push('n:'+noteIdentity(n));
     addAdminLog(wo, `Deleted a ${n.type} note ("${n.text}")`);
     if(isPresite){
       clearPresiteData(wo);
