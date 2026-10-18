@@ -1713,6 +1713,17 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;
   overflow:hidden;
 }
+.fieldSecPreview.fspRich{display:block;line-height:1.55;overflow-wrap:anywhere;}
+.fspClip{max-height:14em;overflow:hidden;}
+.fspClip.more{
+  -webkit-mask-image:linear-gradient(to bottom,#000 70%,transparent);
+  mask-image:linear-gradient(to bottom,#000 70%,transparent);
+}
+.fspRich .fsNote{padding:0;}
+.fspRich .fspNoteText{
+  white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;
+}
 .fieldSecBody{
   display:flex;flex-direction:column;
   padding:0 24px 24px;line-height:1.55;overflow-wrap:anywhere;
@@ -2156,6 +2167,12 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .hoFace .hoPhone{flex:0 0 auto;}
 .hoFace .hoPhone{color:var(--pink-ink);}
 .fieldSec--homeowner .fieldSecHead > span:first-child{overflow:visible;}
+.fieldSec--homeowner .hoRow + .hoRow{border-top:1px solid color-mix(in srgb,var(--pink-ink) 18%,transparent);}
+.hoNote{
+  margin-top:-8px;padding:0 24px 14px;text-align:center;
+  font-size:.88em;font-style:italic;color:var(--muted);line-height:1.4;
+  white-space:pre-wrap;overflow-wrap:anywhere;
+}
 @media (max-width:560px){
   .fieldSec--homeowner .fieldSecHead--withFace{grid-template-columns:1fr;row-gap:6px;}
   .fieldSec--homeowner .fieldSecHead--withFace > span:last-child{display:none;}
@@ -7473,7 +7490,6 @@ function fieldGridHTML(wo){
   const c=wo.customer||{};
   const addr=splitAddress(c.address);
   const addrText=[addr.line1, addr.line2].filter(Boolean).join(', ') || (c.address||'');
-  const hasExtras = !!String(c.altPhone||'').trim();
   const cell=(cls, inner)=>`<div class="fgCell ${cls}">${inner}</div>`;
   return `<div class="fieldGrid">
     <div class="fgCell fgName" role="button" tabindex="0" onclick="openNameAction(${wo.id})">
@@ -7489,27 +7505,28 @@ function fieldGridHTML(wo){
       ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}None</div></div>`)}
   </div>
-  ${hasExtras ? `<button class="fieldMoreBtn" onclick="toggleFieldSec(${wo.id},'extras')">${FIELD_SEC.extras?'Less':'More'}</button>` : ''}
-  ${(hasExtras && FIELD_SEC.extras) ? `<div class="fieldSubPanel">
-    ${c.altPhone?`<div class="fsRow"><span class="fsKey">Alternate</span>${altPhoneInlineHTML(c)}</div>${c.altPhoneNote?`<div class="altPhoneNote">${esc(c.altPhoneNote)}</div>`:''}`:''}
-  </div>` : ''}
   ${fieldHomeownerHTML(wo)}`;
 }
+/* The pink card holds every extra person on the job: the alternate contact
+   (name, number and note) and the homeowner. Each is one row in the same
+   style, so the card reads the same whichever of them a job has. */
 function fieldHomeownerHTML(wo){
   const c=wo.customer||{};
-  const nm=String(c.homeownerName||'').trim();
-  const ph=String(c.homeownerPhone||'').trim();
-  if(!nm && !ph) return '';
-  return `<div class="fieldSec fieldSec--homeowner">
-    <div class="fieldSecHead fieldSecHead--withFace">
-      <span>Homeowner</span>
+  const row=(label, nm, ph, note)=>`<div class="fieldSecHead fieldSecHead--withFace">
+      <span>${label}</span>
       <span class="fieldSecFace"><span class="hoFace">
         ${nm ? `<button type="button" data-v="${esc(nm)}" onclick="openCopyOnly(this.dataset.v)">${esc(nm)}</button>` : ''}
         ${ph ? `<button type="button" class="hoPhone" data-v="${esc(ph)}" onclick="openPhoneAction(this.dataset.v)">${esc(ph)}</button>` : ''}
       </span></span>
       <span></span>
-    </div>
-  </div>`;
+    </div>${note ? `<div class="hoNote">${esc(note)}</div>` : ''}`;
+  const rows=[];
+  const aPh=String(c.altPhone||'').trim();
+  if(aPh) rows.push(row('Alternate', String(c.altPhoneName||'').trim(), aPh, String(c.altPhoneNote||'').trim()));
+  const hNm=String(c.homeownerName||'').trim(), hPh=String(c.homeownerPhone||'').trim();
+  if(hNm || hPh) rows.push(row('Homeowner', hNm, hPh, ''));
+  if(!rows.length) return '';
+  return `<div class="fieldSec fieldSec--homeowner">${rows.map(r=>`<div class="hoRow">${r}</div>`).join('')}</div>`;
 }
 /* Check in and check out are the same button in two states, and it only
    appears on a day the job is actually scheduled for. Tapping it logs a time;
@@ -7651,6 +7668,35 @@ function fieldSecPreviewHTML(id, key, text, meta){
     <div class="fspText">${esc(text)}</div>
   </button>`;
 }
+/* Folded Job Details shows the top of the card exactly as it looks open:
+   gate, parking and pet instructions first, then the formatted description.
+   It is cut off at a fixed height and fades out if there is more. */
+function fieldJobPreviewHTML(wo){
+  const body=accessInfoHTML(wo)+richDescHTML(wo.jobDetails||{});
+  if(!body.trim()) return '';
+  return `<div class="fieldSecPreview fspRich" role="button" onclick="toggleFieldSec(${wo.id},'job')"><div class="fspClip">${body}</div></div>`;
+}
+/* Folded Notes shows the latest note the way it looks open: type, date, time
+   and who wrote it, any follow-up, then as much of the text as fits. */
+function fieldNotePreviewHTML(wo){
+  const n=(wo.notes||[])[0];
+  if(!n) return '';
+  return `<div class="fieldSecPreview fspRich" role="button" onclick="toggleFieldSec(${wo.id},'note')">
+    <div class="fsNote">
+      <div class="fsNoteTop">
+        <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.time?' '+esc(n.time):''}${n.by?' &middot; '+esc(n.by):''}</span>
+        ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
+      </div>
+      <div class="fspNoteText">${esc(n.text)}</div>
+    </div>
+  </div>`;
+}
+/* Marks a clipped preview that has more below it, so only those fade out. */
+function markPreviewOverflow(){
+  document.querySelectorAll('#modalRoot .fspClip').forEach(el=>{
+    el.classList.toggle('more', el.scrollHeight > el.clientHeight+2);
+  });
+}
 function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview){
   const open=!!FIELD_SEC[key];
   const moreCls = moreAlign==='end' ? ' alignEnd' : '';
@@ -7691,7 +7737,7 @@ function fieldNotesSecHTML(wo){
   return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0], 0),
     'notesMore', `All notes (${notes.length})`,
     rest.length ? rest.map((n,i)=>one(n, i+1)).join('') : '', 'end',
-    fieldSecPreviewHTML(wo.id, 'note', notes[0].text, [notes[0].type, notes[0].date].filter(Boolean).join(' \u00b7 ')));
+    fieldNotePreviewHTML(wo));
 }
 /* ---- Customer editing, inline ----
    The same fields and the same saveCustomer() the office view uses. It keeps
@@ -7893,7 +7939,7 @@ function fieldJobSecHTML(wo){
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="${open}">
       <span>Job Details</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
-    ${open ? '' : fieldSecPreviewHTML(id, 'job', jd.description)}
+    ${open ? '' : fieldJobPreviewHTML(wo)}
     ${open?`<div class="fieldSecBody">
       ${body}
       ${presitePrompt}
@@ -8398,6 +8444,8 @@ function renderWorkOrderModal(id){
     if(nextOverlay) nextOverlay.scrollTop=prevOverlayScroll;
   }
   restoreCustDraft(id);
+  markPreviewOverflow();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(markPreviewOverflow);
 }
 /* The homeowner row spans the full width beneath the two columns and is
    omitted entirely when both fields are blank, so a job where the customer is
