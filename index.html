@@ -1221,6 +1221,7 @@ html.hc .woRow.checkedInGlow{
 .ciBtn.in{border-color:var(--neon-rail);}
 .ciBtn.out{background:var(--navy);color:#fff;border-color:var(--navy);}
 .ciBtn.out .ic{opacity:1;}
+html.dark .ciBtn.out{color:var(--paper);}
 .ciBtn:hover{filter:brightness(1.05);}
 .ciBtn:active{transform:scale(.96);}
 html.hc .ciBtn{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
@@ -1264,6 +1265,73 @@ html.hc .dayTodayTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid
 .dayLogRow .jcCheck{background:var(--paper);padding:6px 11px;min-height:34px;font-size:.92em;}
 .dayLogRow .editLink{padding:4px 2px;min-height:28px;font-size:.7em;}
 .dayLogDate{flex:1 0 100%;font-weight:700;color:var(--navy);font-size:.94em;margin-bottom:1px;}
+/* ---- Check In/Out list (dayLogsSectionHTML) ----
+   One white card per group, hairlines between days. Where there is room each
+   visit is a single line with fixed columns, so times, hours and miles line up
+   straight down the list. On a narrow screen or a large text size it folds to
+   two short lines: day and hours, then times and miles. */
+.dlHead{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin-bottom:6px;}
+.dlHead .fsKey{white-space:nowrap;margin:0;}
+.dlSum{margin-left:auto;font-size:.74em;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.dlList{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;container-type:inline-size;}
+.dlDay{padding:3px 0;}
+.dlDay + .dlDay{border-top:1px solid var(--line-soft);}
+.dlDay.canEdit{cursor:pointer;}
+.dlDay.canEdit:hover{background:var(--well);}
+.dlDay.isToday{box-shadow:inset 3px 0 0 var(--orange);}
+.dlLine{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"date hrs" "times mi";
+  align-items:center;gap:1px 10px;padding:5px 12px;
+  font-size:.84em;font-variant-numeric:tabular-nums;color:var(--ink);
+}
+.dlDate{grid-area:date;font-weight:700;color:var(--navy);white-space:nowrap;}
+.dlDate:empty{display:none;}
+.dlWd{color:var(--muted);font-weight:600;}
+.isToday .dlWd{color:var(--orange);font-weight:800;}
+.dlTimes{grid-area:times;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dlArrow{color:var(--muted);margin:0 3px;}
+.dlOpen{font-style:italic;color:var(--muted);}
+.dlWho{display:block;font-size:.82em;color:var(--muted);line-height:1.2;}
+.dlHrs{grid-area:hrs;text-align:right;font-weight:700;color:var(--navy);white-space:nowrap;}
+.dlMi{grid-area:mi;text-align:right;color:var(--muted);white-space:nowrap;font-size:.9em;}
+.dlMuted{grid-area:hrs;color:var(--muted);font-style:italic;text-align:right;}
+.dlAct{grid-area:times;grid-column:1 / -1;}
+.dlAct .ciBtn{padding:6px 12px;min-height:34px;}
+@container (min-width:20.6em){
+  .dlLine{
+    grid-template-columns:5.3em minmax(0,1fr) 4.2em 3.5em;
+    grid-template-areas:"date times hrs mi";gap:6px;padding:6px 10px;
+  }
+  .dlDate:empty{display:block;}
+  .dlMuted{grid-area:times;grid-column:2 / -1;text-align:left;}
+  .dlAct{grid-area:times;grid-column:2 / -1;}
+}
+.dlFoot{margin-top:8px;font-size:.74em;color:var(--muted);}
+html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
+/* Day editor */
+.confirmCard.dayEdCard{text-align:left;padding:22px 18px;}
+.dayEdCard h3{margin:0 0 12px;}
+.dayEdList{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.dayEdVisit{border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;}
+.dayEdTop{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;}
+.dayEdMeta{flex:1 1 auto;min-width:0;font-size:.82em;color:var(--muted);padding-top:6px;}
+.dayEdMeta b{color:var(--navy);}
+.dayEdBtns{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.dayEdTime{
+  flex:1 1 7.5em;min-width:0;display:inline-flex;align-items:center;gap:6px;
+  padding:8px 10px;min-height:40px;box-sizing:border-box;border:1.5px solid var(--line);
+  border-radius:var(--radius-sm);background:var(--well);color:var(--ink);
+  font-family:inherit;font-size:.86em;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap;
+}
+.dayEdTime span{font-size:.78em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
+.dayEdTime .ic{width:13px;height:13px;margin-left:auto;color:var(--orange);flex:0 0 auto;}
+.dayEdTime.off{cursor:default;color:var(--muted);font-style:italic;}
+.dayEdDel{
+  flex:0 0 auto;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--line);border-radius:var(--radius-sm);background:transparent;color:var(--redb);cursor:pointer;
+}
+.dayEdDel .ic{width:16px;height:16px;}
 .woRow.jumpHighlight{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,121,26,.28), var(--sh-2);}
 
 /* =========================================================================
@@ -5803,7 +5871,7 @@ function adminAddVisit(woId, date){
     <div class="field"><label>Check Out Time</label><input type="time" id="addVisitOut"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveAdminVisit(${woId}, '${date}')">Add Visit</button>
-      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+      <button class="btn secondary" onclick="backToDayEditor()">Cancel</button>
     </div>
   </div></div>`;
 }
@@ -5827,6 +5895,7 @@ function saveAdminVisit(woId, date){
   document.getElementById('confirmRoot').innerHTML='';
   renderTabCounts(); renderMain();
   renderWorkOrderModal(woId);
+  backToDayEditor();
   toast('Visit added.');
 }
 function adminDeleteVisit(woId, date, sessionId){
@@ -5835,7 +5904,7 @@ function adminDeleteVisit(woId, date, sessionId){
   if(!found) return;
   const s=found.session;
   askYesNo(`Delete this visit on ${formatDateDisplay(date)} (${s.in?s.in.time:'n/a'} to ${s.out?s.out.time:'still open'})? This cannot be undone.`, yes=>{
-    if(!yes) return;
+    if(!yes){ backToDayEditor(); return; }
     const live=getWO(woId);
     const f=live && findSession(live, date, sessionId);
     if(!f) return;
@@ -5847,6 +5916,7 @@ function adminDeleteVisit(woId, date, sessionId){
     saveDB(DB);
     renderTabCounts(); renderMain();
     renderWorkOrderModal(woId);
+    backToDayEditor();
     toast('Visit deleted.');
   }, {yes:'Delete visit', no:'Cancel'});
 }
@@ -5865,7 +5935,7 @@ function editSessionTime(woId, date, sessionId, which){
     <div class="field"><label>Time</label><input type="text" id="editSessTime" value="${esc(stamp.time)}"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveSessionTime(${woId}, '${date}', '${sessionId}', '${which}')">Save</button>
-      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+      <button class="btn secondary" onclick="backToDayEditor()">Cancel</button>
     </div>
   </div></div>`;
 }
@@ -5887,6 +5957,7 @@ function saveSessionTime(woId, date, sessionId, which){
   document.getElementById('confirmRoot').innerHTML='';
   renderMain();
   renderWorkOrderModal(woId);
+  backToDayEditor();
   toast(word+' time updated.');
 }
 /* The only control a day carries is one button, and it is always whichever
@@ -5960,54 +6031,67 @@ function mileTagHTML(woId, s){
   setTimeout(()=>queueMileage(woId), 0);
   return `<span class="schedHoursTag mileTag" data-wo="${woId}" title="Round trip from home"></span>`;
 }
-function sessionLogHTML(woId, log, isAdmin){
-  const ss=logSessions(log);
-  if(!ss.length) return '';
-  return `<div class="visitLog">${ss.map((s,i)=>{
-    const h=sessionHours(s);
-    const inPencil = (isAdmin && s.in)
-      ? `<button class="fsEdit" title="Edit check-in time" onclick="event.stopPropagation();editSessionTime(${woId}, '${log.date}', '${s.id}', 'in')">${icon('pencil')}</button>` : '';
-    const outPencil = (isAdmin && s.out)
-      ? `<button class="fsEdit" title="Edit check-out time" onclick="event.stopPropagation();editSessionTime(${woId}, '${log.date}', '${s.id}', 'out')">${icon('pencil')}</button>` : '';
-    const outText = s.out ? esc(s.out.time) : '<span class="visitOpen">on site now</span>';
-    const delBtn = isAdmin
-      ? `<button class="fsEdit fsDel" title="Delete this visit" aria-label="Delete this visit" onclick="event.stopPropagation();adminDeleteVisit(${woId}, '${log.date}', '${s.id}')">${icon('trash')}</button>` : '';
-    return `<div class="visitRow">
-      <span class="visitNum">${i+1}</span>
-      <span class="visitBy">${esc((s.in && s.in.by) || 'Unknown')}</span>
-      <span class="visitTimes">${icon('login')}${esc(s.in ? s.in.time : 'n/a')}${inPencil} &rarr; ${icon('logout')}${outText}${outPencil}</span>
-      ${h!=null ? `<span class="schedHoursTag">${formatHoursMinutes(h)}</span>` : ''}
-      ${mileTagHTML(woId, s)}
-      ${delBtn}
-    </div>`;
-  }).join('')}</div>`;
+/* ---- Check In/Out list ----
+   One tight line per visit: the day, in to out, hours, miles. The day label
+   prints only on a day's first visit. Each group's totals ride on its header.
+   Admin controls live in the day editor, opened by tapping a day, so the list
+   itself stays clean. */
+function shortClock(t){
+  const m=parseClockTime(t);
+  if(m==null) return esc(t||'n/a');
+  let h=Math.floor(m/60); const mm=m%60; const ap=h>=12?'p':'a';
+  h=h%12||12;
+  return `${h}:${String(mm).padStart(2,'0')}${ap}`;
 }
-/* One scheduled day: the date, how many visits it holds, the day's total, the
-   visit log itself, and a button only if that day is one you can act on.
-
-   Time is stamped from the clock the moment the button is pressed, so a button
-   on any day other than the one being worked would log the wrong time onto the
-   wrong date. Past and future days are therefore read-only history here: their
-   visits and hours still show, and an admin can still correct a stamp, but
-   there is nothing to press. The one exception is a visit left open on an
-   earlier day, which keeps its Check Out button so time that was never closed
-   out can still be closed rather than stranded. */
-function dayLogRowHTML(woId, log, isAdmin){
-  const count=logSessions(log).length;
-  const hrs=dayLogHours(log);
-  const isToday = log.date===todayLocalISO();
+function fullClock(t){
+  const m=parseClockTime(t);
+  if(m==null) return esc(t||'n/a');
+  let h=Math.floor(m/60); const mm=m%60; const ap=h>=12?'PM':'AM';
+  h=h%12||12;
+  return `${h}:${String(mm).padStart(2,'0')} ${ap}`;
+}
+function shortDayLabel(iso){
+  if(iso===todayLocalISO()) return '<span class="dlWd">Today</span>';
+  const [y,m,d]=iso.split('-').map(Number);
+  const wd=new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'short'});
+  const yr = y!==new Date().getFullYear() ? '/'+String(y).slice(2) : '';
+  return `<span class="dlWd">${wd}</span> ${m}/${d}${yr}`;
+}
+function visitMilesHTML(woId, s){
+  if(!s.out) return '<span class="dlMi"></span>';
+  if(typeof s.miles==='number') return `<span class="dlMi">${s.miles.toFixed(1)} mi</span>`;
+  setTimeout(()=>queueMileage(woId), 0);
+  return `<span class="dlMi"><span class="mileTag" data-wo="${woId}"></span></span>`;
+}
+function dayLogRowHTML(woId, log, isAdmin, showNames){
+  const ss=logSessions(log);
+  const today=todayLocalISO();
+  const isToday = log.date===today;
   const stranded = !isToday && !!openSession(log);
-  const totalTag = hrs!=null
-    ? `<span class="schedHoursTag dayTotalTag" title="Total hours for ${formatDateDisplay(log.date)}">${formatHoursMinutes(hrs)} total</span>`
-    : '';
-  const btn = (isToday || stranded) ? checkBtnHTML(woId, log) : '';
-  return `<div class="dayLogRow">
-      <div class="dayLogDate">${formatDateDisplay(log.date)}${count?` <span class="small">(${count} visit${count>1?'s':''})</span>`:''}${isToday?' <span class="dayTodayTag">Today</span>':''}</div>
-      ${btn}
-      ${totalTag}
-      ${sessionLogHTML(woId, log, isAdmin)}
-      ${isAdmin ? `<button type="button" class="editLink visitAddBtn" onclick="event.stopPropagation();adminAddVisit(${woId}, '${log.date}')">+ Add Visit</button>` : ''}
+  const showBtn = isToday || stranded;
+  const label=shortDayLabel(log.date);
+  const lines=ss.map((s,i)=>{
+    const h=sessionHours(s);
+    const outTxt = s.out ? shortClock(s.out.time) : '<span class="dlOpen">on site</span>';
+    const who = showNames ? `<span class="dlWho">${esc((s.in && s.in.by) || 'Unknown')}</span>` : '';
+    return `<div class="dlLine">
+      <span class="dlDate">${i===0?label:''}</span>
+      <span class="dlTimes">${s.in?shortClock(s.in.time):'n/a'}<span class="dlArrow">&rarr;</span>${outTxt}${who}</span>
+      <span class="dlHrs">${h!=null?formatHoursMinutes(h):''}</span>
+      ${visitMilesHTML(woId, s)}
     </div>`;
+  });
+  if(!ss.length && !showBtn){
+    lines.push(`<div class="dlLine"><span class="dlDate">${label}</span><span class="dlTimes dlMuted">${log.date>today?'Scheduled':'Not logged'}</span></div>`);
+  }
+  if(showBtn){
+    lines.push(`<div class="dlLine dlBtnLine"><span class="dlDate">${ss.length?'':label}</span><span class="dlAct">${checkBtnHTML(woId, log)}</span></div>`);
+  }
+  const open=`openDayEditor(${woId}, '${log.date}')`;
+  const click = isAdmin
+    ? ` role="button" tabindex="0" title="Edit visits for ${formatDateDisplay(log.date)}" onclick="event.stopPropagation();${open}" onkeydown="if(event.target===this&&event.key==='Enter'){event.stopPropagation();${open}}"`
+    : '';
+  return `<div class="dlDay${isToday?' isToday':''}${isAdmin?' canEdit':''}"${click}>${lines.join('')}</div>`;
 }
 /* skipDate drops one day from the list. Kept for callers that pin a day
    elsewhere on the same screen and don't want it printed twice. */
@@ -6015,18 +6099,80 @@ function dayLogsSectionHTML(wo, skipDate){
   const rows=allDayLogsSorted(wo).filter(r=>r.log.date!==skipDate);
   const isAdmin = !!(CURRENT_USER && CURRENT_USER.isAdmin);
   if(!rows.length) return `<div class="small">${skipDate?'No other scheduled days.':'No scheduled days yet. Use Schedule Date(s) to add visit dates.'}</div>`;
+  const people=new Set();
+  rows.forEach(r=>logSessions(r.log).forEach(s=>people.add((s.in && s.in.by) || 'Unknown')));
+  const showNames=people.size>1;
   /* Grouped the same way the schedule list is, because a pre-site walkthrough
      and a work day are different kinds of visit and the hours off them get read
      differently. */
   const groups=[['presite','Pre-Site Inspection'],['full','Whole Job']];
-  return groups.map(([type, title])=>{
+  const body=groups.map(([type, title])=>{
     const inGroup=rows.filter(r=>(r.entry.type||'full')===type);
     if(!inGroup.length) return '';
+    const {total, count}=sumDayLogHours(inGroup.map(r=>r.log));
+    let miles=0, anyMiles=false;
+    inGroup.forEach(r=>logSessions(r.log).forEach(s=>{ if(typeof s.miles==='number'){ miles+=s.miles; anyMiles=true; } }));
+    const sum = count
+      ? `${count} day${count>1?'s':''} &middot; ${formatHoursMinutes(total)}${anyMiles?` &middot; ${miles.toFixed(1)} mi`:''}`
+      : '';
     return `<div class="dayLogGroup">
-      <div class="fsKey">${title}</div>
-      <div class="dayLogsList">${inGroup.map(r=>dayLogRowHTML(wo.id, r.log, isAdmin)).join('')}</div>
+      <div class="dlHead"><span class="fsKey">${title}</span>${sum?`<span class="dlSum">${sum}</span>`:''}</div>
+      <div class="dlList">${inGroup.map(r=>dayLogRowHTML(wo.id, r.log, isAdmin, showNames)).join('')}</div>
     </div>`;
   }).join('');
+  const foot = people.size===1 ? `<div class="dlFoot">All visits by ${esc([...people][0])}</div>` : '';
+  return body+foot;
+}
+/* The day editor: every visit on one day, with its in and out times as tap
+   targets, a delete per visit, and Add Visit. The smaller dialogs it opens
+   come back here when they finish. */
+let DAY_ED=null;
+function openDayEditor(woId, date){
+  const wo=getWO(woId);
+  const found=wo && findDayLog(wo, date);
+  const root=document.getElementById('confirmRoot');
+  if(!found){ DAY_ED=null; root.innerHTML=''; return; }
+  DAY_ED={woId, date};
+  const ss=logSessions(found.log);
+  const [y,m,d]=date.split('-').map(Number);
+  const wd=new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'long'});
+  const list = ss.length ? ss.map((s,i)=>{
+    const h=sessionHours(s);
+    const meta=[esc((s.in && s.in.by) || 'Unknown')];
+    if(h!=null) meta.push(formatHoursMinutes(h));
+    if(typeof s.miles==='number') meta.push(s.miles.toFixed(1)+' mi');
+    const inBtn = s.in
+      ? `<button type="button" class="dayEdTime" onclick="editSessionTime(${woId}, '${date}', '${s.id}', 'in')"><span>In</span>${fullClock(s.in.time)}${icon('pencil')}</button>`
+      : `<span class="dayEdTime off"><span>In</span>n/a</span>`;
+    const outBtn = s.out
+      ? `<button type="button" class="dayEdTime" onclick="editSessionTime(${woId}, '${date}', '${s.id}', 'out')"><span>Out</span>${fullClock(s.out.time)}${icon('pencil')}</button>`
+      : `<span class="dayEdTime off"><span>Out</span>On site</span>`;
+    return `<div class="dayEdVisit">
+      <div class="dayEdTop">
+        <div class="dayEdMeta"><b>Visit ${i+1}</b> &middot; ${meta.join(' &middot; ')}</div>
+        <button type="button" class="dayEdDel" title="Delete this visit" aria-label="Delete this visit" onclick="adminDeleteVisit(${woId}, '${date}', '${s.id}')">${icon('trash')}</button>
+      </div>
+      <div class="dayEdBtns">${inBtn}${outBtn}</div>
+    </div>`;
+  }).join('') : '<div class="small">No visits logged for this day.</div>';
+  root.innerHTML=`<div class="confirmBox" onclick="if(event.target===this)closeDayEditor()"><div class="confirmCard dayEdCard">
+    <h3>${wd}, ${formatDateDisplay(date)}</h3>
+    <div class="dayEdList">${list}</div>
+    <div class="btnRow">
+      <button class="btn" onclick="adminAddVisit(${woId}, '${date}')">Add Visit</button>
+      <button class="btn secondary" onclick="closeDayEditor()">Done</button>
+    </div>
+  </div></div>`;
+}
+function closeDayEditor(){
+  DAY_ED=null;
+  document.getElementById('confirmRoot').innerHTML='';
+}
+/* Where a visit dialog goes when it closes: back to the day editor if it was
+   opened from there, otherwise just closed. */
+function backToDayEditor(){
+  if(DAY_ED && getWO(DAY_ED.woId)) openDayEditor(DAY_ED.woId, DAY_ED.date);
+  else closeDayEditor();
 }
 
 function approveEstimate(id, checkboxEl){
@@ -10336,7 +10482,7 @@ function closeModal(){
   discardPendingNewWO();
   detachHeaderCustOutsideClickHandler();
   hideAddressSuggestions();
-  OPEN_WO_ID=null;
+  OPEN_WO_ID=null; DAY_ED=null;
   WO_JOB_EDIT=false; JD_EDIT=null; WO_EDIT_NOTE_IDX=null;
   WO_CUST_EDIT=false; WO_ADMIN_VIEW=false; WO_DOCS_VIEW=false; WO_PRIOR_VIEW=false;
   WO_LIST_OPEN={};
