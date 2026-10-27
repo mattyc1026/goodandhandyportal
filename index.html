@@ -270,7 +270,7 @@ html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,html.hc .woRow.st-green
 html.hc .woSub,html.hc .woMeta,html.hc .woLastNote,html.hc .woNoteDate,html.hc .listHeader p,html.hc .small,html.hc .field label{color:var(--hc-fg) !important;}
 html.hc .tag{border:1px solid var(--hc-fg);}
 html.hc .field input,html.hc select,html.hc textarea{border:1.5px solid var(--hc-fg);}
-html.hc a,html.hc .editLink,html.hc .adminViewLink{color:var(--orange);}
+html.hc a,html.hc .editLink{color:var(--orange);}
 *{box-sizing:border-box;}
 /* The blueprint grid from the login screen, carried through the whole app at
    a fraction of the strength. background-attachment:fixed keeps it still
@@ -440,7 +440,7 @@ header.top .brand span{color:var(--orange);}
 .hcToggleBtn[aria-pressed="true"]{border-color:var(--navy);border-width:2px;}
 
 .tabsBarWrap{position:sticky;top:0;z-index:49;}
-.tabsToggleBtn{display:none;}
+
 nav.tabs{display:flex;background:var(--navy2);padding:0 20px;gap:2px;overflow-x:auto;}
 nav.tabs button{
   background:transparent;border:none;color:rgba(255,255,255,.62);
@@ -641,9 +641,8 @@ html.hc .docsTab input[type="file"]::file-selector-button{background:var(--hc-fg
 }
 .modal{
   background:var(--paper);border-radius:var(--radius-lg);width:100%;max-width:1100px;
-  box-shadow:var(--sh-4);animation:pop .16s cubic-bezier(.2,.8,.3,1);overflow-x:hidden;
+  box-shadow:var(--sh-4);overflow-x:hidden;
 }
-@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
 .modalHead{
   display:flex;justify-content:space-between;align-items:flex-start;
   padding:20px 24px;border-bottom:1px solid var(--line);gap:14px;
@@ -761,10 +760,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
   font-size:.7em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
   vertical-align:middle;white-space:nowrap;
 }
-.dupBanner{
-  margin:0 0 14px;padding:12px 14px;border-radius:8px;line-height:1.55;
-  background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);
-}
+
 /* margin-left:auto rather than relying on the header's space-between. In field
    mode the customer block is empty, so the tabs were the only child and
    space-between parked them on the LEFT; on a phone the header wraps and the
@@ -874,9 +870,7 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .schedTypeToggle button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
 .schedPendingList{margin-top:16px;}
 .schedPendingItem{display:flex;justify-content:space-between;align-items:center;background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:7px;font-size:.85em;}
-.jobList{margin:10px 0;}
-.jobList h4{font-size:.7em;margin:14px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;font-family:var(--f-body);font-weight:700;}
-.jobList ul{margin:0;padding-left:18px;font-size:.85em;line-height:1.6;}
+
 .notesSection{margin-top:24px;border-top:1px solid var(--line);padding-top:18px;}
 .noteEntryRow{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
 .surveyScript{border:1px solid var(--line);border-left:4px solid var(--blueb);background:var(--blue);border-radius:var(--radius-sm);padding:12px 14px;font-size:.9em;line-height:1.55;color:var(--ink);margin-bottom:10px;}
@@ -923,8 +917,7 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .lostBox li{margin:2px 0;}
 .lostHead{font-weight:700;margin-top:8px;}
 .lostBox .adminPillRow{margin-top:6px;}
-.visitAddBtn{margin-top:6px;}
-.fsDel{color:var(--redb);}
+
 /* Every row spans the full width: one button stretches as far as three. */
 .adminStageBtns .stageBtn{flex:1 1 0;min-width:0;justify-content:center;text-align:center;}
 @media (min-width:901px){ .adminStageBtns .stageBtn{white-space:nowrap;padding-left:13px;padding-right:9px;} }
@@ -996,16 +989,7 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
 .splitRight iframe{flex:1;border:none;width:100%;}
 .laborPick{background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;}
 .laborPick label{display:flex;gap:8px;align-items:flex-start;font-size:.85em;margin-bottom:6px;}
-.copyBox{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px;font-size:.78em;white-space:pre-wrap;max-height:140px;overflow-y:auto;margin-top:8px;font-family:var(--f-data);line-height:1.5;}
 
-.aiPanel{background:linear-gradient(165deg,var(--navy2),var(--navy));color:#fff;border-radius:var(--radius);padding:18px;margin-top:14px;box-shadow:var(--sh-2);}
-.aiPanel h4{margin:0 0 10px;color:var(--orange2);font-size:.7em;text-transform:uppercase;letter-spacing:.12em;font-family:var(--f-body);}
-.chatLog{max-height:220px;overflow-y:auto;background:rgba(255,255,255,.07);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;font-size:.85em;line-height:1.55;}
-.chatMsg{margin-bottom:8px;}
-.chatMsg.user{color:var(--orange2);}
-.chatMsg.ai{color:#e6ecf5;}
-.aiInputRow{display:flex;gap:8px;}
-.aiInputRow input{flex:1;padding:10px;border-radius:var(--radius-sm);border:none;font-family:inherit;}
 .listEditor{background:var(--paper);color:var(--ink);border-radius:var(--radius-sm);padding:14px;margin-top:10px;}
 .listEditor h5{margin:0 0 10px;color:var(--navy);font-size:.72em;text-transform:uppercase;letter-spacing:.09em;}
 /* Job Details edit mode: each sub-list gets a header that doubles as a
@@ -1085,7 +1069,7 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
 }
 .small{font-size:.8em;color:var(--muted);line-height:1.5;}
 .confirmBox{position:fixed;inset:0;background:rgba(10,24,45,.66);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;box-sizing:border-box;overflow-y:auto;}
-.confirmCard{background:var(--paper);border-radius:var(--radius-lg);padding:30px 30px;max-width:380px;width:100%;text-align:center;box-shadow:var(--sh-4);box-sizing:border-box;overflow-x:hidden;animation:pop .16s cubic-bezier(.2,.8,.3,1);}
+.confirmCard{background:var(--paper);border-radius:var(--radius-lg);padding:30px 30px;max-width:380px;width:100%;text-align:center;box-shadow:var(--sh-4);box-sizing:border-box;overflow-x:hidden;}
 .confirmCard h3{font-size:1.15em;line-height:1.45;}
 .confirmCard .btnRow{justify-content:center;}
 .syncPill{
@@ -1154,10 +1138,10 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
 .expandLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px;align-items:start;}
 .expandLinks details{min-width:0;}
 .expandLinks .lineRow,.sideBySide>details .lineRow{font-size:.82em;}
-.custDisplay .kv{display:flex;justify-content:space-between;align-items:baseline;}
+
 .editLink{background:none;border:none;color:var(--orange);font-weight:700;font-size:.78em;cursor:pointer;padding:8px 4px;min-height:36px;font-family:inherit;text-transform:uppercase;letter-spacing:.06em;}
 .editLink:hover{color:var(--orange2);text-decoration:underline;}
-.adminViewLink{background:none;border:none;color:var(--muted);font-size:.85em;font-weight:600;cursor:pointer;text-decoration:underline;margin-right:20px;padding:8px 4px;min-height:36px;display:inline-flex;align-items:center;font-family:inherit;}
+
 .woLastNote{font-size:.78em;color:var(--muted);margin-top:3px;line-height:1.5;}
 .woLastNote b{color:var(--navy);}
 .woNoteDate{color:#93a0b3;font-family:var(--f-data);font-size:.94em;}
@@ -1225,46 +1209,16 @@ html.dark .ciBtn.out{color:var(--paper);}
 .ciBtn:hover{filter:brightness(1.05);}
 .ciBtn:active{transform:scale(.96);}
 html.hc .ciBtn{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
-/* ---- The per-visit log ----
-   One line per trip to the property: who logged it, the time in, the time out,
-   and what that visit came to. Admins get a pencil on each stamp so a mistyped
-   time is fixable without disturbing any of the other visits that day. */
-.visitLog{display:flex;flex-direction:column;gap:5px;flex:1 0 100%;margin-top:4px;}
-.visitRow{
-  display:flex;flex-wrap:wrap;align-items:center;gap:5px 9px;
-  background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:6px 10px;font-size:.84em;
-}
-.visitNum{
-  flex:0 0 auto;min-width:21px;height:21px;padding:0 5px;box-sizing:border-box;
-  border-radius:999px;background:var(--navy);color:#fff;font-size:.76em;font-weight:700;
-  display:inline-flex;align-items:center;justify-content:center;
-}
-.visitBy{font-weight:700;color:var(--navy);}
-.visitTimes{display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums;}
-.visitOpen{font-style:italic;opacity:.75;font-variant-numeric:normal;}
-.dayTotalTag{margin-left:auto;}
-/* Marks the one day in the list that can actually be stamped, so a row with a
-   button never looks arbitrary next to rows without one. */
-.dayTodayTag{
-  display:inline-block;font-size:.72em;font-weight:700;text-transform:uppercase;
-  letter-spacing:.06em;padding:2px 8px;border-radius:999px;margin-left:6px;
-  background:var(--navy);color:#fff;vertical-align:middle;
-}
-html.hc .dayTodayTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
+
 .checkStampBox{
   background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:12px 14px;margin:10px 0;font-size:.85em;
 }
 .checkStampBox .kv{display:flex;justify-content:space-between;gap:10px;}
-.dayLogsList{display:flex;flex-direction:column;gap:8px;}
-.dayLogRow{
-  display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--cream);
-  border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px;
-}
-.dayLogRow .jcCheck{background:var(--paper);padding:6px 11px;min-height:34px;font-size:.92em;}
-.dayLogRow .editLink{padding:4px 2px;min-height:28px;font-size:.7em;}
-.dayLogDate{flex:1 0 100%;font-weight:700;color:var(--navy);font-size:.94em;margin-bottom:1px;}
+/* The Check In/Out list in the full view keeps the smaller text it always had,
+   without the extra box around it. */
+.ciListWrap{font-size:.85em;}
+
 /* ---- Check In/Out list (dayLogsSectionHTML) ----
    One white card per group, hairlines between days. Where there is room each
    visit is a single line with fixed columns, so times, hours and miles line up
@@ -1377,7 +1331,7 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
      thumb zone, clearly distinct in color from the navy header, with
      a soft "peek" of the next tab plus edge fades so scrolling for
      more tabs is obvious rather than a hidden gesture. */
-  .tabsToggleBtn{display:none !important;}
+  
   .tabsBarWrap{
     position:fixed !important;top:auto !important;bottom:0;left:0;right:0;
     background:var(--paper);
@@ -1393,7 +1347,6 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
     overflow-x:hidden;flex-wrap:nowrap;
     max-height:none;
   }
-  nav.tabs#tabsNav.open{display:flex;}
   nav.tabs#tabsNav button{
     /* Buttons share the available width equally and shrink together so the
        bar itself never exceeds the viewport width. min-width:0 lets flex
@@ -1563,7 +1516,7 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   /* ---- buttons everywhere: comfortable thumb-sized targets ---- */
   .btn{padding:15px 20px;min-height:52px;font-size:1.02em;}
   .btnRow{gap:16px;}
-  .editLink,.adminViewLink{min-height:48px;display:inline-flex;align-items:center;font-size:.9em;margin-right:22px;padding:10px 6px;}
+  .editLink{min-height:48px;display:inline-flex;align-items:center;font-size:.9em;margin-right:22px;padding:10px 6px;}
 
   /* ---- estimate / invoice split builder: stack vertically ---- */
   .splitWrap{flex-direction:column;height:auto;gap:14px;}
@@ -1580,7 +1533,7 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   .noteEntryRow textarea{min-height:48px;}
   .jcCheck{min-height:48px;padding:10px 16px;gap:12px;}
   .ciBtn{min-height:46px;padding:11px 18px;font-size:.9em;}
-  .visitRow{font-size:.9em;}
+  
   .noteItem .noteActions{gap:20px;}
   .noteItem .noteActions button{min-height:40px;font-size:.88em;padding:8px 4px;white-space:nowrap;}
   .docRow{flex-direction:column;align-items:stretch;gap:12px;padding:16px;}
@@ -1690,7 +1643,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   font-size:.92em;line-height:1.35;overflow-wrap:anywhere;color:var(--navy);font-weight:600;
 }
 .fgValue .ic{flex:0 0 auto;width:15px;height:15px;margin-top:2px;opacity:.8;}
-.fgValue.muted{color:var(--muted);font-weight:400;}
 
 /* Shared small controls: More toggles, sub-panels, folded sections. */
 /* Pills are a primary control in field view, not a footnote: they are what
@@ -1797,12 +1749,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   padding:0 24px 24px;line-height:1.55;overflow-wrap:anywhere;
 }
 
-/* The customer name card is the way into editing. Nothing about it changes
-   visually until it is touched, because a card that advertises an edit affordance
-   on every job is one more thing to read on a doorstep. */
-.fieldGrid .fgCell.fgEditable{cursor:pointer;-webkit-tap-highlight-color:transparent;}
-.fieldGrid .fgCell.fgEditable:active{transform:scale(.995);}
-
 /* ---- The check in/out card ----
    One card: the button when today is a scheduled day, the status strip, and
    every earlier day folded underneath it. */
@@ -1822,7 +1768,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   width:30px;height:30px;font-size:.99em;margin-left:auto;
   background:var(--chartreuse-ink);color:var(--chartreuse);
 }
-.fieldStatus .fsHours + .fsChev{margin-left:14px;}
+
 /* Anything attached under the strip. Same fade, so the pieces read as one card
    rather than a card with trays under it: a 90deg gradient is uniform top to
    bottom, so it carries across every join. Only the last piece rounds off. */
@@ -1862,8 +1808,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .dayLogGroup{margin-bottom:16px;}
 .dayLogGroup:last-child{margin-bottom:0;}
 .dayLogGroup .fsKey{margin-bottom:6px;}
-.fieldDayPanel .dayLogRow{margin-bottom:8px;}
-.fieldDayPanel .dayLogRow:last-child{margin-bottom:0;}
 
 /* ---- Schedule card: purple, so it reads apart from the green check strip
    sitting right under it ---- */
@@ -1923,10 +1867,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
    class and its id; only the width rule needs relaxing for a card body. */
 .fieldMode .modalHeadCust.editing{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
 .fieldMode .modalHeadCust.editing .kv b{font-size:.68em;}
-/* More and Edit sit on one row under the customer grid. */
-.fieldGridBtns{display:flex;align-items:center;gap:12px;margin-top:14px;}
-.fieldGridBtns .fieldMoreBtn{margin-top:0;}
-.fieldGridBtns .fieldMoreBtn.alignEnd{margin-left:auto;}
+
 /* The inline schedule form. Same inputs as the desktop widget, stacked. */
 .fieldSchedForm .field{margin-bottom:12px;}
 .fieldSchedForm .field:last-of-type{margin-bottom:0;}
@@ -1960,27 +1901,20 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
    without the padding a desktop panel can afford. */
 .fieldSec .schedRow{padding:11px 12px;margin-bottom:8px;}
 .fieldSec .schedRow:last-child{margin-bottom:0;}
-.fieldSec .dayLogRow{margin-bottom:8px;}
+
 /* Note meta becomes a row that can carry a follow-up tag and admin actions. */
 .fsNoteTop{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:4px;}
 .fsNoteActions{display:inline-flex;gap:14px;margin-left:auto;}
 .fsNoteActions button{background:none;border:none;padding:6px 2px;font-family:inherit;font-size:.78em;font-weight:700;color:var(--orange);cursor:pointer;}
 
-/* Minimal day status: the date, the times, and an edit pencil for admins. */
+/* The day status strip on the check in/out card. */
 .fieldStatus{
   display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;
   padding:18px 24px;border:1px solid var(--line);border-radius:var(--radius);
   background:var(--well);font-size:.83em;
 }
 .fsTitle{font-size:.92em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);}
-.fsDate{font-weight:800;}
-.fsTime{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-weight:600;}
-.fsHours{margin-left:auto;font-weight:700;color:var(--navy);}
-.fsEdit{
-  background:none;border:none;padding:2px;cursor:pointer;color:var(--orange);
-  display:inline-flex;align-items:center;
-}
-.fsEdit .ic{width:14px;height:14px;}
+
 .fieldBtn.wide{grid-column:1 / -1;width:100%;}
 .fieldActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
 .fieldActions:has(> :only-child){grid-template-columns:1fr;}
@@ -1993,14 +1927,13 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   text-decoration:none;cursor:pointer;
 }
 .fieldBtn .ic{width:28px;height:28px;}
-.fieldBtn.primary{background:var(--orange);border-color:var(--orange);color:#fff;}
+
 .fieldBtn.done{background:var(--well);color:var(--muted);}
 .fieldBtn:disabled{opacity:.75;cursor:default;}
 .fieldBtn:active:not(:disabled){transform:scale(.97);}
 .fieldBlock{border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px;background:var(--well);}
 .fieldBlockTitle{font-size:.74em;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px;}
-.fieldDay{text-align:center;font-weight:800;font-size:1.05em;margin-bottom:10px;}
-.fieldFull{width:100%;margin-top:4px;}
+
 .fieldNoteLabel{
   display:block;margin-bottom:5px;
   font-size:.74em;letter-spacing:.06em;text-transform:uppercase;
@@ -2015,7 +1948,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldNoteBtns{display:flex;gap:10px;}
 .fieldNoteBtns .btn{flex:1;min-height:50px;}
 .fieldModeBtn.on{background:var(--orange);border-color:var(--orange);color:#fff;}
-
 
 /* =========================================================================
    FIELD VIEW COLOUR
@@ -2070,22 +2002,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fieldGrid .fgCell:nth-child(3) .fgValue .ic{color:var(--redb);}
 .fieldGrid .fgCell:nth-child(4) .fgValue .ic{color:var(--cyan-ink);}
 
-/* ---- Check in / check out ----
-   The one control on the screen that changes the state of the day, so it is
-   the one control that is fully saturated. Green to start, amber to stop:
-   readable as a traffic signal without reading the label at all. */
-.fieldBtn.goIn{
-  background:linear-gradient(135deg,#1a8a54 0%,#17b86d 100%);
-  border-color:transparent;color:#fff;
-  box-shadow:0 6px 18px rgba(23,150,88,.34);
-}
-.fieldBtn.goOut{
-  background:linear-gradient(135deg,#c2571b 0%,#f0902b 100%);
-  border-color:transparent;color:#fff;
-  box-shadow:0 6px 18px rgba(200,100,26,.34);
-}
-.fieldBtn.goIn .ic,.fieldBtn.goOut .ic{color:#fff;}
-
 /* ---- Day status strip ----
    A top rule and a left-to-right fade, the same shape the folding section cards
    use. The left rail is reserved for the customer cells, where it marks a row of
@@ -2094,14 +2010,10 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   border-top:4px solid var(--chartreuse-ink);
   background:linear-gradient(90deg,var(--chartreuse) 0%,var(--paper) 62%);
 }
-.fsDate{color:var(--navy);}
+
 /* Solid navy rather than the green it used to be: a green pill on chartreuse
    is two neighbours on the colour wheel fighting, and the hours are the one
    number on this strip worth picking out. */
-.fsHours{
-  padding:3px 11px;border-radius:999px;font-weight:800;
-  background:var(--navy2);color:#fff;border:1px solid transparent;
-}
 
 /* ---- The two big actions ---- */
 .fieldActions .fieldBtn{box-shadow:var(--sh-1);}
@@ -2182,10 +2094,9 @@ html.hc .fieldSec{background:var(--hc-bg);box-shadow:none;}
 html.hc .fieldGrid .fgCell.fgName{background:var(--hc-fg);border-color:var(--hc-fg);}
 html.hc .fieldGrid .fgCell.fgName .fgLabel,
 html.hc .fieldGrid .fgCell.fgName .fgName{color:var(--hc-bg);}
-html.hc .fieldBtn.goIn,html.hc .fieldBtn.goOut,html.hc .fieldMoreBtn.on,
+html.hc .fieldMoreBtn.on,
 html.hc .fieldSecChev{background:var(--hc-fg);color:var(--hc-bg);border-color:var(--hc-fg);box-shadow:none;}
-html.hc .fieldBtn.goIn .ic,html.hc .fieldBtn.goOut .ic{color:var(--hc-bg);}
-html.hc .fsHours{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
+
 html.hc .fieldSecHead,html.hc .fsKey,html.hc .fsNoteHead,
 html.hc .fieldNote .fieldBlockTitle{color:var(--hc-fg);}
 html.hc .fieldGrid .fgCell:nth-child(2) .fgLabel,
@@ -2286,7 +2197,6 @@ html.hc .mapLink,html.hc .mailLink{border-bottom:2px solid var(--orange);font-we
   transition:opacity .2s ease,transform .2s ease;
   animation:toastIn .2s cubic-bezier(.2,.8,.3,1);
 }
-@keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 html.hc .toastItem{background:var(--hc-fg);color:var(--hc-bg);border:2px solid var(--hc-bg);}
 
 /* ---- Visible keyboard focus ----
@@ -2309,9 +2219,9 @@ html.hc :focus-visible{outline:3px solid var(--hc-fg);}
 /* ---- Data figures ----
    Times, counts and totals are set in the mono face with tabular figures so
    columns of numbers line up down a list instead of shifting per glyph. */
-.dayLogRow .jcCheck,.schedRow .small,.woNoteDate,.subListHeader .count,
+.schedRow .small,.woNoteDate,.subListHeader .count,
 nav.tabs button .count,.schedHoursTag,.priceTag{font-variant-numeric:tabular-nums;}
-.dayLogRow .jcCheck{font-family:var(--f-body);}
+
 .schedHoursTotal{font-variant-numeric:tabular-nums;}
 
 /* ---- Scroll surfaces ----
@@ -2645,10 +2555,7 @@ html.dark.hc .btn.secondary:hover{
    particular inverts meaning between themes, so anything that used it as a
    dark *background* rather than as heading ink has to be corrected here. */
 html.dark .addrSuggest{background:var(--paper);color:var(--ink);}
-html.dark .aiPanel{
-  background:linear-gradient(165deg,var(--navy2),#0b1524);
-  color:var(--ink);border:1px solid var(--line);
-}
+
 html.dark .editRow .jdDel{color:#2a0f0b;}
 /* High contrast wins outright if somehow both are set. */
 
@@ -2782,9 +2689,8 @@ html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
    so the border is redundant and the fill alone reads as recessed. This is
    what stops the work order modal turning into four stacked greys. */
 .custPanel,.jobPanel{border:none;background:var(--s2);}
-.docRow,.dayLogRow{border:none;background:var(--s2);}
-.custPanel .docRow,.jobPanel .docRow,
-.custPanel .dayLogRow,.jobPanel .dayLogRow{background:var(--paper);}
+.docRow{border:none;background:var(--s2);}
+.custPanel .docRow,.jobPanel .docRow{background:var(--paper);}
 .descParagraph,.listEditor,.expandLinks details,.checkStampBox{
   background:transparent;border:1px solid var(--line);
 }
@@ -2970,8 +2876,8 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   html,body{background:#fff !important;background-image:none !important;color:#000;}
   header.top,.globalSearchBar,.tabsBarWrap,nav.tabs,#toastStack,#modalGhost,
   .newWoBtn,.closeX,.headerTabs,.settingsWrap,.syncPill,.logoutBtn,
-  .sortWrap,.editLink,.adminViewLink,.copyIcon,.docActions,.btnRow,
-  .checkInOutRow,.estDecisionRow,.jcCheck,.ciBtn,.fsEdit{display:none !important;}
+  .sortWrap,.editLink,.copyIcon,.docActions,.btnRow,
+  .checkInOutRow,.estDecisionRow,.jcCheck,.ciBtn{display:none !important;}
   /* An open modal becomes the printed page. Without this the scrim prints as
      a full-bleed grey block and the sheet is clipped to the viewport. */
   .overlay,.confirmBox{
@@ -2987,7 +2893,7 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   /* When a modal is open, the board behind it should not print as well. */
   body:has(#modalRoot > *) #appScreen{display:none !important;}
   main{padding:0 !important;max-width:none !important;}
-  .woRow,.docRow,.dayLogRow,.lineRow,.custPanel,.jobPanel,.schedRow{
+  .woRow,.docRow,.lineRow,.custPanel,.jobPanel,.schedRow{
     break-inside:avoid;page-break-inside:avoid;
     box-shadow:none !important;
   }
@@ -3351,10 +3257,6 @@ window._bootSafety = setTimeout(function(){
     <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
   </div>
   <div class="tabsBarWrap" id="tabsBarWrap">
-    <button class="tabsToggleBtn" id="tabsToggleBtn" onclick="toggleTabsMenu()">
-      <span class="hamburgerIcon">&#9776;</span>
-      <span id="currentTabLabel">Work Orders</span>
-    </button>
     <nav class="tabs" id="tabsNav">
       <button data-tab="workorders" onclick="switchTab('workorders')"><svg class="ic" aria-hidden="true"><use href="#i-clipboard"/></svg><span class="tabLbl">Work Orders</span> <span class="count" id="cnt-workorders">0</span></button>
       <button data-tab="presite" onclick="switchTab('presite')"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="tabLbl"><span class="tabFull">Pre-Site Inspections</span><span class="tabShort">Pre-Site</span></span> <span class="count" id="cnt-presite">0</span></button>
@@ -3386,8 +3288,9 @@ window._bootSafety = setTimeout(function(){
    obvious, and the login screen used to point at logo.png and show a broken
    image icon whenever that file was missing, misnamed, or case-mismatched on
    a case-sensitive host. Embedded, neither can fail, and there is no second
-   network request. */
-const LOGO_SRC_HI='data:image/png;base64,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';
+   network request. The image itself is the home-screen icon in the page
+   head; it is read from there rather than stored a second time. */
+const LOGO_SRC_HI=(document.querySelector('link[rel="apple-touch-icon"]')||{}).href||'';
 const DB_KEY='gh_portal_db_v1';
 /* Single escaper used everywhere user-entered text is injected into innerHTML.
    Previously most render paths interpolated raw values, so a customer name,
@@ -3436,6 +3339,57 @@ let syncDb=null, syncStorage=null, syncStorageErr='', syncUnsub=null, applyingRe
    (or an error) comes back. renderMain() shows skeleton rows while it is set
    and the local board is still empty. */
 var SYNC_LOADING=false;
+/* Each save turns every work order into text once, and everything that needs
+   that text (the phone copy, the unsynced-change list and the cloud upload)
+   shares it instead of redoing the work. WO_JSON_CACHE holds the text from the
+   most recent save; SAVE_GEN tells the cloud upload whether that text is still
+   current. Declared with var because loadDB() below runs before this point. */
+var SAVE_GEN=0, WO_JSON_CACHE=null, LOW_STORAGE_WARNED=false;
+function woJsonList(db){
+  const list=[], byId={};
+  (db.workOrders||[]).forEach(wo=>{ const j=JSON.stringify(wo); list.push(j); byId[String(wo.id)]=j; });
+  return {list, byId};
+}
+/* Builds the same text JSON.stringify(db) would, reusing the work order text
+   that was already made. */
+function dbJsonFrom(db, woList){
+  const parts=[];
+  Object.keys(db).forEach(k=>{
+    const v = k==='workOrders' && Array.isArray(db[k]) ? '['+woList.join(',')+']' : JSON.stringify(db[k]);
+    if(v!==undefined) parts.push(JSON.stringify(k)+':'+v);
+  });
+  return '{'+parts.join(',')+'}';
+}
+/* Only the newest damaged-copy backup is kept; older ones just take up space. */
+function pruneCorruptBackups(){
+  try{
+    const prefix=DB_KEY+'_corrupt_';
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.indexOf(prefix)===0) keys.push(k); }
+    keys.sort((a,b)=>Number(b.slice(prefix.length))-Number(a.slice(prefix.length)));
+    keys.slice(1).forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+}
+/* Writes the phone copy. If the phone is out of storage, the change is not
+   lost: the caller still sends it to the cloud, and a warning shows once. */
+function writeLocalCopy(json){
+  try{ localStorage.setItem(DB_KEY, json); return true; }
+  catch(e){
+    pruneCorruptBackups();
+    try{ localStorage.setItem(DB_KEY, json); return true; }catch(e2){}
+    console.error('Phone storage is full; the local copy could not be saved.', e);
+    if(!LOW_STORAGE_WARNED){
+      LOW_STORAGE_WARNED=true;
+      setTimeout(()=>{ try{ toast('This device is low on storage. Changes are still being saved to the cloud.'); }catch(_){} }, 0);
+    }
+    return false;
+  }
+}
+/* For changes arriving from the cloud, which are applied outside saveDB(). */
+function writeLocalDB(){
+  WO_JSON_CACHE=null;
+  writeLocalCopy(JSON.stringify(DB));
+}
 function loadDB(){
   /* A single corrupt localStorage entry used to throw here before anything
      rendered, permanently white-screening the app with no way for a
@@ -3451,6 +3405,7 @@ function loadDB(){
       console.error('Local database was unreadable, starting fresh.', e);
       try{ localStorage.setItem(DB_KEY+'_corrupt_'+Date.now(), raw); }catch(_){}
       localStorage.removeItem(DB_KEY);
+      pruneCorruptBackups();
     }
   }
   const db={users:{}, workOrders:[], nextId:1};
@@ -3465,8 +3420,11 @@ function saveDB(db){
   if(!applyingRemote) db.updatedAt=Date.now();
   // DB is still being created on a first ever load, when this is called from loadDB().
   let isMain=false; try{ isMain = db===DB; }catch(e){}
-  if(!applyingRemote && isMain) trackPendingChanges();
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  const wj=woJsonList(db);
+  if(!applyingRemote && isMain) trackPendingChanges(wj.byId);
+  SAVE_GEN++;
+  WO_JSON_CACHE = isMain ? {gen:SAVE_GEN, byId:wj.byId} : null;
+  writeLocalCopy(dbJsonFrom(db, wj.list));
   if(!applyingRemote) pushToCloud();
 }
 /* Declared here, above the load-time normalizeDB() call below, because that
@@ -3716,7 +3674,7 @@ function openDataConnection(){
           DB.storageUsedBytes=meta.storageUsedBytes||0;
           CLOUD_MIRROR.meta=data.meta;
           normalizeDB(DB);
-          localStorage.setItem(DB_KEY, JSON.stringify(DB));
+          writeLocalDB();
         }catch(err){ console.error('Bad meta payload', err); }
         applyingRemote=false;
       }
@@ -3784,7 +3742,7 @@ function openDataConnection(){
           CLOUD_MIRROR.wos[id]=json;
           if(OPEN_WO_ID!==null && String(OPEN_WO_ID)===id) touchedOpenWO=true;
         });
-        localStorage.setItem(DB_KEY, JSON.stringify(DB));
+        writeLocalDB();
       } finally {
         applyingRemote=false;
       }
@@ -3800,6 +3758,7 @@ function openDataConnection(){
       // Anything changed on this device before the cloud copy arrived was
       // replaced by it above; send whatever is still genuinely different.
       if(firstLoad || needPush) pushToCloud();
+      if(firstLoad) setTimeout(backfillMileage, 3000);
     }, syncErrorHandler));
 
     syncUnsub=()=>unsubs.forEach(u=>{ try{ u(); }catch(e){} });
@@ -3881,7 +3840,7 @@ function migrateToPerWorkOrderDocs(data){
       CLOUD_MIRROR.meta=meta;
       CLOUD_MIRROR.wos=written;
       DB.updatedAt=stamp;
-      localStorage.setItem(DB_KEY, JSON.stringify(DB));
+      writeLocalDB();
       MIGRATING=false;
       setSyncPill('on');
       if(CURRENT_USER){ renderTabCounts(); renderMain(); }
@@ -3950,6 +3909,9 @@ function flushToCloud(){
   const batch=syncDb.batch();
   let writes=0;
   const written={};
+  // The text from the last save is reused only when no cloud change has been
+  // applied since; otherwise each job is turned into text fresh, as before.
+  const cached = (WO_JSON_CACHE && WO_JSON_CACHE.gen===SAVE_GEN) ? WO_JSON_CACHE.byId : null;
 
   const meta=metaPayload();
   if(meta!==CLOUD_MIRROR.meta){
@@ -3959,8 +3921,9 @@ function flushToCloud(){
     writes++;
   }
   (DB.workOrders||[]).forEach(wo=>{
-    const json=JSON.stringify(wo);
-    written[String(wo.id)]=json;
+    const id=String(wo.id);
+    const json=(cached && cached[id]!==undefined) ? cached[id] : JSON.stringify(wo);
+    written[id]=json;
     if(CLOUD_MIRROR.wos[String(wo.id)]!==json){
       batch.set(woCollectionRef().doc(String(wo.id)), {wo:json, updatedAt:stamp});
       writes++;
@@ -4011,7 +3974,7 @@ var BOOT_COPY=BOOT_COPY||{};
 function savePendingChanges(){
   try{ localStorage.setItem(SYNC_PENDING_KEY, JSON.stringify(SYNC_PENDING)); }catch(e){}
 }
-function trackPendingChanges(){
+function trackPendingChanges(jsonById){
   if(typeof SYNC_PENDING!=='object' || !SYNC_PENDING) return;
   if(typeof BOOT_COPY!=='object' || !BOOT_COPY) return;   // still loading
   const ready = typeof CLOUD_READY==='object' && CLOUD_READY && CLOUD_READY.wos;
@@ -4020,7 +3983,7 @@ function trackPendingChanges(){
     const id=String(wo.id);
     if(id in SYNC_PENDING) return;
     const ref = ready ? CLOUD_MIRROR.wos[id] : BOOT_COPY[id];
-    const json=JSON.stringify(wo);
+    const json=(jsonById && jsonById[id]!==undefined) ? jsonById[id] : JSON.stringify(wo);
     if(ref===json) return;
     SYNC_PENDING[id]= ref===undefined ? null : ref;
     ch=true;
@@ -4658,6 +4621,7 @@ function enterApp(u){
   document.getElementById('suErr').textContent='';
   ['siPass','suPass','suPass2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   switchTab(lastTab());
+  fitTabLabelsSoon();
   syncFieldModeBtn();
   syncRolodexBtn();
   restoreSession();
@@ -4874,7 +4838,6 @@ function wholeJobDayArrived(wo){
     return lo<=hi;
   });
 }
-function hasWholeJobDates(wo){ return (wo.scheduleDates||[]).some(d=>d.type!=='presite' && d.startDate); }
 /* Moves one job from Scheduled to In Progress if its day has come. */
 function maybeStartJob(wo, reason){
   if(!wo || !inJobScheduledList(wo) || !wholeJobDayArrived(wo)) return false;
@@ -5012,19 +4975,13 @@ function switchTab(tab){
   rememberTab(tab);
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   const activeBtn = document.querySelector('nav.tabs button[data-tab="'+tab+'"]');
-  const label = document.getElementById('currentTabLabel');
-  if(activeBtn && label){
-    label.textContent = activeBtn.textContent.replace(/\s*\d+\s*$/,'').trim();
-  }
   if(activeBtn && activeBtn.scrollIntoView){
     // Keep the tapped tab fully in view inside the scrollable bottom bar
     // (mobile) instead of leaving it clipped at an edge.
     activeBtn.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
   }
-  closeTabsMenu();
   renderTabCounts();
   renderMain();
-  fitTabLabels();
   window.scrollTo({top:0, behavior:'auto'});
 }
 /* Finds the largest label size, between 8px and 13px, at which every bottom
@@ -5054,13 +5011,14 @@ window.addEventListener('resize', ()=>{ clearTimeout(window._tabFitT); window._t
 window.addEventListener('orientationchange', ()=>setTimeout(fitTabLabels, 200));
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>fitTabLabels());
 document.addEventListener('DOMContentLoaded', ()=>fitTabLabels());
-function toggleTabsMenu(){
-  const nav = document.getElementById('tabsNav');
-  if(nav) nav.classList.toggle('open');
-}
-function closeTabsMenu(){
-  const nav = document.getElementById('tabsNav');
-  if(nav) nav.classList.remove('open');
+/* Labels only need resizing when the screen size changes, when fonts finish
+   loading, when the tab bar first appears, or when a count gets longer or
+   shorter (9 to 10). Several counts change together, so this waits a frame. */
+let TAB_FIT_QUEUED=false;
+function fitTabLabelsSoon(){
+  if(TAB_FIT_QUEUED) return;
+  TAB_FIT_QUEUED=true;
+  requestAnimationFrame(()=>{ TAB_FIT_QUEUED=false; fitTabLabels(); });
 }
 /* Declared with var, not let: renderTabCounts() runs during session restore
    near the top of this script, long before execution reaches this line. A
@@ -5096,6 +5054,7 @@ function setCount(id, n){
   const next=String(n);
   if(prev===next) return;
   el.textContent=next;
+  if(prev.length!==next.length) fitTabLabelsSoon();
   if(prev==='' || reducedMotion()) return;
   el.classList.remove('bump');
   void el.offsetWidth;
@@ -5684,10 +5643,6 @@ function logSessions(log){
 function openSession(log){
   return logSessions(log).find(s=>s.in && !s.out) || null;
 }
-/* A day with at least one finished visit and nobody currently on site. */
-function dayFullyClosed(log){
-  return logSessions(log).length>0 && !openSession(log);
-}
 function findDayLog(wo, date){
   for(const entry of (wo.scheduleDates||[])){
     const log=(entry.dayLogs||[]).find(l=>l.date===date);
@@ -5892,6 +5847,7 @@ function saveAdminVisit(woId, date){
   syncDayLogLegacy(found.log);
   addAdminLog(wo, `Added a visit for ${date} by hand: ${by}, ${sess.in.time} to ${sess.out?sess.out.time:'still open'}.`);
   saveDB(DB);
+  if(sess.out) queueMileage(woId);
   document.getElementById('confirmRoot').innerHTML='';
   renderTabCounts(); renderMain();
   renderWorkOrderModal(woId);
@@ -5975,42 +5931,69 @@ function checkBtnHTML(woId, log){
 /* ---- Mileage ----
    Each finished visit (a check in plus its check out) gets the round trip
    driving distance: home, to the job address, and back home. Google Maps
-   (Routes API) does the math. The figure is stored on the visit itself, so it
-   is only looked up once, and visits logged before this existed get filled in
-   the first time they are shown. */
+   (Routes API) works out the drive there and the drive back as two separate
+   routes, because one-way streets and freeway ramps can make them differ.
+
+   Miles are logged once and then never touched again:
+   - At check-out, the visit gets its miles.
+   - If an earlier visit to the same address already has miles, those are
+     reused instead of asking Google again.
+   - If there was no signal at check-out, the visit is retried when the
+     connection comes back.
+   - When the app opens, any past visit still missing miles is filled in, once. */
 const MILEAGE_HOME='13067 War Bonnet St, San Diego, CA 92129';
 const MILEAGE_KEY='AIzaSyDEnMD-Ok3YupmoEzMML1jyJtN52aXS3GI';
 const MILEAGE_CACHE={};      // address -> Promise of round trip miles
-const MILEAGE_FAILED={};     // address -> true, so a failed lookup is not retried until reload
+const MILEAGE_BAD={};        // address -> true when Google could not route it; not retried until the app reopens
 const MILEAGE_QUEUED={};     // work order id -> true while a lookup is running
+const MILEAGE_RETRY=new Set(); // work order ids waiting for a connection
+let MILEAGE_BACKFILLED=false;
 async function routeMeters(from, to){
   const res=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{
     method:'POST',
     headers:{'Content-Type':'application/json','X-Goog-Api-Key':MILEAGE_KEY,'X-Goog-FieldMask':'routes.distanceMeters'},
     body:JSON.stringify({origin:{address:from}, destination:{address:to}, travelMode:'DRIVE', routingPreference:'TRAFFIC_UNAWARE'})
   });
-  if(!res.ok) throw new Error('Routes API '+res.status);
+  if(!res.ok){ const e=new Error('Routes API '+res.status); e.badAddress=res.status>=400 && res.status<500; throw e; }
   const data=await res.json();
   const m=data && data.routes && data.routes[0] && data.routes[0].distanceMeters;
-  if(typeof m!=='number') throw new Error('No route found');
+  if(typeof m!=='number'){ const e=new Error('No route found'); e.badAddress=true; throw e; }
   return m;
+}
+/* Miles already saved on any visit to this exact address, on any job. */
+function knownMiles(address){
+  const key=address.trim().toLowerCase();
+  for(const wo of (DB.workOrders||[])){
+    for(const {log} of allDayLogsSorted(wo)){
+      for(const s of logSessions(log)){
+        if(typeof s.miles==='number' && String(s.milesAddr||'').trim().toLowerCase()===key) return s.miles;
+      }
+    }
+  }
+  return null;
 }
 function roundTripMiles(address){
   const key=address.trim().toLowerCase();
   if(!MILEAGE_CACHE[key]){
-    MILEAGE_CACHE[key]=Promise.all([routeMeters(MILEAGE_HOME,address), routeMeters(address,MILEAGE_HOME)])
-      .then(([a,b])=>Math.round(((a+b)/1609.344)*10)/10)
-      .catch(err=>{ delete MILEAGE_CACHE[key]; MILEAGE_FAILED[key]=true; throw err; });
+    const saved=knownMiles(address);
+    MILEAGE_CACHE[key] = saved!=null ? Promise.resolve(saved)
+      : Promise.all([routeMeters(MILEAGE_HOME,address), routeMeters(address,MILEAGE_HOME)])
+          .then(([a,b])=>Math.round(((a+b)/1609.344)*10)/10)
+          .catch(err=>{ delete MILEAGE_CACHE[key]; if(err && err.badAddress) MILEAGE_BAD[key]=true; throw err; });
   }
   return MILEAGE_CACHE[key];
 }
+function needsMiles(wo){
+  return allDayLogsSorted(wo).some(({log})=>logSessions(log).some(s=>s.out && typeof s.miles!=='number'));
+}
+/* Returns a promise that settles once this job's lookup is finished. */
 function queueMileage(woId){
-  if(MILEAGE_QUEUED[woId]) return;
+  if(MILEAGE_QUEUED[woId]) return MILEAGE_QUEUED[woId];
   const wo=getWO(woId);
   const address=wo && wo.customer && String(wo.customer.address||'').trim();
-  if(!address || MILEAGE_FAILED[address.toLowerCase()]) return;
-  MILEAGE_QUEUED[woId]=true;
-  roundTripMiles(address).then(miles=>{
+  if(!address || MILEAGE_BAD[address.toLowerCase()] || !needsMiles(wo)) return Promise.resolve();
+  const p=roundTripMiles(address).then(miles=>{
+    MILEAGE_RETRY.delete(woId);
     const live=getWO(woId);
     if(!live) return;
     let changed=false;
@@ -6022,15 +6005,27 @@ function queueMileage(woId){
     if(!changed) return;
     saveDB(DB);
     document.querySelectorAll(`.mileTag[data-wo="${woId}"]`).forEach(el=>{ el.textContent=miles.toFixed(1)+' mi'; });
-  }).catch(err=>{ console.warn('Mileage lookup failed:', err); })
-    .finally(()=>{ delete MILEAGE_QUEUED[woId]; });
+  }).catch(err=>{
+    console.warn('Mileage lookup failed:', err);
+    if(!(err && err.badAddress)) MILEAGE_RETRY.add(woId);
+  }).finally(()=>{ delete MILEAGE_QUEUED[woId]; });
+  MILEAGE_QUEUED[woId]=p;
+  return p;
 }
-function mileTagHTML(woId, s){
-  if(!s.out) return '';
-  if(typeof s.miles==='number') return `<span class="schedHoursTag mileTag" title="Round trip from home">${s.miles.toFixed(1)} mi</span>`;
-  setTimeout(()=>queueMileage(woId), 0);
-  return `<span class="schedHoursTag mileTag" data-wo="${woId}" title="Round trip from home"></span>`;
+/* Runs once each time the app opens: fills in any past visit still missing
+   miles, one job at a time so Google is not hit with a burst. */
+async function backfillMileage(){
+  if(MILEAGE_BACKFILLED) return;
+  MILEAGE_BACKFILLED=true;
+  const ids=(DB.workOrders||[]).filter(needsMiles).map(w=>w.id);
+  for(const id of ids){ await queueMileage(id); }
 }
+function retryMileage(){
+  if(!MILEAGE_RETRY.size || (navigator.onLine===false)) return;
+  [...MILEAGE_RETRY].forEach(id=>queueMileage(id));
+}
+window.addEventListener('online', retryMileage);
+setInterval(retryMileage, 120000);
 /* ---- Check In/Out list ----
    One tight line per visit: the day, in to out, hours, miles. The day label
    prints only on a day's first visit. Each group's totals ride on its header.
@@ -6051,7 +6046,7 @@ function fullClock(t){
   return `${h}:${String(mm).padStart(2,'0')} ${ap}`;
 }
 function shortDayLabel(iso){
-  if(iso===todayLocalISO()) return '<span class="dlWd">Today</span>';
+  if(iso===isoToday()) return '<span class="dlWd">Today</span>';
   const [y,m,d]=iso.split('-').map(Number);
   const wd=new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'short'});
   const yr = y!==new Date().getFullYear() ? '/'+String(y).slice(2) : '';
@@ -6060,12 +6055,11 @@ function shortDayLabel(iso){
 function visitMilesHTML(woId, s){
   if(!s.out) return '<span class="dlMi"></span>';
   if(typeof s.miles==='number') return `<span class="dlMi">${s.miles.toFixed(1)} mi</span>`;
-  setTimeout(()=>queueMileage(woId), 0);
   return `<span class="dlMi"><span class="mileTag" data-wo="${woId}"></span></span>`;
 }
 function dayLogRowHTML(woId, log, isAdmin, showNames){
   const ss=logSessions(log);
-  const today=todayLocalISO();
+  const today=isoToday();
   const isToday = log.date===today;
   const stranded = !isToday && !!openSession(log);
   const showBtn = isToday || stranded;
@@ -6464,7 +6458,7 @@ function scheduleDatesSectionHTML(wo, id){
    goes behind a single line you can open. */
 function schedGroupHTML(id, title, list){
   if(!list.length) return '';
-  const today=new Date().toISOString().slice(0,10);
+  const today=isoToday();
   const past=list.filter(d=>(d.endDate||d.startDate) < today);
   const rest=list.filter(d=>(d.endDate||d.startDate) >= today);
   const head=`<div class="schedSubHeader">${esc(title)}</div>`;
@@ -6654,6 +6648,8 @@ function formatTime12(hhmm){
   const d=new Date(2000,0,1,h,m);
   return d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
 }
+/* Today's date in the phone's own time zone. The one place the app gets
+   "today" from. (toISOString is UTC and flips to tomorrow in the evening.) */
 function isoToday(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -6862,9 +6858,6 @@ function findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDa
   });
   return out;
 }
-function isDateTimeRangeConflict(startDate, startTime, endDate, endTime, excludeDateId, repeat){
-  return findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDateId, repeat).length>0;
-}
 /* Plain-language summary of a clash, used in the override prompt. */
 function describeConflicts(list){
   const seen=[], lines=[];
@@ -6889,10 +6882,6 @@ function withConflictOverride(startDate, startTime, endDate, endTime, excludeDat
     (yes)=>{ if(yes) onOk(true); },
     {yes:'Double-book it', no:'Pick another time'}
   );
-}
-function isDateBooked(iso){
-  const map=buildJobDaysMap(SCHED_EDIT_ID);
-  return !!(map[iso] && map[iso].length);
 }
 /* Worded for the input the device actually has, not for its width: the office
    view gets opened on a phone held in desktop mode often enough that a width
@@ -7121,7 +7110,7 @@ function apptNextIso(iso){
 /* Whole job: the first upcoming whole job day through the last one, with
    the arrival window of that first day. */
 function apptWholeJobWhen(wo){
-  const today=todayLocalISO();
+  const today=isoToday();
   const byDay={};
   (wo.scheduleDates||[]).filter(e=>(e.type||'full')==='full').forEach(e=>{
     expandRepeatDates(e.startDate, e.endDate||e.startDate, e.repeat).forEach(date=>{
@@ -7159,7 +7148,7 @@ function apptBuildEmails(wo, entries, updated){
     updated:!!updated
   };
   const emails=[];
-  const today=todayLocalISO();
+  const today=isoToday();
   entries.filter(e=>e.type==='presite').forEach(e=>{
     expandRepeatDates(e.startDate, e.endDate||e.startDate, e.repeat).forEach(date=>{
       if(date<today) return;
@@ -7354,7 +7343,19 @@ const ADDR_ABBREV={
   northeast:'ne', northwest:'nw', southeast:'se', southwest:'sw',
   apartment:'apt', unit:'apt', suite:'ste', building:'bldg', floor:'fl'
 };
+/* Cleaning up an address is the slow part of Prior Jobs matching, so each
+   cleaned-up result is remembered against the exact text it came from. Edit
+   the address and the text no longer matches, so it is cleaned up fresh. */
+const ADDR_KEY_MEMO=new Map();
 function normAddrKey(raw){
+  const memoKey=String(raw==null?'':raw);
+  if(ADDR_KEY_MEMO.has(memoKey)) return ADDR_KEY_MEMO.get(memoKey);
+  if(ADDR_KEY_MEMO.size>5000) ADDR_KEY_MEMO.clear();
+  const out=normAddrKeyFresh(raw);
+  ADDR_KEY_MEMO.set(memoKey, out);
+  return out;
+}
+function normAddrKeyFresh(raw){
   if(!raw || !String(raw).trim()) return '';
   let parts;
   try{ parts=splitAddress(raw); }catch(e){ parts=null; }
@@ -7433,12 +7434,6 @@ function toggleFieldSec(id, key){
   if(key==='note' && !FIELD_SEC.note) FIELD_SEC.notesMore=false;
   if(key==='job' && !FIELD_SEC.job){ FIELD_SEC.jobMore=false; FIELD_JOB_LIST=null; }
   renderWorkOrderModal(id);
-}
-/* toISOString is UTC, which flips the date late in the evening and would show
-   the wrong day's check-in. This is the local calendar date. */
-function todayLocalISO(){
-  const d=new Date();
-  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
 }
 let FIELD_NOTE_OPEN=false;   // the on-site note composer, inside field view
 let FIELD_NOTE_TYPE='NOTE';
@@ -7628,17 +7623,6 @@ function syncFieldModeBtn(){
   b.classList.toggle('on', FIELD_MODE);
   b.textContent = FIELD_MODE ? 'On' : 'Off';
 }
-/* The day you are most likely to act on: the one you are checked into, else
-   the next one still ahead, else the most recent. */
-function fieldFocusLog(wo){
-  const rows=allDayLogsSorted(wo);
-  if(!rows.length) return null;
-  const open=rows.find(r=>openSession(r.log));
-  if(open) return open.log;
-  const today=new Date().toISOString().slice(0,10);
-  const next=rows.find(r=>r.log.date>=today && !dayFullyClosed(r.log));
-  return next ? next.log : rows[rows.length-1].log;
-}
 function fieldGridHTML(wo){
   const c=wo.customer||{};
   const addr=splitAddress(c.address);
@@ -7689,7 +7673,7 @@ function fieldHomeownerHTML(wo){
 function fieldCheckHTML(wo){
   const id=wo.id;
   const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
-  const today=todayLocalISO();
+  const today=isoToday();
   const rows=allDayLogsSorted(wo);
   const entry=rows.find(r=>r.log.date===today);
   const open=!!FIELD_SEC.days;
@@ -7741,7 +7725,7 @@ function fieldTodayInlineHTML(woId, log, isAdmin){
 }
 /* The line that used to sit on the chartreuse strip. */
 function nextVisitLine(wo){
-  const today=todayLocalISO();
+  const today=isoToday();
   const rows=allDayLogsSorted(wo);
   if(rows.some(r=>r.log.date===today)) return 'Scheduled today, '+formatDateDisplay(today);
   const next=rows.find(r=>r.log.date>today);
@@ -7933,7 +7917,7 @@ function cancelFieldCustEdit(id){
    element ids, because those functions read the values straight off them. */
 function fieldSchedGroupHTML(id, title, list){
   if(!list.length) return '';
-  const today=new Date().toISOString().slice(0,10);
+  const today=isoToday();
   const past=list.filter(d=>(d.endDate||d.startDate) < today);
   const rest=list.filter(d=>(d.endDate||d.startDate) >= today);
   const pastHTML = (past.length && rest.length)
@@ -8441,9 +8425,7 @@ function renderWorkOrderModal(id){
             ${scheduleDatesSectionHTML(wo, id)}
             <div class="schedSection">
               <div class="panelTitle">Check In/Out</div>
-              <div class="checkStampBox">
-                ${dayLogsSectionHTML(wo)}
-              </div>
+              <div class="ciListWrap">${dayLogsSectionHTML(wo)}</div>
               ${(wo.checkIn || wo.checkOut) ? `<div class="checkStampBox">
                   <div class="small" style="margin-bottom:4px;"><b>Legacy job-level stamp</b> (from before per-day check-in/out)</div>
                   <div class="kv"><span><b>Checked In</b></span><span>${wo.checkIn ? esc(wo.checkIn.date+' '+wo.checkIn.time+', '+wo.checkIn.by) : 'n/a'}${(isAdmin && wo.checkIn) ? ` <button class="editLink" onclick="editCheckInTime(${id})">Edit</button>` : ''}</span></div>
@@ -13549,7 +13531,6 @@ document.addEventListener('keydown', function(e){
   const modalRoot=document.getElementById('modalRoot');
   if(modalRoot && modalRoot.innerHTML.trim()){ closeModal(); return; }
   if(document.querySelector('.settingsMenu.open')){ closeSettingsMenus(); return; }
-  closeTabsMenu();
 });
 
 document.addEventListener('click', function(e){
@@ -13558,11 +13539,6 @@ document.addEventListener('click', function(e){
   document.querySelectorAll('.schedCalDay.hasJob.showInfo').forEach(function(cell){
     if(!cell.contains(e.target)) cell.classList.remove('showInfo');
   });
-  const wrap = document.getElementById('tabsBarWrap');
-  const nav = document.getElementById('tabsNav');
-  if(nav && nav.classList.contains('open') && wrap && !wrap.contains(e.target)){
-    nav.classList.remove('open');
-  }
   document.querySelectorAll('.settingsWrap').forEach(function(w){
     if(!w.contains(e.target)){
       const m = w.querySelector('.settingsMenu.open');
@@ -13721,6 +13697,10 @@ function srPresiteSnapshot(){
     return c;
   }catch(e){ return null; }
 }
+/* The backup is still checked every few seconds, but only written when
+   something changed. It is also rewritten every 10 minutes regardless, so its
+   timestamp stays fresh and a long idle stretch never makes it look stale. */
+let SR_LAST_BODY='', SR_LAST_AT=0;
 function srSave(){
   if(SR_RESTORING || !CURRENT_USER) return;
   const fields={};
@@ -13746,10 +13726,13 @@ function srSave(){
     }
   };
   try{
+    const body=JSON.stringify(Object.assign({}, data, {at:0}));
+    if(body===SR_LAST_BODY && (Date.now()-SR_LAST_AT)<600000) return;
     const s=JSON.stringify(data);
     // Never let a runaway draft crowd out the actual portal data.
     if(s.length>400000) return;
     localStorage.setItem(SR_KEY, s);
+    SR_LAST_BODY=body; SR_LAST_AT=Date.now();
   }catch(e){}
 }
 let SR_TIMER=null;
@@ -13759,6 +13742,7 @@ function srSaveSoon(){
 }
 function srClearModalPart(){
   SR_OPENER=null;
+  SR_LAST_BODY='';
   const cur=srRead();
   if(!cur) return;
   Object.keys(cur.fields||{}).forEach(k=>{ if(k.charAt(0)==='m') delete cur.fields[k]; });
@@ -13898,6 +13882,7 @@ function restoreSession(){
     const wrapped=function(){
       try{ localStorage.removeItem(SR_KEY); }catch(e){}
       SR_OPENER=null;
+      SR_LAST_BODY='';
       return orig.apply(this, arguments);
     };
     wrapped.__srWrapped=true;
