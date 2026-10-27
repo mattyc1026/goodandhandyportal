@@ -46,7 +46,7 @@
   --s-pi:#ffb3b3; --s-pi-b:#c0392b;
   --s-ps:#ffd0c2; --s-ps-b:#de5a3a;
   --s-pc:#ffe5c9; --s-pc-b:#ec9a45;
-  --s-be:#ffd77e; --s-be-b:#cf8306;
+  --s-be:#ffd84a; --s-be-b:#dea200;
   --s-se:#fff27a; --s-se-b:#bfa900;
   --s-pa:#fff3bd; --s-pa-b:#d9b62e;
   --s-sj:#a8ecc4; --s-sj-b:#1f8a55;
@@ -155,7 +155,7 @@ html.dark{
   --s-pi:#4b2733; --s-pi-b:#ff8f7d;
   --s-ps:#45292a; --s-ps-b:#ff9f7c;
   --s-pc:#3b2c1f; --s-pc-b:#f5b77a;
-  --s-be:#4a3916; --s-be-b:#f2b13c;
+  --s-be:#4a3d0e; --s-be-b:#f5c518;
   --s-se:#3a3a10; --s-se-b:#ece04c;
   --s-pa:#36321c; --s-pa-b:#ecd67a;
   --s-sj:#1a4229; --s-sj-b:#4fd48a;
@@ -202,7 +202,7 @@ html.hc{
   --s-pi:#ff8f8f; --s-pi-b:#a30000;
   --s-ps:#ffb59c; --s-ps-b:#b5370e;
   --s-pc:#ffd3a6; --s-pc-b:#a35200;
-  --s-be:#ffcf3d; --s-be-b:#7a4f00;
+  --s-be:#ffd630; --s-be-b:#6e5200;
   --s-se:#fff56e; --s-se-b:#5a5500;
   --s-pa:#fff09e; --s-pa-b:#6b5400;
   --s-sj:#79e0a2; --s-sj-b:#0b5c34;
@@ -246,7 +246,7 @@ html.dark.hc{
   --s-pi:#6b1212; --s-pi-b:#ff9a90;
   --s-ps:#5a200f; --s-ps-b:#ffad8c;
   --s-pc:#4a2a00; --s-pc-b:#ffc98a;
-  --s-be:#584600; --s-be-b:#ffc94a;
+  --s-be:#5a4a00; --s-be-b:#ffd23a;
   --s-se:#3a3a00; --s-se-b:#f4f05a;
   --s-pa:#3d3600; --s-pa-b:#fff08a;
   --s-sj:#004d2c; --s-sj-b:#63f0a6;
@@ -554,7 +554,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 }
 /* needs doing, solid */
 .tag.pending{background:var(--s-pi-b);color:#fff;}
-.tag.build-est{background:var(--s-be-b);color:#fff;}
+.tag.build-est{background:var(--s-be-b);color:#2a1d00;}
 .tag.send-est{background:var(--s-se-b);color:#1d1a00;}
 .tag.go{background:var(--s-sj-b);color:#fff;}
 .tag.build-inv{background:var(--s-bi-b);color:#fff;}
@@ -574,6 +574,9 @@ html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.send-est,html.hc .tag.g
   text-align:center;padding:64px 24px;color:var(--muted);
   background:var(--paper);border:1px dashed var(--line);border-radius:var(--radius);
 }
+/* Separates Follow-Up Due from All Work Orders: extra room with a faint line. */
+.subDivider{border:0;border-top:1px solid color-mix(in srgb,var(--muted) 40%,transparent);margin:34px 2px 10px;}
+html.hc .subDivider{border-top-color:var(--line);}
 .subListHeader{
   margin:26px 2px 12px;font-size:.76em;color:var(--navy);display:flex;align-items:center;gap:10px;
   border-bottom:1px solid var(--line);padding-bottom:8px;
@@ -584,13 +587,28 @@ html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.send-est,html.hc .tag.g
   font-family:var(--f-data);font-weight:500;letter-spacing:0;
 }
 input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--orange);}
-.estDecisionRow{margin-top:8px;}
 /* ---- Card actions ----
-   Sent, Approved, Modified, Declined and Job Complete. Same shape and weight as
+   Build, Send, Approved, Modify, Declined and Job Complete. They sit at the
+   bottom of the card's right-hand column. The column's small meta text size
+   is undone so the buttons keep their normal size. Same shape and weight as
    the Check In / Check Out button so every action on a card reads as one family.
    The main action for a stage is solid navy; Approved and Declined carry the
    app's green and red. */
 .actRow{display:flex;flex-wrap:wrap;gap:8px;}
+.woRow .woMeta > .cardActs{font-size:1.282em;margin-top:2px;}
+.cardActs .actRow{justify-content:flex-end;}
+.cardActs .actBtn{min-width:96px;}
+/* Send Invoice options */
+.sendOpts{display:flex;flex-direction:column;gap:10px;}
+.sendOpt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;font-family:inherit;font-size:1em;
+  padding:14px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--line);background:var(--paper);color:var(--navy);
+  cursor:pointer;box-shadow:var(--sh-1);}
+.sendOpt:hover:not([disabled]){border-color:var(--navy);}
+.sendOpt[disabled]{opacity:.5;cursor:not-allowed;}
+.sendOptText{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere;}
+.sendOptText span{font-size:.85em;color:var(--muted);}
+.sendReady{display:flex;align-items:flex-start;gap:12px;line-height:1.5;overflow-wrap:anywhere;}
+.sendReady .ic{color:var(--greenb);flex:0 0 auto;}
 .actBtn{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;
   font-family:inherit;font-size:.82em;font-weight:700;letter-spacing:.02em;
@@ -1585,12 +1603,14 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   /* On a phone the actions stack full width. When the card is wide enough for
      the current text size, they share one row in equal columns instead, icon
      over label. */
-  .estDecisionRow{container-type:inline-size;}
-  .actGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
+  .woRow .woMeta > .cardActs{font-size:1.087em;flex:1 1 100%;width:100%;}
+  .cardActs:not(.trio) .actBtn{min-width:140px;}
+  .cardActs.trio{container-type:inline-size;}
+  .trio .actGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
   @container (min-width: 11.6em){
-    .actGrid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);}
-    .actGrid .actBtn{flex-direction:column;gap:4px;padding:9px 2px;font-size:.7em;letter-spacing:0;min-height:54px;min-width:0;}
-    .actGrid .actBtn .ic{width:18px;height:18px;}
+    .trio .actGrid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);}
+    .trio .actGrid .actBtn{flex-direction:column;gap:4px;padding:9px 2px;font-size:.7em;letter-spacing:0;min-height:54px;min-width:0;}
+    .trio .actGrid .actBtn .ic{width:18px;height:18px;}
   }
 }
 
@@ -2937,7 +2957,7 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   header.top,.globalSearchBar,.tabsBarWrap,nav.tabs,#toastStack,#modalGhost,
   .newWoBtn,.closeX,.headerTabs,.settingsWrap,.syncPill,.logoutBtn,
   .sortWrap,.editLink,.copyIcon,.docActions,.btnRow,
-  .checkInOutRow,.estDecisionRow,.actRow,.actBtn,.ciBtn{display:none !important;}
+  .checkInOutRow,.cardActs,.actRow,.actBtn,.ciBtn{display:none !important;}
   /* An open modal becomes the printed page. Without this the scrim prints as
      a full-bleed grey block and the sheet is clipped to the viewport. */
   .overlay,.confirmBox{
@@ -5482,6 +5502,7 @@ function renderMain(){
     html+=`<div class="listHeader woHeader"><div class="woTitleRow"><h2>Work Orders</h2><button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}New Work Order</button></div>${sortDropdownHTML()}</div>`;
     if(dueList.length){
       html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
+      html+='<hr class="subDivider">';
     }
     html+=subGroupHTML('All Work Orders', list, {
       emptyText:'No work orders yet.', emptyIcon:'clipboard',
@@ -5498,9 +5519,9 @@ function renderMain(){
     const send=DB.workOrders.filter(inSendEstimateList).sort((a,b)=>a.id-b.id);
     const pending=DB.workOrders.filter(inEstimatePendingApprovalList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Estimates</h2></div></div>`;
-    html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', emptyIcon:'file-text', openMode:'estimate'});
-    html+=subGroupHTML('Send Estimate', send, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'file-text', openMode:'esign', showEstimateSent:true});
-    html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', emptyIcon:'file-text', showEstimateDecision:true});
+    html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', emptyIcon:'file-text', action:'buildEstimate'});
+    html+=subGroupHTML('Send Estimate', send, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'file-text', action:'sendEstimate'});
+    html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', emptyIcon:'file-text', action:'decide'});
   } else if(ACTIVE_TAB==='inprogress'){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inJobScheduledList).sort((a,b)=>a.id-b.id);
@@ -5508,13 +5529,13 @@ function renderMain(){
     html+=`<div class="listHeader"><div><h2>Scheduling</h2></div></div>`;
     html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'activity'});
     html+=subGroupHTML('Scheduled', scheduled, {emptyText:'Nothing scheduled and waiting to start right now.', emptyIcon:'activity'});
-    html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', emptyIcon:'activity', showJobComplete:true, showCheckInOut:true});
+    html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', emptyIcon:'activity', action:'jobComplete', showCheckInOut:true});
   } else if(ACTIVE_TAB==='invoices'){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Invoices</h2></div></div>`;
-    html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', emptyIcon:'receipt', openMode:'invoice'});
+    html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', emptyIcon:'receipt', action:'buildInvoice'});
     const sendInvoice=DB.workOrders.filter(inSendInvoiceList).sort((a,b)=>a.id-b.id);
-    html+=subGroupHTML('Send Invoice', sendInvoice, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'receipt', openMode:'none', showInvoiceSent:true});
+    html+=subGroupHTML('Send Invoice', sendInvoice, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'receipt', action:'sendInvoice'});
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Surveys</h2></div></div>`;
@@ -5561,12 +5582,9 @@ function rowHTML(wo, opts){
   const todayLog = todaysDayLog(wo);
   const anyOpenCheckIn = allDayLogsSorted(wo).some(({log})=>openSession(log));
   const glowCls = anyOpenCheckIn ? ' checkedInGlow' : '';
-  const openFn = opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})`
-    : (opts.openMode==='esign') ? `openEsignTool()`
-    : (opts.openMode==='none') ? ''
-    : (opts.openMode==='estimate') ? `openEstimateSplit(${wo.id})`
-    : (opts.openMode==='invoice') ? `openInvoiceSplit(${wo.id})`
-    : `openWorkOrder(${wo.id})`;
+  /* Tapping a card always opens the work order. The builders, the e-sign tool
+     and the send options only open from the action buttons on the card. */
+  const openFn = opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})` : `openWorkOrder(${wo.id})`;
   const n=mostRecentNote(wo);
   const lastNoteHTML = n
     ? `<div class="woLastNote"><b>${esc(n.type)}:</b> ${esc((n.text||'').slice(0,90))}${(n.text||'').length>90?'…':''} <span class="woNoteDate">(${esc(n.date)})</span></div>`
@@ -5574,21 +5592,19 @@ function rowHTML(wo, opts){
   const followUpBadge = (n && n.followUpDate)
     ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span>`
     : '';
-  /* Each of these is a one-tap action that asks to confirm, so they are drawn
-     as buttons rather than checkboxes. */
+  /* The action for this sub-list, drawn on the right of the card. Each one
+     either opens a tool or asks to confirm before the job moves on. */
   const act=(fn, cls, ic, label)=>`<button type="button" class="actBtn ${cls}" onclick="event.stopPropagation();${fn}(${wo.id}, null)">${icon(ic)}<span>${label}</span></button>`;
-  const jobCompleteCheckbox = opts.showJobComplete
-    ? `<div class="actRow" onclick="event.stopPropagation()">${act('confirmJobComplete','ok','check-circle','Job Complete')}</div>`
-    : '';
-  const estimateSentRow = (opts.showEstimateSent || opts.showInvoiceSent)
-    ? `<div class="estDecisionRow" onclick="event.stopPropagation()"><div class="actRow actGrid">${act(opts.showInvoiceSent?'markInvoiceSent':'markEstimateSent','solid','send','Sent')}</div></div>`
-    : '';
-  const estimateDecisionRow = opts.showEstimateDecision
-    ? `<div class="estDecisionRow" onclick="event.stopPropagation()"><div class="actRow actGrid">
-         ${act('approveEstimate','ok','check','Approved')}
-         ${act('modifyEstimate','','pencil','Modified')}
-         ${act('declineEstimate','no','x','Declined')}
-       </div></div>`
+  const actions={
+    buildEstimate:  act('openEstimateSplit','solid','pencil','Build'),
+    sendEstimate:   act('openEsignSplit','solid','send','Send'),
+    decide:         act('approveEstimate','ok','check','Approved')+act('modifyEstimate','','pencil','Modify')+act('declineEstimate','no','x','Declined'),
+    jobComplete:    act('confirmJobComplete','ok','check-circle','Job Complete'),
+    buildInvoice:   act('openInvoiceSplit','solid','pencil','Build'),
+    sendInvoice:    act('openSendInvoice','solid','send','Send')
+  }[opts.action];
+  const cardActs = actions
+    ? `<div class="cardActs${opts.action==='decide'?' trio':''}" onclick="event.stopPropagation()"><div class="actRow actGrid">${actions}</div></div>`
     : '';
   const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? `<div class="checkInOutRow" onclick="event.stopPropagation()">
@@ -5600,15 +5616,13 @@ function rowHTML(wo, opts){
       <div class="woName">${esc(wo.customer.name) || '(No name yet)'}</div>
       <div class="woSub">${wo.jobDetails.description ? esc(wo.jobDetails.description.slice(0,80)) : 'No job description yet'}</div>
       ${lastNoteHTML}
-      ${estimateSentRow}
-      ${estimateDecisionRow}
       ${checkInOutRow}
     </div>
     <div class="woMeta">
       ${statusTag(wo)}
       ${followUpBadge}
-      ${jobCompleteCheckbox}
       <span>${wo.customer.address?icon('map-pin')+' ':''}${esc(wo.customer.address)}</span>
+      ${cardActs}
     </div>
   </div>`;
 }
@@ -6265,36 +6279,144 @@ function approveEstimate(id, checkboxEl){
     }
   });
 }
-/* Estimates are sent for signature from the e-sign tool, which opens in its
-   own tab so its sign-in stays separate from the portal. */
+/* Estimates are sent for signature from the e-sign tool, shown in the same
+   split screen as the builders. The footer also offers it in its own tab, for
+   when the browser won't keep the tool signed in inside the split screen. */
 const ESIGN_URL='https://document-esign-tool.web.app/';
-function openEsignTool(){
-  const w=window.open(ESIGN_URL, '_blank', 'noopener');
-  if(!w) location.href=ESIGN_URL;
+function openEsignSplit(id){ openSplit(id, 'esign'); }
+/* ---- Send Invoice ----
+   Send asks how: by email, by text, or sending it yourself. Email and text
+   first upload the invoice to the job's Docs, then open a message to the
+   customer with a link to that one file. The link is the file's own download
+   address, so it shows only the invoice and nothing else in the portal. Every
+   option moves the job to Surveys. */
+let SEND_INV=null;   // {id, step, via, doc, err, busy}
+function openSendInvoice(id){
+  if(!getWO(id)) return;
+  SEND_INV={id, step:'choose', via:null, doc:null, err:'', busy:false};
+  renderSendInvoice();
 }
-function markEstimateSent(id, checkboxEl){
-  if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
-  askYesNo('Confirm this estimate has been sent to the customer? It will move to Pending Approval.', (yes)=>{
-    if(yes){
-      if(!getWO(id)) return;
-      advanceStage(id, w=>{ w.estimateSent=true; }, 'Sent. Moved to Pending Approval.', 'estimate marked sent');
-    }
-  });
+function renderSendInvoice(){
+  const st=SEND_INV; if(!st) return;
+  const wo=getWO(st.id); if(!wo){ closeModal(); return; }
+  const c=wo.customer||{};
+  const email=String(c.email||'').trim(), phone=String(c.phone||'').trim();
+  let body='';
+  if(st.step==='choose'){
+    const opt=(via, ic, label, sub, ok)=>`<button type="button" class="sendOpt" ${ok?'':'disabled'} onclick="pickSendInvoice('${via}')">
+        ${icon(ic,'lg')}<span class="sendOptText"><b>${label}</b><span>${sub}</span></span></button>`;
+    body=`<div class="sendOpts">
+      ${opt('email','mail','By Email', email?esc(email):'No email on file', !!email)}
+      ${opt('text','message','By Text', phone?esc(phone):'No phone on file', !!phone)}
+      ${opt('self','send','Send It Yourself','Moves the job to Surveys', true)}
+    </div>`;
+  } else if(st.step==='upload'){
+    body=`<div class="small" style="margin-bottom:10px;">Upload the invoice. It is saved to this job's Docs.</div>
+      ${syncStorage
+        ? `<div class="docsTab"><input type="file" id="sendInvFile" accept="application/pdf,image/*" ${st.busy?'disabled':''} onchange="uploadSendInvoice(this)"></div>`
+        : `<div class="errMsg">Uploads need Multi-Device Sync and Firebase Storage. Set them up in Sync, then try again.</div>`}
+      <div class="small" id="sendInvStatus" style="margin-top:8px;color:var(--orange);font-weight:600;">${st.busy?'Uploading…':''}</div>
+      ${st.err?`<div class="errMsg" style="margin-top:8px;">${esc(st.err)}</div>`:''}`;
+  } else if(st.step==='ready'){
+    const target = st.via==='email' ? esc(email) : esc(phone);
+    body=`<div class="sendReady">${icon('check-circle','lg')}<div><b>${esc(st.doc.name)}</b> is saved to Docs.<br>Next, ${st.via==='email'?'an email':'a text'} to ${target} opens with a link to it.</div></div>`;
+  }
+  const foot = st.step==='choose'
+    ? `<button class="btn secondary" onclick="closeSendInvoice()">Cancel</button>`
+    : st.step==='upload'
+      ? `<button class="btn secondary" onclick="SEND_INV.step='choose';SEND_INV.err='';renderSendInvoice()" ${st.busy?'disabled':''}>Back</button>`
+      : `<button class="btn secondary" onclick="closeSendInvoice()">Cancel</button>
+         <button class="btn" onclick="finishSendInvoice()">${icon(st.via==='email'?'mail':'message')}${st.via==='email'?'Open Email':'Open Text'}</button>`;
+  document.getElementById('modalRoot').innerHTML=`
+  <div class="overlay">
+    <div class="modal" style="max-width:520px;">
+      <div class="modalHead"><h2>Send Invoice</h2><button class="closeX" aria-label="Close" onclick="closeSendInvoice()">&times;</button></div>
+      <div class="modalBody">${body}</div>
+      <div class="footerActions">${foot}</div>
+    </div>
+  </div>`;
 }
-function markInvoiceSent(id, checkboxEl){
-  if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
-  askYesNo('Confirm this invoice has been sent to the customer? It will move to Surveys.', (yes)=>{
-    if(yes){
-      if(!getWO(id)) return;
-      advanceStage(id, w=>{ w.invoiceSent=true; }, 'Sent. Moved to Surveys.', 'invoice marked sent');
-    }
-  });
+function closeSendInvoice(){
+  if(SEND_INV && SEND_INV.busy) return;
+  SEND_INV=null; closeModal();
 }
-function modifyEstimate(id, checkboxEl){
-  if(checkboxEl) checkboxEl.checked=false; // this is a one-time trigger, not a persisted state
-  askYesNo('Would you like to modify this estimate?', (yes)=>{
-    if(yes){ openEstimateSplit(id); }
-  });
+function invoiceToSurveys(id, how){
+  if(!getWO(id)) return;
+  advanceStage(id, w=>{ w.invoiceSent=true; }, 'Moved to Surveys.', 'invoice sent '+how);
+}
+function pickSendInvoice(via){
+  const st=SEND_INV; if(!st) return;
+  if(via==='self'){
+    const id=st.id; SEND_INV=null; closeModal();
+    invoiceToSurveys(id, 'by hand');
+    return;
+  }
+  st.via=via; st.step='upload'; st.err='';
+  renderSendInvoice();
+}
+async function uploadSendInvoice(input){
+  const st=SEND_INV; if(!st) return;
+  const file=input.files && input.files[0];
+  if(!file) return;
+  if(!syncStorage){ st.err='Uploads are not available right now.'; renderSendInvoice(); return; }
+  const wo=getWO(st.id); if(!wo) return;
+  st.busy=true; st.err=''; renderSendInvoice();
+  try{
+    const docId='d'+Date.now()+Math.random().toString(36).slice(2,7);
+    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const storagePath=`docs/${wo.id}/${docId}_${safeName}`;
+    const task=syncStorage.ref(storagePath).put(file, {contentType: file.type||undefined});
+    const snap=await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error('No response from Firebase after 30 seconds.')), 30000);
+      task.on('state_changed',
+        p=>{ const el=document.getElementById('sendInvStatus'); if(el && p.totalBytes) el.textContent='Uploading… '+Math.round(p.bytesTransferred/p.totalBytes*100)+'%'; },
+        e=>{ clearTimeout(timer); reject(e); },
+        ()=>{ clearTimeout(timer); resolve(task.snapshot); });
+    });
+    const url=await snap.ref.getDownloadURL();
+    const ts=nowStamp();
+    const doc={id:docId, name:'Invoice, '+ts.date, type:file.type||'', size:file.size, url, storagePath,
+      uploadedBy:CURRENT_USER.displayName, date:ts.date, uploadedAt:Date.now(), tag:''};
+    const live=getWO(st.id);
+    live.docs.push(doc);
+    DB.storageUsedBytes=(DB.storageUsedBytes||0)+file.size;
+    addAdminLog(live, `Uploaded invoice "${file.name}" to send ${st.via==='email'?'by email':'by text'}.`);
+    await purgeStorageIfOverCap();
+    saveDB(DB);
+    st.doc=doc; st.step='ready';
+  }catch(e){
+    console.error(e);
+    st.err='The upload did not go through. Check your connection and try again.';
+  }
+  st.busy=false;
+  if(SEND_INV===st) renderSendInvoice();
+}
+function finishSendInvoice(){
+  const st=SEND_INV; if(!st || !st.doc) return;
+  const wo=getWO(st.id); if(!wo) return;
+  const c=wo.customer||{};
+  const first=String(c.name||'').trim().split(/\s+/)[0]||'';
+  const hi=first?`Hi ${first},`:'Hi,';
+  let href;
+  if(st.via==='email'){
+    const subject='Your invoice from Good & Handy';
+    const body=`${hi}\n\nThank you for choosing Good & Handy. You can view and download your invoice here:\n${st.doc.url}\n\nThank you,\nGood & Handy\n(858) 381-0146`;
+    href='mailto:'+encodeURIComponent(String(c.email||'').trim()).replace(/%40/g,'@')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  } else {
+    const digits=String(c.phone||'').replace(/\D/g,'');
+    const num=digits.length===10?'+1'+digits:digits;
+    const msg=`${hi} thank you for choosing Good & Handy. You can view and download your invoice here: ${st.doc.url}`;
+    const ios=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    href='sms:'+num+(ios?'&':'?')+'body='+encodeURIComponent(msg);
+  }
+  const id=st.id, via=st.via;
+  SEND_INV=null; closeModal();
+  invoiceToSurveys(id, via==='email'?'by email':'by text');
+  openMessageLink(href);
+}
+function openMessageLink(href){ location.href=href; }
+function modifyEstimate(id){
+  openEstimateSplit(id);
 }
 function declineEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false;
@@ -13227,15 +13349,17 @@ function openInvoiceSplit(id){ openSplit(id, 'invoice'); }
 function openSplit(id, kind){
   const wo=getWO(id);
   if(!wo) return;
-  const url = 'https://mattyc1026.github.io/estimatebuilder/';
+  const isSign = kind==='esign';
+  const url = isSign ? ESIGN_URL : 'https://mattyc1026.github.io/estimatebuilder/';
+  const title = isSign ? 'Send Estimate' : kind==='estimate' ? 'Estimate Builder' : 'Invoice Builder';
   const jd=wo.jobDetails;
   const modal=document.getElementById('modalRoot');
   modal.innerHTML=`
   <div class="overlay">
     <div class="modal" style="max-width:1400px;">
       <div class="modalHead">
-        <h2>${esc(wo.customer.name)}, ${kind==='estimate'?'Estimate':'Invoice'} Builder</h2>
-        <button class="closeX" onclick="closeSplit('${kind}',${id})">&times;</button>
+        <h2>${esc(wo.customer.name)}, ${title}</h2>
+        <button class="closeX" aria-label="Close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modalBody">
         <div class="splitWrap">
@@ -13244,8 +13368,9 @@ function openSplit(id, kind){
             <div class="kv"><b>Customer</b>${esc(wo.customer.name)}</div>
             <div class="kv"><b>Phone</b>${phoneLink(wo.customer.phone)}</div>
             <div class="kv"><b>Address</b>${addressLink(wo.customer.address, undefined, true)}</div>
+            ${isSign && wo.customer.email ? `<div class="kv"><b>Email</b>${emailLink(wo.customer.email)}</div>` : ''}
             ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${richDescHTML(jd)}</div>` : ''}
-
+            ${isSign ? '' : `
             <div class="panelTitle" style="margin-top:16px;">Labor Line Items</div>
             <div class="laborPick">${(jd.labor&&jd.labor.length) ? jd.labor.map(priceLineRow).join('') : '<div class="small">No labor items on file.</div>'}</div>
 
@@ -13260,22 +13385,30 @@ function openSplit(id, kind){
 
             <div class="panelTitle" style="margin-top:16px;">Disclaimers</div>
             <div class="laborPick">${(jd.disclaimers&&jd.disclaimers.length) ? jd.disclaimers.map(plainLineRow).join('') : '<div class="small">None on file.</div>'}</div>
-
+            `}
           </div>
           <div class="splitRight">
-            <iframe src="${url}" title="${kind} builder" onload="sendJobDataToBuilder(this, ${id}, '${kind}')"></iframe>
+            <iframe src="${url}" title="${esc(title)}"${isSign ? '' : ` onload="sendJobDataToBuilder(this, ${id}, '${kind}')"`}></iframe>
           </div>
         </div>
       </div>
       <div class="footerActions">
-        <button class="btn secondary" onclick="closeSplit('${kind}',${id})">Close ${kind==='estimate'?'Estimate':'Invoice'}</button>
+        ${isSign ? `<a class="btn secondary" href="${ESIGN_URL}" target="_blank" rel="noopener">${icon('eye')}Open in New Tab</a>` : ''}
+        <button class="btn" onclick="doneSplit('${kind}',${id})">${icon('check')}Done</button>
       </div>
     </div>
   </div>`;
 }
-function closeSplit(kind, id){
+function doneSplit(kind, id){
+  if(kind==='esign'){
+    askYesNo('Has the estimate been sent?', (yes)=>{
+      closeModal();
+      if(yes && getWO(id)) advanceStage(id, w=>{ w.estimateSent=true; }, 'Sent. Moved to Pending Approval.', 'estimate marked sent');
+    });
+    return;
+  }
   askYesNo(
-    kind==='estimate' ? 'Is the estimate complete?' : 'Is the invoice complete?',
+    kind==='estimate' ? 'Has the estimate been built?' : 'Has the invoice been built?',
     (yes)=>{
       const wo=getWO(id);
       if(!wo){ closeModal(); return; }
