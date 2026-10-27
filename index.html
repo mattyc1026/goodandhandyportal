@@ -584,13 +584,33 @@ html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.send-est,html.hc .tag.g
   font-family:var(--f-data);font-weight:500;letter-spacing:0;
 }
 input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--orange);}
-.jcCheck{
-  display:flex;align-items:center;gap:10px;font-size:.88em;background:var(--cream);
-  padding:9px 16px;border-radius:var(--radius-sm);cursor:pointer;min-height:40px;
-  box-sizing:border-box;border:1px solid transparent;transition:border-color .15s,background .15s;
+.estDecisionRow{margin-top:8px;}
+/* ---- Card actions ----
+   Sent, Approved, Modified, Declined and Job Complete. Same shape and weight as
+   the Check In / Check Out button so every action on a card reads as one family.
+   The main action for a stage is solid navy; Approved and Declined carry the
+   app's green and red. */
+.actRow{display:flex;flex-wrap:wrap;gap:8px;}
+.actBtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;
+  font-family:inherit;font-size:.82em;font-weight:700;letter-spacing:.02em;
+  padding:8px 15px;min-height:36px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--line);background:var(--paper);color:var(--navy);
+  cursor:pointer;box-sizing:border-box;box-shadow:var(--sh-1);
 }
-.jcCheck:hover{border-color:var(--line);background:var(--paper);}
-.estDecisionRow{display:flex;gap:18px;margin-top:8px;flex-wrap:wrap;}
+.actBtn .ic{width:15px;height:15px;flex:0 0 auto;}
+.actBtn:hover{border-color:var(--navy);}
+.actBtn.solid{background:var(--navy);border-color:var(--navy);color:#fff;}
+.actBtn.solid:hover{filter:brightness(1.12);}
+.actBtn.ok{background:var(--green);border-color:var(--greenb);color:var(--greenb);}
+.actBtn.no{background:var(--red);border-color:var(--redb);color:var(--redb);}
+.actBtn.ok:hover,.actBtn.no:hover{filter:brightness(.97);}
+html.dark .actBtn.solid{color:var(--paper);}
+/* Dark + high contrast: the dark-mode label colour above would otherwise land
+   black on black, which also hid the Check Out label. */
+html.dark.hc .ciBtn.out{color:var(--hc-fg);}
+html.hc .actBtn,html.hc .actBtn.ok,html.hc .actBtn.no{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);box-shadow:none;}
+html.hc .actBtn.solid{background:var(--hc-fg);color:var(--hc-bg);}
 .docsTab{background:var(--paper);}
 .docsTab h4{margin-top:0;}
 /* The upload control was a raw, unstyled browser file input. Given it as a
@@ -1210,8 +1230,6 @@ html.hc .woRow.checkedInGlow{
   border-left-width:10px;box-shadow:none;animation:none;
 }
 .checkInOutRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px;}
-.checkInOutRow .jcCheck{white-space:nowrap;}
-.checkInOutRow .jcCheck input:disabled{opacity:.6;}
 /* ---- The check in / check out button ----
    One button, not two boxes, and it shows only the action that is actually
    available: Check In when nobody is on site, Check Out once someone is. The
@@ -1555,7 +1573,7 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   .dateFieldWrap input[type="text"]{min-height:48px;min-width:0;}
   .dateFieldWrap .calBtn{min-height:48px;min-width:44px;}
   .noteEntryRow textarea{min-height:48px;}
-  .jcCheck{min-height:48px;padding:10px 16px;gap:12px;}
+  .actBtn{min-height:44px;padding:10px 16px;font-size:.9em;}
   .ciBtn{min-height:46px;padding:11px 18px;font-size:.9em;}
   
   .noteItem .noteActions{gap:20px;}
@@ -1564,8 +1582,16 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   .docActions{width:100%;gap:12px;}
   .docActions .btn{flex:1 1 auto;min-width:100px;min-height:48px;}
   .btnRow{flex-wrap:wrap;}
-  .estDecisionRow{flex-direction:column;align-items:stretch;gap:12px;}
-  .estDecisionRow .btn{width:100%;min-height:52px;}
+  /* On a phone the actions stack full width. When the card is wide enough for
+     the current text size, they share one row in equal columns instead, icon
+     over label. */
+  .estDecisionRow{container-type:inline-size;}
+  .actGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;}
+  @container (min-width: 11.6em){
+    .actGrid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);}
+    .actGrid .actBtn{flex-direction:column;gap:4px;padding:9px 2px;font-size:.7em;letter-spacing:0;min-height:54px;min-width:0;}
+    .actGrid .actBtn .ic{width:18px;height:18px;}
+  }
 }
 
 @media (max-width:480px){
@@ -1825,10 +1851,6 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   gap:6px 10px;min-width:0;cursor:auto;
 }
 .fsTodayDate{font-weight:800;white-space:nowrap;}
-.fsToday .jcCheck{
-  background:var(--paper);padding:6px 11px;min-height:34px;
-  font-size:.92em;gap:8px;white-space:nowrap;
-}
 .dayLogGroup{margin-bottom:16px;}
 .dayLogGroup:last-child{margin-bottom:0;}
 .dayLogGroup .fsKey{margin-bottom:6px;}
@@ -2287,7 +2309,7 @@ html{scroll-behavior:smooth;}
 /* ---- Universal press feedback ----
    Previously only phones got a tap response. A pointer press should feel the
    same on every device: the surface takes the press, then springs back. */
-button,.btn,.woRow,.jcCheck,.docRow,.newWoBtn,.tag,.textSizeBtn,.hcToggleBtn,
+button,.btn,.woRow,.docRow,.newWoBtn,.tag,.textSizeBtn,.hcToggleBtn,
 .syncPill,.editLink,.copyIcon,.closeX,.schedTypeToggle button,.headerTabs button{
   transition:
     transform var(--t-press) var(--e-out),
@@ -2301,7 +2323,7 @@ button,.btn,.woRow,.jcCheck,.docRow,.newWoBtn,.tag,.textSizeBtn,.hcToggleBtn,
 button:active,.btn:active,.newWoBtn:active,.textSizeBtn:active,
 .hcToggleBtn:active,.syncPill:active,.schedTypeToggle button:active,
 .headerTabs button:active{transform:scale(.955);}
-.jcCheck:active,.docRow:active{transform:scale(.975);}
+.docRow:active{transform:scale(.975);}
 .closeX:active,.copyIcon:active,.editLink:active{transform:scale(.88);}
 /* Row press is gentler than a button's: it's a big surface, so the same
    scale factor would read as the whole list lurching. */
@@ -2793,7 +2815,7 @@ html.hc .globalSearchBar .btn.secondary{border-color:#fff;color:#fff;}
 }
 .ic.lg{width:1.7em;height:1.7em;}
 .ic.xl{width:2.6em;height:2.6em;stroke-width:1.3;}
-.jcCheck .ic,.docName .ic,.telLink .ic{opacity:.75;}
+.docName .ic,.telLink .ic{opacity:.75;}
 nav.tabs button{display:inline-flex;align-items:center;gap:8px;}
 nav.tabs button .ic{width:1.25em;height:1.25em;}
 nav.tabs .tabShort{display:none;}
@@ -2915,7 +2937,7 @@ html.no-showpicker .calNativeOverlay::-webkit-calendar-picker-indicator{
   header.top,.globalSearchBar,.tabsBarWrap,nav.tabs,#toastStack,#modalGhost,
   .newWoBtn,.closeX,.headerTabs,.settingsWrap,.syncPill,.logoutBtn,
   .sortWrap,.editLink,.copyIcon,.docActions,.btnRow,
-  .checkInOutRow,.estDecisionRow,.jcCheck,.ciBtn{display:none !important;}
+  .checkInOutRow,.estDecisionRow,.actRow,.actBtn,.ciBtn{display:none !important;}
   /* An open modal becomes the printed page. Without this the scrim prints as
      a full-bleed grey block and the sheet is clipped to the viewport. */
   .overlay,.confirmBox{
@@ -3165,6 +3187,9 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
   <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></symbol>
   <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/></symbol>
 </defs></svg>
 
@@ -5474,7 +5499,7 @@ function renderMain(){
     const pending=DB.workOrders.filter(inEstimatePendingApprovalList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Estimates</h2></div></div>`;
     html+=subGroupHTML('Build Estimate', build, {emptyText:'Nothing waiting on an estimate right now.', emptyIcon:'file-text', openMode:'estimate'});
-    html+=subGroupHTML('Send Estimate', send, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'file-text', openMode:'estimate', showEstimateSent:true});
+    html+=subGroupHTML('Send Estimate', send, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'file-text', openMode:'esign', showEstimateSent:true});
     html+=subGroupHTML('Pending Approval', pending, {emptyText:'Nothing pending a decision right now.', emptyIcon:'file-text', showEstimateDecision:true});
   } else if(ACTIVE_TAB==='inprogress'){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
@@ -5489,7 +5514,7 @@ function renderMain(){
     html+=`<div class="listHeader"><div><h2>Invoices</h2></div></div>`;
     html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', emptyIcon:'receipt', openMode:'invoice'});
     const sendInvoice=DB.workOrders.filter(inSendInvoiceList).sort((a,b)=>a.id-b.id);
-    html+=subGroupHTML('Send Invoice', sendInvoice, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'receipt', openMode:'invoice', showInvoiceSent:true});
+    html+=subGroupHTML('Send Invoice', sendInvoice, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'receipt', openMode:'none', showInvoiceSent:true});
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Surveys</h2></div></div>`;
@@ -5537,6 +5562,8 @@ function rowHTML(wo, opts){
   const anyOpenCheckIn = allDayLogsSorted(wo).some(({log})=>openSession(log));
   const glowCls = anyOpenCheckIn ? ' checkedInGlow' : '';
   const openFn = opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})`
+    : (opts.openMode==='esign') ? `openEsignTool()`
+    : (opts.openMode==='none') ? ''
     : (opts.openMode==='estimate') ? `openEstimateSplit(${wo.id})`
     : (opts.openMode==='invoice') ? `openInvoiceSplit(${wo.id})`
     : `openWorkOrder(${wo.id})`;
@@ -5547,29 +5574,28 @@ function rowHTML(wo, opts){
   const followUpBadge = (n && n.followUpDate)
     ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span>`
     : '';
+  /* Each of these is a one-tap action that asks to confirm, so they are drawn
+     as buttons rather than checkboxes. */
+  const act=(fn, cls, ic, label)=>`<button type="button" class="actBtn ${cls}" onclick="event.stopPropagation();${fn}(${wo.id}, null)">${icon(ic)}<span>${label}</span></button>`;
   const jobCompleteCheckbox = opts.showJobComplete
-    ? `<label class="jcCheck" onclick="event.stopPropagation()">
-         <input type="checkbox" ${wo.jobComplete?'checked':''} onchange="confirmJobComplete(${wo.id}, this)"> Job Complete
-       </label>`
+    ? `<div class="actRow" onclick="event.stopPropagation()">${act('confirmJobComplete','ok','check-circle','Job Complete')}</div>`
     : '';
   const estimateSentRow = (opts.showEstimateSent || opts.showInvoiceSent)
-    ? `<div class="estDecisionRow" onclick="event.stopPropagation()">
-         <label class="jcCheck"><input type="checkbox" onchange="${opts.showInvoiceSent?'markInvoiceSent':'markEstimateSent'}(${wo.id}, this)"> Sent</label>
-       </div>`
+    ? `<div class="estDecisionRow" onclick="event.stopPropagation()"><div class="actRow actGrid">${act(opts.showInvoiceSent?'markInvoiceSent':'markEstimateSent','solid','send','Sent')}</div></div>`
     : '';
   const estimateDecisionRow = opts.showEstimateDecision
-    ? `<div class="estDecisionRow" onclick="event.stopPropagation()">
-         <label class="jcCheck"><input type="checkbox" onchange="approveEstimate(${wo.id}, this)"> Approved</label>
-         <label class="jcCheck"><input type="checkbox" onchange="modifyEstimate(${wo.id}, this)"> Modified</label>
-         <label class="jcCheck"><input type="checkbox" onchange="declineEstimate(${wo.id}, this)"> Declined</label>
-       </div>`
+    ? `<div class="estDecisionRow" onclick="event.stopPropagation()"><div class="actRow actGrid">
+         ${act('approveEstimate','ok','check','Approved')}
+         ${act('modifyEstimate','','pencil','Modified')}
+         ${act('declineEstimate','no','x','Declined')}
+       </div></div>`
     : '';
   const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? `<div class="checkInOutRow" onclick="event.stopPropagation()">
          ${checkBtnHTML(wo.id, todayLog.log)}
        </div>`
     : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today. See Job Details for other days.</div>' : '');
-  return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}" onclick="${openFn}">
+  return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}"${openFn?` onclick="${openFn}"`:''}>
     <div class="woMain">
       <div class="woName">${esc(wo.customer.name) || '(No name yet)'}</div>
       <div class="woSub">${wo.jobDetails.description ? esc(wo.jobDetails.description.slice(0,80)) : 'No job description yet'}</div>
@@ -5589,7 +5615,7 @@ function rowHTML(wo, opts){
 function confirmJobComplete(id, checkboxEl){
   const wo=getWO(id);
   if(!wo || wo.jobComplete){ return; }
-  checkboxEl.checked=false; // don't visually check until confirmed
+  if(checkboxEl) checkboxEl.checked=false;
   askYesNo('Confirm this job is complete and you\'re ready to generate an invoice?', (yes)=>{
     if(yes){
       closeModal();
@@ -6238,6 +6264,13 @@ function approveEstimate(id, checkboxEl){
       advanceStage(id, w=>{ w.estimateApproved=true; }, 'Approved. Moved to Schedule Job.', 'estimate approved');
     }
   });
+}
+/* Estimates are sent for signature from the e-sign tool, which opens in its
+   own tab so its sign-in stays separate from the portal. */
+const ESIGN_URL='https://document-esign-tool.web.app/';
+function openEsignTool(){
+  const w=window.open(ESIGN_URL, '_blank', 'noopener');
+  if(!w) location.href=ESIGN_URL;
 }
 function markEstimateSent(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
