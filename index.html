@@ -13393,7 +13393,9 @@ function openSplit(id, kind){
         </div>
       </div>
       <div class="footerActions">
-        ${isSign ? `<a class="btn secondary" href="${ESIGN_URL}" target="_blank" rel="noopener">${icon('eye')}Open in New Tab</a>` : ''}
+        ${isSign
+          ? `<a class="btn secondary" href="${ESIGN_URL}" target="_blank" rel="noopener">${icon('eye')}Open in New Tab</a>`
+          : `<button class="btn secondary" onclick="openBuilderTab(${id},'${kind}')">${icon('eye')}Open in New Tab</button>`}
         <button class="btn" onclick="doneSplit('${kind}',${id})">${icon('check')}Done</button>
       </div>
     </div>
@@ -13565,6 +13567,17 @@ function buildLaborLineItems(labor){
   return out;
 }
 function sendJobDataToBuilder(iframeEl, id, kind){
+  postJobDataTo(iframeEl.contentWindow, id, kind);
+}
+/* Opens the builder in its own tab and sends it the same job data the split
+   screen sends. A tab on another site can't report when it has loaded, so the
+   data is sent a few times over the first several seconds. */
+function openBuilderTab(id, kind){
+  const win=window.open('https://mattyc1026.github.io/estimatebuilder/', '_blank');
+  if(!win) return;
+  [1000, 2500, 5000, 8000].forEach(ms=>setTimeout(()=>{ if(!win.closed) postJobDataTo(win, id, kind); }, ms));
+}
+function postJobDataTo(target, id, kind){
   const wo=getWO(id);
   if(!wo) return;
   const jd=wo.jobDetails||{};
@@ -13612,14 +13625,14 @@ function sendJobDataToBuilder(iframeEl, id, kind){
   try{
     // Tell the builder to wipe any prior estimate before this work order's
     // data is generated over, then send the fresh data right behind it.
-    iframeEl.contentWindow.postMessage({source:'gh_portal', type:'clear_estimate', workOrderId:wo.id}, '*');
+    target.postMessage({source:'gh_portal', type:'clear_estimate', workOrderId:wo.id}, '*');
     setTimeout(()=>{
-      try{ iframeEl.contentWindow.postMessage(payload, '*'); }catch(e){}
+      try{ target.postMessage(payload, '*'); }catch(e){}
       // The estimate/invoice builder is one unified app with tabs, tell it
       // which tab to land on so opening "Invoice" doesn't leave the visitor
       // sitting on the Estimate tab.
       if(kind==='invoice'){
-        try{ iframeEl.contentWindow.postMessage({source:'gh_portal', type:'switch_tab', tab:'invoice', workOrderId:wo.id}, '*'); }catch(e){}
+        try{ target.postMessage({source:'gh_portal', type:'switch_tab', tab:'invoice', workOrderId:wo.id}, '*'); }catch(e){}
       }
     }, 50);
   }catch(e){ /* builder may not be ready yet; ignore */ }
