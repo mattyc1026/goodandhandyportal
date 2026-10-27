@@ -39,7 +39,7 @@
   /* In Progress: a paler green than Scheduled, the same step Pre-Site Complete takes off Pre-Site Scheduled. */
   --green-lite:#ecfaf2; --green-liteb:#7cc9a0;
   /* Job stage colours, one tint and one rail per sub-list. Pre-Site runs
-     bold red, coral, light orange; Estimates amber, gold, then light yellow; In
+     bold red, coral, light orange; Estimates amber, lemon, then light yellow; In
      Progress bold green, green, seafoam; Invoices deep blue; Surveys
      periwinkle. Kept apart from --red/--green etc. so alerts and buttons
      that use those are unaffected. */
@@ -47,12 +47,13 @@
   --s-ps:#ffd0c2; --s-ps-b:#de5a3a;
   --s-pc:#ffe5c9; --s-pc-b:#ec9a45;
   --s-be:#ffd77e; --s-be-b:#cf8306;
-  --s-se:#ffe7a6; --s-se-b:#d99a0b;
+  --s-se:#fff27a; --s-se-b:#bfa900;
   --s-pa:#fff3bd; --s-pa-b:#d9b62e;
   --s-sj:#a8ecc4; --s-sj-b:#1f8a55;
   --s-js:#d0f0dc; --s-js-b:#36a066;
   --s-ip:#d3f4ec; --s-ip-b:#3bb89a;
   --s-bi:#aec4f0; --s-bi-b:#1a3c8c;
+  --s-si:#c9d8f8; --s-si-b:#3b64c6;
   --s-sv:#e0e2fb; --s-sv-b:#7d82db;
   --blue:#d8e6ff; --blueb:#1f5aa8; --blue-bold:#aecdfa;
   --grey:#e9edf2; --greyb:#5f6e87;
@@ -155,12 +156,13 @@ html.dark{
   --s-ps:#45292a; --s-ps-b:#ff9f7c;
   --s-pc:#3b2c1f; --s-pc-b:#f5b77a;
   --s-be:#4a3916; --s-be-b:#f2b13c;
-  --s-se:#423618; --s-se-b:#f5c453;
+  --s-se:#3a3a10; --s-se-b:#ece04c;
   --s-pa:#36321c; --s-pa-b:#ecd67a;
   --s-sj:#1a4229; --s-sj-b:#4fd48a;
   --s-js:#14321f; --s-js-b:#69d295;
   --s-ip:#11312c; --s-ip-b:#62dcc1;
   --s-bi:#1c2f5e; --s-bi-b:#7fa6ff;
+  --s-si:#1d3152; --s-si-b:#9ab8ff;
   --s-sv:#272a4f; --s-sv-b:#afb3ff;
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
@@ -201,12 +203,13 @@ html.hc{
   --s-ps:#ffb59c; --s-ps-b:#b5370e;
   --s-pc:#ffd3a6; --s-pc-b:#a35200;
   --s-be:#ffcf3d; --s-be-b:#7a4f00;
-  --s-se:#ffe07a; --s-se-b:#6e5200;
+  --s-se:#fff56e; --s-se-b:#5a5500;
   --s-pa:#fff09e; --s-pa-b:#6b5400;
   --s-sj:#79e0a2; --s-sj-b:#0b5c34;
   --s-js:#b3ecc8; --s-js-b:#13703f;
   --s-ip:#a6efdc; --s-ip-b:#0a6652;
   --s-bi:#87a8ec; --s-bi-b:#0a2a70;
+  --s-si:#a9c1f2; --s-si-b:#1d3f8f;
   --s-sv:#c9ccf7; --s-sv-b:#353aa3;
   --blue:#bcd7ff; --blueb:#0a3a86; --blue-bold:#87b6f7;
   --grey:#e0e0e0; --greyb:#222222;
@@ -244,12 +247,13 @@ html.dark.hc{
   --s-ps:#5a200f; --s-ps-b:#ffad8c;
   --s-pc:#4a2a00; --s-pc-b:#ffc98a;
   --s-be:#584600; --s-be-b:#ffc94a;
-  --s-se:#4d3e00; --s-se-b:#ffd866;
+  --s-se:#3a3a00; --s-se-b:#f4f05a;
   --s-pa:#3d3600; --s-pa-b:#fff08a;
   --s-sj:#004d2c; --s-sj-b:#63f0a6;
   --s-js:#00331d; --s-js-b:#7af5b4;
   --s-ip:#003a30; --s-ip-b:#6ff5d8;
   --s-bi:#00266b; --s-bi-b:#8fb3ff;
+  --s-si:#0d2a5e; --s-si-b:#a9c4ff;
   --s-sv:#1c1f55; --s-sv-b:#c3c6ff;
   --blue:#001f4d; --blueb:#93bdff; --blue-bold:#002e70;
   --grey:#242424; --greyb:#e0e0e0;
@@ -269,7 +273,8 @@ html.hc body{background:var(--hc-bg);}
    rail intact; a `border-width` shorthand here would flatten it. */
 html.hc .woRow{border-top-width:2px;border-right-width:2px;border-bottom-width:2px;border-left-width:8px;}
 html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,html.hc .woRow.st-green-bold,html.hc .woRow.st-blue-bold,
-html.hc .woRow.st-yellow-send{
+html.hc .woRow.st-yellow-send,
+html.hc .woRow.st-blue-send{
   border-top-width:3px;border-right-width:3px;border-bottom-width:3px;border-left-width:12px;
 }
 html.hc .woSub,html.hc .woMeta,html.hc .woLastNote,html.hc .woNoteDate,html.hc .listHeader p,html.hc .small,html.hc .field label{color:var(--hc-fg) !important;}
@@ -484,6 +489,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
      yellow-send  estimate needs sending
      green-bold   job needs scheduling            green   scheduled / in progress
      blue-bold    invoice needs building          blue    invoiced, survey pending
+     blue-send    invoice needs sending
      grey         closed, in job history
 
    Each row is a white card with a solid rail down its left edge carrying the
@@ -513,6 +519,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 .woRow.st-green-bold{border-color:var(--s-sj-b);border-left-color:var(--s-sj-b);border-left-width:8px;}
 .woRow.st-blue{border-left-color:var(--s-sv-b);}
 .woRow.st-blue-bold{border-color:var(--s-bi-b);border-left-color:var(--s-bi-b);border-left-width:8px;}
+.woRow.st-blue-send{border-color:var(--s-si-b);border-left-color:var(--s-si-b);border-left-width:8px;}
 .woRow.st-grey{border-left-color:var(--greyb);}
 /* The bold tints are saturated enough that the default muted grey loses
    contrast against them, darken the supporting text on those rows so a
@@ -521,13 +528,15 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 .woRow.st-yellow-bold .woSub, .woRow.st-yellow-bold .woMeta, .woRow.st-yellow-bold .woLastNote, .woRow.st-yellow-bold .woNoteDate,
 .woRow.st-green-bold .woSub, .woRow.st-green-bold .woMeta, .woRow.st-green-bold .woLastNote, .woRow.st-green-bold .woNoteDate,
 .woRow.st-blue-bold .woSub, .woRow.st-blue-bold .woMeta, .woRow.st-blue-bold .woLastNote, .woRow.st-blue-bold .woNoteDate,
-.woRow.st-yellow-send .woSub,.woRow.st-yellow-send .woMeta,.woRow.st-yellow-send .woLastNote,.woRow.st-yellow-send .woNoteDate{
+.woRow.st-yellow-send .woSub,.woRow.st-yellow-send .woMeta,.woRow.st-yellow-send .woLastNote,.woRow.st-yellow-send .woNoteDate,
+.woRow.st-blue-send .woSub,.woRow.st-blue-send .woMeta,.woRow.st-blue-send .woLastNote,.woRow.st-blue-send .woNoteDate{
   color:var(--ink);
 }
 /* The follow-up badge needs a solid ground so it stays legible on the tint. */
 .woRow.st-red-bold .followupBadge, .woRow.st-yellow-bold .followupBadge,
 .woRow.st-green-bold .followupBadge, .woRow.st-blue-bold .followupBadge,
-.woRow.st-yellow-send .followupBadge{
+.woRow.st-yellow-send .followupBadge,
+.woRow.st-blue-send .followupBadge{
   background:rgba(255,255,255,.85);
 }
 .woRow .woMain{display:flex;flex-direction:column;gap:3px;}
@@ -546,9 +555,10 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 /* needs doing, solid */
 .tag.pending{background:var(--s-pi-b);color:#fff;}
 .tag.build-est{background:var(--s-be-b);color:#fff;}
-.tag.send-est{background:var(--s-se-b);color:#fff;}
+.tag.send-est{background:var(--s-se-b);color:#1d1a00;}
 .tag.go{background:var(--s-sj-b);color:#fff;}
 .tag.build-inv{background:var(--s-bi-b);color:#fff;}
+.tag.send-inv{background:var(--s-si-b);color:#fff;}
 /* in flight, outlined */
 .tag.sched{background:var(--s-ps);color:color-mix(in srgb,var(--s-ps-b) 75%,var(--ink));border-color:var(--s-ps-b);}
 .tag.presite-done{background:var(--s-pc);color:color-mix(in srgb,var(--s-pc-b) 55%,var(--ink));border-color:var(--s-pc-b);}
@@ -559,7 +569,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 /* closed */
 .tag.hist{background:var(--grey);color:var(--greyb);border-color:var(--line);}
 .tag.visit{background:var(--orange);color:#fff;}
-html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.send-est,html.hc .tag.go,html.hc .tag.build-inv,html.hc .tag.visit{color:var(--hc-bg);}
+html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.send-est,html.hc .tag.go,html.hc .tag.build-inv,html.hc .tag.send-inv,html.hc .tag.visit{color:var(--hc-bg);}
 .emptyState{
   text-align:center;padding:64px 24px;color:var(--muted);
   background:var(--paper);border:1px dashed var(--line);border-radius:var(--radius);
@@ -973,7 +983,9 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .stageBtn.st-blue{background-image:linear-gradient(90deg,var(--s-sv),var(--paper) 80%);}
 .stageBtn.st-blue::before{background:var(--s-sv-b);}
 .stageBtn.st-blue-bold{background-image:linear-gradient(90deg,var(--s-bi),var(--paper) 95%);border-color:var(--s-bi-b);}
+.stageBtn.st-blue-send{background-image:linear-gradient(90deg,var(--s-si),var(--paper) 95%);border-color:var(--s-si-b);}
 .stageBtn.st-blue-bold::before{background:var(--s-bi-b);width:4px;}
+.stageBtn.st-blue-send::before{background:var(--s-si-b);width:4px;}
 .stageBtn.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 80%);}
 .stageBtn.st-grey::before{background:var(--greyb);}
 /* The stage the job is in now: ringed and not clickable. */
@@ -2501,7 +2513,7 @@ html.dark #loginScreen{
 /* Solid status pills carry white text in light mode; in dark the pill colour
    is the bright one, so the text has to flip to the dark ground instead. */
 html.dark .tag.pending,html.dark .tag.build-est,html.dark .tag.send-est,
-html.dark .tag.go,html.dark .tag.build-inv,html.dark .tag.visit{color:#0e1522;}
+html.dark .tag.go,html.dark .tag.build-inv,html.dark .tag.send-inv,html.dark .tag.visit{color:#0e1522;}
 html.dark .subListHeader .count{background:var(--navy2);color:var(--ink);}
 html.dark .toastItem{background:#22304a;color:var(--ink);}
 /* Dark mode flips the primary button's label to dark ink, because its fill is
@@ -2517,7 +2529,8 @@ html.dark .btn.secondary:hover{background:var(--navy2);color:var(--ink);border-c
 html.dark .syncPill.on{color:#0e1522;}
 html.dark .woRow.st-red-bold .followupBadge,html.dark .woRow.st-yellow-bold .followupBadge,
 html.dark .woRow.st-green-bold .followupBadge,html.dark .woRow.st-blue-bold .followupBadge,
-html.dark .woRow.st-yellow-send .followupBadge{
+html.dark .woRow.st-yellow-send .followupBadge,
+html.dark .woRow.st-blue-send .followupBadge{
   background:rgba(0,0,0,.34);
 }
 html.dark .woNoteDate{color:#8493ab;}
@@ -2611,11 +2624,13 @@ html.hc body{background-image:none;}
 .woRow.st-yellow-send::before{background:var(--s-se-b);width:6px;}
 .woRow.st-green-bold::before{background:var(--s-sj-b);width:6px;}
 .woRow.st-blue-bold::before{background:var(--s-bi-b);width:6px;}
+.woRow.st-blue-send::before{background:var(--s-si-b);width:6px;}
 .woRow.st-red-bold{border-color:var(--s-pi-b);}
 .woRow.st-yellow-bold{border-color:var(--s-be-b);}
 .woRow.st-yellow-send{border-color:var(--s-se-b);}
 .woRow.st-green-bold{border-color:var(--s-sj-b);}
 .woRow.st-blue-bold{border-color:var(--s-bi-b);}
+.woRow.st-blue-send{border-color:var(--s-si-b);}
 /* Proportional tint. Bold states run the wash further and start it heavier,
    which is what keeps "waiting on me" distinct from "waiting on them". */
 .woRow.st-red{background-image:linear-gradient(90deg,var(--s-ps),var(--paper) 42%);}
@@ -2630,6 +2645,7 @@ html.hc body{background-image:none;}
 .woRow.st-yellow-send{background-image:linear-gradient(90deg,var(--s-se),var(--paper) 58%);border-color:var(--s-se-b);}
 .woRow.st-green-bold{background-image:linear-gradient(90deg,var(--s-sj),var(--paper) 58%);border-color:var(--s-sj-b);}
 .woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--s-bi),var(--paper) 58%);border-color:var(--s-bi-b);}
+.woRow.st-blue-send{background-image:linear-gradient(90deg,var(--s-si),var(--paper) 58%);border-color:var(--s-si-b);}
 /* The neon rail wins over the stage colour: a crew on site outranks whatever
    lifecycle stage the job happens to be sitting in. */
 .woRow.checkedInGlow{border-left:1px solid var(--neon-rail);}
@@ -2645,7 +2661,8 @@ html.hc body{background-image:none;}
 html.hc .woRow,
 html.hc .woRow.st-red-bold,html.hc .woRow.st-yellow-bold,
 html.hc .woRow.st-green-bold,html.hc .woRow.st-blue-bold,
-.woRow.st-yellow-send,html.hc .woRow.st-yellow-send{border-left-width:1px;}
+.woRow.st-yellow-send,html.hc .woRow.st-yellow-send,
+.woRow.st-blue-send,html.hc .woRow.st-blue-send{border-left-width:1px;}
 
 /* Editorial hierarchy: serif headline, quiet secondary line, meta stacked in
    its own right-hand column instead of strung out along the same baseline. */
@@ -2664,7 +2681,8 @@ html.hc .woRow{border-left-width:1px;}
 html.hc .woRow::before{width:7px;}
 html.hc .woRow.st-red-bold::before,html.hc .woRow.st-yellow-bold::before,
 html.hc .woRow.st-green-bold::before,html.hc .woRow.st-blue-bold::before,
-html.hc .woRow.st-yellow-send::before{width:11px;}
+html.hc .woRow.st-yellow-send::before,
+html.hc .woRow.st-blue-send::before{width:11px;}
 html.hc .woRow.checkedInGlow{border-left-width:1px;}
 html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
 
@@ -2687,6 +2705,7 @@ html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
 .woRow.st-yellow-send{background-image:linear-gradient(90deg,var(--s-se),var(--paper) 88%);}
   .woRow.st-green-bold{background-image:linear-gradient(90deg,var(--s-sj),var(--paper) 88%);}
   .woRow.st-blue-bold{background-image:linear-gradient(90deg,var(--s-bi),var(--paper) 88%);}
+.woRow.st-blue-send{background-image:linear-gradient(90deg,var(--s-si),var(--paper) 88%);}
   /* Replace the rotated single-guillemet with a real chevron. The old one was
      a text glyph flipped 180 degrees, which rendered at a different weight
      and vertical offset in every font it landed in. */
@@ -3472,7 +3491,7 @@ function setWoSort(val){
 }
 /* Progression order matches stage: bold red -> red -> bold yellow -> yellow
    -> bold green -> green -> bold blue -> blue (earliest to latest stage) */
-const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','st-yellow-send','st-yellow','st-green-bold','st-green','st-green-lite','st-blue-bold','st-blue','st-grey'];
+const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','st-yellow-send','st-yellow','st-green-bold','st-green','st-green-lite','st-blue-bold','st-blue-send','st-blue','st-grey'];
 /* Applies a stage change, saves, then re-renders so the job moves into its new
    tab. Callers pass a function that mutates the work order. Kept as one helper
    so every stage transition saves, recounts and re-renders in the same order
@@ -3564,6 +3583,7 @@ function followUpDueList(){
 function workOrderCurrentTab(wo){
   if(inJobHistoryList(wo)) return 'jobhistory';
   if(inSurveysList(wo)) return 'surveys';
+  if(inSendInvoiceList(wo)) return 'invoices';
   if(inBuildInvoiceList(wo)) return 'invoices';
   if(inInvoiceInProgressList(wo)) return 'inprogress';
   if(inJobScheduledList(wo)) return 'inprogress';
@@ -4241,6 +4261,8 @@ function normalizeWO(wo){
   /* Send Estimate came in after Pending Approval. A job that already had a
      finished estimate is treated as sent, so nothing moves backwards. */
   if(wo.estimateSent===undefined) wo.estimateSent=!!wo.estimateDone;
+  /* Same for Send Invoice: a job already past its invoice counts as sent. */
+  if(wo.invoiceSent===undefined) wo.invoiceSent=!!wo.invoiceDone;
   if(wo.estimateDeclined===undefined) wo.estimateDeclined=false;
   if(wo.jobScheduled===undefined) wo.jobScheduled=!!wo.invoiceApproved; // migrate from prior workflow version
   if(wo.jobComplete===undefined) wo.jobComplete=false;
@@ -4770,7 +4792,8 @@ function hasRequiredInfo(wo){
 function schdCount(wo){ return wo.notes.filter(n=>n.type==='SCHD').length; }
 function statusClass(wo){
   if(wo.movedToHistoryAt) return 'st-grey';
-  if(wo.invoiceDone) return 'st-blue';                 // Surveys
+  if(wo.invoiceDone && wo.invoiceSent) return 'st-blue'; // Surveys
+  if(wo.invoiceDone) return 'st-blue-send';            // Invoices > Send Invoice
   if(wo.jobComplete) return 'st-blue-bold';            // Invoices > Build Invoice
   if(wo.jobScheduled && wo.jobStarted) return 'st-green-lite'; // In Progress > In Progress
   if(wo.jobScheduled) return 'st-green';                // In Progress > Scheduled
@@ -4789,7 +4812,8 @@ function statusTag(wo){
   if(wo.movedToHistoryAt) return hasUpcomingSchedule(wo)
     ? '<span class="tag visit">Visit Scheduled</span>'
     : '<span class="tag hist">Job History</span>';
-  if(wo.invoiceDone) return '<span class="tag survey">Awaiting Survey</span>';
+  if(wo.invoiceDone && wo.invoiceSent) return '<span class="tag survey">Awaiting Survey</span>';
+  if(wo.invoiceDone) return '<span class="tag send-inv">Send Invoice</span>';
   if(wo.jobComplete) return '<span class="tag build-inv">Build Invoice</span>';
   if(wo.jobScheduled && wo.jobStarted) return '<span class="tag in-prog">In Progress</span>';
   if(wo.jobScheduled) return '<span class="tag job-sched">Scheduled</span>';
@@ -4880,7 +4904,8 @@ function autoStartScheduledJobs(){
 function inBuildInvoiceList(wo){ return inInvoicesList(wo) && !!wo.jobComplete; }
 
 /* Surveys + Job History */
-function inSurveysList(wo){ return !!wo.invoiceDone && !wo.movedToHistoryAt; }
+function inSendInvoiceList(wo){ return !!wo.invoiceDone && !wo.invoiceSent && !wo.movedToHistoryAt; }
+function inSurveysList(wo){ return !!wo.invoiceDone && !!wo.invoiceSent && !wo.movedToHistoryAt; }
 /* Job History is the final resting place, so a job only lands here once there
    is nothing left on the calendar. Until then it is still on the board and
    showing in both places would be the duplication this is meant to avoid. */
@@ -5066,7 +5091,7 @@ function renderTabCounts(){
   setCount('cnt-presite', DB.workOrders.filter(inPresiteList).length);
   setCount('cnt-estimates', DB.workOrders.filter(wo=>inEstimatesList(wo) && !inScheduleJobList(wo)).length);
   setCount('cnt-inprogress', DB.workOrders.filter(wo=>inScheduleJobList(wo) || inJobScheduledList(wo) || inInvoiceInProgressList(wo)).length);
-  setCount('cnt-invoices', DB.workOrders.filter(inBuildInvoiceList).length);
+  setCount('cnt-invoices', DB.workOrders.filter(wo=>inBuildInvoiceList(wo) || inSendInvoiceList(wo)).length);
   setCount('cnt-surveys', DB.workOrders.filter(inSurveysList).length);
 }
 /* Writes a tab count and bumps the badge only when the number actually moved,
@@ -5463,6 +5488,8 @@ function renderMain(){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Invoices</h2></div></div>`;
     html+=subGroupHTML('Build Invoice', buildInvoice, {emptyText:'Nothing waiting on an invoice right now.', emptyIcon:'receipt', openMode:'invoice'});
+    const sendInvoice=DB.workOrders.filter(inSendInvoiceList).sort((a,b)=>a.id-b.id);
+    html+=subGroupHTML('Send Invoice', sendInvoice, {emptyText:'Nothing waiting to be sent right now.', emptyIcon:'receipt', openMode:'invoice', showInvoiceSent:true});
   } else if(ACTIVE_TAB==='surveys'){
     const list=DB.workOrders.filter(inSurveysList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Surveys</h2></div></div>`;
@@ -5525,9 +5552,9 @@ function rowHTML(wo, opts){
          <input type="checkbox" ${wo.jobComplete?'checked':''} onchange="confirmJobComplete(${wo.id}, this)"> Job Complete
        </label>`
     : '';
-  const estimateSentRow = opts.showEstimateSent
+  const estimateSentRow = (opts.showEstimateSent || opts.showInvoiceSent)
     ? `<div class="estDecisionRow" onclick="event.stopPropagation()">
-         <label class="jcCheck"><input type="checkbox" onchange="markEstimateSent(${wo.id}, this)"> Sent</label>
+         <label class="jcCheck"><input type="checkbox" onchange="${opts.showInvoiceSent?'markInvoiceSent':'markEstimateSent'}(${wo.id}, this)"> Sent</label>
        </div>`
     : '';
   const estimateDecisionRow = opts.showEstimateDecision
@@ -6221,6 +6248,15 @@ function markEstimateSent(id, checkboxEl){
     }
   });
 }
+function markInvoiceSent(id, checkboxEl){
+  if(checkboxEl) checkboxEl.checked=false; // one-time trigger, not a persisted state
+  askYesNo('Confirm this invoice has been sent to the customer? It will move to Surveys.', (yes)=>{
+    if(yes){
+      if(!getWO(id)) return;
+      advanceStage(id, w=>{ w.invoiceSent=true; }, 'Sent. Moved to Surveys.', 'invoice marked sent');
+    }
+  });
+}
 function modifyEstimate(id, checkboxEl){
   if(checkboxEl) checkboxEl.checked=false; // this is a one-time trigger, not a persisted state
   askYesNo('Would you like to modify this estimate?', (yes)=>{
@@ -6263,7 +6299,7 @@ function openNewWorkOrder(){
     customer:{name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
-    presiteDone:false, estimateDone:false, estimateSent:false, invoiceDone:false,
+    presiteDone:false, estimateDone:false, estimateSent:false, invoiceDone:false, invoiceSent:false,
     presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobStarted:false, jobStartHold:null, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
   };
@@ -10132,7 +10168,7 @@ function adminDuplicateWorkOrder(id){
     customer:Object.assign({name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer),
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
-    presiteDone:false, estimateDone:false, estimateSent:false, invoiceDone:false,
+    presiteDone:false, estimateDone:false, estimateSent:false, invoiceDone:false, invoiceSent:false,
     presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobStarted:false, jobStartHold:null, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
   };
@@ -10150,7 +10186,7 @@ const ADMIN_STAGE_GROUPS=[
   ['Pre-Site Inspections',[['presite','Pre-Site Incomplete','st-red-bold',w=>inPresiteIncompleteList(w)],['presitescheduled','Pre-Site Scheduled','st-red',w=>inPresiteScheduledList(w)],['presitecomplete','Pre-Site Complete','st-red-lite',w=>inPresiteCompleteList(w)]]],
   ['Estimates',[['estimates','Build Estimate','st-yellow-bold',w=>inBuildEstimateList(w)],['sendestimate','Send Estimate','st-yellow-send',w=>inSendEstimateList(w)],['pendingapproval','Pending Approval','st-yellow',w=>inEstimatePendingApprovalList(w)]]],
   ['Scheduling',[['schedulejob','Schedule Job','st-green-bold',w=>inScheduleJobList(w)],['jobscheduled','Scheduled','st-green',w=>inJobScheduledList(w)],['inprogress','In Progress','st-green-lite',w=>inInvoiceInProgressList(w)]]],
-  ['Invoices',[['invoices','Build Invoice','st-blue-bold',w=>inBuildInvoiceList(w)]]],
+  ['Invoices',[['invoices','Build Invoice','st-blue-bold',w=>inBuildInvoiceList(w)],['sendinvoice','Send Invoice','st-blue-send',w=>inSendInvoiceList(w)]]],
   ['Surveys',[['surveys','Surveys','st-blue',w=>inSurveysList(w)]]],
   ['Job History',[['jobhistory','Job History','st-grey',w=>inJobHistoryList(w)]]]
 ];
@@ -10215,6 +10251,10 @@ function adminSetStage(id, target){
     wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
     wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=false; wo.movedToHistoryAt=null;
   }
+  if(target==='sendinvoice'){
+    wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
+    wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=null;
+  }
   if(target==='surveys'){
     wo.presiteDone=true; wo.estimateDone=true; wo.estimateApproved=true; wo.estimateDeclined=false;
     wo.jobScheduled=true; wo.jobComplete=true; wo.invoiceDone=true; wo.movedToHistoryAt=null;
@@ -10227,6 +10267,7 @@ function adminSetStage(id, target){
      back to In Progress. It still moves on by itself on its next Whole Job day. */
   wo.jobStarted = !['presite','presitescheduled','presitecomplete','estimates','sendestimate','pendingapproval','schedulejob','jobscheduled'].includes(target);
   wo.estimateSent = !!wo.estimateDone && target!=='sendestimate';
+  wo.invoiceSent = !!wo.invoiceDone && target!=='sendinvoice';
   wo.jobStartHold = target==='jobscheduled' ? isoToday() : null;
   addAdminLog(wo, `Overrode workflow, forced job from ${stageBefore} to ${adminStageLabel(target)}.`);
   saveDB(DB);
@@ -13216,8 +13257,11 @@ function closeSplit(kind, id){
         else { saveDB(DB); renderTabCounts(); renderMain(); }
         return;
       }
-      if(!yes){ saveDB(DB); renderTabCounts(); renderMain(); return; }
-      advanceStage(id, w=>{ w.invoiceDone=true; }, 'Invoice complete. Moved to Surveys.', 'invoice marked complete');
+      /* Same pattern as estimates: a finished invoice goes to Send Invoice, and
+         one marked not complete goes back to (or stays in) Build Invoice. */
+      if(yes) advanceStage(id, w=>{ w.invoiceDone=true; w.invoiceSent=false; }, 'Invoice saved. Moved to Send Invoice.', 'invoice marked complete');
+      else if(wo.invoiceDone && !wo.invoiceSent) advanceStage(id, w=>{ w.invoiceDone=false; }, 'Invoice not complete. Moved back to Build Invoice.', 'invoice marked not complete');
+      else { saveDB(DB); renderTabCounts(); renderMain(); }
     }
   );
 }
