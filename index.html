@@ -6303,23 +6303,21 @@ function renderSendInvoice(){
   const email=String(c.email||'').trim(), phone=String(c.phone||'').trim();
   let body='';
   if(st.step==='choose'){
-    const opt=(via, ic, label, sub, ok)=>`<button type="button" class="sendOpt" ${ok?'':'disabled'} onclick="pickSendInvoice('${via}')">
-        ${icon(ic,'lg')}<span class="sendOptText"><b>${label}</b><span>${sub}</span></span></button>`;
+    const opt=(via, ic, label, ok)=>`<button type="button" class="sendOpt" ${ok?'':'disabled'} onclick="pickSendInvoice('${via}')">
+        ${icon(ic,'lg')}<span class="sendOptText"><b>${label}</b></span></button>`;
     body=`<div class="sendOpts">
-      ${opt('email','mail','By Email', email?esc(email):'No email on file', !!email)}
-      ${opt('text','message','By Text', phone?esc(phone):'No phone on file', !!phone)}
-      ${opt('self','send','Send It Yourself','Moves the job to Surveys', true)}
+      ${opt('email','mail','By Email', !!email)}
+      ${opt('text','message','By Text', !!phone)}
+      ${opt('self','send','Send It Yourself', true)}
     </div>`;
   } else if(st.step==='upload'){
-    body=`<div class="small" style="margin-bottom:10px;">Upload the invoice. It is saved to this job's Docs.</div>
-      ${syncStorage
+    body=`${syncStorage
         ? `<div class="docsTab"><input type="file" id="sendInvFile" accept="application/pdf,image/*" ${st.busy?'disabled':''} onchange="uploadSendInvoice(this)"></div>`
-        : `<div class="errMsg">Uploads need Multi-Device Sync and Firebase Storage. Set them up in Sync, then try again.</div>`}
+        : `<div class="errMsg">Uploads are unavailable.</div>`}
       <div class="small" id="sendInvStatus" style="margin-top:8px;color:var(--orange);font-weight:600;">${st.busy?'Uploading…':''}</div>
       ${st.err?`<div class="errMsg" style="margin-top:8px;">${esc(st.err)}</div>`:''}`;
   } else if(st.step==='ready'){
-    const target = st.via==='email' ? esc(email) : esc(phone);
-    body=`<div class="sendReady">${icon('check-circle','lg')}<div><b>${esc(st.doc.name)}</b> is saved to Docs.<br>Next, ${st.via==='email'?'an email':'a text'} to ${target} opens with a link to it.</div></div>`;
+    body=`<div class="sendReady">${icon('check-circle','lg')}<div><b>${esc(st.doc.name)}</b> saved.</div></div>`;
   }
   const foot = st.step==='choose'
     ? `<button class="btn secondary" onclick="closeSendInvoice()">Cancel</button>`
@@ -6358,7 +6356,7 @@ async function uploadSendInvoice(input){
   const st=SEND_INV; if(!st) return;
   const file=input.files && input.files[0];
   if(!file) return;
-  if(!syncStorage){ st.err='Uploads are not available right now.'; renderSendInvoice(); return; }
+  if(!syncStorage){ st.err='Uploads are unavailable.'; renderSendInvoice(); return; }
   const wo=getWO(st.id); if(!wo) return;
   st.busy=true; st.err=''; renderSendInvoice();
   try{
@@ -6386,7 +6384,7 @@ async function uploadSendInvoice(input){
     st.doc=doc; st.step='ready';
   }catch(e){
     console.error(e);
-    st.err='The upload did not go through. Check your connection and try again.';
+    st.err='Upload failed.';
   }
   st.busy=false;
   if(SEND_INV===st) renderSendInvoice();
@@ -7632,7 +7630,7 @@ function stageLabelFor(wo){
 }
 function priorJobsTabHTML(wo){
   const prior=priorJobsFor(wo);
-  if(!prior.length) return emptyStateHTML('No prior jobs for this customer.', {icon:'clipboard', style:'padding:30px 18px;'});
+  if(!prior.length) return emptyStateHTML('No other jobs in this group.', {icon:'clipboard', style:'padding:30px 18px;'});
   const rows=prior.map(({wo:w, why})=>{
     const when=w.createdAt ? new Date(w.createdAt).toLocaleDateString('en-US') : '';
     const desc=(w.jobDetails && w.jobDetails.description) ? w.jobDetails.description.trim() : '';
@@ -7645,7 +7643,7 @@ function priorJobsTabHTML(wo){
     </div>`;
   }).join('');
   return `<div class="jobPanel">
-    <div class="panelTitle">Prior Jobs (${prior.length})</div>
+    <div class="panelTitle">Group (${prior.length})</div>
     ${rows}
   </div>`;
 }
@@ -8616,7 +8614,7 @@ function renderWorkOrderModal(id){
       headerActions = `<div class="headerTabs fieldNav">
           <button class="headerTab active" onclick="setFieldView(${id}, false)">Full View</button>
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
-          ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Prior Jobs (${priorCount})</button>` : ''}
+          ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Group (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
         </div>`;
       bodyHTML = fieldModeHTML(wo);
@@ -8639,8 +8637,8 @@ function renderWorkOrderModal(id){
     headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="toggleDocsView(${id})">&larr; Docs</button></div>`;
     bodyHTML = docsTabHTML(wo);
   } else if(WO_PRIOR_VIEW && priorCount){
-    headerSuffix = ', Prior Jobs';
-    headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="togglePriorView(${id})">&larr; Prior Jobs</button></div>`;
+    headerSuffix = ', Group';
+    headerActions = `<div class="headerTabs"><button class="headerTab active" onclick="togglePriorView(${id})">&larr; Group</button></div>`;
     bodyHTML = priorJobsTabHTML(wo);
   } else if(isAdmin && WO_ADMIN_VIEW){
     headerSuffix = ', Admin';
@@ -8650,7 +8648,7 @@ function renderWorkOrderModal(id){
     headerActions = `<div class="headerTabs">
           <button class="headerTab" onclick="setFieldView(${id}, true)">Field</button>
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
-          ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Prior Jobs (${priorCount})</button>` : ''}
+          ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Group (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
         </div>`;
     bodyHTML = `
@@ -9285,7 +9283,7 @@ function warnIfDuplicateCustomer(id){
   const more = prior.length>5 ? ('\nand '+(prior.length-5)+' more') : '';
   askYesNo(
     'This customer already has '+prior.length+' work order'+(prior.length>1?'s':'')+' on file, matched on '+how+':\n\n'+list+more+
-    '\n\nNothing has been merged. This work order stays separate, and all of them are listed under Prior Jobs.',
+    '\n\nNothing has been merged. This work order stays separate, and all of them are listed under Group.',
     ()=>{},
     {yes:'Got it', no:'Close'}
   );
@@ -10305,35 +10303,39 @@ function adminTabHTML(wo){
     <h4 style="margin-top:14px;">Duplicate</h4>
     <div class="adminPillRow">
       <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id})">Duplicate Work Order</button>
+      <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id}, true)">Clone Work Order</button>
     </div>
     <h4 style="margin-top:14px;">Admin Log</h4>
     <div class="adminLogBox">${logHTML}</div>
   </div>`;
 }
-/* Makes a brand new work order for the same customer. Only the customer block
-   is carried over (name, phones, email, address, homeowner). Notes, job
-   details, schedule, documents, stage and the admin log all start empty, and
-   the new job begins in the Work Orders tab like any other new one. */
-function adminDuplicateWorkOrder(id){
+/* Duplicate makes a brand new work order for the same customer. Only the
+   customer block is carried over (name, phones, email, address, homeowner).
+   Clone also carries over the job details (description, labor, materials,
+   tools, issues, exclusions, disclaimers). Either way notes, schedule, visit
+   logs, documents and the admin log start empty, and the new job begins at
+   the first stage like any other new one. */
+function adminDuplicateWorkOrder(id, clone){
   const src=getWO(id);
   if(!src) return;
   const newId=newWorkOrderId();
   const wo={
     id:newId, createdAt:Date.now(),
-    customer:Object.assign({name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer),
-    jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
+    customer:JSON.parse(JSON.stringify(Object.assign({name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer))),
+    jobDetails:Object.assign({description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
+      clone ? JSON.parse(JSON.stringify(src.jobDetails||{})) : {}),
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, estimateSent:false, invoiceDone:false, invoiceSent:false,
     presiteScheduled:false, presiteComplete:false, estimateApproved:false, estimateDeclined:false, jobScheduled:false, jobStarted:false, jobStartHold:null, jobComplete:false, movedToHistoryAt:null,
     checkIn:null, checkOut:null
   };
   DB.workOrders.push(wo);
-  addAdminLog(wo, 'Work order created as a duplicate of #'+woCode(src)+'.');
-  addAdminLog(src, 'Duplicated into new work order #'+woCode(wo)+'.');
+  addAdminLog(wo, 'Work order created as a '+(clone?'clone':'duplicate')+' of #'+woCode(src)+'.');
+  addAdminLog(src, (clone?'Cloned':'Duplicated')+' into new work order #'+woCode(wo)+'.');
   saveDB(DB);
   renderTabCounts(); renderMain();
   openWorkOrder(newId);
-  toast('Duplicated. This is the new work order.');
+  toast((clone?'Cloned':'Duplicated')+'. This is the new work order.');
 }
 /* One force button per sub-list, grouped by the nav tab it lives under. */
 /* [key, label, card colour class, test for "the job is in this sub-list"] */
