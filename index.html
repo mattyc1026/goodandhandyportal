@@ -980,6 +980,24 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .adminStageBtns .stageBtn{flex:1 1 0;min-width:0;justify-content:center;text-align:center;}
 @media (min-width:901px){ .adminStageBtns .stageBtn{white-space:nowrap;padding-left:13px;padding-right:9px;} }
 .adminPillRow{display:flex;margin:4px 0 6px;}
+/* The Duplicate and Clone buttons sit to the right of the heading. On a
+   narrower card each label goes to two lines to stay there, and only when
+   even that won't fit do they drop to their own row under the heading. */
+.adminTab{container-type:inline-size;}
+.adminTopRow{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin-bottom:6px;}
+.adminTopRow h4{margin:0;}
+.adminTopBtns{margin:0;gap:6px;display:grid;grid-template-columns:1fr 1fr;}
+.adminTopBtns .stageBtn{min-width:0;flex-direction:column;gap:0;justify-content:center;text-align:center;line-height:1.2;overflow-wrap:anywhere;}
+@container (min-width: 21.7em){
+  .adminTopRow{flex-direction:row;align-items:center;justify-content:space-between;gap:8px;}
+  .adminTopRow h4{flex:0 0 auto;}
+  .adminTopBtns{flex:0 0 auto;}
+  .adminTopBtns .stageBtn{font-size:.85em;white-space:nowrap;padding-right:8px;}
+}
+@container (min-width: 29em){
+  .adminTopBtns{display:flex;}
+  .adminTopBtns .stageBtn{flex-direction:row;gap:.3em;font-size:1em;}
+}
 /* The log scrolls inside its own box so a long history doesn't stretch the tab. */
 .adminLogBox{
   max-height:min(320px,45vh);overflow-y:auto;overscroll-behavior:contain;
@@ -10295,15 +10313,16 @@ function adminTabHTML(wo){
     : '<div class="small">No admin overrides on this work order.</div>';
   return `<div class="adminTab">
     ${lostItemsPanelHTML(wo.id)}
-    <h4>Admin Controls</h4>
+    <div class="adminTopRow">
+      <h4>Admin Controls</h4>
+      <div class="adminPillRow adminTopBtns">
+        <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id})"><span>Duplicate</span> <span>Work Order</span></button>
+        <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id}, true)"><span>Clone</span> <span>Work Order</span></button>
+      </div>
+    </div>
     <div class="small" style="margin-bottom:8px;">Force this work order's stage, bypassing the normal workflow.</div>
     <div class="adminStageList">
       ${adminStageButtonsHTML(wo.id)}
-    </div>
-    <h4 style="margin-top:14px;">Duplicate</h4>
-    <div class="adminPillRow">
-      <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id})">Duplicate Work Order</button>
-      <button type="button" class="stageBtn pillNeutral" onclick="adminDuplicateWorkOrder(${wo.id}, true)">Clone Work Order</button>
     </div>
     <h4 style="margin-top:14px;">Admin Log</h4>
     <div class="adminLogBox">${logHTML}</div>
