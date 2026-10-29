@@ -4,6 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script>
+/* Practice copy. Opened with ?training=1 (from Meetings), the portal runs on
+   its own practice jobs: everything it saves on this device goes under
+   separate names, and it syncs to gh_portal/training instead of the real
+   jobs. Display settings and the sync connection are shared with the real
+   portal; nothing else is. */
+(function(){
+  var q=null; try{ q=new URLSearchParams(location.search); }catch(e){}
+  var on=!!(q && q.get('training')==='1');
+  window.GH_TRAINING=on;
+  window.GH_MEETING_ID=on ? (q.get('meeting')||'') : '';
+  if(!on) return;
+  document.documentElement.classList.add('training');
+  var SHARED={gh_text_scale:1, gh_dark_mode:1, gh_high_contrast:1, gh_portal_sync_cfg:1, gh_wo_sort:1, gh_field_mode:1, gh_rolodex:1};
+  var P=Storage.prototype, g=P.getItem, st=P.setItem, rm=P.removeItem;
+  function map(k){ k=String(k); return (k.indexOf('gh_')===0 && !SHARED[k]) ? 'ghtrain_'+k.slice(3) : k; }
+  function isLocal(o){ try{ return o===window.localStorage; }catch(e){ return false; } }
+  P.getItem=function(k){ return g.call(this, isLocal(this)?map(k):k); };
+  P.setItem=function(k,v){ return st.call(this, isLocal(this)?map(k):k, v); };
+  P.removeItem=function(k){ return rm.call(this, isLocal(this)?map(k):k); };
+  window.GH_REAL_GET=function(k){ try{ return g.call(window.localStorage, k); }catch(e){ return null; } };
+  window.GH_RAW_REMOVE=function(k){ if(String(k).indexOf('ghtrain_')!==0) return; try{ rm.call(window.localStorage, k); }catch(e){} };
+})();
+</script>
+<script>
 /* iPhone and iPad zoom into a text box when it is tapped. maximum-scale=1 stops
    that on iOS only, where pinch to zoom keeps working regardless. Not applied
    elsewhere, because on Android it would block pinch to zoom. */
@@ -398,6 +422,11 @@ html.hc header.top{background:#000;color:#fff;}
 header.top .brand{font-family:var(--f-display);font-size:1.35em;}
 header.top .brand span{color:var(--orange);}
 .userBadge{display:flex;align-items:center;gap:12px;font-size:.85em;}
+.practicePill{display:none;}
+html.training .practicePill{display:inline-block;background:var(--redb);color:#fff;font-size:.66em;padding:3px 9px;border-radius:20px;font-weight:700;letter-spacing:.1em;}
+html.training #dashToggle,html.training #dashPanel,html.training #dashBackdrop,
+html.training .logoutBtn,html.training #syncPill,html.training #pwNudge,
+html.training .settingsRow:has(#changePwBtn){display:none !important;}
 .adminPill{
   background:var(--orange);color:#fff;font-size:.66em;padding:3px 9px;border-radius:20px;
   font-weight:700;letter-spacing:.1em;text-transform:uppercase;
@@ -3305,6 +3334,7 @@ window._bootSafety = setTimeout(function(){
     <div class="userBadge">
       <span id="whoami"></span>
       <span id="adminPill" class="adminPill hidden">ADMIN</span>
+      <span class="practicePill">PRACTICE</span>
       <div class="settingsWrap">
         <button class="settingsBtn" id="settingsBtn" onclick="toggleSettingsMenu('settingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false"><svg class="gearIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.50 4.96 L10.05 2.81 A9.40 9.40 0 0 1 13.95 2.81 L13.50 4.96 A7.20 7.20 0 0 1 15.92 5.96 L17.12 4.12 A9.40 9.40 0 0 1 19.88 6.88 L18.04 8.08 A7.20 7.20 0 0 1 19.04 10.50 L21.19 10.05 A9.40 9.40 0 0 1 21.19 13.95 L19.04 13.50 A7.20 7.20 0 0 1 18.04 15.92 L19.88 17.12 A9.40 9.40 0 0 1 17.12 19.88 L15.92 18.04 A7.20 7.20 0 0 1 13.50 19.04 L13.95 21.19 A9.40 9.40 0 0 1 10.05 21.19 L10.50 19.04 A7.20 7.20 0 0 1 8.08 18.04 L6.88 19.88 A9.40 9.40 0 0 1 4.12 17.12 L5.96 15.92 A7.20 7.20 0 0 1 4.96 13.50 L2.81 13.95 A9.40 9.40 0 0 1 2.81 10.05 L4.96 10.50 A7.20 7.20 0 0 1 5.96 8.08 L4.12 6.88 A9.40 9.40 0 0 1 6.88 4.12 L8.08 5.96 A7.20 7.20 0 0 1 10.50 4.96 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
         <div class="settingsMenu" id="settingsMenu">
@@ -3713,6 +3743,7 @@ function initSync(){
       cfg.__derivedBucket = true;
     }
     if(!firebase.apps.length){ firebase.initializeApp(cfg); }
+    if(window.GH_TRAINING) guardTrainingAuth();
     // Firestore is now locked behind Firebase Auth, so the data connection is
     // not opened here. attachAuthListener() opens it once a user is signed in
     // and closes it again on sign-out; opening it any earlier just produces
@@ -3721,6 +3752,12 @@ function initSync(){
     try{
       syncStorage=firebase.storage();
       syncStorageErr='';
+      // Practice uploads are kept in their own folder.
+      if(window.GH_TRAINING && syncStorage && !syncStorage._ghTraining){
+        const realRef=syncStorage.ref.bind(syncStorage);
+        syncStorage.ref=p=>realRef('training/'+String(p||'').replace(/^\/+/,''));
+        syncStorage._ghTraining=true;
+      }
     }catch(e){
       syncStorage=null;
       syncStorageErr=(e && (e.message||e.code)) ? String(e.message||e.code) : 'Firebase Storage could not be initialised.';
@@ -3754,7 +3791,10 @@ function openDataConnection(){
     // ---- shared bits: users and the storage running total ----------
     unsubs.push(mainDocRef().onSnapshot(snap=>{
       SYNC_LOADING=false;
-      if(!snap.exists){
+      if(window.GH_TRAINING && trainingResetSeen(snap)) return;
+      const trainingEmpty = window.GH_TRAINING && snap.exists && !(snap.data()||{}).meta;
+      if(!snap.exists || trainingEmpty){
+        if(window.GH_TRAINING && !(DB.workOrders||[]).length) seedTrainingDB();
         // Nothing in the cloud at all. Seed it from this device.
         CLOUD_MIRROR={meta:null, wos:{}};
         CLOUD_READY={meta:true, wos:true};
@@ -3773,7 +3813,7 @@ function openDataConnection(){
         applyingRemote=true;
         try{
           const meta=JSON.parse(data.meta);
-          DB.users=meta.users||{};
+          DB.users=window.GH_TRAINING ? Object.assign({}, trainingRealUsers(), meta.users||{}) : (meta.users||{});
           DB.storageUsedBytes=meta.storageUsedBytes||0;
           CLOUD_MIRROR.meta=data.meta;
           normalizeDB(DB);
@@ -3989,8 +4029,104 @@ let MIGRATING=false;
 function metaPayload(){
   return JSON.stringify({users:DB.users||{}, storageUsedBytes:DB.storageUsedBytes||0});
 }
-function mainDocRef(){ return syncDb.collection('gh_portal').doc('main'); }
+function mainDocRef(){ return syncDb.collection('gh_portal').doc(window.GH_TRAINING ? 'training' : 'main'); }
 function woCollectionRef(){ return mainDocRef().collection(WO_COLLECTION); }
+
+/* ---- Practice copy (?training=1) ----
+   Signing out, sign-up and password changes would act on the real account,
+   which this copy shares, so they do nothing here. */
+function guardTrainingAuth(){
+  try{
+    const a=firebase.auth();
+    if(a._ghTraining) return;
+    a._ghTraining=true;
+    a.signOut=()=>Promise.resolve();
+    a.createUserWithEmailAndPassword=()=>Promise.reject({code:'auth/operation-not-allowed'});
+    a.sendPasswordResetEmail=()=>Promise.reject({code:'auth/operation-not-allowed'});
+  }catch(e){}
+}
+function trainingRealUsers(){
+  try{ return (JSON.parse(window.GH_REAL_GET('gh_portal_db_v1')||'{}')||{}).users||{}; }catch(e){ return {}; }
+}
+/* Resetting the practice jobs from Meetings stamps resetAt on the practice
+   document. A device that has not seen that stamp yet drops its own practice
+   copy and starts again from the shared one. */
+function trainingResetSeen(snap){
+  if(!snap.exists) return false;
+  const at=String((snap.data()||{}).resetAt||'');
+  if(!at || at===String(localStorage.getItem('gh_train_reset')||'')) return false;
+  try{
+    const kill=[];
+    for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.indexOf('ghtrain_')===0) kill.push(k); }
+    kill.forEach(k=>window.GH_RAW_REMOVE(k));
+    localStorage.setItem('gh_train_reset', at);
+  }catch(e){}
+  if(syncUnsub){ try{ syncUnsub(); }catch(e){} syncUnsub=null; }
+  syncDb=null;
+  location.reload();
+  return true;
+}
+/* The practice jobs, one in every sub-list. Ids and contents are fixed, so
+   two devices starting the practice copy at the same moment write the same
+   jobs. Dates are set around today. */
+function trainingSampleWOs(by){
+  const day=off=>{ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+off); return d; };
+  const iso=off=>{ const d=day(off); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  const us=off=>day(off).toLocaleDateString();
+  const sess=(off,tin,tout)=>({id:'tp'+off+tin.replace(/\W/g,''), in:{date:us(off),time:tin,by}, out:tout?{date:us(off),time:tout,by}:null});
+  const log=(off,list)=>({date:iso(off), sessions:list, checkIn:null, checkOut:null});
+  const entry=(id,type,from,to,st,et,logs)=>({id, type, startDate:iso(from), startTime:st, endDate:iso(to), endTime:et, multiDay:from!==to, repeat:from!==to?'daily':'none', dayTimes:{}, overridden:false, dayLogs:logs||[]});
+  const note=(type,text,off,time,follow)=>({type, text, by, date:us(off), time, followUpDate:follow==null?null:iso(follow)});
+  const base0={presiteScheduled:false,presiteComplete:false,presiteDone:false,estimateDone:false,estimateSent:false,estimateApproved:false,estimateDeclined:false,jobScheduled:false,jobStarted:false,jobStartHold:null,jobComplete:false,invoiceDone:false,invoiceSent:false,movedToHistoryAt:null,checkIn:null,checkOut:null};
+  const F={
+    presite:{}, presched:{presiteScheduled:true}, precomp:{presiteScheduled:true,presiteComplete:true},
+    build:{presiteScheduled:true,presiteComplete:true,presiteDone:true},
+    send:{presiteScheduled:true,presiteComplete:true,presiteDone:true,estimateDone:true},
+    pending:{presiteScheduled:true,presiteComplete:true,presiteDone:true,estimateDone:true,estimateSent:true},
+    schedule:{presiteScheduled:true,presiteComplete:true,presiteDone:true,estimateDone:true,estimateSent:true,estimateApproved:true}
+  };
+  F.scheduled=Object.assign({},F.schedule,{jobScheduled:true});
+  F.progress=Object.assign({},F.scheduled,{jobStarted:true});
+  F.binv=Object.assign({},F.progress,{jobComplete:true});
+  F.sinv=Object.assign({},F.binv,{invoiceDone:true});
+  F.survey=Object.assign({},F.sinv,{invoiceSent:true});
+  F.history=Object.assign({},F.survey,{movedToHistoryAt:day(-3).getTime()});
+  const jd=(desc,labor,mats)=>({description:desc, labor:labor||[], materials:mats||[], tools:[], issues:[], exclusions:[], disclaimers:[]});
+  const list=[
+    ['Lisa Moreno','4821 Clairemont Dr, San Diego, CA 92117','presite',jd('Kitchen faucet leaking at the base. Garbage disposal hums but will not spin.'),[note('NOTE','Called in from the website. Prefers texts.',-1,'09:12 AM')]],
+    ['Tom Becker','10655 Scripps Ranch Blvd, San Diego, CA 92131','presched',jd('Replace two interior doors and adjust the sliding patio door.'),[note('NOTE','Gate code at the front of the complex is #2468.',-2,'02:40 PM')],[entry('tpA2','presite',1,1,'10:00','11:00')]],
+    ['Ana Ruiz','3175 Adams Ave, San Diego, CA 92116','precomp',jd('Bathroom vanity swap and new light fixture over the mirror.'),[note('PRESITE','Walkthrough done. Vanity is 36 inches. Existing shutoffs are corroded.',-1,'11:20 AM')],[entry('tpA3','presite',-1,-1,'10:00','11:00',[log(-1,[sess(-1,'10:02 AM','10:55 AM')])])]],
+    ['Greg Holt','7520 Mission Gorge Rd, San Diego, CA 92120','build',jd('Patch and paint drywall in the hallway. Two holes about 6 inches across.',[{item:'Drywall patch and texture',price:'$240'},{item:'Paint hallway, two coats',price:'$380'}],[{item:'Patch kit and joint compound',qty:1,unit:28.5,price:'$28.50'}]),[note('PRESITE','Paint color is on the can in the garage.',-3,'01:05 PM')]],
+    ['Maria Chen','12364 Carmel Mountain Rd, San Diego, CA 92128','send',jd('Install a ceiling fan in the main bedroom where a light fixture is now.',[{item:'Install ceiling fan with brace box',price:'$325'}]),[note('NOTE','Estimate built, ready to send.',-1,'04:30 PM')]],
+    ['Dave Patel','8930 Lake Murray Blvd, San Diego, CA 92119','pending',jd('Rebuild the side gate and replace the latch.',[{item:'Rebuild gate frame',price:'$410'}]),[note('NOTE','Estimate sent. Follow up if no answer.',-4,'10:00 AM',-1)]],
+    ['Kim Nguyen','2550 Garnet Ave, San Diego, CA 92109','schedule',jd('Replace the garbage disposal and the kitchen sink drain assembly.',[{item:'Replace disposal',price:'$290'}]),[note('NOTE','Approved by phone.',-1,'03:15 PM')]],
+    ['Rob Silva','6155 El Cajon Blvd, San Diego, CA 92115','scheduled',jd('Install new baseboards in the living room and hallway.',[{item:'Baseboard install',price:'$860'}]),[],[entry('tpA8','full',3,4,'08:00','15:00')]],
+    ['Jen Walker','4250 Genesee Ave, San Diego, CA 92117','progress',jd('Tile the laundry room floor, about 60 square feet.',[{item:'Tile laundry room floor',price:'$1,450'}],[{item:'Porcelain tile',qty:66,unit:3.2,price:'$211.20'}]),[note('NOTE','Day one demo done.',-1,'03:45 PM')],[entry('tpA9','full',-1,1,'08:00','16:00',[log(-1,[sess(-1,'08:05 AM','03:40 PM')]),log(0,[]),log(1,[])])]],
+    ['Sam Ortiz','9420 Activity Rd, San Diego, CA 92126','binv',jd('Replace the water heater expansion tank.',[{item:'Replace expansion tank',price:'$275'}]),[note('NOTE','Job complete. Customer happy with it.',-1,'12:30 PM')],[entry('tpB0','full',-1,-1,'09:00','12:00',[log(-1,[sess(-1,'09:00 AM','12:10 PM')])])]],
+    ['Pat Lee','15721 Bernardo Heights Pkwy, San Diego, CA 92128','sinv',jd('Re-caulk the shower and replace the shower valve trim.',[{item:'Re-caulk shower',price:'$185'}]),[],[entry('tpB1','full',-2,-2,'09:00','13:00',[log(-2,[sess(-2,'09:10 AM','12:50 PM')])])]],
+    ['Lou Garcia','3690 Murphy Canyon Rd, San Diego, CA 92123','survey',jd('Install grab bars in two bathrooms.',[{item:'Install 4 grab bars',price:'$360'}]),[],[entry('tpB2','full',-5,-5,'10:00','14:00',[log(-5,[sess(-5,'10:00 AM','01:30 PM')])])]],
+    ['Ray Fox','5030 Cass St, San Diego, CA 92109','history',jd('Fence repair after the storm.',[{item:'Replace 3 fence panels',price:'$720'}]),[],[entry('tpB3','full',-9,-9,'08:00','15:00',[log(-9,[sess(-9,'08:00 AM','02:45 PM')])])]]
+  ];
+  return list.map((r,i)=>{
+    const id=9000001+i;
+    const first=r[0].split(' ')[0].toLowerCase(), last=r[0].split(' ')[1].toLowerCase();
+    return Object.assign({
+      id, createdAt:day(-14+i).getTime(),
+      customer:{name:r[0], phone:'(619) 555-01'+String(10+i), altPhone:'', altPhoneName:'', altPhoneNote:'', email:first+'.'+last+'@example.com', address:r[1], homeownerName:'', homeownerPhone:''},
+      jobDetails:r[3], notes:r[4]||[], adminLog:[{text:'Practice job created.', by, date:us(-14+i), time:'08:00 AM'}],
+      docs:[], scheduleDates:r[5]||[]
+    }, base0, F[r[2]]);
+  });
+}
+function seedTrainingDB(){
+  const users=trainingRealUsers();
+  const admin=Object.values(users).find(u=>u.isAdmin) || Object.values(users)[0] || {};
+  DB.users=Object.assign({}, users, DB.users||{});
+  DB.workOrders=trainingSampleWOs(admin.username||'matthewc');
+  DB.storageUsedBytes=0;
+  normalizeDB(DB);
+  writeLocalDB();
+}
 
 function pushToCloud(){
   if(!syncDb || applyingRemote || MIGRATING) return;
@@ -7427,6 +7563,7 @@ function offerApptEmails(woId, entries, updated){
   }, {yes:'Send', no:"Don't Send"});
 }
 async function sendApptEmails(woId, emails){
+  if(window.GH_TRAINING){ toast('Practice mode. No email was sent.'); return; }
   let sent=0;
   for(const payload of emails){
     try{
@@ -14293,10 +14430,70 @@ setInterval(()=>{
   }).observe(document.body, {childList:true, subtree:true});
 })();
 
+
+/* ---- Practice copy: account actions off, and following a presenter ----
+   Inside Meetings the practice copy talks to the meeting page around it. The
+   presenter's copy reports which tab and work order are on screen; a
+   follower's copy goes to the same place. */
+if(window.GH_TRAINING){
+  openSyncModal=function(){};
+  disconnectSync=function(){};
+  openChangePassword=function(){};
+  confirmLogout=function(){};
+  logout=function(){};
+  doSignUp=function(){};
+  (function(){
+    let ROLE='none', lastSent='', lastApplied='', pendingView=null;
+    const inFrame = window.parent && window.parent!==window;
+    function post(m){ if(!inFrame) return; try{ window.parent.postMessage(Object.assign({source:'gh_training'}, m), location.origin); }catch(e){} }
+    function viewState(){
+      return {tab:ACTIVE_TAB, wo:OPEN_WO_ID, admin:!!WO_ADMIN_VIEW, docs:!!WO_DOCS_VIEW, prior:!!WO_PRIOR_VIEW, field:FIELD_VIEW_OVERRIDE};
+    }
+    function applyView(st){
+      if(!st || !CURRENT_USER) return false;
+      const key=JSON.stringify(st);
+      if(key===lastApplied) return true;
+      if(st.tab && st.tab!==ACTIVE_TAB && document.querySelector('nav.tabs button[data-tab="'+st.tab+'"]')) switchTab(st.tab);
+      if(st.wo!==null && st.wo!==undefined){
+        if(!getWO(st.wo)) return false;   // not synced here yet; tried again shortly
+        if(String(OPEN_WO_ID)!==String(st.wo)) openWorkOrder(st.wo);
+        WO_ADMIN_VIEW=!!st.admin; WO_DOCS_VIEW=!!st.docs; WO_PRIOR_VIEW=!!st.prior;
+        FIELD_VIEW_OVERRIDE=(st.field===undefined ? null : st.field);
+        renderWorkOrderModal(st.wo);
+      } else if(OPEN_WO_ID!==null){
+        closeModal();
+      }
+      lastApplied=key;
+      return true;
+    }
+    setInterval(()=>{
+      if(!CURRENT_USER) return;
+      if(ROLE==='present'){
+        const s=JSON.stringify(viewState());
+        if(s!==lastSent){ lastSent=s; post({type:'view', state:JSON.parse(s)}); }
+      } else if(ROLE==='follow' && pendingView){
+        if(applyView(pendingView)) pendingView=null;
+      }
+    }, 300);
+    window.addEventListener('message', e=>{
+      if(e.origin!==location.origin) return;
+      const d=e.data||{};
+      if(d.source!=='gh_meeting') return;
+      if(d.type==='role'){
+        ROLE=d.role||'none'; lastSent=''; lastApplied='';
+        if(ROLE!=='follow') pendingView=null;
+      } else if(d.type==='view' && ROLE==='follow'){
+        if(!applyView(d.state)) pendingView=d.state;
+      }
+    });
+    const ready=setInterval(()=>{ if(CURRENT_USER){ clearInterval(ready); post({type:'ready'}); } }, 300);
+  })();
+}
 </script>
 <script>
 /* ---- Dashboard side panel ---- */
 (function(){
+  if(window.GH_TRAINING) return;
   const DASH_URL='https://mattyc1026.github.io/ghdashboard/';
   const KEY='gh_dash_open';
   const phoneMQ=window.matchMedia('(max-width:900px)');
