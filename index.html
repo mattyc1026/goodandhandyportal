@@ -25,6 +25,42 @@
   P.removeItem=function(k){ return rm.call(this, isLocal(this)?map(k):k); };
   window.GH_REAL_GET=function(k){ try{ return g.call(window.localStorage, k); }catch(e){ return null; } };
   window.GH_RAW_REMOVE=function(k){ if(String(k).indexOf('ghtrain_')!==0) return; try{ rm.call(window.localStorage, k); }catch(e){} };
+  /* Inside Meetings the practice copy sits in a frame. A browser scrolls the
+     page around a frame to bring an element into view or to show a field that
+     takes focus, which pulled the meeting page down to the bottom of the
+     practice copy and kept pulling it back. Here both only scroll within the
+     practice copy itself. */
+  if(window.parent && window.parent!==window){
+    var scrollerOf=function(el){
+      for(var n=el.parentElement; n; n=n.parentElement){
+        var cs=getComputedStyle(n);
+        if(/(auto|scroll)/.test(cs.overflowY+cs.overflowX) && (n.scrollHeight>n.clientHeight+1 || n.scrollWidth>n.clientWidth+1)) return n;
+      }
+      return document.scrollingElement||document.documentElement;
+    };
+    var inside=function(el, opt){
+      var o=(opt && typeof opt==='object') ? opt : {block: opt===false?'end':'start'};
+      var sc=scrollerOf(el), r=el.getBoundingClientRect();
+      var root=(sc===document.scrollingElement||sc===document.documentElement);
+      var b=root ? {top:0, left:0, height:window.innerHeight, width:window.innerWidth} : sc.getBoundingClientRect();
+      var pick=function(mode, start, size, vStart, vSize){
+        if(mode==='center') return start-vStart-(vSize-size)/2;
+        if(mode==='end') return start+size-(vStart+vSize);
+        if(mode==='nearest'){ if(start<vStart) return start-vStart; if(start+size>vStart+vSize) return Math.min(start-vStart, start+size-(vStart+vSize)); return 0; }
+        return start-vStart;
+      };
+      var dy=pick(o.block||'start', r.top, r.height, b.top, b.height);
+      var dx=pick(o.inline||'nearest', r.left, r.width, b.left, b.width);
+      if(dx||dy){ try{ sc.scrollBy({top:dy, left:dx, behavior:o.behavior==='smooth'?'smooth':'auto'}); }catch(e){ sc.scrollTop+=dy; sc.scrollLeft+=dx; } }
+      if(!root && sc.parentElement) inside(sc, {block:'nearest', inline:'nearest'});
+    };
+    Element.prototype.scrollIntoView=function(opt){ try{ inside(this, opt); }catch(e){} };
+    var realFocus=HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus=function(opt){
+      realFocus.call(this, {preventScroll:true});
+      if(!(opt && opt.preventScroll)){ try{ inside(this, {block:'nearest', inline:'nearest'}); }catch(e){} }
+    };
+  }
 })();
 </script>
 <script>
