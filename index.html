@@ -14472,10 +14472,11 @@ setInterval(()=>{
 })();
 
 
-/* ---- Practice copy: account actions off, and following a presenter ----
-   Inside Meetings the practice copy talks to the meeting page around it. The
-   presenter's copy reports which tab and work order are on screen; a
-   follower's copy goes to the same place. */
+/* ---- Practice copy: account actions off, and presenting ----
+   Inside Meetings the practice copy talks to the meeting page around it.
+   While its user presents, it reports everything on its screen: the page
+   itself and every change to it, scrolling, typing, and where fingers or
+   the mouse touch, so followers see an exact live copy. */
 if(window.GH_TRAINING){
   openSyncModal=function(){};
   disconnectSync=function(){};
@@ -14484,48 +14485,148 @@ if(window.GH_TRAINING){
   logout=function(){};
   doSignUp=function(){};
   (function(){
-    let ROLE='none', lastSent='', lastApplied='', pendingView=null;
     const inFrame = window.parent && window.parent!==window;
     function post(m){ if(!inFrame) return; try{ window.parent.postMessage(Object.assign({source:'gh_training'}, m), location.origin); }catch(e){} }
-    function viewState(){
-      return {tab:ACTIVE_TAB, wo:OPEN_WO_ID, admin:!!WO_ADMIN_VIEW, docs:!!WO_DOCS_VIEW, prior:!!WO_PRIOR_VIEW, field:FIELD_VIEW_OVERRIDE};
+    const SVGNS='http://www.w3.org/2000/svg';
+    const ids=new WeakMap(); let nextId=1;
+    const byId=new Map();   // scroll containers, for highlights anchored to them
+    function idOf(n){
+      if(!n || n===document || n===document.documentElement || n===document.scrollingElement) return 0;
+      let i=ids.get(n); if(!i){ i=nextId++; ids.set(n,i); } return i;
     }
-    function applyView(st){
-      if(!st || !CURRENT_USER) return false;
-      const key=JSON.stringify(st);
-      if(key===lastApplied) return true;
-      if(st.tab && st.tab!==ACTIVE_TAB && document.querySelector('nav.tabs button[data-tab="'+st.tab+'"]')) switchTab(st.tab);
-      if(st.wo!==null && st.wo!==undefined){
-        if(!getWO(st.wo)) return false;   // not synced here yet; tried again shortly
-        if(String(OPEN_WO_ID)!==String(st.wo)) openWorkOrder(st.wo);
-        WO_ADMIN_VIEW=!!st.admin; WO_DOCS_VIEW=!!st.docs; WO_PRIOR_VIEW=!!st.prior;
-        FIELD_VIEW_OVERRIDE=(st.field===undefined ? null : st.field);
-        renderWorkOrderModal(st.wo);
-      } else if(OPEN_WO_ID!==null){
-        closeModal();
+    function attrsOf(n){ const a={}; for(const at of n.attributes){ if(!/^on/i.test(at.name)) a[at.name]=at.value; } return a; }
+    function ser(n){
+      if(n.nodeType===3) return {i:idOf(n), x:n.data};
+      if(n.nodeType!==1 || n.tagName==='SCRIPT' || n.tagName==='NOSCRIPT') return null;
+      const o={i:idOf(n), t:n.localName, a:attrsOf(n)};
+      if(n.namespaceURI===SVGNS) o.s=1;
+      const tag=n.tagName;
+      if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'){
+        o.v = n.type==='password' ? '' : n.value;
+        if(n.type==='checkbox'||n.type==='radio') o.c=n.checked;
+        if(o.a.type==='password') o.a.value='';
       }
-      lastApplied=key;
-      return true;
+      if(tag==='IFRAME'){ delete o.a.src; delete o.a.srcdoc; delete o.a.onload; o.f=n.title||''; return o; }
+      if(n.scrollTop||n.scrollLeft) o.sc=[n.scrollTop, n.scrollLeft];
+      const k=[]; for(const c of n.childNodes){ const s=ser(c); if(s) k.push(s); }
+      if(k.length) o.k=k;
+      return o;
     }
-    setInterval(()=>{
-      if(!CURRENT_USER) return;
-      if(ROLE==='present'){
-        const s=JSON.stringify(viewState());
-        if(s!==lastSent){ lastSent=s; post({type:'view', state:JSON.parse(s)}); }
-      } else if(ROLE==='follow' && pendingView){
-        if(applyView(pendingView)) pendingView=null;
+    function snapshot(){
+      return {html:attrsOf(document.documentElement), body:ser(document.body), vw:innerWidth, vh:innerHeight,
+        sy:[document.scrollingElement.scrollTop, document.scrollingElement.scrollLeft]};
+    }
+    let ON=false, obs=null, timer=0;
+    const kids=new Set(), attrs=new Set(), texts=new Set(), vals=new Set(), scr=new Map();
+    let vp=null;
+    function schedule(){ if(!timer) timer=setTimeout(flush, 70); }
+    function under(n, set){ for(let p=n.parentNode; p; p=p.parentNode){ if(set.has(p)) return true; } return false; }
+    function flush(){
+      timer=0;
+      if(!ON) return;
+      const ops=[];
+      const K=[...kids].filter(n=>n.isConnected && n!==document.documentElement && n!==document.head && !(document.head && document.head.contains(n)));
+      const Kset=new Set(K);
+      const top=K.filter(n=>!under(n,Kset)), topSet=new Set(top);
+      top.forEach(n=>{ const k=[]; for(const c of n.childNodes){ const x=ser(c); if(x) k.push(x); } ops.push({k:[idOf(n), k]}); });
+      attrs.forEach(n=>{
+        if(!n.isConnected) return;
+        if(n===document.documentElement){ ops.push({h:attrsOf(n)}); return; }
+        if(n.nodeType===1 && !under(n,topSet) && !(document.head && document.head.contains(n))) ops.push({a:[idOf(n), attrsOf(n)]});
+      });
+      texts.forEach(n=>{ if(n.isConnected && !under(n,topSet) && !(document.head && document.head.contains(n))) ops.push({x:[idOf(n), n.data]}); });
+      vals.forEach(n=>{ if(n.isConnected && !under(n,topSet)) ops.push({v:[idOf(n), n.type==='password'?'':n.value, !!n.checked]}); });
+      scr.forEach((v,n)=>{ if(n===0 || n.isConnected) ops.push({sc:[n===0?0:idOf(n), v[0], v[1]]}); });
+      if(vp){ ops.push({vp}); vp=null; }
+      kids.clear(); attrs.clear(); texts.clear(); vals.clear(); scr.clear();
+      if(ops.length) post({type:'mirror', ops});
+    }
+    function start(){
+      if(ON){ post({type:'mirror', snap:snapshot()}); return; }
+      ON=true;
+      obs=new MutationObserver(recs=>{
+        recs.forEach(r=>{
+          if(r.type==='childList') kids.add(r.target);
+          else if(r.type==='attributes') attrs.add(r.target);
+          else if(r.type==='characterData') texts.add(r.target);
+        });
+        schedule();
+      });
+      obs.observe(document.documentElement, {childList:true, subtree:true, attributes:true, characterData:true});
+      post({type:'mirror', snap:snapshot()});
+    }
+    function stop(){
+      ON=false; if(obs){ obs.disconnect(); obs=null; }
+      clearTimeout(timer); timer=0;
+      kids.clear(); attrs.clear(); texts.clear(); vals.clear(); scr.clear();
+    }
+    const valChange=e=>{ if(!ON) return; const t=e.target; if(t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)){ vals.add(t); schedule(); } };
+    document.addEventListener('input', valChange, true);
+    document.addEventListener('change', valChange, true);
+    document.addEventListener('scroll', e=>{
+      if(!ON) return;
+      const t=e.target;
+      if(t===document || t===document.documentElement || t===document.scrollingElement) scr.set(0, [document.scrollingElement.scrollTop, document.scrollingElement.scrollLeft]);
+      else if(t && t.nodeType===1){ scr.set(t, [t.scrollTop, t.scrollLeft]); byId.set(idOf(t), new WeakRef(t)); }
+      schedule();
+    }, true);
+    window.addEventListener('resize', ()=>{ if(ON){ vp=[innerWidth, innerHeight]; schedule(); } });
+
+    /* Touches and the mouse, so followers see a gesture where it happened. */
+    const TAPPABLE='button,a,input,select,textarea,label,summary,[onclick],.woRow,[role=button]';
+    const downs=new Map(); const lastMove=new Map();
+    function ptr(kind, e, extra){
+      post({type:'ptr', p:Object.assign({k:kind, id:e.pointerId, x:Math.round(e.clientX), y:Math.round(e.clientY), m:e.pointerType==='mouse'?1:0}, extra||{})});
+    }
+    window.addEventListener('pointerdown', e=>{
+      if(!ON) return;
+      downs.set(e.pointerId, {x:e.clientX, y:e.clientY, t:Date.now(), el:e.target});
+      ptr('d', e);
+    }, true);
+    window.addEventListener('pointermove', e=>{
+      if(!ON) return;
+      const now=Date.now(), down=downs.has(e.pointerId);
+      if(now-(lastMove.get(e.pointerId)||0) < (down?30:60)) return;
+      lastMove.set(e.pointerId, now);
+      ptr(down?'m':'h', e);
+    }, true);
+    const up=e=>{
+      if(!ON) return;
+      const d=downs.get(e.pointerId); downs.delete(e.pointerId);
+      let tap;
+      if(d && Math.hypot(e.clientX-d.x, e.clientY-d.y)<10 && Date.now()-d.t<800 && d.el && d.el.closest){
+        const el=d.el.closest(TAPPABLE);
+        if(el && el.isConnected) tap=idOf(el);
       }
-    }, 300);
+      ptr('u', e, tap?{tap}:null);
+    };
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
+
+    /* For highlights the presenter draws: the scrolling area under a point,
+       so a highlight moves with the page underneath it. */
+    function scrollerAt(x,y){
+      let el=document.elementFromPoint(x,y);
+      for(; el && el!==document.body && el!==document.documentElement; el=el.parentElement){
+        const cs=getComputedStyle(el);
+        if(/(auto|scroll)/.test(cs.overflowY+cs.overflowX) && (el.scrollHeight>el.clientHeight+1 || el.scrollWidth>el.clientWidth+1)){ byId.set(idOf(el), new WeakRef(el)); return el; }
+      }
+      return null;
+    }
+    window.GH_MIRROR={
+      anchorAt(x,y){ const el=scrollerAt(x,y); if(!el) return {sid:0, st:document.scrollingElement.scrollTop, sl:document.scrollingElement.scrollLeft}; return {sid:idOf(el), st:el.scrollTop, sl:el.scrollLeft}; },
+      scrollOf(sid){
+        if(!sid) return [document.scrollingElement.scrollTop, document.scrollingElement.scrollLeft];
+        const r=byId.get(sid); const el=r && r.deref();
+        return (el && el.isConnected) ? [el.scrollTop, el.scrollLeft] : null;
+      }
+    };
     window.addEventListener('message', e=>{
       if(e.origin!==location.origin) return;
       const d=e.data||{};
       if(d.source!=='gh_meeting') return;
-      if(d.type==='role'){
-        ROLE=d.role||'none'; lastSent=''; lastApplied='';
-        if(ROLE!=='follow') pendingView=null;
-      } else if(d.type==='view' && ROLE==='follow'){
-        if(!applyView(d.state)) pendingView=d.state;
-      }
+      if(d.type==='role'){ if(d.role==='present') start(); else stop(); }
+      else if(d.type==='snap' && ON){ post({type:'mirror', snap:snapshot()}); }
     });
     const ready=setInterval(()=>{ if(CURRENT_USER){ clearInterval(ready); post({type:'ready'}); } }, 300);
   })();
