@@ -50,7 +50,7 @@
         return start-vStart;
       };
       var dy=pick(o.block||'start', r.top, r.height, b.top, b.height);
-      var dx=pick(o.inline||'nearest', r.left, r.width, b.left, b.width);
+      var dx=root ? 0 : pick(o.inline||'nearest', r.left, r.width, b.left, b.width);
       if(dx||dy){ try{ sc.scrollBy({top:dy, left:dx, behavior:o.behavior==='smooth'?'smooth':'auto'}); }catch(e){ sc.scrollTop+=dy; sc.scrollLeft+=dx; } }
       if(!root && sc.parentElement) inside(sc, {block:'nearest', inline:'nearest'});
     };
@@ -463,6 +463,11 @@ html.training .practicePill{display:inline-block;background:var(--redb);color:#f
 html.training #dashToggle,html.training #dashPanel,html.training #dashBackdrop,
 html.training .logoutBtn,html.training #syncPill,html.training #pwNudge,
 html.training .settingsRow:has(#changePwBtn){display:none !important;}
+/* The practice copy never moves sideways inside its frame: there is no
+   dashboard panel here, and nothing may push the page wider than the frame. */
+html.training{overflow-x:hidden;}
+html.training body{overflow-x:clip;}
+html.training #appScreen{margin-left:0 !important;}
 .adminPill{
   background:var(--orange);color:#fff;font-size:.66em;padding:3px 9px;border-radius:20px;
   font-weight:700;letter-spacing:.1em;text-transform:uppercase;
