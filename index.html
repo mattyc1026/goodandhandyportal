@@ -14514,11 +14514,15 @@ if(window.GH_TRAINING){
     }
     function snapshot(){
       return {html:attrsOf(document.documentElement), body:ser(document.body), vw:innerWidth, vh:innerHeight,
-        sy:[document.scrollingElement.scrollTop, document.scrollingElement.scrollLeft]};
+        sy:[document.scrollingElement.scrollTop, document.scrollingElement.scrollLeft], vv:vvNow(), fo:focusId()};
     }
     let ON=false, obs=null, timer=0;
     const kids=new Set(), attrs=new Set(), texts=new Set(), vals=new Set(), scr=new Map();
-    let vp=null;
+    let vp=null, vvSent='', foSent=null;
+    /* Pinch zoom on a phone or tablet zooms the visible part of the page. */
+    function vvNow(){ const v=window.visualViewport; return v ? [+v.scale.toFixed(3), Math.round(v.offsetLeft), Math.round(v.offsetTop)] : [1,0,0]; }
+    const FOCUSABLE=/^(INPUT|TEXTAREA|SELECT)$/;
+    function focusId(){ const a=document.activeElement; return (a && (FOCUSABLE.test(a.tagName) || a.isContentEditable)) ? idOf(a) : null; }
     function schedule(){ if(!timer) timer=setTimeout(flush, 70); }
     function under(n, set){ for(let p=n.parentNode; p; p=p.parentNode){ if(set.has(p)) return true; } return false; }
     function flush(){
@@ -14538,6 +14542,8 @@ if(window.GH_TRAINING){
       vals.forEach(n=>{ if(n.isConnected && !under(n,topSet)) ops.push({v:[idOf(n), n.type==='password'?'':n.value, !!n.checked]}); });
       scr.forEach((v,n)=>{ if(n===0 || n.isConnected) ops.push({sc:[n===0?0:idOf(n), v[0], v[1]]}); });
       if(vp){ ops.push({vp}); vp=null; }
+      const vv=vvNow(), vvs=vv.join(','); if(vvs!==vvSent){ vvSent=vvs; ops.push({vv}); }
+      const fo=focusId(); if(fo!==foSent){ foSent=fo; ops.push({fo}); }
       kids.clear(); attrs.clear(); texts.clear(); vals.clear(); scr.clear();
       if(ops.length) post({type:'mirror', ops});
     }
@@ -14553,6 +14559,7 @@ if(window.GH_TRAINING){
         schedule();
       });
       obs.observe(document.documentElement, {childList:true, subtree:true, attributes:true, characterData:true});
+      vvSent=vvNow().join(','); foSent=focusId();
       post({type:'mirror', snap:snapshot()});
     }
     function stop(){
@@ -14571,6 +14578,9 @@ if(window.GH_TRAINING){
       schedule();
     }, true);
     window.addEventListener('resize', ()=>{ if(ON){ vp=[innerWidth, innerHeight]; schedule(); } });
+    if(window.visualViewport){ ['resize','scroll'].forEach(ev=>visualViewport.addEventListener(ev, ()=>{ if(ON) schedule(); })); }
+    document.addEventListener('focusin', ()=>{ if(ON) schedule(); }, true);
+    document.addEventListener('focusout', ()=>{ if(ON) setTimeout(schedule, 0); }, true);
 
     /* Touches and the mouse, so followers see a gesture where it happened. */
     const TAPPABLE='button,a,input,select,textarea,label,summary,[onclick],.woRow,[role=button]';
@@ -14578,30 +14588,66 @@ if(window.GH_TRAINING){
     function ptr(kind, e, extra){
       post({type:'ptr', p:Object.assign({k:kind, id:e.pointerId, x:Math.round(e.clientX), y:Math.round(e.clientY), m:e.pointerType==='mouse'?1:0}, extra||{})});
     }
+    function tapOf(d, x, y){
+      if(d && Math.hypot(x-d.x, y-d.y)<10 && Date.now()-d.t<800 && d.el && d.el.closest){
+        const el=d.el.closest(TAPPABLE);
+        if(el && el.isConnected) return idOf(el);
+      }
+      return 0;
+    }
     window.addEventListener('pointerdown', e=>{
-      if(!ON) return;
+      if(!ON || e.pointerType==='touch') return;
       downs.set(e.pointerId, {x:e.clientX, y:e.clientY, t:Date.now(), el:e.target});
       ptr('d', e);
     }, true);
     window.addEventListener('pointermove', e=>{
-      if(!ON) return;
+      if(!ON || e.pointerType==='touch') return;
       const now=Date.now(), down=downs.has(e.pointerId);
       if(now-(lastMove.get(e.pointerId)||0) < (down?30:60)) return;
       lastMove.set(e.pointerId, now);
       ptr(down?'m':'h', e);
     }, true);
     const up=e=>{
-      if(!ON) return;
+      if(!ON || e.pointerType==='touch') return;
       const d=downs.get(e.pointerId); downs.delete(e.pointerId);
-      let tap;
-      if(d && Math.hypot(e.clientX-d.x, e.clientY-d.y)<10 && Date.now()-d.t<800 && d.el && d.el.closest){
-        const el=d.el.closest(TAPPABLE);
-        if(el && el.isConnected) tap=idOf(el);
-      }
+      const tap=tapOf(d, e.clientX, e.clientY);
       ptr('u', e, tap?{tap}:null);
     };
     window.addEventListener('pointerup', up, true);
     window.addEventListener('pointercancel', up, true);
+    /* Fingers. Touch events keep arriving while a swipe scrolls the page,
+       which pointer events stop doing, so a swipe is drawn all the way. */
+    const tp=(k, t, extra)=>post({type:'ptr', p:Object.assign({k, id:'t'+t.identifier, x:Math.round(t.clientX), y:Math.round(t.clientY), m:0}, extra||{})});
+    window.addEventListener('touchstart', e=>{
+      if(!ON) return;
+      for(const t of e.changedTouches){ downs.set('t'+t.identifier, {x:t.clientX, y:t.clientY, t:Date.now(), el:t.target}); tp('d', t); }
+    }, {capture:true, passive:true});
+    window.addEventListener('touchmove', e=>{
+      if(!ON) return;
+      const now=Date.now();
+      for(const t of e.changedTouches){
+        const k='t'+t.identifier;
+        if(now-(lastMove.get(k)||0) < 30) continue;
+        lastMove.set(k, now); tp('m', t);
+      }
+    }, {capture:true, passive:true});
+    const tEnd=e=>{
+      if(!ON) return;
+      for(const t of e.changedTouches){
+        const k='t'+t.identifier, d=downs.get(k); downs.delete(k);
+        const tap=e.type==='touchend' ? tapOf(d, t.clientX, t.clientY) : 0;
+        tp('u', t, tap?{tap}:null);
+      }
+    };
+    window.addEventListener('touchend', tEnd, {capture:true, passive:true});
+    window.addEventListener('touchcancel', tEnd, {capture:true, passive:true});
+    /* A mouse wheel or trackpad scroll, shown as a short glide. */
+    let lastWheel=0;
+    window.addEventListener('wheel', e=>{
+      if(!ON) return;
+      const now=Date.now(); if(now-lastWheel<140) return; lastWheel=now;
+      post({type:'ptr', p:{k:'w', id:'w', x:Math.round(e.clientX), y:Math.round(e.clientY), dy:Math.sign(e.deltaY), dx:Math.sign(e.deltaX), m:1}});
+    }, {capture:true, passive:true});
 
     /* For highlights the presenter draws: the scrolling area under a point,
        so a highlight moves with the page underneath it. */
