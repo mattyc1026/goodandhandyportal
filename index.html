@@ -1142,6 +1142,19 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
 .splitLeft{flex:0 0 38%;overflow-y:auto;padding-right:8px;min-width:0;box-sizing:border-box;}
 .splitRight{flex:1;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;min-width:0;box-shadow:var(--sh-1);}
 .splitRight iframe{flex:1;border:none;width:100%;}
+/* The job info side of a split screen folds away to give the builder or
+   e-sign tool the whole width (or, on a phone, the whole height). */
+.splitLeft{transition:flex-basis .28s cubic-bezier(.2,.8,.2,1);}
+.splitLeftHead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:2;background:var(--paper);}
+.splitToggle{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;margin:-6px 0 0;border-radius:10px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--navy);cursor:pointer;transition:background-color .15s,border-color .15s,color .15s;}
+.splitToggle:hover{border-color:var(--orange);color:var(--orange);}
+.splitToggle .ic{width:18px;height:18px;transition:transform .28s cubic-bezier(.2,.8,.2,1);}
+.splitWrap.leftCollapsed .splitLeft{flex-basis:34px;overflow:hidden;padding-right:0;}
+.splitWrap.leftCollapsed .splitLeftHead .panelTitle,.splitWrap.leftCollapsed .splitLeftBody{display:none;}
+.splitWrap.leftCollapsed .splitToggle{margin:0;}
+.splitWrap.leftCollapsed .splitToggle .ic{transform:rotate(180deg);}
+.copyRow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .laborPick{background:var(--cream);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;}
 .laborPick label{display:flex;gap:8px;align-items:flex-start;font-size:.85em;margin-bottom:6px;}
 
@@ -1675,6 +1688,11 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   .splitWrap{flex-direction:column;height:auto;gap:14px;}
   .splitLeft{flex:none;max-height:46vh;padding-right:0;order:1;}
   .splitRight{flex:none;height:56vh;order:2;}
+  .splitToggle .ic{transform:rotate(90deg);}
+  .splitWrap.leftCollapsed .splitLeft{flex-basis:auto;max-height:none;overflow:visible;}
+  .splitWrap.leftCollapsed .splitLeftHead .panelTitle{display:block;margin:6px 0 0;}
+  .splitWrap.leftCollapsed .splitToggle .ic{transform:rotate(-90deg);}
+  .splitWrap.leftCollapsed .splitRight{height:76vh;}
 
   /* ---- misc form rows ---- */
   .noteEntryTop{flex-direction:row;flex-wrap:wrap;align-items:flex-end;gap:10px;}
@@ -1716,6 +1734,7 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   .field input{font-size:16px;}
   .splitLeft{max-height:40vh;}
   .splitRight{height:50vh;}
+  .splitWrap.leftCollapsed .splitRight{height:74vh;}
   #toastStack{bottom:calc(96px + env(safe-area-inset-bottom,0px));}
 }
 
@@ -3301,6 +3320,7 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
   <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></symbol>
   <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/></symbol>
@@ -13566,13 +13586,15 @@ function openSplit(id, kind){
         <button class="closeX" aria-label="Close" onclick="closeModal()">&times;</button>
       </div>
       <div class="modalBody">
-        <div class="splitWrap">
+        <div class="splitWrap${splitLeftCollapsed()?' leftCollapsed':''}">
           <div class="splitLeft">
-            <div class="panelTitle">Job Info</div>
+            <div class="splitLeftHead"><div class="panelTitle">Job Info</div>
+              <button type="button" class="splitToggle" onclick="toggleSplitLeft(this)" aria-label="${splitLeftCollapsed()?'Show job info':'Hide job info'}" title="${splitLeftCollapsed()?'Show job info':'Hide job info'}">${icon('chevron')}</button></div>
+            <div class="splitLeftBody">
             <div class="kv"><b>Customer</b>${esc(wo.customer.name)}</div>
             <div class="kv"><b>Phone</b>${phoneLink(wo.customer.phone)}</div>
             <div class="kv"><b>Address</b>${addressLink(wo.customer.address, undefined, true)}</div>
-            ${isSign && wo.customer.email ? `<div class="kv"><b>Email</b>${emailLink(wo.customer.email)}</div>` : ''}
+            ${isSign && wo.customer.email ? `<div class="kv"><b>Email</b><span class="copyRow">${emailLink(wo.customer.email)}<button class="copyIcon" type="button" title="Copy email" aria-label="Copy email" data-copy="${esc(String(wo.customer.email).trim())}">⧉</button></span></div>` : ''}
             ${jd.description ? `<div class="descParagraph" style="margin-top:8px;">${richDescHTML(jd)}</div>` : ''}
             ${isSign ? '' : `
             <div class="panelTitle" style="margin-top:16px;">Labor Line Items</div>
@@ -13590,6 +13612,7 @@ function openSplit(id, kind){
             <div class="panelTitle" style="margin-top:16px;">Disclaimers</div>
             <div class="laborPick">${(jd.disclaimers&&jd.disclaimers.length) ? jd.disclaimers.map(plainLineRow).join('') : '<div class="small">None on file.</div>'}</div>
             `}
+            </div>
           </div>
           <div class="splitRight">
             <iframe src="${url}" title="${esc(title)}"${isSign ? '' : ` onload="sendJobDataToBuilder(this, ${id}, '${kind}')"`}></iframe>
@@ -13604,6 +13627,15 @@ function openSplit(id, kind){
       </div>
     </div>
   </div>`;
+}
+function splitLeftCollapsed(){ try{ return localStorage.getItem('gh_split_left_collapsed')==='1'; }catch(e){ return false; } }
+function toggleSplitLeft(btn){
+  const wrap=btn.closest('.splitWrap'); if(!wrap) return;
+  const on=!wrap.classList.contains('leftCollapsed');
+  wrap.classList.toggle('leftCollapsed', on);
+  const lbl=on?'Show job info':'Hide job info';
+  btn.setAttribute('aria-label', lbl); btn.title=lbl;
+  try{ localStorage.setItem('gh_split_left_collapsed', on?'1':'0'); }catch(e){}
 }
 function doneSplit(kind, id){
   if(kind==='esign'){
