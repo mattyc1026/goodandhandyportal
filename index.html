@@ -9864,8 +9864,15 @@ function addJDItem(id, key){
 }
 /* Several items typed at once, separated by commas, become one item each,
    with every word capitalized. A comma between digits (1,200) stays put. */
+const JD_SMALL_WORDS=new Set(['a','an','the','and','but','or','nor','for','so','as','at','by','in','of','on','to','from','into','onto','with','per','via','vs','is','if','are','be','than']);
 function jdTitleCase(s){
-  return String(s||'').replace(/\s+/g,' ').trim().split(' ').map(w=>w ? w.charAt(0).toUpperCase()+w.slice(1) : w).join(' ');
+  // small words like "of", "to" and "with" stay lowercase, except as the first word
+  return String(s||'').replace(/\s+/g,' ').trim().split(' ').map((w,i)=>{
+    if(!w) return w;
+    const bare=w.toLowerCase().replace(/^[^a-z]+|[^a-z]+$/g,'');
+    if(i>0 && JD_SMALL_WORDS.has(bare)) return w.toLowerCase();
+    return w.charAt(0).toUpperCase()+w.slice(1);
+  }).join(' ');
 }
 function addJDBulk(id, key){
   const inp=document.getElementById('jdBulk-'+key); if(!inp) return;
