@@ -1178,6 +1178,9 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
   .jdToggle .jdChev{transition:none;}
 }
 .editRow{display:flex;gap:6px;margin-bottom:6px;align-items:stretch;}
+.jdBulk{display:flex;gap:6px;margin-top:8px;align-items:stretch;}
+.jdBulk input{flex:1;min-width:0;padding:8px 10px;border-radius:6px;border:1.5px solid var(--line);font-family:inherit;background:var(--paper);color:var(--ink);}
+.jdBulk .btn{flex:none;margin:0;}
 /* min-width:0 lets the text fields give way to the grip and delete button.
    Without it a flex item refuses to shrink below its content width and the
    row overflows on a phone instead of the inputs narrowing. */
@@ -9859,6 +9862,26 @@ function addJDItem(id, key){
     setTimeout(()=>jdRevealGently(input), 350);   // after the phone keyboard settles
   }
 }
+/* Several items typed at once, separated by commas, become one item each,
+   with every word capitalized. A comma between digits (1,200) stays put. */
+function jdTitleCase(s){
+  return String(s||'').replace(/\s+/g,' ').trim().split(' ').map(w=>w ? w.charAt(0).toUpperCase()+w.slice(1) : w).join(' ');
+}
+function addJDBulk(id, key){
+  const inp=document.getElementById('jdBulk-'+key); if(!inp) return;
+  const parts=String(inp.value||'').replace(/(\d),(?=\d)/g,'$1\u0000').split(',')
+    .map(x=>jdTitleCase(x.replace(/\u0000/g,','))).filter(Boolean);
+  if(!parts.length) return;
+  const isPriced = key==='labor' || key==='materials';
+  if(!JD_EDIT[key]) JD_EDIT[key]=[];
+  parts.forEach(p=>JD_EDIT[key].push(isPriced ? {item:p, price:''} : p));
+  inp.value='';
+  jdRefreshRows(id, key);
+  const rows=document.getElementById('jdRows-'+key);
+  if(rows) rows.scrollTop=rows.scrollHeight;
+  const again=document.getElementById('jdBulk-'+key);
+  if(again) again.focus({preventScroll:true});
+}
 function jdRowsHTML(id, key, isPriced){
   const items=JD_EDIT[key]||[];
   /* The grip is a real button so the list is still reorderable without a
@@ -9893,6 +9916,9 @@ function jdEditSection(id, key, label, isPriced){
     </button>
     <div id="jdBody-${key}"${collapsed?' hidden':''}>
       <div class="jdRows" id="jdRows-${key}">${rows}</div>
+      <div class="jdBulk"><input type="text" id="jdBulk-${key}" aria-label="Add items to ${esc(label)}" autocomplete="off"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addJDBulk(${id},'${key}');}">
+        <button type="button" class="btn secondary" onclick="addJDBulk(${id},'${key}')">Submit</button></div>
       <button class="btn secondary" onclick="addJDItem(${id},'${key}')" style="margin-top:6px;">+ Add Item</button>
     </div>
   </div>`;
