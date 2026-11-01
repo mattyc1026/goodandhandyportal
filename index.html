@@ -4539,6 +4539,7 @@ const NOTE_TYPES=['NOTE','L/M','WCB','SCHD PRESITE','SCHD','RESCHD','PRESITE','S
 
 /* Ensure work orders created before this feature set have the newer fields. */
 function normalizeWO(wo){
+  fixPracticeName(wo);
   if(!wo.customer || typeof wo.customer!=='object') wo.customer={name:'',phone:'',altPhone:'',email:'',address:''};
   /* Homeowner is optional and often blank: on a management-company or agent
      job the customer on the account is not the person who answers the door.
@@ -4634,7 +4635,30 @@ function repeatLabel(d){
   if(!d.repeat || d.repeat==='none') return '';
   return ' (repeats daily)';
 }
+/* The practice customer was renamed twice. Practice jobs saved before that
+   still carry the old name, so they are brought up to date wherever they load,
+   and the change is sent up once the cloud's copy is in. */
+var PRACTICE_RENAME_SAVE=null;
+function fixPracticeName(w){
+  if(!window.GH_TRAINING) return;
+  const c=w && w.customer; if(!c) return;
+  if(!/^(lou garcia|nora quinn)$/i.test(String(c.name||'').trim())) return;
+  c.name='Beth Larson';
+  if(/^(lou\.garcia|nora\.quinn)@example\.com$/i.test(String(c.email||'').trim())) c.email='beth.larson@example.com';
+  clearTimeout(PRACTICE_RENAME_SAVE);
+  let tries=0;
+  const push=()=>{
+    if(!(CLOUD_READY.meta && CLOUD_READY.wos) && tries++<30){ PRACTICE_RENAME_SAVE=setTimeout(push, 1000); return; }
+    try{ (DB.workOrders||[]).forEach(fixPracticeNameQuiet); saveDB(DB); if(CURRENT_USER){ renderTabCounts(); renderMain(); } }catch(e){}
+  };
+  PRACTICE_RENAME_SAVE=setTimeout(push, 800);
+}
+function fixPracticeNameQuiet(w){
+  const c=w && w.customer; if(!c || !/^(lou garcia|nora quinn)$/i.test(String(c.name||'').trim())) return;
+  c.name='Beth Larson'; if(/^(lou\.garcia|nora\.quinn)@example\.com$/i.test(String(c.email||'').trim())) c.email='beth.larson@example.com';
+}
 function normalizeDB(db){
+  (db.workOrders||[]).forEach(fixPracticeName);
   let changed=false;
   if(!db.users || typeof db.users!=='object'){ db.users={}; changed=true; }
   if(!Array.isArray(db.workOrders)){ db.workOrders=[]; changed=true; }
