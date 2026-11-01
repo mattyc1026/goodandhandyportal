@@ -15,16 +15,29 @@
   window.GH_TRAINING=on;
   window.GH_MEETING_ID=on ? (q.get('meeting')||'') : '';
   if(!on) return;
+  /* A private practice copy is used while someone works through tasks
+     assigned in a meeting. It lives on this device only, under its own keys,
+     so starting fresh never touches the shared practice jobs. */
+  window.GH_PRIVATE = q.get('private')==='1';
+  var PFX = window.GH_PRIVATE ? 'ghtp_' : 'ghtrain_';
   document.documentElement.classList.add('training');
   var SHARED={gh_text_scale:1, gh_dark_mode:1, gh_high_contrast:1, gh_portal_sync_cfg:1, gh_wo_sort:1, gh_field_mode:1, gh_rolodex:1};
   var P=Storage.prototype, g=P.getItem, st=P.setItem, rm=P.removeItem;
-  function map(k){ k=String(k); return (k.indexOf('gh_')===0 && !SHARED[k]) ? 'ghtrain_'+k.slice(3) : k; }
+  function map(k){ k=String(k); return (k.indexOf('gh_')===0 && !SHARED[k]) ? PFX+k.slice(3) : k; }
+  if(window.GH_PRIVATE && q.get('fresh')){
+    try{
+      var kill=[];
+      for(var i=0;i<localStorage.length;i++){ var kk=localStorage.key(i); if(kk && kk.indexOf('ghtp_')===0) kill.push(kk); }
+      kill.forEach(function(kk){ rm.call(localStorage, kk); });
+      q.delete('fresh'); history.replaceState(null, '', location.pathname+'?'+q.toString()+location.hash);
+    }catch(e){}
+  }
   function isLocal(o){ try{ return o===window.localStorage; }catch(e){ return false; } }
   P.getItem=function(k){ return g.call(this, isLocal(this)?map(k):k); };
   P.setItem=function(k,v){ return st.call(this, isLocal(this)?map(k):k, v); };
   P.removeItem=function(k){ return rm.call(this, isLocal(this)?map(k):k); };
   window.GH_REAL_GET=function(k){ try{ return g.call(window.localStorage, k); }catch(e){ return null; } };
-  window.GH_RAW_REMOVE=function(k){ if(String(k).indexOf('ghtrain_')!==0) return; try{ rm.call(window.localStorage, k); }catch(e){} };
+  window.GH_RAW_REMOVE=function(k){ if(String(k).indexOf(PFX)!==0) return; try{ rm.call(window.localStorage, k); }catch(e){} };
   /* Inside Meetings the practice copy sits in a frame. A browser scrolls the
      page around a frame to bring an element into view or to show a field that
      takes focus, which pulled the meeting page down to the bottom of the
@@ -3453,7 +3466,7 @@ window._bootSafety = setTimeout(function(){
     <button class="searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders">
       <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span>Search</span>
     </button>
-    <input type="text" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
+    <input type="text" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
     <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
   </div>
   <div class="tabsBarWrap" id="tabsBarWrap">
@@ -3847,6 +3860,7 @@ function initSync(){
    re-initialising the Firebase app each time. */
 function openDataConnection(){
   if(!syncDb) return;
+  if(window.GH_PRIVATE){ openPrivateCopy(); return; }
   try{
     SYNC_LOADING=true;
     if(CURRENT_USER && typeof renderMain==='function') renderMain();
@@ -4121,7 +4135,7 @@ function trainingRealUsers(){
    document. A device that has not seen that stamp yet drops its own practice
    copy and starts again from the shared one. */
 function trainingResetSeen(snap){
-  if(!snap.exists) return false;
+  if(!snap.exists || window.GH_PRIVATE) return false;
   const at=String((snap.data()||{}).resetAt||'');
   if(!at || at===String(localStorage.getItem('gh_train_reset')||'')) return false;
   try{
@@ -4163,7 +4177,7 @@ function trainingSampleWOs(by){
   const jd=(desc,labor,mats)=>({description:desc, labor:labor||[], materials:mats||[], tools:[], issues:[], exclusions:[], disclaimers:[]});
   const list=[
     ['Lisa Moreno','4821 Clairemont Dr, San Diego, CA 92117','presite',jd('Kitchen faucet leaking at the base. Garbage disposal hums but will not spin.'),[note('NOTE','Called in from the website. Prefers texts.',-1,'09:12 AM')]],
-    ['Tom Becker','10655 Scripps Ranch Blvd, San Diego, CA 92131','presched',jd('Replace two interior doors and adjust the sliding patio door.'),[note('NOTE','Gate code at the front of the complex is #2468.',-2,'02:40 PM')],[entry('tpA2','presite',1,1,'10:00','11:00')]],
+    ['Tom Becker','10655 Scripps Ranch Blvd, San Diego, CA 92131','presched',jd('Replace two interior doors and adjust the sliding patio door.'),[note('NOTE','Gate code at the front of the complex is #2468.',-2,'02:40 PM')],[entry('tpA2','presite',0,0,'10:00','11:00',[log(0,[])])]],
     ['Ana Ruiz','3175 Adams Ave, San Diego, CA 92116','precomp',jd('Bathroom vanity swap and new light fixture over the mirror.'),[note('PRESITE','Walkthrough done. Vanity is 36 inches. Existing shutoffs are corroded.',-1,'11:20 AM')],[entry('tpA3','presite',-1,-1,'10:00','11:00',[log(-1,[sess(-1,'10:02 AM','10:55 AM')])])]],
     ['Greg Holt','7520 Mission Gorge Rd, San Diego, CA 92120','build',jd('Patch and paint drywall in the hallway. Two holes about 6 inches across.',[{item:'Drywall patch and texture',price:'$240'},{item:'Paint hallway, two coats',price:'$380'}],[{item:'Patch kit and joint compound',qty:1,unit:28.5,price:'$28.50'}]),[note('PRESITE','Paint color is on the can in the garage.',-3,'01:05 PM')]],
     ['Maria Chen','12364 Carmel Mountain Rd, San Diego, CA 92128','send',jd('Install a ceiling fan in the main bedroom where a light fixture is now.',[{item:'Install ceiling fan with brace box',price:'$325'}]),[note('NOTE','Estimate built, ready to send.',-1,'04:30 PM')]],
@@ -4173,7 +4187,7 @@ function trainingSampleWOs(by){
     ['Jen Walker','4250 Genesee Ave, San Diego, CA 92117','progress',jd('Tile the laundry room floor, about 60 square feet.',[{item:'Tile laundry room floor',price:'$1,450'}],[{item:'Porcelain tile',qty:66,unit:3.2,price:'$211.20'}]),[note('NOTE','Day one demo done.',-1,'03:45 PM')],[entry('tpA9','full',-1,1,'08:00','16:00',[log(-1,[sess(-1,'08:05 AM','03:40 PM')]),log(0,[]),log(1,[])])]],
     ['Sam Ortiz','9420 Activity Rd, San Diego, CA 92126','binv',jd('Replace the water heater expansion tank.',[{item:'Replace expansion tank',price:'$275'}]),[note('NOTE','Job complete. Customer happy with it.',-1,'12:30 PM')],[entry('tpB0','full',-1,-1,'09:00','12:00',[log(-1,[sess(-1,'09:00 AM','12:10 PM')])])]],
     ['Pat Lee','15721 Bernardo Heights Pkwy, San Diego, CA 92128','sinv',jd('Re-caulk the shower and replace the shower valve trim.',[{item:'Re-caulk shower',price:'$185'}]),[],[entry('tpB1','full',-2,-2,'09:00','13:00',[log(-2,[sess(-2,'09:10 AM','12:50 PM')])])]],
-    ['Lou Garcia','3690 Murphy Canyon Rd, San Diego, CA 92123','survey',jd('Install grab bars in two bathrooms.',[{item:'Install 4 grab bars',price:'$360'}]),[],[entry('tpB2','full',-5,-5,'10:00','14:00',[log(-5,[sess(-5,'10:00 AM','01:30 PM')])])]],
+    ['Nora Quinn','3690 Murphy Canyon Rd, San Diego, CA 92123','survey',jd('Install grab bars in two bathrooms.',[{item:'Install 4 grab bars',price:'$360'}]),[],[entry('tpB2','full',-5,-5,'10:00','14:00',[log(-5,[sess(-5,'10:00 AM','01:30 PM')])])]],
     ['Ray Fox','5030 Cass St, San Diego, CA 92109','history',jd('Fence repair after the storm.',[{item:'Replace 3 fence panels',price:'$720'}]),[],[entry('tpB3','full',-9,-9,'08:00','15:00',[log(-9,[sess(-9,'08:00 AM','02:45 PM')])])]]
   ];
   return list.map((r,i)=>{
@@ -4197,13 +4211,33 @@ function seedTrainingDB(){
   writeLocalDB();
 }
 
+/* The private practice copy: the people come from the shared practice copy,
+   the jobs are this device's own and are never sent anywhere. */
+function openPrivateCopy(){
+  SYNC_LOADING=false;
+  const ready=meta=>{
+    try{ if(meta && meta.users) DB.users=Object.assign({}, meta.users, DB.users||{}); }catch(e){}
+    if(!(DB.workOrders||[]).length) seedTrainingDB();
+    DB.users=Object.assign({}, trainingRealUsers(), DB.users||{});
+    normalizeDB(DB); writeLocalDB();
+    CLOUD_READY={meta:true, wos:true};
+    setSyncPill('on');
+    onDatabaseReady();
+    if(CURRENT_USER){ renderTabCounts(); renderMain(); }
+  };
+  try{
+    mainDocRef().get().then(snap=>{ let m=null; try{ m=snap.exists && snap.data().meta ? JSON.parse(snap.data().meta) : null; }catch(e){} ready(m); }, ()=>ready(null));
+  }catch(e){ ready(null); }
+}
 function pushToCloud(){
+  if(window.GH_PRIVATE) return;
   if(!syncDb || applyingRemote || MIGRATING) return;
   if(!firebase.auth().currentUser) return;
   clearTimeout(syncSaveTimer);
   syncSaveTimer=setTimeout(flushToCloud, 250);
 }
 function flushToCloud(){
+  if(window.GH_PRIVATE) return;
   if(!syncDb || applyingRemote || MIGRATING) return;
   if(!firebase.auth().currentUser) return;
   /* A device opened after time away still holds its old copy of every job
