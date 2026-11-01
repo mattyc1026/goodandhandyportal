@@ -3440,10 +3440,6 @@ window._bootSafety = setTimeout(function(){
             </button>
           </div>
           <div class="settingsRow">
-            <span>Field View</span>
-            <button class="hcToggleBtn fieldModeBtn" id="fieldModeBtn" onclick="toggleFieldMode()" title="Open work orders in the simplified on-site view" aria-pressed="false">Off</button>
-          </div>
-          <div class="settingsRow">
             <span>Rolodex View</span>
             <button class="hcToggleBtn rolodexBtn" id="rolodexBtn" onclick="toggleRolodex()" title="Show each list as a rolodex of cards" aria-pressed="false">Off</button>
           </div>
@@ -8085,11 +8081,9 @@ let FIELD_VIEW_OVERRIDE=null;   // null = decide automatically, true/false = pin
 function isCheckedInNow(wo){
   return allDayLogsSorted(wo).some(({log})=>openSession(log));
 }
-function fieldModeFor(wo){
-  if(FIELD_VIEW_OVERRIDE!==null) return FIELD_VIEW_OVERRIDE;
-  if(FIELD_MODE) return true;
-  return isCheckedInNow(wo);
-}
+/* Work orders always open in field view; the full view is only drawn if
+   field view itself fails. */
+function fieldModeFor(wo){ return true; }
 function setFieldView(id, on){
   FIELD_VIEW_OVERRIDE = on;
   renderWorkOrderModal(id);
@@ -8870,7 +8864,6 @@ function renderWorkOrderModal(id){
          view, so the one button you press to get back jumped across the
          header every time you used it. */
       headerActions = `<div class="headerTabs fieldNav">
-          <button class="headerTab active" onclick="setFieldView(${id}, false)">Full View</button>
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Group (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
@@ -8904,7 +8897,6 @@ function renderWorkOrderModal(id){
     bodyHTML = adminTabHTML(wo);
   } else {
     headerActions = `<div class="headerTabs">
-          <button class="headerTab" onclick="setFieldView(${id}, true)">Field</button>
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Group (${priorCount})</button>` : ''}
           ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
