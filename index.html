@@ -3232,6 +3232,112 @@ html.dark.hc select:not([multiple]):not([size]){
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
+/* ---- Daily database usage ----
+   Every device keeps a running count of the documents it reads and saves and
+   adds it to one shared tally for the day (Pacific time, when Google's free
+   amounts reset). The owner gets a pop-up to acknowledge when a day reaches
+   80% of a free amount, and again when it goes past it. The counts are this
+   app's own estimate; Google's billing page has the exact figures. */
+(function(){
+  if(window.GH_USAGE) return;
+  const OWNER='matthewc';
+  const LIM={r:50000, w:20000, d:20000};
+  const NAMES={r:'reads', w:'saves', d:'deletes'};
+  let pend={r:0, w:0, d:0}, db=null, me='', show=false, unsub=null, day='', timer=0, last=null, installed=false;
+  const today=()=>new Intl.DateTimeFormat('en-CA', {timeZone:'America/Los_Angeles', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date());
+  const ref=d=>db.collection('gh_portal').doc('usage').collection('days').doc(d);
+  function count(s){
+    if(!s || !s.metadata || s.metadata.fromCache) return;
+    if(typeof s.docChanges==='function'){
+      let n=0; s.docChanges().forEach(c=>{ if(!(c.doc && c.doc.metadata && c.doc.metadata.hasPendingWrites)) n++; });
+      pend.r+=n;
+    } else if(!s.metadata.hasPendingWrites) pend.r+=1;
+  }
+  function install(){
+    if(installed || !window.firebase || typeof firebase.firestore!=='function') return;
+    const F=firebase.firestore;
+    if(!F.DocumentReference || !F.Query) return;
+    installed=true;
+    const wrap=(proto, name, fn)=>{ if(!proto || typeof proto[name]!=='function' || proto[name]._ghu) return; const o=proto[name]; const w=fn(o); w._ghu=true; proto[name]=w; };
+    const op=k=>o=>function(...a){ pend[k]++; return o.apply(this, a); };
+    [F.DocumentReference && F.DocumentReference.prototype, F.WriteBatch && F.WriteBatch.prototype].forEach(p=>{
+      wrap(p, 'set', op('w')); wrap(p, 'update', op('w')); wrap(p, 'delete', op('d'));
+    });
+    if(F.CollectionReference) wrap(F.CollectionReference.prototype, 'add', op('w'));
+    const snap=o=>function(...a){
+      const i=a.findIndex(x=>typeof x==='function');
+      if(i>=0){ const cb=a[i]; a[i]=function(s){ try{ count(s); }catch(e){} return cb.apply(this, arguments); }; }
+      else if(a[0] && typeof a[0].next==='function'){ const ob=a[0], nx=ob.next; a[0]=Object.assign({}, ob, {next:s=>{ try{ count(s); }catch(e){} return nx.call(ob, s); }}); }
+      return o.apply(this, a);
+    };
+    const get=o=>function(...a){ return o.apply(this, a).then(s=>{ try{ pend.r+=Math.max(1, s && typeof s.size==='number' ? s.size : 1); }catch(e){} return s; }); };
+    [F.Query && F.Query.prototype, F.CollectionReference && F.CollectionReference.prototype, F.DocumentReference && F.DocumentReference.prototype].forEach(p=>{
+      if(!p) return;
+      if(Object.prototype.hasOwnProperty.call(p, 'onSnapshot')) wrap(p, 'onSnapshot', snap);
+      if(Object.prototype.hasOwnProperty.call(p, 'get')) wrap(p, 'get', get);
+    });
+  }
+  function flush(){
+    if(!db || !firebase.auth || !firebase.auth().currentUser) return;
+    const d=today();
+    if(show && d!==day) watch();
+    if(!pend.r && !pend.w && !pend.d) return;
+    const p=pend; pend={r:0, w:0, d:0};
+    const inc=n=>firebase.firestore.FieldValue.increment(n);
+    ref(d).set({r:inc(p.r), w:inc(p.w), d:inc(p.d), at:Date.now()}, {merge:true}).catch(()=>{ pend.r+=p.r; pend.w+=p.w; pend.d+=p.d; });
+  }
+  function watch(){
+    if(unsub){ try{ unsub(); }catch(e){} unsub=null; }
+    day=today();
+    unsub=ref(day).onSnapshot(s=>{ last=s.exists ? s.data() : null; check(); }, ()=>{});
+  }
+  function check(){
+    if(!show || !last || document.getElementById('ghUsageAlert')) return;
+    const ack=last.ack||{};
+    let pick=null;
+    ['w','r','d'].forEach(k=>{
+      const v=last[k]||0, lv=v>=LIM[k] ? 100 : v>=LIM[k]*0.8 ? 80 : 0;
+      if(lv && !ack[k+lv] && (!pick || lv>pick.lv || (lv===pick.lv && v/LIM[k]>pick.v/LIM[pick.k]))) pick={k, lv, v};
+    });
+    if(!pick) return;
+    const pct=Math.round(pick.v/LIM[pick.k]*100);
+    const fmt=n=>Number(n).toLocaleString();
+    const el=document.createElement('div');
+    el.id='ghUsageAlert';
+    el.setAttribute('role','alertdialog'); el.setAttribute('aria-modal','true');
+    el.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,18,32,.6);font-family:inherit;';
+    el.innerHTML=`<div style="width:min(420px,100%);background:#fff;color:#141f33;border-radius:16px;padding:22px 22px 18px;box-shadow:0 20px 50px rgba(0,0,0,.35);border-top:6px solid ${pick.lv===100?'#c0392b':'#e8791a'};">
+      <div style="font-size:1.3em;font-weight:800;color:#0f2647;margin-bottom:10px;">${pick.lv===100?'Free Amount Used':'Database Usage at '+pct+'%'}</div>
+      <div style="line-height:1.5;margin-bottom:6px;">Today's ${NAMES[pick.k]}: <b>${fmt(pick.v)}</b> of ${fmt(LIM[pick.k])} free.</div>
+      ${pick.lv===100?'<div style="line-height:1.5;">Anything more today is billed to your Blaze plan.</div>':''}
+      <div style="display:flex;justify-content:flex-end;margin-top:16px;"><button type="button" id="ghUsageOk" style="font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 22px;background:#0f2647;color:#fff;cursor:pointer;">OK</button></div></div>`;
+    document.body.appendChild(el);
+    const key=pick.k+pick.lv;
+    el.querySelector('#ghUsageOk').onclick=()=>{
+      el.remove();
+      if(last){ last.ack=Object.assign({}, last.ack||{}, {[key]:true}); }
+      ref(day).set({ack:{[key]:true}}, {merge:true}).catch(()=>{});
+      setTimeout(check, 50);
+    };
+    setTimeout(()=>{ const b=document.getElementById('ghUsageOk'); if(b) b.focus(); }, 30);
+  }
+  window.GH_USAGE={
+    install,
+    /* who is signed in, and the database to tally into; the owner also watches */
+    user(name, database, canShow){
+      install();
+      db=database; me=String(name||'');
+      if(!timer){ timer=setInterval(flush, 60000); window.addEventListener('pagehide', flush); }
+      const s=canShow!==false && me===OWNER;
+      if(s && !show){ show=true; watch(); }
+      if(!s && show){ show=false; if(unsub){ unsub(); unsub=null; } }
+    },
+    flush, _pend:()=>pend, _check:check
+  };
+  install();
+})();
+</script>
 <style>
 /* ---- Dashboard side panel ----
    The live dashboard is loaded from its own site inside a frame, so its code
@@ -4976,6 +5082,7 @@ function sendPasswordReset(){
     .catch(e=>{ err.textContent=authErrorMessage(e); });
 }
 function enterApp(u){
+  try{ if(window.GH_USAGE && syncDb) GH_USAGE.user(u.username, syncDb, !window.GH_TRAINING); }catch(e){}
   CURRENT_USER={username:u.username, displayName:fullName(u), isAdmin:u.isAdmin};
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
