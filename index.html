@@ -474,7 +474,7 @@ header.top .brand span{color:var(--orange);}
 .practicePill{display:none;}
 html.training .practicePill{display:inline-block;background:var(--redb);color:#fff;font-size:.66em;padding:3px 9px;border-radius:20px;font-weight:700;letter-spacing:.1em;}
 html.training #dashToggle,html.training #dashPanel,html.training #dashBackdrop,
-html.training .logoutBtn,html.training #syncPill,html.training #pwNudge,
+html.training .logoutBtn,html.training .logoutRow,html.training #syncPill,html.training #pwNudge,
 html.training .settingsRow:has(#changePwBtn){display:none !important;}
 /* The practice copy never moves sideways inside its frame: there is no
    dashboard panel here, and nothing may push the page wider than the frame. */
@@ -504,6 +504,17 @@ html.training:has(#modalRoot .overlay){overflow:hidden;}
   font-size:1.15em;line-height:1;transition:background .15s;
 }
 .settingsBtn:hover{background:rgba(255,255,255,.18);}
+.hdrIcon{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:40px;min-height:40px;padding:0;border-radius:50%;cursor:pointer;
+  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;
+}
+.hdrIcon .ic{width:20px;height:20px;}
+.hdrIcon:hover{background:rgba(255,255,255,.18);}
+.settingsMenu .logoutRow{border-top:1px solid var(--line);margin-top:4px;padding-top:12px;}
+.settingsMenu .logoutBtn{width:100%;min-height:42px;background:transparent;color:var(--redb);border:1px solid var(--line);font-weight:700;cursor:pointer;}
+.settingsMenu .logoutBtn:hover{background:var(--red);border-color:var(--redb);}
+html.hc .settingsMenu .logoutBtn{color:var(--hc-fg);border-color:var(--hc-fg);}
 /* Inline SVG gear instead of the U+2699 character. The character has both a
    plain and an emoji presentation, so the icon changed appearance depending on
    the device and font. This renders identically everywhere and inherits the
@@ -1718,19 +1729,24 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   .noteEntryRow.sheetOpen ~ #notesList{margin-top:4px;}
 
   /* --- search collapses to its icon --- */
-  .globalSearchBar{gap:8px;}
-  .searchToggleBtn{
-    display:inline-flex;align-items:center;gap:7px;
-    background:none;border:1px solid var(--line);border-radius:var(--radius-sm);
-    padding:9px 14px;cursor:pointer;font-family:inherit;font-weight:700;
-    font-size:.85em;color:var(--muted);
-  }
-  .globalSearchBar input,
-  .globalSearchBar > .btn{display:none;}
-  .globalSearchBar.open .searchToggleBtn{display:none;}
-  .globalSearchBar.open input,
-  .globalSearchBar.open > .btn{display:block;}
+  /* the search field opens from the magnifier in the top bar */
+  .globalSearchBar{gap:8px;display:none;}
+  .globalSearchBar.open{display:flex;}
   .globalSearchBar.open input{flex:1;}
+  .searchToggleBtn.on{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.5);}
+  header.top{flex-wrap:nowrap;gap:6px;padding-left:12px;padding-right:12px;}
+  header.top .brand{gap:8px !important;flex:none;}
+  .userBadge{flex-wrap:nowrap;gap:6px;min-width:0;}
+  .userBadge .syncPill{white-space:nowrap;font-size:11px;padding:6px 10px;min-height:32px;}
+  .userBadge .adminPill,.userBadge .practicePill{font-size:11px !important;}
+  header.top .brand img{width:36px !important;height:36px !important;}
+  header.top .dashToggle{flex:none;}
+}
+@media (max-width:380px){
+  .userBadge .syncPill .syncLbl{display:none;}
+}
+@media (max-width:900px){
+  .globalSearchBar input{min-width:0;}
 
   .docCameraBtn{display:inline-flex;align-items:center;gap:6px;}
   .modalHeadCust.editing{width:100%;}
@@ -1846,6 +1862,23 @@ html.hc .schedLoggedTag{background:var(--hc-bg);color:var(--hc-fg);border:1px so
 html.hc .schedDblTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
 /* ---- remove days from a multi-day booking ---- */
 .confirmBox.noAnim,.confirmBox.noAnim .confirmCard{animation:none;}
+.confirmCard.wrapCard{max-width:400px;text-align:left;padding:24px 22px 20px;}
+.wrapCard h3{margin:0 0 14px;font-size:1.2em;}
+.wrapOpts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.wrapOpt{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.wrapOpt.on{border-color:var(--navy);background:var(--s2,var(--cream));}
+.wrapBox{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;color:transparent;}
+.wrapBox .ic{width:15px;height:15px;stroke-width:3;}
+.wrapOpt.on .wrapBox{background:var(--navy);border-color:var(--navy);color:#fff;}
+.wrapTxt{display:flex;flex-direction:column;min-width:0;}
+.wrapTxt b{color:var(--navy);}
+.wrapTxt span{font-size:.85em;color:var(--muted);overflow-wrap:anywhere;}
+.wrapNone{font-size:.88em;color:var(--muted);}
+.wrapNone:empty{display:none;}
+.wrapCard .btnRow{justify-content:flex-start;flex-wrap:nowrap;}
+.wrapCard .btnRow .btn{flex:1 1 auto;}
+html.hc .wrapOpt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
+html.hc .wrapOpt.on .wrapBox{background:var(--hc-fg);color:var(--hc-bg);}
 .confirmCard.schedRmCard{max-width:460px;text-align:left;padding:24px 22px 18px;}
 .schedRmCard h3{margin:0 0 4px;font-size:1.2em;}
 .schedRmSub{color:var(--muted);font-size:.9em;margin-bottom:16px;}
@@ -3326,6 +3359,76 @@ html.dark.hc select:not([multiple]):not([size]){
   input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:max(16px,1em) !important;}
   .rtEditor,[contenteditable=true]{font-size:max(16px,.92em) !important;}
 }
+/* ---- moving several follow-ups at once ---- */
+.fuSelBtn{margin-left:auto;padding:6px 14px;font-size:max(12px,.62em) !important;white-space:nowrap;flex:none;border-radius:999px;border:1.5px solid var(--navy);background:transparent;color:var(--navy);
+  font-family:inherit;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
+.fuSelBtn.on{background:var(--navy);color:#fff;}
+.subListHeader:has(.fuSelBtn){flex-wrap:wrap;white-space:nowrap;row-gap:8px;}
+.woRow.fuPickable{position:relative;padding-left:62px !important;}
+.woRow.fuPickable::after{display:none;}
+.fuCheck{position:absolute;left:24px;top:50%;width:26px;height:26px;margin-top:-13px;border-radius:8px;border:2px solid var(--line);
+  background:var(--paper);display:flex;align-items:center;justify-content:center;color:transparent;z-index:2;}
+.fuCheck .ic{width:16px;height:16px;stroke-width:3;}
+.woRow.fuPicked{border-color:var(--navy) !important;box-shadow:0 0 0 2px var(--navy);}
+.woRow.fuPicked .fuCheck{background:var(--navy);border-color:var(--navy);color:#fff;}
+.fuBar{position:sticky;bottom:16px;z-index:20;margin:4px 0 14px;padding:12px 14px;border-radius:16px;
+  background:var(--navy);color:#fff;box-shadow:var(--sh-4);}
+.fuBarTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:.85em;}
+.fuAll{background:none;border:0;color:var(--orange2,#ffb067);font:inherit;font-weight:800;cursor:pointer;padding:4px 0;}
+.fuBarBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.fuBarBtns .btn{background:#fff;color:var(--navy);min-height:44px;padding:8px 4px;font-weight:800;font-size:.8em;white-space:nowrap;}
+.fuBarBtns .btn[disabled]{opacity:.45;cursor:not-allowed;}
+@media (max-width:900px){ .fuBar{bottom:calc(96px + env(safe-area-inset-bottom,0px));} }
+html.hc .fuBar{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
+html.hc .fuBarBtns .btn{background:var(--hc-fg);color:var(--hc-bg);}
+/* ---- next booked day on a card ---- */
+.followupBadge .fuShort{display:none;}
+.syncPill .syncLbl{margin-right:.35em;}
+.woNext{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:var(--navy);opacity:1 !important;white-space:nowrap;}
+.woNext .ic{width:14px;height:14px;}
+.woNext.today{color:var(--greenb);}
+html.hc .woNext{color:var(--hc-fg);}
+/* ---- compact cards on phones: four or five to a screen ---- */
+@media (max-width:600px){
+  .woRow{padding:9px 28px 9px 18px;margin-bottom:8px;gap:6px;}
+  .woRow .woMain{gap:2px;}
+  .woRow .woName{font-size:1.02em;line-height:1.2;text-wrap:initial;}
+  .woRow .woName,.woRow .woSub,.woRow .woLastNote{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;}
+  .woRow .woSub{font-size:.8em;line-height:1.28;}
+  .woRow .woLastNote{font-size:.78em;line-height:1.28;margin-top:0;}
+  .woRow .woLastNote .woNoteDate{display:none;}
+  .woRow .woMeta{gap:8px;row-gap:7px;font-size:.84em;}
+  .woRow .woMeta > .woAddr{display:none;}
+  .woRow .woMeta .tag{padding:4px 10px;font-size:.86em;}
+  .woRow .followupBadge{padding:3px 9px;}
+  .woRow .followupBadge .fuWord{display:none;}
+  .woRow .followupBadge .fuShort{display:inline;}
+  .woRow .woMeta .tag,.woRow .followupBadge{font-size:.74em;}
+  .woRow .woMeta .tag{padding:3px 9px;}
+  .woRow .woMeta{font-size:.8em;}
+  .woRow::after{right:11px;font-size:1.35em;}
+  .woRow .checkInOutRow{margin-top:4px;}
+
+  /* customer block: full-width rows, label on the left, nothing breaks mid-word */
+  .fieldGrid{grid-template-columns:1fr;gap:8px;}
+  .fgCell{min-height:0;}
+  .fgCell.fgName{padding:13px 16px;}
+  .fgCell .fgName{font-size:1.1em;overflow-wrap:normal;word-break:normal;}
+  .fgHit{display:flex;align-items:center;gap:12px;padding:12px 16px;}
+  .fgHit .fgLabel{flex:0 0 auto;min-width:5.2em;margin:0;}
+  .fgHit .fgValue{flex:1 1 auto;min-width:0;align-items:center;overflow-wrap:normal;word-break:normal;}
+  .fgHit .fgValue .ic{display:none;}
+  .fieldGrid .fgCell:nth-child(2) .fgValue{white-space:nowrap;}
+  .fieldGrid .fgCell:nth-child(4) .fgValue{overflow-wrap:anywhere;}
+
+  /* work order header: the tabs and the close button share one row */
+  .headerActionsWrap{flex-wrap:nowrap;width:100%;gap:6px;}
+  .headerTabs,.fieldNav{flex-wrap:nowrap;flex:1 1 auto;min-width:0;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;}
+  .headerTabs > :first-child{margin-left:auto;}
+  .headerTabs::-webkit-scrollbar{display:none;}
+  .headerTabs button{padding:9px 9px;font-size:min(.66em,13.5px);letter-spacing:.04em;white-space:nowrap;flex:none;}
+  .headerActionsWrap .closeX{flex:none;}
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -3622,6 +3725,7 @@ window._bootSafety = setTimeout(function(){
       <span id="whoami"></span>
       <span id="adminPill" class="adminPill hidden">ADMIN</span>
       <span class="practicePill">PRACTICE</span>
+      <button class="hdrIcon searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
       <div class="settingsWrap">
         <button class="settingsBtn" id="settingsBtn" onclick="toggleSettingsMenu('settingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false"><svg class="gearIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.50 4.96 L10.05 2.81 A9.40 9.40 0 0 1 13.95 2.81 L13.50 4.96 A7.20 7.20 0 0 1 15.92 5.96 L17.12 4.12 A9.40 9.40 0 0 1 19.88 6.88 L18.04 8.08 A7.20 7.20 0 0 1 19.04 10.50 L21.19 10.05 A9.40 9.40 0 0 1 21.19 13.95 L19.04 13.50 A7.20 7.20 0 0 1 18.04 15.92 L19.88 17.12 A9.40 9.40 0 0 1 17.12 19.88 L15.92 18.04 A7.20 7.20 0 0 1 13.50 19.04 L13.95 21.19 A9.40 9.40 0 0 1 10.05 21.19 L10.50 19.04 A7.20 7.20 0 0 1 8.08 18.04 L6.88 19.88 A9.40 9.40 0 0 1 4.12 17.12 L5.96 15.92 A7.20 7.20 0 0 1 4.96 13.50 L2.81 13.95 A9.40 9.40 0 0 1 2.81 10.05 L4.96 10.50 A7.20 7.20 0 0 1 5.96 8.08 L4.12 6.88 A9.40 9.40 0 0 1 6.88 4.12 L8.08 5.96 A7.20 7.20 0 0 1 10.50 4.96 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
         <div class="settingsMenu" id="settingsMenu">
@@ -3652,10 +3756,12 @@ window._bootSafety = setTimeout(function(){
             <span>Password</span>
             <button class="editLink" id="changePwBtn" onclick="closeSettingsMenus(); openChangePassword()">Change</button>
           </div>
+          <div class="settingsRow logoutRow">
+            <button class="logoutBtn" onclick="closeSettingsMenus(); confirmLogout()">Sign Out</button>
+          </div>
         </div>
       </div>
       <button class="syncPill off" id="syncPill" onclick="openSyncModal()">Sync: Off</button>
-      <button class="logoutBtn" onclick="confirmLogout()">Sign Out</button>
     </div>
   </header>
   <div id="pwNudge" role="status">
@@ -3664,9 +3770,6 @@ window._bootSafety = setTimeout(function(){
     <button class="btn secondary" onclick="dismissPwNudge()">Later</button>
   </div>
   <div class="globalSearchBar" id="globalSearchBar">
-    <button class="searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders">
-      <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span>Search</span>
-    </button>
     <input type="text" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
     <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
   </div>
@@ -4000,14 +4103,16 @@ function getSyncConfig(){
 }
 
 function setSyncPill(state){ // 'on' | 'off' | 'connecting'
-  const label='Sync: '+(state==='on'?'On':state==='connecting'?'Connecting…':'Off');
+  const word=state==='on'?'On':state==='connecting'?'Connecting…':'Off';
+  const label='Sync: '+word;
   ['syncPill','loginSyncPill'].forEach(id=>{
     const p=document.getElementById(id);
     if(!p) return;
     p.className='syncPill '+(state==='on'?'on':'off');
     if(id==='loginSyncPill' && state!=='on'){ p.style.borderColor='var(--navy)'; p.style.color='var(--navy)'; }
     else { p.style.borderColor=''; p.style.color=''; }
-    p.textContent=label;
+    p.innerHTML='<span class="syncLbl">Sync: </span>'+word;
+    p.setAttribute('aria-label', label);
   });
 }
 function initSync(){
@@ -5177,7 +5282,7 @@ function sendPasswordReset(){
   const err=document.getElementById('siErr');
   if(!email){ err.textContent='Enter your email address first, then tap Forgot password.'; return; }
   firebase.auth().sendPasswordResetEmail(email)
-    .then(()=>{ err.textContent=''; toast('Password reset email sent. Check your inbox.'); })
+    .then(()=>{ err.textContent=''; toast('Password reset email sent.'); })
     .catch(e=>{ err.textContent=authErrorMessage(e); });
 }
 function enterApp(u){
@@ -5453,6 +5558,11 @@ function isFollowUpDue(dateStr){
   const fu=new Date(dateStr+'T00:00:00');
   return fu.getTime() <= today.getTime();
 }
+function formatFollowUpShort(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const short=(d.getMonth()+1)+'/'+d.getDate();
+  return d.getFullYear()===new Date().getFullYear() ? short : short+'/'+String(d.getFullYear()).slice(2);
+}
 function formatFollowUp(dateStr){
   const d=new Date(dateStr+'T00:00:00');
   return d.toLocaleDateString();
@@ -5549,7 +5659,7 @@ function applyFollowUpFromNative(){
    re-render the full list too. */
 var STAGGER_NEXT_RENDER=false;
 function switchTab(tab){
-  if(tab!==ACTIVE_TAB) STAGGER_NEXT_RENDER=true;
+  if(tab!==ACTIVE_TAB){ STAGGER_NEXT_RENDER=true; FU_SELECT=null; }
   ACTIVE_TAB=tab;
   rememberTab(tab);
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
@@ -5960,12 +6070,12 @@ function subGroupHTML(label, list, opts){
   } else {
     inner=listBodyHTML(list, opts, ACTIVE_TAB+':'+label);
   }
-  return `<h3 class="subListHeader">${label} <span class="count">${list.length}</span></h3>${inner}`;
+  return `<h3 class="subListHeader">${label} <span class="count">${list.length}</span>${opts.headerExtra||''}</h3>${inner}${opts.after||''}`;
 }
 /* A list of cards, either plain or as a rolodex drum when that view is on. */
 function listBodyHTML(list, opts, key){
   const rows=list.map(wo=>rowHTML(wo, opts)).join('');
-  if(!ROLODEX) return '<div>'+rows+'</div>';
+  if(!ROLODEX || opts.plain) return '<div>'+rows+'</div>';
   return `<div class="rolo" data-rolo-key="${esc(key)}" tabindex="0" role="listbox" aria-label="${esc(String(key).split(':').slice(1).join(':'))}">${rows}</div>`;
 }
 function renderMain(){
@@ -5984,7 +6094,11 @@ function renderMain(){
     const list = sortWorkOrders(DB.workOrders.filter(inWorkOrdersList));
     html+=`<div class="listHeader woHeader"><div class="woTitleRow"><h2>Work Orders</h2><button class="newWoBtn" onclick="openNewWorkOrder()">${icon('plus')}New Work Order</button></div>${sortDropdownHTML()}</div>`;
     if(dueList.length){
-      html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true});
+      const picking=!!FU_SELECT;
+      if(picking) FU_SELECT=new Set([...FU_SELECT].filter(id=>dueList.some(w=>w.id===id)));
+      html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true, plain:picking,
+        headerExtra:`<button type="button" class="fuSelBtn${picking?' on':''}" onclick="toggleFuSelect()">${picking?'Cancel':'Select'}</button>`,
+        after: picking ? fuBarHTML(dueList) : ''});
       html+='<hr class="subDivider">';
     }
     html+=subGroupHTML('All Work Orders', list, {
@@ -6052,12 +6166,80 @@ function applyListMotion(main){
   clearTimeout(LIST_MOTION_TIMER);
   LIST_MOTION_TIMER=setTimeout(()=>main.classList.remove('stagger'), 900);
 }
+/* ---- moving several follow-ups at once ---- */
+let FU_SELECT=null;   // Set of work order ids while picking, else null
+function toggleFuSelect(){
+  FU_SELECT = FU_SELECT ? null : new Set();
+  renderMain();
+}
+function toggleFuPick(id){
+  if(!FU_SELECT) return;
+  if(FU_SELECT.has(id)) FU_SELECT.delete(id); else FU_SELECT.add(id);
+  renderMain();
+}
+function fuPickAll(ids){
+  if(!FU_SELECT) return;
+  const all=ids.every(id=>FU_SELECT.has(id));
+  FU_SELECT = new Set(all ? [] : ids);
+  renderMain();
+}
+function fuBarHTML(list){
+  const n=FU_SELECT ? FU_SELECT.size : 0;
+  const ids=list.map(w=>w.id);
+  const all=n && ids.every(id=>FU_SELECT.has(id));
+  const dis=n?'':'disabled';
+  return `<div class="fuBar" role="toolbar" aria-label="Move follow-ups">
+    <div class="fuBarTop"><b>${n} selected</b><button type="button" class="fuAll" onclick="fuPickAll([${ids.join(',')}])">${all?'Clear':'Select All'}</button></div>
+    <div class="fuBarBtns">
+      <button type="button" class="btn" ${dis} onclick="fuSnooze('day')">1 Day</button>
+      <button type="button" class="btn" ${dis} onclick="fuSnooze('week')">1 Week</button>
+      <button type="button" class="btn" ${dis} onclick="fuSnooze('month')">1 Month</button>
+    </div>
+  </div>`;
+}
+function fuSnooze(unit){
+  if(!FU_SELECT || !FU_SELECT.size) return;
+  const d=new Date(); d.setHours(12,0,0,0);
+  if(unit==='day') d.setDate(d.getDate()+1);
+  else if(unit==='week') d.setDate(d.getDate()+7);
+  else { const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+1); d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth()+1, 0).getDate())); }
+  const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let moved=0;
+  FU_SELECT.forEach(id=>{
+    const wo=getWO(id), n=wo && mostRecentNote(wo);
+    if(!n || !n.followUpDate) return;
+    const was=n.followUpDate;
+    // The old version of the note is marked as replaced, so other devices
+    // don't set it aside as a lost note.
+    if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+    wo.tombstones.push('n:'+noteIdentity(n));
+    n.followUpDate=iso;
+    addAdminLog(wo, `Follow-up moved from ${formatFollowUp(was)} to ${formatFollowUp(iso)}.`);
+    moved++;
+  });
+  FU_SELECT=null;
+  if(moved) saveDB(DB);
+  renderTabCounts(); renderMain();
+  if(moved) toast(`${moved} follow-up${moved>1?'s':''} moved to ${formatFollowUp(iso)}.`);
+}
 function mostRecentNote(wo){
   return (wo.notes && wo.notes.length) ? wo.notes[0] : null;
 }
 function woIsFollowUpDue(wo){
   const n=mostRecentNote(wo);
   return !!(n && n.followUpDate && isFollowUpDue(n.followUpDate));
+}
+/* Today or the next booked day, shown on the card. */
+function nextDateChip(wo){
+  const today=isoToday();
+  const rows=allDayLogsSorted(wo);
+  let iso=null;
+  if(rows.some(r=>r.log.date===today)) iso=today;
+  else { const nx=rows.find(r=>r.log.date>today); if(nx) iso=nx.log.date; }
+  if(!iso) return '';
+  const d=new Date(iso+'T00:00:00');
+  const label = iso===today ? 'Today' : d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
+  return `<span class="woNext${iso===today?' today':''}">${icon('nav-calendar')}${esc(label)}</span>`;
 }
 function rowHTML(wo, opts){
   opts=opts||{};
@@ -6067,13 +6249,15 @@ function rowHTML(wo, opts){
   const glowCls = anyOpenCheckIn ? ' checkedInGlow' : '';
   /* Tapping a card always opens the work order. The builders, the e-sign tool
      and the send options only open from the action buttons on the card. */
-  const openFn = opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})` : `openWorkOrder(${wo.id})`;
+  const picking = opts.followUpNav && FU_SELECT;
+  const picked = picking && FU_SELECT.has(wo.id);
+  const openFn = picking ? `toggleFuPick(${wo.id})` : opts.followUpNav ? `goToWorkOrderInWorkflow(${wo.id})` : `openWorkOrder(${wo.id})`;
   const n=mostRecentNote(wo);
   const lastNoteHTML = n
     ? `<div class="woLastNote"><b>${esc(n.type)}:</b> ${esc((n.text||'').slice(0,90))}${(n.text||'').length>90?'…':''} <span class="woNoteDate">(${esc(n.date)})</span></div>`
     : '';
   const followUpBadge = (n && n.followUpDate)
-    ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span>`
+    ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}"><span class="fuWord">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span><span class="fuShort">${isFollowUpDue(n.followUpDate)?'Due':'Follow-up'} ${formatFollowUpShort(n.followUpDate)}</span></span>`
     : '';
   /* The action for this sub-list, drawn on the right of the card. Each one
      either opens a tool or asks to confirm before the job moves on. */
@@ -6094,7 +6278,8 @@ function rowHTML(wo, opts){
          ${checkBtnHTML(wo.id, todayLog.log)}
        </div>`
     : (opts.showCheckInOut ? '<div class="small" onclick="event.stopPropagation()">No visit scheduled today. See Job Details for other days.</div>' : '');
-  return `<div class="woRow ${cls}${glowCls}" data-wo-id="${wo.id}"${openFn?` onclick="${openFn}"`:''}>
+  return `<div class="woRow ${cls}${glowCls}${picking?' fuPickable':''}${picked?' fuPicked':''}" data-wo-id="${wo.id}"${openFn?` onclick="${openFn}"`:''}${picking?` role="checkbox" aria-checked="${picked?'true':'false'}"`:''}>
+    ${picking?`<span class="fuCheck" aria-hidden="true">${icon('check')}</span>`:''}
     <div class="woMain">
       <div class="woName">${esc(wo.customer.name) || '(No name yet)'}</div>
       <div class="woSub">${wo.jobDetails.description ? esc(wo.jobDetails.description.slice(0,80)) : 'No job description yet'}</div>
@@ -6104,7 +6289,8 @@ function rowHTML(wo, opts){
     <div class="woMeta">
       ${statusTag(wo)}
       ${followUpBadge}
-      <span>${wo.customer.address?icon('map-pin')+' ':''}${esc(wo.customer.address)}</span>
+      ${nextDateChip(wo)}
+      <span class="woAddr">${wo.customer.address?icon('map-pin')+' ':''}${esc(wo.customer.address)}</span>
       ${cardActs}
     </div>
   </div>`;
@@ -6313,7 +6499,7 @@ function checkInDay(woId, date){
   if(!wo) return;
   const found=findDayLog(wo, date);
   if(!found) return;
-  if(openSession(found.log)){ toast('Already checked in. Check out first.'); return; }
+  if(openSession(found.log)){ toast('Already checked in.'); return; }
   askYesNo('Confirm you are checking in on site for '+formatDateDisplay(date)+'?', (yes)=>{
     if(!yes) return;
     const live=getWO(woId);
@@ -6954,6 +7140,8 @@ function toggleSearchBar(){
   if(!bar) return;
   const opening=!bar.classList.contains('open');
   bar.classList.toggle('open', opening);
+  const tb=document.getElementById('searchToggleBtn');
+  if(tb){ tb.setAttribute('aria-expanded', opening?'true':'false'); tb.classList.toggle('on', opening); }
   if(opening){
     const i=document.getElementById('globalSearchInput');
     if(i) setTimeout(()=>i.focus(), 40);
@@ -7308,23 +7496,9 @@ function applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, ov
   SCHED_INLINE=false;
   renderWorkOrderModal(woId);
   renderMain();
-  // The .ics already sent to a calendar can't be edited in place, so offer a
-  // corrected one rather than leaving the calendar silently out of date.
-  askYesNo('Schedule updated. Download an updated calendar (.ics) file for this date?', (yes)=>{
-    if(yes){
-      const w=getWO(woId);
-      const entry=w && (w.scheduleDates||[]).find(x=>x.id===editedId);
-      if(entry){
-        downloadICS(w, [entry]);
-        toast('Updated .ics downloaded. Opening it will update the existing calendar entry.');
-      }
-    } else {
-      toast('Schedule updated.');
-    }
-    const w2=getWO(woId);
-    const entry2=w2 && (w2.scheduleDates||[]).find(x=>x.id===editedId);
-    if(entry2) offerApptEmails(woId, [entry2], true);
-  });
+  // The .ics already sent to a calendar can't be edited in place, so a
+  // corrected one is offered along with the updated email.
+  offerScheduleWrapUp(woId, [editedId], 'Schedule Updated', true);
 }
 function schedEntryLabel(d){
   return `${d.type==='presite'?'pre-site':'whole job'} date ${formatDateDisplay(d.startDate)}${d.multiDay?' to '+formatDateDisplay(d.endDate):''} @ ${formatTime12(d.startTime)}-${formatTime12(d.endTime)}`;
@@ -7481,16 +7655,7 @@ function removeScheduleDays(woId, dateId, removed){
   saveDB(DB);
   renderWorkOrderModal(woId);
   renderMain();
-  const ids=parts.map(e=>e.id);
-  askYesNo(`${removed.length>1?removed.length+' days':'Day'} removed. Download an updated calendar (.ics) file?`, yes=>{
-    const w=getWO(woId);
-    const entries=w ? (w.scheduleDates||[]).filter(x=>ids.indexOf(x.id)!==-1) : [];
-    if(yes && entries.length){
-      downloadICS(w, entries);
-      toast('Updated .ics downloaded. Opening it will update the existing calendar entry.');
-    } else if(!yes) toast('Schedule updated.');
-    if(entries.length) offerApptEmails(woId, entries, true);
-  });
+  offerScheduleWrapUp(woId, parts.map(e=>e.id), removed.length>1?removed.length+' Days Removed':'Day Removed', true);
 }
 
 /* Converts a 24hr "HH:MM" start time into a 1-hour arrival window string,
@@ -7922,8 +8087,8 @@ function addPendingScheduleDate(){
     SCHED_START=null; SCHED_END=null;
     renderScheduleWidget();
     toast(overridden
-      ? 'Double-booked date added to the list below.'
-      : 'Date added to the list below. Click "Add to Calendar" when you\'re done.');
+      ? 'Double-booked date added.'
+      : 'Date added.');
   }, repeat, dayTimes);
 }
 function removePendingScheduleDate(i){
@@ -7939,17 +8104,70 @@ function finalizeScheduleDates(){
   });
   wo.scheduleDates=(wo.scheduleDates||[]).concat(SCHED_PENDING);
   const dbl=SCHED_PENDING.filter(e=>e.overridden).length;
-  addAdminLog(wo, `Added ${SCHED_PENDING.length} schedule date(s) and generated a calendar (.ics) download.`+
+  addAdminLog(wo, `Added ${SCHED_PENDING.length} schedule date(s).`+
     (dbl?` ${dbl} of them double-booked over an existing appointment (override).`:''));
   saveDB(DB);
-  downloadICS(wo, SCHED_PENDING);
   const doneId=SCHED_WO_ID;
   const added=SCHED_PENDING.slice();
   SCHED_PENDING=[]; SCHED_WO_ID=null; SCHED_INLINE=false;
-  toast('Schedule dates saved. The .ics file downloaded. Open it to add to Apple Calendar.');
   renderWorkOrderModal(doneId);
   renderMain();
-  offerApptEmails(doneId, added, false);
+  offerScheduleWrapUp(doneId, added.map(e=>e.id), added.length>1?'Dates Saved':'Date Saved', false);
+}
+
+/* ---- after scheduling: calendar file and customer email in one sheet ---- */
+let SCHED_WRAP=null;   // {woId, ids, updated, ics, email}
+function schedWrapEntries(){
+  const w=SCHED_WRAP && getWO(SCHED_WRAP.woId);
+  return w ? (w.scheduleDates||[]).filter(x=>SCHED_WRAP.ids.indexOf(x.id)!==-1) : [];
+}
+function offerScheduleWrapUp(woId, ids, title, updated){
+  const wo=getWO(woId);
+  if(!wo || !ids.length) return;
+  const to=((wo.customer||{}).email||'').trim();
+  const entries=(wo.scheduleDates||[]).filter(x=>ids.indexOf(x.id)!==-1);
+  const canEmail=!!APPT_EMAIL_URL && !!to && apptBuildEmails(wo, entries, updated).length>0;
+  SCHED_WRAP={woId, ids:ids.slice(), updated:!!updated, ics:true, email:canEmail, canEmail, to, title};
+  renderScheduleWrapUp(true);
+}
+function renderScheduleWrapUp(first){
+  const W=SCHED_WRAP, root=document.getElementById('confirmRoot');
+  if(!W || !root) return;
+  const row=(key, on, label, sub)=>`<button type="button" class="wrapOpt${on?' on':''}" aria-pressed="${on}" onclick="toggleScheduleWrap('${key}')">
+      <span class="wrapBox">${icon('check')}</span><span class="wrapTxt"><b>${label}</b>${sub?`<span>${esc(sub)}</span>`:''}</span>
+    </button>`;
+  root.innerHTML=`<div class="confirmBox${first?'':' noAnim'}" onclick="if(event.target===this)finishScheduleWrap(false)"><div class="confirmCard wrapCard" role="dialog" aria-modal="true" aria-label="${esc(W.title)}">
+    <h3>${esc(W.title)}</h3>
+    <div class="wrapOpts">
+      ${row('ics', W.ics, W.updated?'Updated Calendar File':'Calendar File', '.ics')}
+      ${W.canEmail ? row('email', W.email, W.updated?'Updated Email to Customer':'Email Customer', W.to) : `<div class="wrapNone">${W.to?'':'No email on file'}</div>`}
+    </div>
+    <div class="btnRow">
+      <button class="btn" id="wrapDone" onclick="finishScheduleWrap(true)">Done</button>
+      <button class="btn secondary" onclick="finishScheduleWrap(false)">Skip</button>
+    </div>
+  </div></div>`;
+  const b=document.getElementById('wrapDone'); if(b) b.focus();
+}
+function toggleScheduleWrap(key){
+  if(!SCHED_WRAP) return;
+  SCHED_WRAP[key]=!SCHED_WRAP[key];
+  renderScheduleWrapUp(false);
+}
+function finishScheduleWrap(go){
+  const W=SCHED_WRAP;
+  SCHED_WRAP=null;
+  const root=document.getElementById('confirmRoot');
+  if(root) root.innerHTML='';
+  if(!W) return;
+  const wo=getWO(W.woId);
+  const entries=wo ? (wo.scheduleDates||[]).filter(x=>W.ids.indexOf(x.id)!==-1) : [];
+  if(!go || !entries.length) return;
+  if(W.ics) downloadICS(wo, entries);
+  if(W.email && W.canEmail){
+    const emails=apptBuildEmails(wo, entries, W.updated);
+    if(emails.length) sendApptEmails(W.woId, emails);
+  } else if(W.ics) toast('Calendar file downloaded.');
 }
 
 /* ---- Appointment confirmation emails ----
@@ -8637,7 +8855,7 @@ function saveFieldNoteEdit(id){
   const text=textEl ? textEl.value.trim() : '';
   if(!text){
     if(textEl) textEl.focus();
-    toast('A note can\'t be saved empty. Delete it instead if that\'s what you want.');
+    toast('A note can\'t be saved empty.');
     return;
   }
   const oldText=n.text;
@@ -9429,10 +9647,9 @@ function renderWorkOrderModal(id){
       <div class="modalBody">
         ${bodyHTML}
       </div>
-      <div class="footerActions">
-        ${(isAdmin && WO_ADMIN_VIEW) ? `<button class="btn danger" onclick="adminDeleteWorkOrder(${id})">Delete Work Order</button>` : ''}
-        <button class="btn secondary" onclick="closeModal()">Close</button>
-      </div>
+      ${(isAdmin && WO_ADMIN_VIEW) ? `<div class="footerActions">
+        <button class="btn danger" onclick="adminDeleteWorkOrder(${id})">Delete Work Order</button>
+      </div>` : ''}
     </div>
   </div>`;
   if(prevScroll){
@@ -9940,7 +10157,7 @@ function fallbackCopy(text, done){
     document.execCommand('copy');
     ta.remove();
     done();
-  }catch(e){ toast('Copy failed. Select the text manually.'); }
+  }catch(e){ toast('Copy failed.'); }
 }
 /* Copy targets are carried on a data- attribute and read back by a delegated
    listener, instead of being spliced into an inline onclick string literal,
@@ -10873,12 +11090,12 @@ async function handleDocUpload(id, inputEl, opts){
     await purgeStorageIfOverCap();
     saveDB(DB);
     renderWorkOrderModal(id);
-    toast(addedCount>1 ? `${addedCount} documents uploaded. Tap Rename on any row to retitle it.` : 'Document uploaded. Tap Rename to retitle it.');
+    toast(addedCount>1 ? `${addedCount} documents uploaded.` : 'Document uploaded.');
   }
   if(failed.length){
     toast(failed.length===1
-      ? `Couldn't upload "${failed[0]}". See the details now shown in the Docs tab.`
-      : `${failed.length} files failed to upload. See the details now shown in the Docs tab.`);
+      ? `Couldn't upload "${failed[0]}".`
+      : `${failed.length} files failed to upload.`);
     renderWorkOrderModal(id);
   }
   inputEl.value='';
@@ -11806,7 +12023,7 @@ function adminDuplicateWorkOrder(id, clone){
   saveDB(DB);
   renderTabCounts(); renderMain();
   openWorkOrder(newId);
-  toast((clone?'Cloned':'Duplicated')+'. This is the new work order.');
+  toast((clone?'Cloned':'Duplicated')+'. Now showing the new work order.');
 }
 /* One force button per sub-list, grouped by the nav tab it lives under. */
 /* [key, label, card colour class, test for "the job is in this sub-list"] */
@@ -12065,10 +12282,14 @@ function saveNoteEdit(id){
   if(!text){
     const ta=document.getElementById('noteText');
     if(ta) ta.focus();
-    toast('A note can\'t be saved empty. Delete it instead if that\'s what you want.');
+    toast('A note can\'t be saved empty.');
     return;
   }
   const oldText=n.text;
+  if(n.type!==type || (n.followUpDate||'')!==(followUp||'')){
+    if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+    wo.tombstones.push('n:'+noteIdentity(n));
+  }
   n.type=type;
   n.text=text;
   n.followUpDate=followUp;
@@ -14548,7 +14769,7 @@ function psScanTranscript(){
   /* pull numbers out only as a starting quantity, never as scope */
   PRESITE_STATE.stage='scope';
   renderPresiteBody();
-  toast(hits? hits+' item'+(hits===1?'':'s')+' suggested. Confirm, correct or remove each one.' : 'No items matched. Add them from the picker.');
+  toast(hits? hits+' item'+(hits===1?'':'s')+' suggested.' : 'No items matched.');
 }
 
 /* ---------- Stage: pick -------------------------------------------------- */
