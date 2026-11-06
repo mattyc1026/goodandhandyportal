@@ -868,6 +868,26 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .modalHeadCust .mhHomeownerSep{color:var(--muted);margin:0 8px;}
 
 /* ---- photo labels ---- */
+/* The label picker is a pill in the label's own color, under the file name.
+   A real <select> sits invisibly over it, so phones open their own picker. */
+.docTagPick{
+  position:relative;display:inline-flex;align-items:center;gap:7px;align-self:flex-start;margin-top:7px;
+  padding:7px 11px 7px 12px;min-height:32px;box-sizing:border-box;
+  border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted);
+  font-size:.74em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1;
+  transition:box-shadow .15s ease,border-color .15s ease;cursor:pointer;
+}
+.docTagPick.empty{border-style:dashed;}
+.docTagPick:hover{box-shadow:0 1px 5px rgba(15,38,71,.16);}
+.docTagPick:focus-within{outline:2px solid var(--orange);outline-offset:2px;}
+.docTagDot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;flex:none;}
+.docTagPick .ic{width:14px;height:14px;transform:rotate(-90deg);stroke-width:2.6;flex:none;opacity:.8;}
+.docTagSel{
+  position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;
+  -webkit-appearance:none;appearance:none;border:0;margin:0;font-size:16px;
+}
+.docTagSel option{color:var(--ink);background:var(--paper);}
+html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
 .docTagPill{
   display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;
   font-size:.72em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
@@ -880,10 +900,7 @@ html.hc .telLink{color:var(--orange);border-bottom:2px solid var(--orange);font-
 .dt-pre-existing-damage{background:#efe9f7;color:#4b2f75;border-color:#d8cbec;}
 .dt-damage-issue{background:#fbe6e6;color:#9b2226;border-color:#efc6c6;}
 .dt-receipt{background:#efe9dc;color:#5c4a20;border-color:#ddd1b6;}
-.docTagSel{
-  font-size:.82em;padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius-sm);
-  background:var(--paper);color:var(--ink);max-width:170px;
-}
+
 .docTagFilter{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .docTagChip{
   padding:5px 11px;border-radius:999px;border:1px solid var(--line);
@@ -1807,6 +1824,39 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
 html.hc .tinyEdit{border-color:var(--hc-fg);color:var(--hc-fg);}
 html.hc .schedLoggedTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
 html.hc .schedDblTag{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
+/* ---- remove days from a multi-day booking ---- */
+.confirmBox.noAnim,.confirmBox.noAnim .confirmCard{animation:none;}
+.confirmCard.schedRmCard{max-width:460px;text-align:left;padding:24px 22px 18px;}
+.schedRmCard h3{margin:0 0 4px;font-size:1.2em;}
+.schedRmSub{color:var(--muted);font-size:.9em;margin-bottom:16px;}
+.schedRmSub b{color:var(--navy);}
+.schedRmDays{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-bottom:18px;}
+.schedRmDay{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  min-height:62px;padding:8px 4px;border-radius:12px;border:1.5px solid var(--line);
+  background:var(--paper);color:var(--navy);font:inherit;cursor:pointer;
+  transition:background .12s ease,border-color .12s ease,transform .08s ease;
+}
+.schedRmDay:active{transform:scale(.96);}
+.schedRmDay.past{opacity:.6;}
+.schedRmDow{font-size:.68em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.schedRmDate{font-size:1.08em;font-weight:800;}
+.schedRmLog{font-size:.58em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--greenb);}
+.schedRmMark{
+  position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;background:var(--redb);color:#fff;
+}
+.schedRmMark .ic{width:12px;height:12px;stroke-width:3;}
+.schedRmDay.on{background:var(--red);border-color:var(--redb);color:var(--redb);opacity:1;}
+.schedRmDay.on .schedRmDow{color:var(--redb);}
+.schedRmDay.on .schedRmDate{text-decoration:line-through;text-decoration-thickness:2px;}
+.schedRmDay.on .schedRmMark{display:flex;}
+.schedRmCard .btnRow{justify-content:flex-start;flex-wrap:nowrap;}
+.schedRmCard .btnRow .btn{flex:1 1 auto;}
+.schedRmCard .btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;}
+.schedRmAll{display:block;margin:12px 0 0;padding:6px 0;background:none;border:0;font:inherit;font-size:.88em;font-weight:700;color:var(--orange);cursor:pointer;}
+html.hc .schedRmDay{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
+html.hc .schedRmDay.on{background:var(--hc-fg);color:var(--hc-bg);}
 /* Per-date hours tag (schedRowHTML) and the section-wide running total
    (scheduleDatesSectionHTML), both built from completed check-in/check-out
    pairs, so they only ever count time that's actually been logged. Set in the
@@ -7256,17 +7306,170 @@ function applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, ov
     if(entry2) offerApptEmails(woId, [entry2], true);
   });
 }
+function schedEntryLabel(d){
+  return `${d.type==='presite'?'pre-site':'whole job'} date ${formatDateDisplay(d.startDate)}${d.multiDay?' to '+formatDateDisplay(d.endDate):''} @ ${formatTime12(d.startTime)}-${formatTime12(d.endTime)}`;
+}
+function scheduleDays(d){ return expandRepeatDates(d.startDate, d.endDate||d.startDate, d.repeat); }
 function deleteScheduleDate(woId, dateId){
   const wo=getWO(woId);
   if(!wo) return;
+  const d=(wo.scheduleDates||[]).find(x=>x.id===dateId);
+  if(!d) return;
+  // A booking that covers several days opens a day picker, so one day can be
+  // taken out without losing the rest.
+  if(scheduleDays(d).length>1){
+    SCHED_RM={woId, dateId, sel:[]};
+    renderSchedRemove();
+    return;
+  }
   askYesNo('Remove this scheduled date? This does not remove it from any calendar it was already added to.', (yes)=>{
-    if(yes){
-      const gone=(wo.scheduleDates||[]).find(d=>d.id===dateId);
-      if(gone) addAdminLog(wo, `Removed a ${gone.type==='presite'?'pre-site':'whole job'} scheduled date: ${formatDateDisplay(gone.startDate)}${gone.multiDay?' to '+formatDateDisplay(gone.endDate):''} @ ${formatTime12(gone.startTime)}-${formatTime12(gone.endTime)}.`);
-      wo.scheduleDates=(wo.scheduleDates||[]).filter(d=>d.id!==dateId);
-      saveDB(DB);
-      renderWorkOrderModal(woId);
-    }
+    if(yes) removeWholeScheduleEntry(woId, dateId);
+  });
+}
+function removeWholeScheduleEntry(woId, dateId){
+  const wo=getWO(woId);
+  if(!wo) return;
+  const gone=(wo.scheduleDates||[]).find(d=>d.id===dateId);
+  if(gone) addAdminLog(wo, `Removed a ${schedEntryLabel(gone)}.`);
+  wo.scheduleDates=(wo.scheduleDates||[]).filter(d=>d.id!==dateId);
+  if(SCHED_EDIT_ID===dateId){ SCHED_EDIT_ID=null; SCHED_INLINE=false; }
+  saveDB(DB);
+  renderWorkOrderModal(woId);
+  renderMain();
+}
+
+/* ---- Removing single days from a multi-day booking ---- */
+let SCHED_RM=null;   // {woId, dateId, sel:[iso,...]}
+function schedRmEntry(){
+  if(!SCHED_RM) return null;
+  const wo=getWO(SCHED_RM.woId);
+  return wo && (wo.scheduleDates||[]).find(x=>x.id===SCHED_RM.dateId) || null;
+}
+function renderSchedRemove(){
+  const d=schedRmEntry();
+  const root=document.getElementById('confirmRoot');
+  if(!d || !root){ SCHED_RM=null; return; }
+  const days=scheduleDays(d);
+  const sel=SCHED_RM.sel;
+  const today=isoToday();
+  const logged=new Set((d.dayLogs||[]).filter(l=>logSessions(l).length).map(l=>l.date));
+  const chip=iso=>{
+    const dt=new Date(iso+'T00:00:00');
+    const on=sel.indexOf(iso)!==-1;
+    return `<button type="button" class="schedRmDay${on?' on':''}${iso<today?' past':''}" aria-pressed="${on}" data-iso="${iso}" onclick="toggleSchedRmDay('${iso}')">
+      <span class="schedRmDow">${dt.toLocaleDateString([], {weekday:'short'})}</span>
+      <span class="schedRmDate">${dt.getMonth()+1}/${dt.getDate()}</span>
+      ${logged.has(iso)?'<span class="schedRmLog">Logged</span>':''}
+      <span class="schedRmMark">${icon('x')}</span>
+    </button>`;
+  };
+  const n=sel.length;
+  const all=n===days.length;
+  const md=iso=>{ const x=new Date(iso+'T00:00:00'); return (x.getMonth()+1)+'/'+x.getDate(); };
+  const range=`${md(d.startDate)} – ${md(d.endDate||d.startDate)}`;
+  const open=!root.querySelector('.schedRmCard');
+  root.innerHTML=`<div class="confirmBox${open?'':' noAnim'}" onclick="if(event.target===this)closeSchedRemove()"><div class="confirmCard schedRmCard" role="dialog" aria-modal="true" aria-label="Remove scheduled days">
+    <h3>Remove Days</h3>
+    <div class="schedRmSub"><b>${d.type==='presite'?'Pre-Site':'Whole Job'}</b> · ${range} · ${esc(formatTime12(d.startTime))}-${esc(formatTime12(d.endTime))}</div>
+    <div class="schedRmDays">${days.map(chip).join('')}</div>
+    <div class="btnRow">
+      <button class="btn danger" id="schedRmGo" ${n?'':'disabled'} onclick="confirmSchedRemove()">${icon('trash')}${!n?'Remove':all?'Remove All '+days.length+' Days':'Remove '+n+' Day'+(n>1?'s':'')}</button>
+      <button class="btn secondary" onclick="closeSchedRemove()">Cancel</button>
+    </div>
+    <button type="button" class="schedRmAll" onclick="selectAllSchedRm()">${all?'Clear Selection':'Select All Days'}</button>
+  </div></div>`;
+}
+function toggleSchedRmDay(iso){
+  if(!SCHED_RM) return;
+  const i=SCHED_RM.sel.indexOf(iso);
+  if(i===-1) SCHED_RM.sel.push(iso); else SCHED_RM.sel.splice(i,1);
+  renderSchedRemove();
+}
+function selectAllSchedRm(){
+  const d=schedRmEntry();
+  if(!d) return;
+  const days=scheduleDays(d);
+  SCHED_RM.sel = SCHED_RM.sel.length===days.length ? [] : days.slice();
+  renderSchedRemove();
+}
+function closeSchedRemove(){
+  SCHED_RM=null;
+  const root=document.getElementById('confirmRoot');
+  if(root) root.innerHTML='';
+}
+/* Splits what is left of a booking into runs of back-to-back days, e.g.
+   11/4-11/10 without 11/6 gives 11/4-11/5 and 11/7-11/10. */
+function scheduleRuns(days, removed){
+  const runs=[]; let cur=[];
+  days.forEach(iso=>{
+    if(removed.indexOf(iso)!==-1){ if(cur.length) runs.push(cur); cur=[]; }
+    else cur.push(iso);
+  });
+  if(cur.length) runs.push(cur);
+  return runs;
+}
+function confirmSchedRemove(){
+  const d=schedRmEntry();
+  if(!d){ closeSchedRemove(); return; }
+  const {woId, dateId}=SCHED_RM;
+  const removed=SCHED_RM.sel.slice().sort();
+  if(!removed.length) return;
+  const days=scheduleDays(d);
+  const losing=(d.dayLogs||[]).filter(l=>logSessions(l).length && removed.indexOf(l.date)!==-1);
+  const go=()=>{
+    closeSchedRemove();
+    if(removed.length>=days.length) removeWholeScheduleEntry(woId, dateId);
+    else removeScheduleDays(woId, dateId, removed);
+  };
+  if(losing.length){
+    document.getElementById('confirmRoot').innerHTML='';
+    const keep=SCHED_RM;
+    askYesNo(`${losing.map(l=>formatDateDisplay(l.date)).join(', ')} already ${losing.length>1?'have':'has'} logged time. That time log will be deleted. Continue?`,
+      yes=>{ SCHED_RM=keep; if(yes) go(); else renderSchedRemove(); });
+  } else go();
+}
+function removeScheduleDays(woId, dateId, removed){
+  const wo=getWO(woId);
+  const d=wo && (wo.scheduleDates||[]).find(x=>x.id===dateId);
+  if(!d) return;
+  const before=schedEntryLabel(d);
+  const runs=scheduleRuns(scheduleDays(d), removed);
+  const logs={};
+  (d.dayLogs||[]).forEach(l=>{ logs[l.date]=l; });
+  const base=JSON.parse(JSON.stringify(d));
+  // The first run keeps the original entry (and its calendar id), so an
+  // updated .ics moves the existing calendar event instead of adding one.
+  const parts=runs.map((run, i)=>{
+    const e = i===0 ? d : Object.assign(JSON.parse(JSON.stringify(base)), {id:'sd'+Date.now()+i+Math.random().toString(36).slice(2,7)});
+    e.startDate=run[0];
+    e.endDate=run[run.length-1];
+    e.multiDay=run.length>1;
+    e.repeat=run.length>1 ? 'daily' : 'none';
+    e.dayTimes=cleanDayTimes(base.dayTimes, e.startDate, e.endDate, e.repeat, e.startTime, e.endTime);
+    // A day left on its own takes its own times as the booking's times.
+    const own=run.length===1 && e.dayTimes[run[0]];
+    if(own){ e.startTime=own.startTime; e.endTime=own.endTime; e.dayTimes={}; }
+    e.dayLogs=run.map(iso=>logs[iso] ? migrateDayLogSessions(JSON.parse(JSON.stringify(logs[iso]))) : newDayLog(iso));
+    return e;
+  });
+  const list=wo.scheduleDates;
+  const at=list.indexOf(d);
+  list.splice(at+1, 0, ...parts.slice(1));
+  if(SCHED_EDIT_ID===dateId){ SCHED_EDIT_ID=null; SCHED_INLINE=false; }
+  const span=e=>formatDateDisplay(e.startDate)+(e.multiDay?' to '+formatDateDisplay(e.endDate):'');
+  addAdminLog(wo, `Removed ${removed.map(formatDateDisplay).join(', ')} from a ${before}. Now booked: ${parts.map(span).join(' and ')}.`);
+  saveDB(DB);
+  renderWorkOrderModal(woId);
+  renderMain();
+  const ids=parts.map(e=>e.id);
+  askYesNo(`${removed.length>1?removed.length+' days':'Day'} removed. Download an updated calendar (.ics) file?`, yes=>{
+    const w=getWO(woId);
+    const entries=w ? (w.scheduleDates||[]).filter(x=>ids.indexOf(x.id)!==-1) : [];
+    if(yes && entries.length){
+      downloadICS(w, entries);
+      toast('Updated .ics downloaded. Opening it will update the existing calendar entry.');
+    } else if(!yes) toast('Schedule updated.');
+    if(entries.length) offerApptEmails(woId, entries, true);
   });
 }
 
@@ -10358,17 +10561,20 @@ function docRowHTML(wo, d){
       <div class="docLead">
         ${lead}
         <div class="docInfo">
-          <span class="docName">${esc(d.name||'Untitled')}${d.tag?` <span class="docTagPill ${docTagClass(d.tag)}">${esc(d.tag)}</span>`:''}</span>
+          <span class="docName">${esc(d.name||'Untitled')}</span>
           <span class="small">${esc(d.uploadedBy)} · ${esc(d.date)} ${d.size?('· '+fmtBytes(d.size)):''}${!d.url?' · local only (not synced)':''}</span>
+          ${(isImg || d.tag) ? `<span class="docTagPick ${d.tag?docTagClass(d.tag):'empty'}">
+            <span class="docTagDot"></span><span class="docTagTxt">${esc(d.tag||'Add Label')}</span>${icon('chevron')}
+            <select class="docTagSel" title="Photo label" aria-label="Photo label" onchange="setDocTag(${wo.id},'${d.id}',this.value)">
+              <option value="" ${!d.tag?'selected':''}>${d.tag?'No Label':'Add Label'}</option>
+              ${DOC_TAGS.map(t=>`<option value="${esc(t)}" ${d.tag===t?'selected':''}>${esc(t)}</option>`).join('')}
+            </select>
+          </span>` : ''}
         </div>
       </div>
       <div class="docActions">
         <button class="btn secondary" onclick="viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
         <button class="btn secondary" onclick="downloadDoc(${wo.id},'${d.id}')">${icon('download')}Download</button>
-        ${(isImg || d.tag) ? `<select class="docTagSel" title="Photo label (optional)" aria-label="Photo label" onchange="setDocTag(${wo.id},'${d.id}',this.value)">
-          <option value="" ${!d.tag?'selected':''}>No label</option>
-          ${DOC_TAGS.map(t=>`<option value="${esc(t)}" ${d.tag===t?'selected':''}>${esc(t)}</option>`).join('')}
-        </select>` : ''}
         <button class="btn secondary" onclick="renameDoc(${wo.id},'${d.id}')">${icon('pencil')}Rename</button>
         <button class="btn danger" onclick="deleteDoc(${wo.id},'${d.id}')">${icon('trash')}Delete</button>
       </div>
