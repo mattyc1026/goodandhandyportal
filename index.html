@@ -916,8 +916,10 @@ html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(
 #scanOverlay{position:fixed;inset:0;z-index:3000;background:#0b111c;color:#fff;display:flex;flex-direction:column;}
 #scanBody{display:flex;flex-direction:column;flex:1;min-height:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
 .scHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;}
-.scTitle{font-weight:800;font-size:1.05em;}
-.scCount{margin-left:8px;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.14);font-size:.78em;font-weight:700;}
+.scTitle{font-weight:800;font-size:1.05em;white-space:nowrap;display:flex;align-items:center;min-width:0;flex:1 1 auto;overflow:hidden;}
+.scHead .scIcon{flex:none;}
+@media (max-width:480px){ .scTitle{font-size:.9em;} .scCount{font-size:.72em;padding:2px 8px;} }
+.scCount{margin-left:8px;white-space:nowrap;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.14);font-size:.78em;font-weight:700;}
 .scIcon{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;cursor:pointer;}
 .scStage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;}
 .scStage canvas{position:absolute;inset:8px;width:calc(100% - 16px);height:calc(100% - 16px);object-fit:contain;}
@@ -937,6 +939,24 @@ html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(
 .scThumb.add{width:56px;display:grid;place-items:center;}
 .scFoot{display:flex;gap:10px;padding:8px 12px 12px;}
 .scFoot .scBtn{flex:1;min-height:52px;}
+.scIcon:disabled{opacity:.4;cursor:not-allowed;}
+.scBtn{display:inline-flex;align-items:center;justify-content:center;gap:7px;}
+.scBtn .ic{width:18px;height:18px;}
+.scSegWrap{flex-wrap:nowrap;}
+.scTools .scBtn{padding:10px 13px;}
+.scEmpty{display:flex;flex-direction:column;gap:12px;width:min(280px,80%);}
+.scEmpty .scBtn{min-height:54px;font-size:1.02em;}
+.scThumb.add .ic{width:20px;height:20px;}
+.scAdj{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;}
+.scStage .scAdj canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;}
+.scAdjSvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+.scAdjShape{fill:rgba(255,148,54,.16);stroke:#ff9436;stroke-linejoin:round;}
+.scAdjHit{fill:transparent;cursor:grab;}
+.scAdjDot{fill:rgba(255,255,255,.35);stroke:#ff9436;pointer-events:none;}
+.scAdjPt.drag .scAdjDot{fill:rgba(255,148,54,.55);}
+.scAdjPt{touch-action:none;}
+body.scanning .confirmBox{z-index:3100;}
+body.scanning #toastStack{z-index:3200;}
 
 /* ---- prior jobs ---- */
 .priorRow{
@@ -10753,8 +10773,9 @@ async function handleDocUpload(id, inputEl, opts){
   opts=opts||{};
   const files=Array.from(inputEl.files||[]);
   if(!files.length) return;
-  if(!syncStorage){ toast('Set up Multi-Device Sync first. Documents are stored in your Firebase project.'); inputEl.value=''; return; }
-  const wo=getWO(id);
+  if(!syncStorage){ toast('Set up Multi-Device Sync first. Documents are stored in your Firebase project.'); inputEl.value=''; return {added:0, failed:files.map(f=>f.name)}; }
+  let wo=getWO(id);
+  if(!wo) return {added:0, failed:files.map(f=>f.name)};
   const oversized=files.filter(f=>f.size>DOC_MAX_BYTES && !f.type.startsWith('image/'));
   if(oversized.length){
     toast(oversized.length===1
@@ -10763,6 +10784,7 @@ async function handleDocUpload(id, inputEl, opts){
   }
   const toProcess=files.filter(f=>f.type.startsWith('image/') || f.size<=DOC_MAX_BYTES);
   const statusEl=document.getElementById(`docUploadStatus_${wo.id}`);
+  const setStatus=t=>{ if(statusEl) statusEl.textContent=t; if(opts.onStatus) opts.onStatus(t); };
   inputEl.disabled=true;
   let addedCount=0;
   const failed=[];
@@ -10774,7 +10796,7 @@ async function handleDocUpload(id, inputEl, opts){
       // interruptions, and a mis-tapped Cancel silently dropped the file.
       // Renaming is still one tap away on each row afterwards.
       const name=file.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim() || file.name;
-      if(statusEl) statusEl.textContent=`Uploading "${name}"… (${i+1}/${toProcess.length})`;
+      setStatus(`Uploading "${name}"… (${i+1}/${toProcess.length})`);
 
       let blob=file;
       // HEIC/HEIF (common for iPhone camera photos) can't be decoded by <canvas> in most
@@ -10797,7 +10819,7 @@ async function handleDocUpload(id, inputEl, opts){
             reject(new Error('No response from Firebase after 30s. This is usually a CORS block, an ad-blocker/firewall blocking firebasestorage.googleapis.com, or the Storage bucket not fully finished provisioning yet.'));
           }, 30000);
           uploadTask.on('state_changed',
-            (p)=>{ if(statusEl && p.totalBytes){ statusEl.textContent=`Uploading "${name}"… ${Math.round((p.bytesTransferred/p.totalBytes)*100)}%`; } },
+            (p)=>{ if(p.totalBytes){ setStatus(`Uploading "${name}"… ${Math.round((p.bytesTransferred/p.totalBytes)*100)}%`); } },
             (err)=>{
               clearTimeout(timer);
               // Wrapping in a new Error dropped Firebase's .code, which is the
@@ -10811,6 +10833,10 @@ async function handleDocUpload(id, inputEl, opts){
         });
         const url = await snapshot.ref.getDownloadURL();
         const ts=nowStamp();
+        // The job may have been refreshed from the cloud during the upload,
+        // so the record goes onto the current copy of it.
+        wo=getWO(id)||wo;
+        if(!Array.isArray(wo.docs)) wo.docs=[];
         wo.docs.push({
           id: docId, name: name, type: file.type||'', size: blob.size,
           url, storagePath, uploadedBy: CURRENT_USER.displayName, date: ts.date, uploadedAt: Date.now(),
@@ -10833,11 +10859,11 @@ async function handleDocUpload(id, inputEl, opts){
           file:file.name
         };
         failed.push(file.name);
-        if(statusEl) statusEl.textContent='';
+        setStatus('');
       }
     }
   } finally {
-    if(statusEl) statusEl.textContent='';
+    setStatus('');
     inputEl.disabled=false;
   }
   if(addedCount){
@@ -10856,6 +10882,7 @@ async function handleDocUpload(id, inputEl, opts){
     renderWorkOrderModal(id);
   }
   inputEl.value='';
+  return {added:addedCount, failed};
 }
 /* =========================================================================
    DOCUMENT SCANNER (Docs tab)
@@ -10873,10 +10900,12 @@ let SCAN_LAST_FILTER='color';
 
 /* ---- pure image maths (no DOM, so it can be tested on its own) ---- */
 
-/* Finds the sheet of paper in a small grayscale grid. Paper is taken to be
-   the largest connected region brighter than the Otsu threshold. Returns the
-   four corners [top-left, top-right, bottom-right, bottom-left] in grid
-   coordinates, or null when nothing paper-like is found. */
+/* Finds the sheet of paper in a small grayscale grid and returns its four
+   corners [top-left, top-right, bottom-right, bottom-left] in grid
+   coordinates, or null when nothing paper-like is found. Two ways are tried:
+   the largest region brighter than the Otsu threshold (paper on a darker
+   surface), and the largest region closed in by edges (paper on a light
+   counter, where brightness alone runs the paper into the background). */
 function scanFindQuad(g, w, h){
   const n=w*h;
   const b=new Uint8Array(n);
@@ -10887,50 +10916,53 @@ function scanFindQuad(g, w, h){
       b[y*w+x]=(g[y0*w+x0]+g[y0*w+x]+g[y0*w+x1]+g[y*w+x0]+g[y*w+x]+g[y*w+x1]+g[y1*w+x0]+g[y1*w+x]+g[y1*w+x1])/9|0;
     }
   }
-  const hist=new Uint32Array(256);
-  let sum=0;
-  for(let i=0;i<n;i++){ hist[b[i]]++; sum+=b[i]; }
-  let wB=0, sB=0, best=-1, thr=128, mBest=0, fBest=0;
-  for(let t=0;t<256;t++){
-    wB+=hist[t];
-    if(!wB) continue;
-    const wF=n-wB;
-    if(!wF) break;
-    sB+=t*hist[t];
-    const mB=sB/wB, mF=(sum-sB)/wF;
-    const v=wB*wF*(mB-mF)*(mB-mF);
-    if(v>best){ best=v; thr=t; mBest=mB; fBest=mF; }
-  }
-  if(fBest-mBest<20) return null;
-  const lab=new Int32Array(n), stack=new Int32Array(n);
+  const bright=scanQuadByBrightness(b, w, h);
+  if(bright && bright.sides<=1) return bright.q;
+  const edged=scanQuadByEdges(b, w, h);
+  if(edged) return edged.q;
+  if(bright && bright.sides<=2) return bright.q;
+  return null;
+}
+/* Largest 4-connected region of mask (values 1). Returns its label grid. */
+function scanLargestRegion(mask, w, h){
+  const n=w*h, lab=new Int32Array(n), stack=new Int32Array(n);
   let bestLab=0, bestSize=0, cur=0;
   for(let s=0;s<n;s++){
-    if(b[s]<=thr || lab[s]) continue;
+    if(!mask[s] || lab[s]) continue;
     cur++;
     let sp=0, size=0;
     stack[sp++]=s; lab[s]=cur;
     while(sp){
       const p=stack[--sp];
       size++;
-      const x=p%w, y=(p-x)/w;
-      if(x>0){ const q=p-1; if(!lab[q] && b[q]>thr){ lab[q]=cur; stack[sp++]=q; } }
-      if(x<w-1){ const q=p+1; if(!lab[q] && b[q]>thr){ lab[q]=cur; stack[sp++]=q; } }
-      if(y>0){ const q=p-w; if(!lab[q] && b[q]>thr){ lab[q]=cur; stack[sp++]=q; } }
-      if(y<h-1){ const q=p+w; if(!lab[q] && b[q]>thr){ lab[q]=cur; stack[sp++]=q; } }
+      const x=p%w;
+      if(x>0 && mask[p-1] && !lab[p-1]){ lab[p-1]=cur; stack[sp++]=p-1; }
+      if(x<w-1 && mask[p+1] && !lab[p+1]){ lab[p+1]=cur; stack[sp++]=p+1; }
+      if(p>=w && mask[p-w] && !lab[p-w]){ lab[p-w]=cur; stack[sp++]=p-w; }
+      if(p<n-w && mask[p+w] && !lab[p+w]){ lab[p+w]=cur; stack[sp++]=p+w; }
     }
     if(size>bestSize){ bestSize=size; bestLab=cur; }
   }
-  if(!bestLab) return null;
+  return bestLab ? {lab, id:bestLab, size:bestSize} : null;
+}
+/* Corners of a region, checked for being a sensible sheet of paper. sides is
+   how many edges of the photo the region runs into. */
+function scanRegionQuad(R, w, h){
+  if(!R) return null;
+  const {lab, id, size}=R, n=w*h;
   let tl=null, tr=null, br=null, bl=null;
   let mTL=1e9, mBR=-1e9, mTR=-1e9, mBL=1e9;
+  let top=0, bot=0, left=0, right=0;
   for(let p=0;p<n;p++){
-    if(lab[p]!==bestLab) continue;
+    if(lab[p]!==id) continue;
     const x=p%w, y=(p-x)/w, s=x+y, d=x-y;
     if(s<mTL){ mTL=s; tl={x,y}; }
     if(s>mBR){ mBR=s; br={x,y}; }
     if(d>mTR){ mTR=d; tr={x,y}; }
     if(d<mBL){ mBL=d; bl={x,y}; }
+    if(y===0) top++; if(y===h-1) bot++; if(x===0) left++; if(x===w-1) right++;
   }
+  const sides=(top>w*0.04)+(bot>w*0.04)+(left>h*0.04)+(right>h*0.04);
   const q=[tl,tr,br,bl];
   let area=0, sign=0, convex=true;
   for(let i=0;i<4;i++){
@@ -10946,8 +10978,63 @@ function scanFindQuad(g, w, h){
   if(!convex || sign<0) return null;
   const frac=area/n;
   if(frac<0.12 || frac>0.93) return null;
-  if(bestSize/area<0.6) return null;
-  return q;
+  if(size/area<0.6) return null;
+  return {q, sides};
+}
+function scanQuadByBrightness(b, w, h){
+  const n=w*h, hist=new Uint32Array(256);
+  let sum=0;
+  for(let i=0;i<n;i++){ hist[b[i]]++; sum+=b[i]; }
+  let wB=0, sB=0, best=-1, thr=128, mBest=0, fBest=0;
+  for(let t=0;t<256;t++){
+    wB+=hist[t];
+    if(!wB) continue;
+    const wF=n-wB;
+    if(!wF) break;
+    sB+=t*hist[t];
+    const mB=sB/wB, mF=(sum-sB)/wF;
+    const v=wB*wF*(mB-mF)*(mB-mF);
+    if(v>best){ best=v; thr=t; mBest=mB; fBest=mF; }
+  }
+  if(fBest-mBest<20) return null;
+  const mask=new Uint8Array(n);
+  for(let i=0;i<n;i++) mask[i]=b[i]>thr?1:0;
+  return scanRegionQuad(scanLargestRegion(mask, w, h), w, h);
+}
+function scanQuadByEdges(b, w, h){
+  const n=w*h, mag=new Uint16Array(n), hist=new Uint32Array(1021);
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+    const p=y*w+x;
+    const v=Math.abs(b[p+1]-b[p-1])+Math.abs(b[p+w]-b[p-w]);
+    mag[p]=v; hist[v]++;
+  }
+  let acc=0, med=0;
+  for(let v=0;v<hist.length;v++){ acc+=hist[v]; if(acc>=n/2){ med=v; break; } }
+  const T=Math.max(8, med*3);
+  // Edges, thickened by one pixel so small gaps in the outline still close.
+  const edge=new Uint8Array(n);
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+    const p=y*w+x;
+    if(mag[p]>=T){ edge[p]=1; edge[p-1]=1; edge[p+1]=1; edge[p-w]=1; edge[p+w]=1; }
+  }
+  // Everything reachable from the photo's border without crossing an edge is
+  // background; what is left over is enclosed.
+  const out=new Uint8Array(n), stack=new Int32Array(n);
+  let sp=0;
+  const seed=p=>{ if(!edge[p] && !out[p]){ out[p]=1; stack[sp++]=p; } };
+  for(let x=0;x<w;x++){ seed(x); seed((h-1)*w+x); }
+  for(let y=0;y<h;y++){ seed(y*w); seed(y*w+w-1); }
+  while(sp){
+    const p=stack[--sp], x=p%w;
+    if(x>0) seed(p-1);
+    if(x<w-1) seed(p+1);
+    if(p>=w) seed(p-w);
+    if(p<n-w) seed(p+w);
+  }
+  const mask=new Uint8Array(n);
+  for(let i=0;i<n;i++) mask[i]=out[i]?0:1;
+  const r=scanRegionQuad(scanLargestRegion(mask, w, h), w, h);
+  return r && r.sides===0 ? r : null;
 }
 
 /* Maps the unit square onto the quad (Heckbert's projective mapping). */
@@ -10995,16 +11082,17 @@ function scanWarp(sd, sw, sh, q, ow, oh){
   return out;
 }
 
-/* Cleans up RGBA pixels in place. 'color' and 'gray' stretch the levels so
-   the paper reads as white; 'bw' then applies a local threshold, which keeps
-   text crisp and flattens shadows across the page. */
+/* Cleans up RGBA pixels in place. Uneven light is evened out first (the
+   brightest paper in each small area is lifted to white), then the levels are
+   stretched so the paper reads as white. 'bw' then applies a local
+   threshold, which keeps text crisp and flattens shadows across the page. */
 function scanApplyFilter(d, w, h, mode){
   const n=w*h;
-  const lum=new Uint8Array(n), hist=new Uint32Array(256);
-  for(let i=0, p=0;i<n;i++, p+=4){
-    const l=(d[p]*77+d[p+1]*150+d[p+2]*29)>>8;
-    lum[i]=l; hist[l]++;
-  }
+  const lum=new Uint8Array(n);
+  for(let i=0, p=0;i<n;i++, p+=4) lum[i]=(d[p]*77+d[p+1]*150+d[p+2]*29)>>8;
+  if(mode!=='bw') scanEvenLight(d, lum, w, h);
+  const hist=new Uint32Array(256);
+  for(let i=0;i<n;i++) hist[lum[i]]++;
   let acc=0, lo=0, hi=255;
   const loT=n*0.01, hiT=n*0.98;
   for(let v=0;v<256;v++){ acc+=hist[v]; if(acc>=loT){ lo=v; break; } }
@@ -11043,6 +11131,55 @@ function scanApplyFilter(d, w, h, mode){
       const i=y*w+x, p=i*4;
       const v=g2[i]<(s/cnt)*0.9 ? 0 : 255;
       d[p]=d[p+1]=d[p+2]=v;
+    }
+  }
+}
+/* Evens out lighting across the page. The paper's brightness is sampled on a
+   coarse grid (near the top of each cell, so ink is ignored), smoothed, and
+   every pixel is scaled up by how far its spot falls short of the brightest.
+   Updates lum to match. */
+function scanEvenLight(d, lum, w, h){
+  const cs=Math.max(8, Math.round(Math.min(w,h)/20));
+  const gw=Math.ceil(w/cs), gh=Math.ceil(h/cs);
+  const grid=new Float32Array(gw*gh), hist=new Uint32Array(256);
+  let peak=0;
+  for(let gy=0;gy<gh;gy++) for(let gx=0;gx<gw;gx++){
+    hist.fill(0);
+    let cnt=0;
+    const xe=Math.min(w,(gx+1)*cs), ye=Math.min(h,(gy+1)*cs);
+    for(let y=gy*cs;y<ye;y+=2) for(let x=gx*cs;x<xe;x+=2){ hist[lum[y*w+x]]++; cnt++; }
+    let a=0, v=255;
+    const t=cnt*0.1;
+    for(;v>0;v--){ a+=hist[v]; if(a>=t) break; }
+    grid[gy*gw+gx]=v;
+    if(v>peak) peak=v;
+  }
+  if(peak<40) return;
+  // Cells with no paper in them (a photo, a dark logo) borrow from their
+  // brighter neighbours instead of being blown out to white.
+  const floor=peak*0.55;
+  const sm=new Float32Array(gw*gh);
+  for(let pass=0;pass<2;pass++){
+    for(let gy=0;gy<gh;gy++) for(let gx=0;gx<gw;gx++){
+      let s=0, c=0, mx=0;
+      for(let yy=Math.max(0,gy-1);yy<=Math.min(gh-1,gy+1);yy++) for(let xx=Math.max(0,gx-1);xx<=Math.min(gw-1,gx+1);xx++){
+        const v=grid[yy*gw+xx]; s+=v; c++; if(v>mx) mx=v;
+      }
+      const own=grid[gy*gw+gx];
+      sm[gy*gw+gx]=Math.max(floor, own<mx*0.8 ? mx : s/c);
+    }
+    grid.set(sm);
+  }
+  const target=Math.min(250, peak);
+  for(let y=0;y<h;y++){
+    const fy=Math.min(gh-1, Math.max(0, (y+0.5)/cs-0.5)), y0=fy|0, y1=Math.min(gh-1,y0+1), ty=fy-y0;
+    for(let x=0;x<w;x++){
+      const fx=Math.min(gw-1, Math.max(0, (x+0.5)/cs-0.5)), x0=fx|0, x1=Math.min(gw-1,x0+1), tx=fx-x0;
+      const bg=(grid[y0*gw+x0]*(1-tx)+grid[y0*gw+x1]*tx)*(1-ty)+(grid[y1*gw+x0]*(1-tx)+grid[y1*gw+x1]*tx)*ty;
+      const k=Math.min(1.8, target/bg);
+      const i=y*w+x, p=i*4;
+      d[p]=Math.min(255,d[p]*k); d[p+1]=Math.min(255,d[p+1]*k); d[p+2]=Math.min(255,d[p+2]*k);
+      lum[i]=Math.min(255,lum[i]*k);
     }
   }
 }
@@ -11086,6 +11223,9 @@ function scanBuildPdf(pages){
 
 /* ---- camera, pages and rendering ---- */
 
+/* Phones only hand back canvas memory when a canvas is shrunk, so canvases
+   that are done with are emptied rather than just dropped. */
+function scanFree(c){ if(c && c.getContext){ c.width=0; c.height=0; } }
 function scanLoadImage(file){
   return new Promise((resolve,reject)=>{
     const url=URL.createObjectURL(file);
@@ -11112,6 +11252,7 @@ function scanDetect(src){
   cx.imageSmoothingQuality='high';
   cx.drawImage(src,0,0,w,h);
   const px=cx.getImageData(0,0,w,h).data;
+  scanFree(c);
   const g=new Uint8Array(w*h);
   for(let i=0, p=0;i<w*h;i++, p+=4) g[i]=(px[p]*77+px[p+1]*150+px[p+2]*29)>>8;
   const q=scanFindQuad(g,w,h);
@@ -11122,6 +11263,7 @@ function scanDetect(src){
 function scanRenderPage(page, filter){
   return new Promise(resolve=>{
     setTimeout(()=>{
+      const old=page.out;
       try{
         const src=page.src;
         if(page.quad===undefined) page.quad=scanDetect(src);
@@ -11154,9 +11296,11 @@ function scanRenderPage(page, filter){
         ctx.putImageData(im,0,0);
         page.out=out;
         page.key=filter+'|'+page.crop;
+        if(old && old!==out) scanFree(old);
       }catch(e){
         console.error(e);
         page.out=null; page.key='';
+        scanFree(old);
       }
       resolve();
     },20);
@@ -11165,45 +11309,64 @@ function scanRenderPage(page, filter){
 function scanCanvasBlob(cv){
   return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('encode')),'image/jpeg',0.88));
 }
+function scanFreePage(pg){ if(pg){ scanFree(pg.src); scanFree(pg.out); pg.src=null; pg.out=null; } }
 
 /* ---- overlay ---- */
 
 function openScanner(woId, kind){
   if(!syncStorage){ toast('Set up Multi-Device Sync first. Documents are stored in your Firebase project.'); return; }
   closeScanner(true);
-  SCAN={woId:woId, kind:kind==='receipt'?'receipt':'document', filter:SCAN_LAST_FILTER, pages:[], cur:0, busy:false, status:'', replaceIdx:null};
+  SCAN={woId:woId, kind:kind==='receipt'?'receipt':'document', filter:SCAN_LAST_FILTER, pages:[], cur:0, busy:false, status:'', replaceIdx:null, adjust:null, uploading:false};
   const ov=document.createElement('div');
   ov.id='scanOverlay';
   ov.setAttribute('role','dialog');
   ov.setAttribute('aria-modal','true');
   ov.setAttribute('aria-label', SCAN.kind==='receipt'?'Scan Receipt':'Scan Document');
-  ov.innerHTML='<input type="file" id="scanInput" accept="image/*" capture="environment" style="display:none;" onchange="scanOnFile(this)" oncancel="scanPickCancelled()"><div id="scanBody"></div>';
+  ov.innerHTML='<input type="file" id="scanInput" accept="image/*" capture="environment" style="display:none;" onchange="scanOnFile(this)">'+
+    '<input type="file" id="scanInputLib" accept="image/*" multiple style="display:none;" onchange="scanOnFile(this)">'+
+    '<div id="scanBody"></div>';
   document.body.appendChild(ov);
   document.body.style.overflow='hidden';
+  document.body.classList.add('scanning');
   document.addEventListener('keydown', scanKey);
+  window.addEventListener('resize', scanOnResize);
   renderScanOverlay();
   scanPick();
 }
-function scanKey(e){ if(e.key==='Escape' && SCAN) closeScanner(); }
+function scanKey(e){
+  if(e.key!=='Escape' || !SCAN) return;
+  if(document.querySelector('#confirmRoot .confirmBox')) return;
+  if(SCAN.adjust){ scanAdjustCancel(); return; }
+  closeScanner();
+}
+function scanOnResize(){ if(SCAN && SCAN.adjust) scanLayoutAdjust(); }
 function closeScanner(force){
-  if(SCAN && !force && SCAN.pages.length && !confirm('Discard this scan?')) return;
+  if(!force){
+    if(!SCAN || SCAN.uploading) return;
+    if(SCAN.pages.length){
+      askYesNo('Discard this scan?', yes=>{ if(yes) closeScanner(true); }, {yes:'Discard', no:'Keep'});
+      return;
+    }
+  }
   const ov=document.getElementById('scanOverlay');
-  if(ov) ov.remove();
+  if(ov){ ov.querySelectorAll('canvas').forEach(c=>{ if(!SCAN || !SCAN.pages.some(p=>p.out===c || p.src===c)) scanFree(c); }); ov.remove(); }
   document.removeEventListener('keydown', scanKey);
-  if(SCAN) document.body.style.overflow='';
+  window.removeEventListener('resize', scanOnResize);
+  if(SCAN){
+    document.body.style.overflow='';
+    document.body.classList.remove('scanning');
+    SCAN.pages.forEach(scanFreePage);
+  }
   SCAN=null;
 }
-function scanPick(){
+function scanPick(lib){
   if(!SCAN || SCAN.busy) return;
-  const el=document.getElementById('scanInput');
+  const el=document.getElementById(lib?'scanInputLib':'scanInput');
   if(!el) return;
   el.value='';
   el.click();
 }
-function scanPickCancelled(){
-  if(SCAN && !SCAN.pages.length && !SCAN.busy) closeScanner(true);
-}
-function scanAddPage(){ if(!SCAN) return; SCAN.replaceIdx=null; scanPick(); }
+function scanAddPage(lib){ if(!SCAN) return; SCAN.replaceIdx=null; scanPick(lib); }
 function scanRetake(){ if(!SCAN || !SCAN.pages.length) return; SCAN.replaceIdx=SCAN.cur; scanPick(); }
 function scanSetBusy(on, msg){
   if(!SCAN) return;
@@ -11211,28 +11374,39 @@ function scanSetBusy(on, msg){
   SCAN.status=msg||'';
   renderScanOverlay();
 }
+function scanEdgeNote(p){ return (p && p.crop==='auto' && !p.quad) ? 'Edges not found' : ''; }
 async function scanOnFile(inp){
-  const f=inp.files && inp.files[0];
+  const list=Array.from(inp.files||[]);
   inp.value='';
   const S=SCAN;
-  if(!f || !S) return;
-  scanSetBusy(true,'Processing');
-  try{
-    const src=await scanLoadImage(f);
-    if(SCAN!==S) return;
-    const page={src:src, quad:undefined, crop:'auto', out:null, key:''};
-    let idx;
-    if(S.replaceIdx!==null && S.pages[S.replaceIdx]){ idx=S.replaceIdx; S.pages[idx]=page; }
-    else { S.pages.push(page); idx=S.pages.length-1; }
-    S.replaceIdx=null;
-    S.cur=idx;
-    await scanRenderPage(page,S.filter);
-    if(SCAN!==S) return;
-    scanSetBusy(false, (page.crop==='auto' && !page.quad) ? 'Edges not found, using full frame' : '');
-  }catch(e){
-    console.error(e);
-    if(SCAN===S) scanSetBusy(false,'That photo could not be read');
+  if(!list.length || !S) return;
+  const replacing=S.replaceIdx!==null && S.pages[S.replaceIdx] ? S.replaceIdx : null;
+  S.replaceIdx=null;
+  const room=replacing!==null ? 1 : SCAN_MAX_PAGES-S.pages.length;
+  const files=list.slice(0, Math.max(0,room));
+  if(!files.length) return;
+  let bad=0, last=null;
+  for(let i=0;i<files.length;i++){
+    scanSetBusy(true, files.length>1 ? `Processing ${i+1} of ${files.length}` : 'Processing');
+    try{
+      const src=await scanLoadImage(files[i]);
+      if(SCAN!==S){ scanFree(src); return; }
+      const page={src:src, quad:undefined, crop:'auto', out:null, key:''};
+      let idx;
+      if(replacing!==null){ idx=replacing; scanFreePage(S.pages[idx]); S.pages[idx]=page; }
+      else { S.pages.push(page); idx=S.pages.length-1; }
+      S.cur=idx;
+      await scanRenderPage(page,S.filter);
+      if(SCAN!==S) return;
+      last=page;
+    }catch(e){
+      console.error(e);
+      bad++;
+    }
   }
+  if(SCAN!==S) return;
+  const extra=list.length>files.length ? `Only ${SCAN_MAX_PAGES} pages fit in one scan` : '';
+  scanSetBusy(false, bad ? (bad>1?`${bad} photos could not be read`:'That photo could not be read') : extra || scanEdgeNote(last));
 }
 async function scanShowCurrent(){
   const S=SCAN;
@@ -11244,17 +11418,10 @@ async function scanShowCurrent(){
     await scanRenderPage(p,S.filter);
     if(SCAN!==S) return;
   }
-  scanSetBusy(false, (p.crop==='auto' && !p.quad) ? 'Edges not found, using full frame' : '');
+  scanSetBusy(false, scanEdgeNote(p));
 }
 function scanSelect(i){ if(!SCAN || SCAN.busy) return; SCAN.cur=i; scanShowCurrent(); }
 function scanSetFilter(f){ if(!SCAN || SCAN.busy) return; SCAN.filter=f; SCAN_LAST_FILTER=f; scanShowCurrent(); }
-function scanToggleCrop(){
-  if(!SCAN || SCAN.busy) return;
-  const p=SCAN.pages[SCAN.cur];
-  if(!p) return;
-  p.crop=p.crop==='auto'?'none':'auto';
-  scanShowCurrent();
-}
 function scanRotate(){
   if(!SCAN || SCAN.busy) return;
   const p=SCAN.pages[SCAN.cur];
@@ -11265,54 +11432,181 @@ function scanRotate(){
   ctx.translate(c.width,0);
   ctx.rotate(Math.PI/2);
   ctx.drawImage(p.src,0,0);
-  p.src=c; p.quad=undefined; p.key='';
+  // The corners turn with the photo, so a hand-set crop is kept.
+  const H0=p.src.height;
+  if(p.quad) p.quad=[p.quad[3],p.quad[0],p.quad[1],p.quad[2]].map(pt=>({x:H0-1-pt.y, y:pt.x}));
+  scanFree(p.src);
+  p.src=c; p.key='';
   scanShowCurrent();
 }
 function scanDelete(){
   if(!SCAN || SCAN.busy || !SCAN.pages.length) return;
-  SCAN.pages.splice(SCAN.cur,1);
+  scanFreePage(SCAN.pages.splice(SCAN.cur,1)[0]);
   SCAN.cur=Math.max(0,Math.min(SCAN.cur,SCAN.pages.length-1));
   SCAN.status='';
   scanShowCurrent();
 }
+
+/* ---- setting the corners by hand ---- */
+function scanAdjustOpen(){
+  if(!SCAN || SCAN.busy) return;
+  const p=SCAN.pages[SCAN.cur];
+  if(!p) return;
+  const W=p.src.width, H=p.src.height;
+  const ix=W*0.06, iy=H*0.06;
+  const pts=(p.crop==='auto' && p.quad) ? p.quad : [{x:ix,y:iy},{x:W-ix,y:iy},{x:W-ix,y:H-iy},{x:ix,y:H-iy}];
+  SCAN.adjust={pts:pts.map(q=>({x:q.x,y:q.y}))};
+  SCAN.status='';
+  renderScanOverlay();
+}
+function scanAdjustCancel(){ if(!SCAN) return; SCAN.adjust=null; renderScanOverlay(); }
+function scanAdjustSet(kind){
+  const S=SCAN, p=S && S.pages[S.cur];
+  if(!p || !S.adjust) return;
+  const W=p.src.width, H=p.src.height;
+  if(kind==='full') S.adjust.pts=[{x:0,y:0},{x:W-1,y:0},{x:W-1,y:H-1},{x:0,y:H-1}];
+  else if(kind==='auto'){
+    const q=scanDetect(p.src);
+    if(!q){ S.status='Edges not found'; renderScanOverlay(); return; }
+    S.adjust.pts=q;
+  }
+  scanDrawAdjust();
+}
+function scanAdjustApply(){
+  const S=SCAN, p=S && S.pages[S.cur];
+  if(!p || !S.adjust) return;
+  const q=S.adjust.pts;
+  // A shape that folds over itself can't be flattened, so it is refused.
+  let sign=0, ok=true;
+  for(let i=0;i<4;i++){
+    const a=q[i], c=q[(i+1)%4], e=q[(i+2)%4];
+    const cr=(c.x-a.x)*(e.y-c.y)-(c.y-a.y)*(e.x-c.x);
+    const sg=cr>0?1:cr<0?-1:0;
+    if(!sg || (sign && sg!==sign)) ok=false;
+    sign=sign||sg;
+  }
+  if(!ok || sign<0){ S.status='Corners cross over'; renderScanOverlay(); return; }
+  p.quad=q.map(pt=>({x:pt.x,y:pt.y}));
+  p.crop='auto';
+  p.key='';
+  S.adjust=null;
+  scanShowCurrent();
+}
+function scanLayoutAdjust(){
+  const S=SCAN, p=S && S.pages[S.cur];
+  const stage=document.querySelector('#scanBody .scStage'), box=document.getElementById('scanAdj');
+  if(!p || !stage || !box) return;
+  const sw=stage.clientWidth-24, sh=stage.clientHeight-24;
+  const k=Math.min(sw/p.src.width, sh/p.src.height);
+  box.style.width=Math.round(p.src.width*k)+'px';
+  box.style.height=Math.round(p.src.height*k)+'px';
+  scanDrawAdjust();
+}
+function scanDrawAdjust(){
+  const S=SCAN, p=S && S.pages[S.cur];
+  const svg=document.getElementById('scanAdjSvg'), box=document.getElementById('scanAdj');
+  if(!p || !S.adjust || !svg || !box) return;
+  const k=p.src.width/Math.max(1,box.clientWidth);
+  const pts=S.adjust.pts;
+  svg.querySelector('.scAdjShape').setAttribute('points', pts.map(q=>q.x+','+q.y).join(' '));
+  svg.querySelector('.scAdjShape').setAttribute('stroke-width', 2.5*k);
+  svg.querySelectorAll('.scAdjPt').forEach((g,i)=>{
+    g.querySelector('.scAdjDot').setAttribute('cx',pts[i].x); g.querySelector('.scAdjDot').setAttribute('cy',pts[i].y);
+    g.querySelector('.scAdjDot').setAttribute('r',11*k); g.querySelector('.scAdjDot').setAttribute('stroke-width',3*k);
+    g.querySelector('.scAdjHit').setAttribute('cx',pts[i].x); g.querySelector('.scAdjHit').setAttribute('cy',pts[i].y);
+    g.querySelector('.scAdjHit').setAttribute('r',30*k);
+  });
+}
+function scanAdjustDown(e, i){
+  const S=SCAN, p=S && S.pages[S.cur], box=document.getElementById('scanAdj');
+  if(!p || !S.adjust || !box) return;
+  e.preventDefault();
+  const tgt=e.currentTarget;
+  try{ tgt.setPointerCapture(e.pointerId); }catch(err){}
+  const start=S.adjust.pts[i], r0=box.getBoundingClientRect(), k=p.src.width/r0.width;
+  const sx=e.clientX, sy=e.clientY, ox=start.x, oy=start.y;
+  tgt.classList.add('drag');
+  const move=ev=>{
+    if(!SCAN || !SCAN.adjust) return;
+    const x=Math.max(0, Math.min(p.src.width-1, ox+(ev.clientX-sx)*k));
+    const y=Math.max(0, Math.min(p.src.height-1, oy+(ev.clientY-sy)*k));
+    SCAN.adjust.pts[i]={x,y};
+    scanDrawAdjust();
+  };
+  const up=()=>{ tgt.classList.remove('drag'); tgt.removeEventListener('pointermove',move); tgt.removeEventListener('pointerup',up); tgt.removeEventListener('pointercancel',up); };
+  tgt.addEventListener('pointermove',move);
+  tgt.addEventListener('pointerup',up);
+  tgt.addEventListener('pointercancel',up);
+}
+
 function renderScanOverlay(){
   const S=SCAN;
   const body=document.getElementById('scanBody');
   if(!S || !body) return;
+  // Thumbnails are throwaway copies; the pages' own canvases are kept.
+  body.querySelectorAll('canvas').forEach(c=>{ if(!S.pages.some(p=>p.out===c || p.src===c)) scanFree(c); });
   const n=S.pages.length;
   const p=S.pages[S.cur];
   const dis=S.busy?'disabled':'';
   const title=S.kind==='receipt'?'Scan Receipt':'Scan Document';
   const filt=[['color','Color'],['gray','Gray'],['bw','B&amp;W']];
-  body.innerHTML=
-    `<div class="scHead">
+  const head=`<div class="scHead">
       <span class="scTitle">${title}${n?` <span class="scCount">${n} page${n>1?'s':''}</span>`:''}</span>
-      <button class="scIcon" onclick="closeScanner()" aria-label="Close">${icon('x')}</button>
-    </div>
-    <div class="scStage">
-      ${p?'<canvas id="scanPreview"></canvas>':`<button class="scBtn pri" onclick="scanPick()" ${dis}>Open Camera</button>`}
+      <button class="scIcon" onclick="closeScanner()" aria-label="Close" ${S.uploading?'disabled':''}>${icon('x')}</button>
+    </div>`;
+  if(S.adjust && p){
+    body.innerHTML=head+`<div class="scStage"><div class="scAdj" id="scanAdj">
+        <svg id="scanAdjSvg" class="scAdjSvg" viewBox="0 0 ${p.src.width} ${p.src.height}" preserveAspectRatio="none">
+          <polygon class="scAdjShape" points=""/>
+          ${[0,1,2,3].map(i=>`<g class="scAdjPt" onpointerdown="scanAdjustDown(event,${i})" aria-label="Corner ${i+1}"><circle class="scAdjHit"/><circle class="scAdjDot"/></g>`).join('')}
+        </svg>
+      </div><div class="scStatus">${esc(S.status||'')}</div></div>
+      <div class="scTools">
+        <button class="scBtn" onclick="scanAdjustSet('auto')">Auto</button>
+        <button class="scBtn" onclick="scanAdjustSet('full')">Full Frame</button>
+      </div>
+      <div class="scFoot">
+        <button class="scBtn" onclick="scanAdjustCancel()">Cancel</button>
+        <button class="scBtn pri" onclick="scanAdjustApply()">Done</button>
+      </div>`;
+    const box=document.getElementById('scanAdj');
+    p.src.className='scAdjImg';
+    box.insertBefore(p.src, box.firstChild);
+    scanLayoutAdjust();
+    return;
+  }
+  body.innerHTML=head+
+    `<div class="scStage" id="scanStage">
+      ${p?'':`<div class="scEmpty">
+        <button class="scBtn pri" onclick="scanPick()" ${dis}>${icon('image')}Take Photo</button>
+        <button class="scBtn" onclick="scanPick(true)" ${dis}>${icon('folder')}Choose Photos</button>
+      </div>`}
       <div class="scStatus">${esc(S.status||'')}</div>
     </div>
     ${n?`<div class="scTools">
       <div class="scSegWrap">${filt.map(([k,l])=>`<button class="scBtn ${S.filter===k?'on':''}" onclick="scanSetFilter('${k}')" ${dis}>${l}</button>`).join('')}</div>
-      <button class="scBtn ${p.crop==='auto'?'on':''}" onclick="scanToggleCrop()" ${dis}>${p.crop==='auto'?'Auto Crop':'Full Frame'}</button>
-      <button class="scBtn" onclick="scanRotate()" ${dis}>Rotate</button>
-      <button class="scBtn" onclick="scanRetake()" ${dis}>Retake</button>
-      <button class="scBtn" onclick="scanDelete()" ${dis}>Delete</button>
+      <div class="scSegWrap">
+        <button class="scBtn" onclick="scanAdjustOpen()" ${dis}>Crop</button>
+        <button class="scBtn" onclick="scanRotate()" ${dis}>Rotate</button>
+        <button class="scBtn" onclick="scanRetake()" ${dis}>Retake</button>
+        <button class="scBtn" onclick="scanDelete()" ${dis} aria-label="Delete page">${icon('trash')}</button>
+      </div>
     </div>
     <div class="scThumbs">
       ${S.pages.map((pg,i)=>`<button class="scThumb ${i===S.cur?'on':''}" onclick="scanSelect(${i})" ${dis} aria-label="Page ${i+1}"><canvas data-i="${i}"></canvas><span>${i+1}</span></button>`).join('')}
-      ${n<SCAN_MAX_PAGES?`<button class="scThumb add" onclick="scanAddPage()" ${dis} aria-label="Add page">${icon('plus')}</button>`:''}
+      ${n<SCAN_MAX_PAGES?`<button class="scThumb add" onclick="scanAddPage()" ${dis} aria-label="Add page from camera">${icon('plus')}</button>
+      <button class="scThumb add" onclick="scanAddPage(true)" ${dis} aria-label="Add page from photos">${icon('image')}</button>`:''}
     </div>
     <div class="scFoot">
       <button class="scBtn" onclick="scanSave('image')" ${dis}>Save as Image${n>1?'s':''}</button>
       <button class="scBtn pri" onclick="scanSave('pdf')" ${dis}>Save as PDF</button>
     </div>`:''}`;
   if(p){
-    const cv=document.getElementById('scanPreview');
-    if(cv && p.out){
-      cv.width=p.out.width; cv.height=p.out.height;
-      cv.getContext('2d').drawImage(p.out,0,0);
+    const stage=document.getElementById('scanStage');
+    if(p.out){
+      p.out.className='scPreview';
+      p.out.id='scanPreview';
+      stage.insertBefore(p.out, stage.firstChild);
     }
     body.querySelectorAll('.scThumb canvas').forEach(c=>{
       const pg=S.pages[Number(c.dataset.i)];
@@ -11356,9 +11650,29 @@ async function scanSave(fmt){
     return;
   }
   if(SCAN!==S) return;
-  const woId=S.woId, tag=S.kind==='receipt'?'Receipt':'';
-  closeScanner(true);
-  await handleDocUpload(woId, {files:files, disabled:false, value:''}, {tag:tag, skipCompress:true});
+  // The scan stays open until the upload is through, so a dropped
+  // connection doesn't throw away the pages.
+  S.uploading=true;
+  scanSetBusy(true,'Uploading');
+  let res;
+  try{
+    res=await handleDocUpload(S.woId, {files:files, disabled:false, value:''}, {
+      tag:S.kind==='receipt'?'Receipt':'', skipCompress:true,
+      onStatus:t=>{ if(SCAN===S && t){ S.status=t.replace(/^Uploading ".*?"…\s*/,'Uploading ').trim(); const el=document.querySelector('#scanBody .scStatus'); if(el) el.textContent=S.status; } }
+    });
+  }catch(e){ console.error(e); res={added:0, failed:files.map(f=>f.name)}; }
+  if(SCAN!==S) return;
+  S.uploading=false;
+  const failed=(res && res.failed) || [];
+  if(!failed.length){ closeScanner(true); return; }
+  // Keep only the pages that still need to go up.
+  if(fmt!=='pdf'){
+    const keep=S.pages.filter((pg,i)=>failed.indexOf(files[i].name)!==-1);
+    S.pages.forEach(pg=>{ if(keep.indexOf(pg)===-1) scanFreePage(pg); });
+    S.pages=keep;
+    S.cur=0;
+  }
+  scanSetBusy(false,'Upload failed, try again');
 }
 
 /* Safety net: if total Storage usage reaches the 5GB free-tier cap, automatically
