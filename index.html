@@ -1957,6 +1957,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   background:var(--paper);min-height:78px;overflow:hidden;
 }
 .fgCell.fgName{padding:19px 20px;background:var(--well);}
+.fgAddrShort{display:none;}
 .fgHit{
   display:block;width:100%;height:100%;box-sizing:border-box;
   padding:19px 20px;text-align:left;background:none;border:none;
@@ -3466,11 +3467,12 @@ html.hc .woNext{color:var(--hc-fg);}
   /* label on the left, value centred in the card, like the Schedule and
      Check In/Out rows */
   /* label above, value centred under it on one line */
-  .fgHit{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:10px 16px 12px;}
-  .fgHit .fgLabel{margin:0;text-align:left;}
-  .fgHit .fgValue{width:100%;}
-  .fgCell.fgName .fgLabel{text-align:left;}
-  .fgCell.fgName .fgName{display:block;width:100%;text-align:center;white-space:nowrap;overflow:hidden;}
+  /* label on the left, value centred on the same line */
+  .fgHit,.fgCell.fgName{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(0,1fr);align-items:center;gap:10px;padding:12px 16px;}
+  .fgHit .fgLabel,.fgCell.fgName .fgLabel{margin:0;text-align:left;}
+  .fgCell.fgName .fgName{display:block;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;}
+  .fgAddrFull{display:none;}
+  .fgAddrShort{display:inline;}
   .fgHit .fgValue{min-width:0;display:block;text-align:center;white-space:nowrap;overflow:hidden;overflow-wrap:normal;word-break:normal;}
   .fgHit .fgValue .ic{display:none;}
   .fieldGrid .fgCell:nth-child(2) .fgValue{white-space:nowrap;}
@@ -8771,6 +8773,12 @@ function syncFieldModeBtn(){
   b.classList.toggle('on', FIELD_MODE);
   b.textContent = FIELD_MODE ? 'On' : 'Off';
 }
+/* Street and ZIP only, for the narrow phone layout. */
+function shortAddress(addr, full){
+  const zip=String(addr.line2||full||'').match(/\b\d{5}(?:-\d{4})?\b(?!.*\b\d{5}\b)/);
+  if(!addr.line1 || !zip) return full;
+  return addr.line1.replace(/,\s*$/,'')+', '+zip[0];
+}
 function fieldGridHTML(wo){
   const c=wo.customer||{};
   const addr=splitAddress(c.address);
@@ -8784,7 +8792,7 @@ function fieldGridHTML(wo){
       ? `<button type="button" class="fgHit" data-v="${esc(c.phone)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}None</div></div>`)}
     ${cell('fgTap', addrText
-      ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}${esc(addrText)}</div></button>`
+      ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}<span class="fgAddrFull">${esc(addrText)}</span><span class="fgAddrShort">${esc(shortAddress(addr, addrText))}</span></div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
     ${cell('fgTap', c.email
       ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}<span>${esc(c.email)}</span></div></button>`
