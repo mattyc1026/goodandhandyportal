@@ -3410,7 +3410,9 @@ html.hc .docAmt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc
 .calcGas{border-top:1px solid var(--line);padding-top:12px;}
 .calcGas summary{cursor:pointer;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;gap:10px;align-items:center;list-style:none;}
 .calcGas summary::-webkit-details-marker{display:none;}
-.calcGas summary span{font-weight:600;color:var(--muted);font-size:.78em;white-space:nowrap;}
+.calcGas summary{flex-wrap:wrap;}
+@media (max-width:600px){ .calcInputs.two{grid-template-columns:1fr;} }
+.calcGas summary span{font-weight:600;color:var(--muted);font-size:.78em;}
 .calcGas .calcInputs{margin-top:12px;}
 html.hc .calcPay{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
 /* ---- moving several follow-ups at once ---- */
@@ -11127,10 +11129,11 @@ function milesLogged(wo){
    Invoice total, then Alyssa's pay from her chart, then gas for the miles
    driven, then receipts. What is left is split evenly between Matthew and
    Scott. Miles per gallon and the gas price are shared across devices. */
-const CALC_DEFAULTS={mpg:26, gas:5.5};
+const CALC_DEFAULTS={mpg:26, gas:5.5, oh:10};
 function calcSettings(){
   const c=DB.calc||{};
-  return {mpg: Number(c.mpg)>0 ? Number(c.mpg) : CALC_DEFAULTS.mpg, gas: Number(c.gas)>=0 && c.gas!==undefined && c.gas!=='' ? Number(c.gas) : CALC_DEFAULTS.gas};
+  const num=(v,d)=>(v!==undefined && v!=='' && Number(v)>=0) ? Number(v) : d;
+  return {mpg: Number(c.mpg)>0 ? Number(c.mpg) : CALC_DEFAULTS.mpg, gas:num(c.gas, CALC_DEFAULTS.gas), oh:num(c.oh, CALC_DEFAULTS.oh)};
 }
 /* Alyssa's chart, in effect for payouts from 8/14/2026. */
 function alyssaPay(total){
@@ -11147,16 +11150,18 @@ function alyssaPay(total){
   if(capped) pay=cap;
   return {pct, pay, capped};
 }
-/* Alyssa's pay comes off the full invoice total; materials, gas and
-   receipts come off after. */
-function calcBreakdown(invoice, miles, receipts, mpg, gas, materials){
+/* Alyssa's pay and the overhead fund are both figured on the full invoice
+   total; materials, gas and receipts come off after. */
+function calcBreakdown(invoice, miles, receipts, mpg, gas, materials, ohPct){
   const inv=Number(invoice)||0, mi=Number(miles)||0, rc=Number(receipts)||0, mat=Number(materials)||0;
+  const pct = ohPct===undefined ? CALC_DEFAULTS.oh : (Number(ohPct)||0);
   const a=alyssaPay(inv);
+  const overhead=Math.round(inv*pct)/100;
   const gallons = mpg>0 ? mi/mpg : 0;
   const gasCost=Math.round(gallons*gas*100)/100;
-  const left=Math.round((inv-a.pay-mat-gasCost-rc)*100)/100;
+  const left=Math.round((inv-a.pay-overhead-mat-gasCost-rc)*100)/100;
   const half=Math.round(left*50)/100;
-  return {inv, alyssa:a, materials:mat, gallons, gasCost, receipts:rc, left, matthew:half, scott:Math.round((left-half)*100)/100};
+  return {inv, alyssa:a, overhead, ohPct:pct, materials:mat, gallons, gasCost, receipts:rc, left, matthew:half, scott:Math.round((left-half)*100)/100};
 }
 /* Sum of the priced Materials lines in a job's details. */
 function materialsTotal(wo){
@@ -11233,12 +11238,14 @@ function renderExpenseCalc(){
         </div>
         <div class="calcResult" id="calcResult"></div>
         <details class="calcGas">
-          <summary>Gas Settings <span id="calcGasSum">${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal</span></summary>
+          <summary>Settings <span id="calcGasSum">${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal · ${cs.oh}% overhead</span></summary>
           <div class="calcInputs two">
             <div class="field"><label for="calcMpg">Miles per Gallon</label>
               <div class="calcMoney"><input id="calcMpg" type="text" inputmode="decimal" value="${cs.mpg}" onchange="calcSetting('mpg',this)"><span>mpg</span></div></div>
             <div class="field"><label for="calcGasP">Gas Price per Gallon</label>
               <div class="calcMoney"><span>$</span><input id="calcGasP" type="text" inputmode="decimal" value="${cs.gas.toFixed(2)}" onchange="calcSetting('gas',this)"></div></div>
+            <div class="field"><label for="calcOh">Overhead Fund</label>
+              <div class="calcMoney"><input id="calcOh" type="text" inputmode="decimal" value="${cs.oh}" onchange="calcSetting('oh',this)"><span>%</span></div></div>
           </div>
         </details>
       </div>
@@ -11252,14 +11259,15 @@ function renderCalcResult(){
   if(!el || !CALC) return;
   const cs=calcSettings();
   const sum=document.getElementById('calcGasSum');
-  if(sum) sum.textContent=`${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal`;
+  if(sum) sum.textContent=`${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal · ${cs.oh}% overhead`;
   const num=v=>{ const n=parseMoney(v); return (n===null || isNaN(n)) ? 0 : n; };
-  const b=calcBreakdown(num(CALC.invoice), num(CALC.miles), num(CALC.receipts), cs.mpg, cs.gas, num(CALC.materials));
+  const b=calcBreakdown(num(CALC.invoice), num(CALC.miles), num(CALC.receipts), cs.mpg, cs.gas, num(CALC.materials), cs.oh);
   const row=(label, sub, val, cls)=>`<div class="calcRow ${cls||''}"><span class="calcLbl">${label}${sub?`<small>${sub}</small>`:''}</span><span class="calcVal">${val}</span></div>`;
   const aSub = b.alyssa.pct ? `${b.alyssa.pct}%${b.alyssa.capped?', capped at $600':''}` : (b.inv>0?'Under $150':'');
   el.innerHTML=
     row('Invoice Total','',fmtMoney(b.inv),'calcTop')+
     row('Alyssa',aSub,'−'+fmtMoney(b.alyssa.pay),'calcOut')+
+    row('Overhead Fund',`${b.ohPct}% of invoice`,'−'+fmtMoney(b.overhead),'calcOut')+
     row('Materials','','−'+fmtMoney(b.materials),'calcOut')+
     row('Gas',`${num(CALC.miles).toLocaleString('en-US',{maximumFractionDigits:1})} mi ÷ ${cs.mpg} mpg × ${fmtMoney(cs.gas)}`,'−'+fmtMoney(b.gasCost),'calcOut')+
     row('Receipts','','−'+fmtMoney(b.receipts),'calcOut')+
