@@ -3359,6 +3359,55 @@ html.dark.hc select:not([multiple]):not([size]){
   input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:max(16px,1em) !important;}
   .rtEditor,[contenteditable=true]{font-size:max(16px,.92em) !important;}
 }
+/* ---- receipt amounts ---- */
+.docTagLine{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:7px;}
+.docTagLine .docTagPick{margin-top:0;}
+.docAmt{display:inline-flex;align-items:center;margin:0;min-height:32px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--greenb);background:var(--green);color:var(--greenb);font-family:var(--f-data,inherit);font-weight:800;font-size:.8em;cursor:pointer;}
+.docAmt.empty{border-style:dashed;background:transparent;color:var(--muted);border-color:var(--line);font-family:inherit;letter-spacing:.04em;text-transform:uppercase;font-size:.72em;}
+.confirmCard.amtCard{max-width:360px;text-align:left;padding:24px 22px 20px;}
+.amtCard h3{margin:0 0 4px;font-size:1.2em;}
+.amtName{color:var(--muted);font-size:.85em;margin-bottom:14px;overflow-wrap:anywhere;}
+.amtField,.calcMoney{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;background:var(--paper);}
+.amtField:focus-within,.calcMoney:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,38,71,.12);}
+.amtField span,.calcMoney span{font-weight:800;color:var(--muted);}
+.amtField input,.calcMoney input{flex:1;min-width:0;border:0 !important;box-shadow:none !important;background:transparent;padding:12px 0;font-size:max(16px,1.1em);font-weight:700;outline:none;}
+.amtCard .btnRow{justify-content:flex-start;flex-wrap:nowrap;margin-top:14px;}
+.amtCard .btnRow .btn{flex:1 1 auto;}
+html.hc .docAmt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
+/* ---- expenses calculator ---- */
+.modal.calcModal{max-width:520px;}
+.calcInputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.calcInputs .calcBig{grid-column:1 / -1;}
+.calcInputs .field{margin:0;}
+.calcBig .calcMoney input{font-size:max(18px,1.35em);}
+.calcHint{font-weight:600;color:var(--muted);font-size:.78em;margin-top:5px;}
+.calcHint.warn{color:var(--orange);}
+.calcSelect{width:100%;min-height:46px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-weight:600;}
+.calcMoney span:last-child:not(:first-child){font-size:.82em;}
+.calcResult{margin:18px 0 14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--paper);}
+.calcRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);}
+.calcLbl{font-weight:700;color:var(--navy);display:flex;flex-direction:column;min-width:0;}
+.calcLbl small{font-weight:600;font-size:.72em;color:var(--muted);margin-top:2px;}
+.calcVal{font-family:var(--f-data,inherit);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+.calcSubAmt{display:block;font-family:inherit;font-weight:600;font-size:.78em;color:var(--muted);margin-bottom:2px;}
+.calcTop .calcVal{font-size:1.15em;}
+.calcOut .calcVal{color:var(--redb);}
+.calcLeft{background:var(--s2,var(--cream));}
+.calcLeft .calcVal{font-size:1.1em;}
+.calcLeft.neg .calcVal,.calcPay.neg b{color:var(--redb);}
+.calcSplit{display:grid;grid-template-columns:1fr 1fr;}
+.calcPay{display:flex;flex-direction:column;align-items:center;gap:2px;padding:16px 10px;background:var(--navy);color:#fff;}
+.calcPay + .calcPay{border-left:1px solid rgba(255,255,255,.2);}
+.calcPay span{font-size:.78em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.8;}
+.calcPay b{font-size:1.35em;font-family:var(--f-data,inherit);font-variant-numeric:tabular-nums;}
+.calcPay.neg b{color:#ffb4a8;}
+.calcGas{border-top:1px solid var(--line);padding-top:12px;}
+.calcGas summary{cursor:pointer;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;gap:10px;align-items:center;list-style:none;}
+.calcGas summary::-webkit-details-marker{display:none;}
+.calcGas summary span{font-weight:600;color:var(--muted);font-size:.78em;white-space:nowrap;}
+.calcGas .calcInputs{margin-top:12px;}
+html.hc .calcPay{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
 /* ---- moving several follow-ups at once ---- */
 .fuSelBtn{margin-left:auto;padding:6px 14px;font-size:max(12px,.62em) !important;white-space:nowrap;flex:none;border-radius:999px;border:1.5px solid var(--navy);background:transparent;color:var(--navy);
   font-family:inherit;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}
@@ -3755,6 +3804,10 @@ window._bootSafety = setTimeout(function(){
           <div class="settingsRow">
             <span>Password</span>
             <button class="editLink" id="changePwBtn" onclick="closeSettingsMenus(); openChangePassword()">Change</button>
+          </div>
+          <div class="settingsRow adminOnly hidden" id="calcRow">
+            <span>Expenses Calculator</span>
+            <button class="editLink" onclick="openExpenseCalc()">Open</button>
           </div>
           <div class="settingsRow logoutRow">
             <button class="logoutBtn" onclick="closeSettingsMenus(); confirmLogout()">Sign Out</button>
@@ -4204,6 +4257,7 @@ function openDataConnection(){
           const meta=JSON.parse(data.meta);
           DB.users=window.GH_TRAINING ? Object.assign({}, trainingRealUsers(), meta.users||{}) : (meta.users||{});
           DB.storageUsedBytes=meta.storageUsedBytes||0;
+          if(meta.calc) DB.calc=meta.calc;
           CLOUD_MIRROR.meta=data.meta;
           normalizeDB(DB);
           writeLocalDB();
@@ -4416,7 +4470,9 @@ var CLOUD_READY={meta:false, wos:false};
 let MIGRATING=false;
 
 function metaPayload(){
-  return JSON.stringify({users:DB.users||{}, storageUsedBytes:DB.storageUsedBytes||0});
+  const m={users:DB.users||{}, storageUsedBytes:DB.storageUsedBytes||0};
+  if(DB.calc) m.calc=DB.calc;
+  return JSON.stringify(m);
 }
 function mainDocRef(){ return syncDb.collection('gh_portal').doc(window.GH_TRAINING ? 'training' : 'main'); }
 function woCollectionRef(){ return mainDocRef().collection(WO_COLLECTION); }
@@ -5293,6 +5349,7 @@ function enterApp(u){
   STAGGER_NEXT_RENDER=true;
   document.getElementById('whoami').textContent=CURRENT_USER.displayName;
   document.getElementById('adminPill').classList.toggle('hidden', !u.isAdmin);
+  const calcRow=document.getElementById('calcRow'); if(calcRow) calcRow.classList.toggle('hidden', !u.isAdmin);
   PW_NUDGE_DISMISSED=false;
   refreshPwNudge();
   document.getElementById('siErr').textContent='';
@@ -9648,6 +9705,7 @@ function renderWorkOrderModal(id){
         ${bodyHTML}
       </div>
       ${(isAdmin && WO_ADMIN_VIEW) ? `<div class="footerActions">
+        <button class="btn secondary" onclick="openExpenseCalc(${id})">Expenses Calculator</button>
         <button class="btn danger" onclick="adminDeleteWorkOrder(${id})">Delete Work Order</button>
       </div>` : ''}
     </div>
@@ -10777,7 +10835,197 @@ function setDocTag(woId, docId, tag){
   if(oldTag!==d.tag) addAdminLog(wo, `Photo "${d.name}" label changed from ${oldTag||'none'} to ${d.tag||'none'}.`);
   saveDB(DB);
   renderWorkOrderModal(woId);
+  if(d.tag==='Receipt' && oldTag!=='Receipt' && typeof d.amount!=='number'){ askReceiptAmount(woId, docId); return; }
   toast(d.tag ? `Labeled "${d.tag}".` : 'Label removed.');
+}
+
+/* ---- receipt amounts ---- */
+function fmtMoney(n){
+  const v=Math.round((Number(n)||0)*100)/100;
+  return (v<0?'-':'')+'$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function parseMoney(str){
+  const t=String(str==null?'':str).replace(/[$,\s]/g,'');
+  if(t==='') return null;
+  const v=Number(t);
+  return isFinite(v) ? Math.round(v*100)/100 : NaN;
+}
+function askReceiptAmount(woId, docId){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  const root=document.getElementById('confirmRoot');
+  if(!d || !root) return;
+  const cur=typeof d.amount==='number' ? d.amount.toFixed(2) : '';
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard amtCard" role="dialog" aria-modal="true" aria-label="Receipt amount">
+    <h3>Receipt Amount</h3>
+    <div class="amtName">${esc(d.name||'')}</div>
+    <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Receipt amount"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();saveReceiptAmount(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}"></label>
+    <div class="errMsg" id="amtErr"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveReceiptAmount(${woId},'${docId}')">Save</button>
+      <button class="btn secondary" onclick="closeReceiptAmount()">${cur?'Cancel':'Skip'}</button>
+    </div>
+  </div></div>`;
+  setTimeout(()=>{ const i=document.getElementById('amtInput'); if(i){ i.focus(); i.select(); } }, 60);
+}
+function closeReceiptAmount(){ const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
+function saveReceiptAmount(woId, docId){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  if(!d){ closeReceiptAmount(); return; }
+  const v=parseMoney(document.getElementById('amtInput').value);
+  if(v!==null && (isNaN(v) || v<0)){ document.getElementById('amtErr').textContent='Enter a dollar amount.'; return; }
+  const was=typeof d.amount==='number' ? d.amount : null;
+  if(v===null) delete d.amount; else d.amount=v;
+  if(was!==v) addAdminLog(wo, `Receipt "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(v)}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
+  closeReceiptAmount();
+  saveDB(DB);
+  renderWorkOrderModal(woId);
+}
+function receiptTotal(wo){
+  let sum=0, count=0, missing=0;
+  (wo.docs||[]).forEach(d=>{
+    if(d.tag!=='Receipt') return;
+    if(typeof d.amount==='number'){ sum+=d.amount; count++; } else missing++;
+  });
+  return {sum:Math.round(sum*100)/100, count, missing};
+}
+function milesLogged(wo){
+  let m=0;
+  allDayLogsSorted(wo).forEach(({log})=>logSessions(log).forEach(x=>{ if(typeof x.miles==='number') m+=x.miles; }));
+  return Math.round(m*10)/10;
+}
+
+/* ---- expenses calculator (admins) ----
+   Invoice total, then Alyssa's pay from her chart, then gas for the miles
+   driven, then receipts. What is left is split evenly between Matthew and
+   Scott. Miles per gallon and the gas price are shared across devices. */
+const CALC_DEFAULTS={mpg:26, gas:5.5};
+function calcSettings(){
+  const c=DB.calc||{};
+  return {mpg: Number(c.mpg)>0 ? Number(c.mpg) : CALC_DEFAULTS.mpg, gas: Number(c.gas)>=0 && c.gas!==undefined && c.gas!=='' ? Number(c.gas) : CALC_DEFAULTS.gas};
+}
+/* Alyssa's chart, in effect for payouts from 8/14/2026. */
+function alyssaPay(total){
+  const t=Number(total)||0;
+  let pct=0, cap=null;
+  if(t<150) pct=0;
+  else if(t<500) pct=7;
+  else if(t<1500) pct=8;
+  else if(t<3000) pct=9;
+  else if(t<10000){ pct=10; cap=600; }
+  else pct=10;
+  let pay=Math.round(t*pct)/100;
+  const capped = cap!==null && pay>cap;
+  if(capped) pay=cap;
+  return {pct, pay, capped};
+}
+function calcBreakdown(invoice, miles, receipts, mpg, gas){
+  const inv=Number(invoice)||0, mi=Number(miles)||0, rc=Number(receipts)||0;
+  const a=alyssaPay(inv);
+  const gallons = mpg>0 ? mi/mpg : 0;
+  const gasCost=Math.round(gallons*gas*100)/100;
+  const left=Math.round((inv-a.pay-gasCost-rc)*100)/100;
+  const half=Math.round(left*50)/100;
+  return {inv, alyssa:a, gallons, gasCost, receipts:rc, left, matthew:half, scott:Math.round((left-half)*100)/100};
+}
+let CALC=null;   // {woId, invoice, miles, receipts}
+function openExpenseCalc(woId){
+  if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
+  closeSettingsMenus();
+  CALC={woId:null, invoice:'', miles:'', receipts:'', back:woId||null};
+  if(woId) calcPickJob(woId, true);
+  renderExpenseCalc();
+}
+function closeExpenseCalc(){
+  const back=CALC && CALC.back;
+  CALC=null;
+  if(back && getWO(back)) openWorkOrder(back); else closeModal();
+}
+function calcPickJob(id, quiet){
+  const wo=getWO(Number(id));
+  CALC.woId = wo ? wo.id : null;
+  if(wo){
+    const r=receiptTotal(wo);
+    CALC.miles=String(milesLogged(wo));
+    CALC.receipts=r.sum.toFixed(2);
+  }
+  if(!quiet) renderExpenseCalc();
+}
+function calcInput(key, el){
+  CALC[key]=el.value;
+  renderCalcResult();
+}
+function calcSetting(key, el){
+  const v=parseMoney(el.value);
+  if(v===null || isNaN(v) || v<0 || (key==='mpg' && v===0)) return;
+  if(!DB.calc) DB.calc={};
+  if(Number(DB.calc[key])===v) { renderCalcResult(); return; }
+  DB.calc[key]=v;
+  saveDB(DB);
+  renderCalcResult();
+}
+function calcJobOptions(){
+  const list=DB.workOrders.slice().sort((a,b)=>(b.id||0)-(a.id||0));
+  return list.map(w=>`<option value="${w.id}" ${CALC.woId===w.id?'selected':''}>${esc(w.customer.name||'Untitled')} · #${w.id}</option>`).join('');
+}
+function renderExpenseCalc(){
+  const modal=document.getElementById('modalRoot');
+  if(!modal || !CALC) return;
+  const cs=calcSettings();
+  const wo=CALC.woId ? getWO(CALC.woId) : null;
+  const r=wo ? receiptTotal(wo) : null;
+  modal.innerHTML=`
+  <div class="overlay" id="calcModal" onclick="if(event.target===this)closeExpenseCalc()">
+    <div class="modal calcModal">
+      <div class="modalHead"><h2>Expenses Calculator</h2><button class="closeX" onclick="closeExpenseCalc()" aria-label="Close">&times;</button></div>
+      <div class="modalBody">
+        <div class="field"><label for="calcJob">Job</label>
+          <select id="calcJob" class="calcSelect" onchange="calcPickJob(this.value)"><option value="">None</option>${calcJobOptions()}</select></div>
+        <div class="calcInputs">
+          <div class="field calcBig"><label for="calcInv">Invoice Total</label>
+            <div class="calcMoney"><span>$</span><input id="calcInv" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.invoice)}" oninput="calcInput('invoice',this)"></div></div>
+          <div class="field"><label for="calcMiles">Miles</label>
+            <div class="calcMoney"><input id="calcMiles" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.miles)}" oninput="calcInput('miles',this)"><span>mi</span></div></div>
+          <div class="field"><label for="calcRc">Receipts</label>
+            <div class="calcMoney"><span>$</span><input id="calcRc" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.receipts)}" oninput="calcInput('receipts',this)"></div>
+            ${r?`<div class="calcHint${r.missing?' warn':''}">${r.count} receipt${r.count===1?'':'s'}${r.missing?`, ${r.missing} with no amount`:''}</div>`:''}</div>
+        </div>
+        <div class="calcResult" id="calcResult"></div>
+        <details class="calcGas">
+          <summary>Gas Settings <span id="calcGasSum">${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal</span></summary>
+          <div class="calcInputs two">
+            <div class="field"><label for="calcMpg">Miles per Gallon</label>
+              <div class="calcMoney"><input id="calcMpg" type="text" inputmode="decimal" value="${cs.mpg}" onchange="calcSetting('mpg',this)"><span>mpg</span></div></div>
+            <div class="field"><label for="calcGasP">Gas Price per Gallon</label>
+              <div class="calcMoney"><span>$</span><input id="calcGasP" type="text" inputmode="decimal" value="${cs.gas.toFixed(2)}" onchange="calcSetting('gas',this)"></div></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>`;
+  renderCalcResult();
+  if(!CALC.invoice) setTimeout(()=>{ const i=document.getElementById('calcInv'); if(i && !('ontouchstart' in window)) i.focus(); }, 60);
+}
+function renderCalcResult(){
+  const el=document.getElementById('calcResult');
+  if(!el || !CALC) return;
+  const cs=calcSettings();
+  const sum=document.getElementById('calcGasSum');
+  if(sum) sum.textContent=`${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal`;
+  const num=v=>{ const n=parseMoney(v); return (n===null || isNaN(n)) ? 0 : n; };
+  const b=calcBreakdown(num(CALC.invoice), num(CALC.miles), num(CALC.receipts), cs.mpg, cs.gas);
+  const row=(label, sub, val, cls)=>`<div class="calcRow ${cls||''}"><span class="calcLbl">${label}${sub?`<small>${sub}</small>`:''}</span><span class="calcVal">${val}</span></div>`;
+  const aSub = b.alyssa.pct ? `${b.alyssa.pct}%${b.alyssa.capped?', capped at $600':''}` : (b.inv>0?'Under $150':'');
+  el.innerHTML=
+    row('Invoice Total','',fmtMoney(b.inv),'calcTop')+
+    row('Alyssa',aSub,'−'+fmtMoney(b.alyssa.pay),'calcOut')+
+    row('Gas',`${num(CALC.miles).toLocaleString('en-US',{maximumFractionDigits:1})} mi ÷ ${cs.mpg} mpg × ${fmtMoney(cs.gas)}`,'−'+fmtMoney(b.gasCost),'calcOut')+
+    row('Receipts','','−'+fmtMoney(b.receipts),'calcOut')+
+    row('Remaining','',fmtMoney(b.left),'calcLeft'+(b.left<0?' neg':''))+
+    `<div class="calcSplit">
+      <div class="calcPay${b.matthew<0?' neg':''}"><span>Matthew</span><b>${fmtMoney(b.matthew)}</b></div>
+      <div class="calcPay${b.scott<0?' neg':''}"><span>Scott</span><b>${fmtMoney(b.scott)}</b></div>
+    </div>`;
 }
 function isImageDoc(d){
   if(d.type) return d.type.startsWith('image/');
@@ -10800,13 +11048,13 @@ function docRowHTML(wo, d){
         <div class="docInfo">
           <span class="docName">${esc(d.name||'Untitled')}</span>
           <span class="small">${esc(d.uploadedBy)} · ${esc(d.date)} ${d.size?('· '+fmtBytes(d.size)):''}${!d.url?' · local only (not synced)':''}</span>
-          ${(isImg || d.tag) ? `<span class="docTagPick ${d.tag?docTagClass(d.tag):'empty'}">
+          ${(isImg || d.tag) ? `<span class="docTagLine"><span class="docTagPick ${d.tag?docTagClass(d.tag):'empty'}">
             <span class="docTagDot"></span><span class="docTagTxt">${esc(d.tag||'Add Label')}</span>${icon('chevron')}
             <select class="docTagSel" title="Photo label" aria-label="Photo label" onchange="setDocTag(${wo.id},'${d.id}',this.value)">
               <option value="" ${!d.tag?'selected':''}>${d.tag?'No Label':'Add Label'}</option>
               ${DOC_TAGS.map(t=>`<option value="${esc(t)}" ${d.tag===t?'selected':''}>${esc(t)}</option>`).join('')}
             </select>
-          </span>` : ''}
+          </span>${d.tag==='Receipt' ? `<button type="button" class="docAmt${typeof d.amount==='number'?'':' empty'}" onclick="askReceiptAmount(${wo.id},'${d.id}')" aria-label="Receipt amount">${typeof d.amount==='number'?fmtMoney(d.amount):'Add Amount'}</button>` : ''}</span>` : ''}
         </div>
       </div>
       <div class="docActions">
@@ -11004,6 +11252,7 @@ async function handleDocUpload(id, inputEl, opts){
   const setStatus=t=>{ if(statusEl) statusEl.textContent=t; if(opts.onStatus) opts.onStatus(t); };
   inputEl.disabled=true;
   let addedCount=0;
+  const addedIds=[];
   const failed=[];
   try{
     for(const [i,file] of toProcess.entries()){
@@ -11059,6 +11308,7 @@ async function handleDocUpload(id, inputEl, opts){
           url, storagePath, uploadedBy: CURRENT_USER.displayName, date: ts.date, uploadedAt: Date.now(),
           tag: DOC_TAGS.includes(opts.tag) ? opts.tag : ''
         });
+        addedIds.push(docId);
         DB.storageUsedBytes=(DB.storageUsedBytes||0)+blob.size;
         addedCount++;
       }catch(e){
@@ -11099,7 +11349,7 @@ async function handleDocUpload(id, inputEl, opts){
     renderWorkOrderModal(id);
   }
   inputEl.value='';
-  return {added:addedCount, failed};
+  return {added:addedCount, failed, ids:addedIds};
 }
 /* =========================================================================
    DOCUMENT SCANNER (Docs tab)
@@ -11881,7 +12131,11 @@ async function scanSave(fmt){
   if(SCAN!==S) return;
   S.uploading=false;
   const failed=(res && res.failed) || [];
-  if(!failed.length){ closeScanner(true); return; }
+  if(!failed.length){
+    closeScanner(true);
+    if(S.kind==='receipt' && res && res.ids && res.ids.length) askReceiptAmount(S.woId, res.ids[0]);
+    return;
+  }
   // Keep only the pages that still need to go up.
   if(fmt!=='pdf'){
     const keep=S.pages.filter((pg,i)=>failed.indexOf(files[i].name)!==-1);
