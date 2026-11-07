@@ -3471,8 +3471,9 @@ html.hc .woNext{color:var(--hc-fg);}
   .fgHit,.fgCell.fgName{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(0,1fr);align-items:center;gap:10px;padding:12px 16px;}
   .fgHit .fgLabel,.fgCell.fgName .fgLabel{margin:0;text-align:left;}
   .fgCell.fgName .fgName{display:block;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;}
-  .fgAddrFull{display:none;}
-  .fgAddrShort{display:inline;}
+  .fgHit.fgTight,.fgCell.fgName.fgTight{grid-template-columns:max-content minmax(0,1fr);}
+  .fgValue.useShort .fgAddrFull{display:none;}
+  .fgValue.useShort .fgAddrShort{display:inline;}
   .fgHit .fgValue{min-width:0;display:block;text-align:center;white-space:nowrap;overflow:hidden;overflow-wrap:normal;word-break:normal;}
   .fgHit .fgValue .ic{display:none;}
   .fieldGrid .fgCell:nth-child(2) .fgValue{white-space:nowrap;}
@@ -9741,9 +9742,19 @@ function renderWorkOrderModal(id){
    row is shrunk until it fits instead of wrapping. */
 function fitFieldValues(){
   const vals=document.querySelectorAll('#modalRoot .fieldGrid .fgHit .fgValue, #modalRoot .fieldGrid .fgCell.fgName .fgName');
-  vals.forEach(v=>{ v.style.fontSize=''; });
+  vals.forEach(v=>{ v.style.fontSize=''; v.classList.remove('useShort'); if(v.parentElement) v.parentElement.classList.remove('fgTight'); });
   if(!window.matchMedia || !window.matchMedia('(max-width:600px)').matches) return;
+  const over=v=>v.scrollWidth>v.clientWidth+1;
   vals.forEach(v=>{
+    const row=v.parentElement;
+    // Tried in order: centred; using the space on the right too; for an
+    // address, without the city and state; and only then smaller text.
+    if(over(v)) row.classList.add('fgTight');
+    if(over(v) && v.querySelector('.fgAddrShort')){
+      row.classList.remove('fgTight');
+      v.classList.add('useShort');
+      if(over(v)) row.classList.add('fgTight');
+    }
     let size=parseFloat(getComputedStyle(v).fontSize)||16;
     const min=Math.min(size, 11);
     for(let i=0;i<10 && v.scrollWidth>v.clientWidth+1 && size>min;i++){
