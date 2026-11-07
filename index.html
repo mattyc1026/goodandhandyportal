@@ -3527,9 +3527,10 @@ html.hc .woNext{color:var(--hc-fg);}
     installed=true;
     const wrap=(proto, name, fn)=>{ if(!proto || typeof proto[name]!=='function' || proto[name]._ghu) return; const o=proto[name]; const w=fn(o); w._ghu=true; proto[name]=w; };
     const op=k=>o=>function(...a){ pend[k]++; return o.apply(this, a); };
-    [F.DocumentReference && F.DocumentReference.prototype, F.WriteBatch && F.WriteBatch.prototype].forEach(p=>{
+    [F.DocumentReference && F.DocumentReference.prototype, F.WriteBatch && F.WriteBatch.prototype, F.Transaction && F.Transaction.prototype].forEach(p=>{
       wrap(p, 'set', op('w')); wrap(p, 'update', op('w')); wrap(p, 'delete', op('d'));
     });
+    if(F.Transaction) wrap(F.Transaction.prototype, 'get', o=>function(...a){ pend.r++; return o.apply(this, a); });
     if(F.CollectionReference) wrap(F.CollectionReference.prototype, 'add', op('w'));
     const snap=o=>function(...a){
       const i=a.findIndex(x=>typeof x==='function');
@@ -4309,6 +4310,7 @@ function openDataConnection(){
           if(change.doc.metadata && change.doc.metadata.hasPendingWrites) return;
           const json=change.doc.data().wo;
           if(!json) return;
+          if(Number(change.doc.data().app||0)>APP_BUILD) noteNewerApp();
           // A document echoing back a change this device just made needs no
           // work; the in-memory copy is already identical.
           if(CLOUD_MIRROR.wos[id]===json) return;
@@ -4613,6 +4615,33 @@ function pushToCloud(){
   clearTimeout(syncSaveTimer);
   syncSaveTimer=setTimeout(flushToCloud, 250);
 }
+/* Each changed job is saved with a check-and-write: the cloud's copy is read
+   first, and if someone else changed the job since this device last saw it,
+   the two are combined before saving. Saving used to send this device's whole
+   copy over the top, so when two people changed the same job at nearly the
+   same moment, or a phone came back online with changes made while it had no
+   signal, the other person's visits, notes or edits were wiped. With no
+   connection the save simply waits; nothing is sent blind later. */
+let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
+/* Every save is stamped with this number. A device that sees a save from a
+   newer number is running an old copy of the app, so it reloads itself as
+   soon as nobody is mid-edit, instead of carrying on with older save rules.
+   Raise it whenever a change needs every device on the newest version. */
+var APP_BUILD=2026110701;
+var NEWER_APP=false;
+function noteNewerApp(){
+  if(NEWER_APP || window.GH_TRAINING || window.GH_PRIVATE) return;
+  NEWER_APP=true;
+  const busy=()=>!!document.querySelector('input:focus, textarea:focus, select:focus, [contenteditable=true]:focus, #modalRoot .overlay, #confirmRoot .confirmBox, #scanOverlay')
+    || SYNC_FLUSHING || Object.keys(SYNC_PENDING||{}).length>0;
+  const go=()=>{
+    if(busy()){ setTimeout(go, 4000); return; }
+    try{ const u=new URL(location.href); u.searchParams.set('v', Date.now().toString(36)); location.replace(u.toString()); }
+    catch(e){ location.reload(); }
+  };
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden && !document.querySelector('input:focus, textarea:focus, [contenteditable=true]:focus')) go(); });
+  setTimeout(go, 1500);
+}
 function flushToCloud(){
   if(window.GH_PRIVATE) return;
   if(!syncDb || applyingRemote || MIGRATING) return;
@@ -4624,53 +4653,97 @@ function flushToCloud(){
      that window stay on this device, and this runs again once the cloud's
      copy is in. */
   if(!CLOUD_READY.meta || !CLOUD_READY.wos) return;
+  if(SYNC_FLUSHING){ SYNC_AGAIN=true; return; }
   const stamp=DB.updatedAt||Date.now();
-  const batch=syncDb.batch();
-  let writes=0;
-  const written={};
-  // The text from the last save is reused only when no cloud change has been
-  // applied since; otherwise each job is turned into text fresh, as before.
   const cached = (WO_JSON_CACHE && WO_JSON_CACHE.gen===SAVE_GEN) ? WO_JSON_CACHE.byId : null;
-
-  const meta=metaPayload();
-  if(meta!==CLOUD_MIRROR.meta){
-    // schema is written on every meta update so a device that somehow still
-    // has the old single-document code cannot quietly drag things backwards.
-    batch.set(mainDocRef(), {meta, schema:2, updatedAt:stamp}, {merge:true});
-    writes++;
-  }
+  const jobs=[], present={};
   (DB.workOrders||[]).forEach(wo=>{
     const id=String(wo.id);
     const json=(cached && cached[id]!==undefined) ? cached[id] : JSON.stringify(wo);
-    written[id]=json;
-    if(CLOUD_MIRROR.wos[String(wo.id)]!==json){
-      batch.set(woCollectionRef().doc(String(wo.id)), {wo:json, updatedAt:stamp});
-      writes++;
-    }
+    present[id]=true;
+    if(CLOUD_MIRROR.wos[id]!==json) jobs.push({id, json});
   });
+  const meta=metaPayload();
+  const metaChanged = meta!==CLOUD_MIRROR.meta;
   // A work order deleted on this device leaves its document behind unless it
   // is explicitly removed.
-  Object.keys(CLOUD_MIRROR.wos).forEach(id=>{
-    if(!(id in written)){ batch.delete(woCollectionRef().doc(id)); writes++; }
+  const gone=Object.keys(CLOUD_MIRROR.wos).filter(id=>!present[id]);
+  if(!jobs.length && !metaChanged && !gone.length) return;
+  SYNC_FLUSHING=true;
+  const tasks=[];
+  if(metaChanged || gone.length){
+    const batch=syncDb.batch();
+    // schema is written on every meta update so a device that somehow still
+    // has the old single-document code cannot quietly drag things backwards.
+    if(metaChanged) batch.set(mainDocRef(), {meta, schema:2, updatedAt:stamp}, {merge:true});
+    gone.forEach(id=>batch.delete(woCollectionRef().doc(id)));
+    tasks.push(batch.commit().then(()=>{
+      if(metaChanged) CLOUD_MIRROR.meta=meta;
+      gone.forEach(id=>{ delete CLOUD_MIRROR.wos[id]; if(id in SYNC_PENDING) delete SYNC_PENDING[id]; });
+    }));
+  }
+  jobs.forEach(j=>tasks.push(saveWorkOrderSafely(j.id, j.json, stamp)));
+  Promise.allSettled(tasks).then(results=>{
+    SYNC_FLUSHING=false;
+    savePendingChanges();
+    const failed=results.filter(r=>r.status==='rejected');
+    if(failed.length){
+      console.warn('Sync will retry', failed.map(f=>f.reason));
+      SYNC_FAILS++;
+      const offline = navigator.onLine===false || failed.every(f=>f.reason && /unavailable|offline|network/i.test(String(f.reason.code||f.reason.message||'')));
+      if(!offline && SYNC_FAILS===3) toast('Could not sync latest change to the cloud. It will keep trying.');
+      clearTimeout(SYNC_RETRY_T);
+      SYNC_RETRY_T=setTimeout(pushToCloud, Math.min(60000, 4000*SYNC_FAILS));
+    } else SYNC_FAILS=0;
+    if(SYNC_AGAIN){ SYNC_AGAIN=false; pushToCloud(); }
   });
-
-  if(!writes) return;
-  batch.commit().then(()=>{
-    CLOUD_MIRROR.meta=meta;
-    CLOUD_MIRROR.wos=written;
-    let ch=false;
-    Object.keys(SYNC_PENDING).forEach(id=>{
-      const wo=(DB.workOrders||[]).find(w=>String(w.id)===id);
-      if(!wo){ delete SYNC_PENDING[id]; ch=true; return; }
-      if(!(id in written)) return;
-      if(JSON.stringify(wo)===written[id]) delete SYNC_PENDING[id];
-      else SYNC_PENDING[id]=written[id];   // changed again since; the cloud now holds what was sent
-      ch=true;
-    });
-    if(ch) savePendingChanges();
-  }).catch(e=>{
-    console.error(e);
-    toast('Could not sync latest change to the cloud.');
+}
+window.addEventListener('online', ()=>{ SYNC_FAILS=0; setTimeout(pushToCloud, 800); });
+function saveWorkOrderSafely(id, json, stamp){
+  const ref=woCollectionRef().doc(id);
+  // What this device's change started from: the copy the cloud had then.
+  const base = (id in SYNC_PENDING) ? SYNC_PENDING[id] : (CLOUD_MIRROR.wos[id]!==undefined ? CLOUD_MIRROR.wos[id] : null);
+  const tx = typeof syncDb.runTransaction==='function'
+    ? fn=>syncDb.runTransaction(fn)
+    : fn=>{ const ops=[]; const t={get:r=>r.get(), set:(r,d)=>{ ops.push(()=>r.set(d)); }}; return fn(t).then(res=>Promise.all(ops.map(f=>f())).then(()=>res)); };
+  return tx(t=>t.get(ref).then(snap=>{
+    const cloud = snap.exists ? ((snap.data()||{}).wo||null) : null;
+    if(!cloud && base){
+      // Someone deleted this job meanwhile; it is not brought back.
+      return {out:null, deleted:true};
+    }
+    let out=json;
+    if(cloud && cloud!==json && cloud!==base){
+      const merged=mergeWO3(base?JSON.parse(base):{}, JSON.parse(json), JSON.parse(cloud));
+      normalizeWO(merged);
+      allDayLogsSorted(merged).forEach(({log})=>syncDayLogLegacy(log));
+      out=JSON.stringify(merged);
+    }
+    if(out!==cloud) t.set(ref, {wo:out, updatedAt:stamp, app:APP_BUILD});
+    return {out, deleted:false};
+  })).then(r=>{
+    if(r.deleted){ delete SYNC_PENDING[id]; return; }
+    CLOUD_MIRROR.wos[id]=r.out;
+    const at=(DB.workOrders||[]).findIndex(w=>String(w.id)===id);
+    if(at<0){ delete SYNC_PENDING[id]; return; }
+    const nowJson=JSON.stringify(DB.workOrders[at]);
+    if(r.out!==json){
+      // Someone else's changes were combined in; show them here too.
+      let next=JSON.parse(r.out);
+      if(nowJson!==json){
+        // ...without losing anything done on this device since the save began.
+        try{ next=mergeWO3(JSON.parse(json), JSON.parse(nowJson), next); normalizeWO(next); }catch(e){ console.error(e); next=DB.workOrders[at]; }
+      }
+      DB.workOrders[at]=next;
+      const nj=JSON.stringify(next);
+      if(nj===r.out) delete SYNC_PENDING[id]; else { SYNC_PENDING[id]=r.out; SYNC_AGAIN=true; }
+      writeLocalDB();
+      if(CURRENT_USER){
+        renderTabCounts(); renderMain();
+        if(OPEN_WO_ID!==null && String(OPEN_WO_ID)===id && !document.querySelector('#modalRoot input:focus, #modalRoot textarea:focus, #modalRoot [contenteditable=true]:focus')) renderWorkOrderModal(OPEN_WO_ID);
+      }
+    } else if(nowJson===json) delete SYNC_PENDING[id];
+    else SYNC_PENDING[id]=r.out;   // changed again since; the cloud now holds what was sent
   });
 }
 
