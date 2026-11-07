@@ -3463,12 +3463,14 @@ html.hc .woNext{color:var(--hc-fg);}
   .fgCell{min-height:0;}
   .fgCell.fgName{padding:13px 16px;}
   .fgCell .fgName{font-size:1.1em;overflow-wrap:normal;word-break:normal;}
-  .fgHit{display:flex;align-items:center;gap:12px;padding:12px 16px;}
-  .fgHit .fgLabel{flex:0 0 auto;min-width:5.2em;margin:0;}
-  .fgHit .fgValue{flex:1 1 auto;min-width:0;align-items:center;overflow-wrap:normal;word-break:normal;}
+  /* label on the left, value centred in the card, like the Schedule and
+     Check In/Out rows */
+  .fgHit{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(0,1fr);align-items:center;gap:10px;padding:12px 16px;}
+  .fgHit .fgLabel{margin:0;}
+  .fgHit .fgValue{min-width:0;justify-content:center;text-align:center;align-items:center;overflow-wrap:normal;word-break:normal;}
   .fgHit .fgValue .ic{display:none;}
   .fieldGrid .fgCell:nth-child(2) .fgValue{white-space:nowrap;}
-  .fieldGrid .fgCell:nth-child(4) .fgValue{overflow-wrap:anywhere;}
+  .fieldGrid .fgCell:nth-child(4) .fgValue{overflow-wrap:normal;}
 
   /* work order header: the tabs and the close button share one row */
   .headerActionsWrap{flex-wrap:nowrap;width:100%;gap:6px;}
@@ -8781,7 +8783,7 @@ function fieldGridHTML(wo){
       ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}${esc(addrText)}</div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
     ${cell('fgTap', c.email
-      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}${esc(c.email)}</div></button>`
+      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}<span>${esc(c.email).replace('@','@<wbr>')}</span></div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}None</div></div>`)}
   </div>
   ${fieldHomeownerHTML(wo)}`;
