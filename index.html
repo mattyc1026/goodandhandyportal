@@ -3423,7 +3423,7 @@ html.hc .calcPay{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var
 .fuBar{position:sticky;bottom:16px;z-index:20;margin:4px 0 14px;padding:12px 14px;border-radius:16px;
   background:var(--navy);color:#fff;box-shadow:var(--sh-4);}
 .fuBarTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:.85em;}
-.fuAll{background:none;border:0;color:var(--orange2,#ffb067);font:inherit;font-weight:800;cursor:pointer;padding:4px 0;}
+.fuAll{white-space:nowrap;align-self:flex-start;flex:none;background:none;border:0;color:var(--orange2,#ffb067);font:inherit;font-weight:800;cursor:pointer;padding:4px 0;}
 .fuBarBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .fuBarBtns .btn{background:#fff;color:var(--navy);min-height:44px;padding:8px 4px;font-weight:800;font-size:.8em;white-space:nowrap;}
 .fuBarBtns .btn[disabled]{opacity:.45;cursor:not-allowed;}
@@ -6246,7 +6246,7 @@ function fuBarHTML(list){
   const all=n && ids.every(id=>FU_SELECT.has(id));
   const dis=n?'':'disabled';
   return `<div class="fuBar" role="toolbar" aria-label="Move follow-ups">
-    <div class="fuBarTop"><b>${n} selected</b><button type="button" class="fuAll" onclick="fuPickAll([${ids.join(',')}])">${all?'Clear':'Select All'}</button></div>
+    <div class="fuBarTop"><b>Push ${n} selected work order${n===1?'':'s'} out for:</b><button type="button" class="fuAll" onclick="fuPickAll([${ids.join(',')}])">${all?'Clear':'Select All'}</button></div>
     <div class="fuBarBtns">
       <button type="button" class="btn" ${dis} onclick="fuSnooze('day')">1 Day</button>
       <button type="button" class="btn" ${dis} onclick="fuSnooze('week')">1 Week</button>
