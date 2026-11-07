@@ -3466,8 +3466,8 @@ html.hc .woNext{color:var(--hc-fg);}
   /* label on the left, value centred in the card, like the Schedule and
      Check In/Out rows */
   .fgHit{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(0,1fr);align-items:center;gap:10px;padding:12px 16px;}
-  .fgHit .fgLabel{margin:0;}
-  .fgHit .fgValue{min-width:0;justify-content:center;text-align:center;align-items:center;overflow-wrap:normal;word-break:normal;}
+  .fgHit .fgLabel{margin:0;font-size:min(.66em,12.5px);}
+  .fgHit .fgValue{min-width:0;display:block;text-align:center;white-space:nowrap;overflow:hidden;overflow-wrap:normal;word-break:normal;}
   .fgHit .fgValue .ic{display:none;}
   .fieldGrid .fgCell:nth-child(2) .fgValue{white-space:nowrap;}
   .fieldGrid .fgCell:nth-child(4) .fgValue{overflow-wrap:normal;}
@@ -8783,7 +8783,7 @@ function fieldGridHTML(wo){
       ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}${esc(addrText)}</div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
     ${cell('fgTap', c.email
-      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}<span>${esc(c.email).replace('@','@<wbr>')}</span></div></button>`
+      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}<span>${esc(c.email)}</span></div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}None</div></div>`)}
   </div>
   ${fieldHomeownerHTML(wo)}`;
@@ -9722,8 +9722,25 @@ function renderWorkOrderModal(id){
   }
   restoreCustDraft(id);
   markPreviewOverflow();
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(markPreviewOverflow);
+  fitFieldValues();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ markPreviewOverflow(); fitFieldValues(); });
 }
+/* On phones each customer value stays on one line: a value too long for its
+   row is shrunk until it fits instead of wrapping. */
+function fitFieldValues(){
+  const vals=document.querySelectorAll('#modalRoot .fieldGrid .fgHit .fgValue');
+  vals.forEach(v=>{ v.style.fontSize=''; });
+  if(!window.matchMedia || !window.matchMedia('(max-width:600px)').matches) return;
+  vals.forEach(v=>{
+    let size=parseFloat(getComputedStyle(v).fontSize)||16;
+    const min=Math.min(size, 11);
+    for(let i=0;i<10 && v.scrollWidth>v.clientWidth+1 && size>min;i++){
+      size=Math.max(min, Math.floor(size*Math.max(0.8, (v.clientWidth/v.scrollWidth))*10)/10);
+      v.style.fontSize=size+'px';
+    }
+  });
+}
+window.addEventListener('resize', ()=>{ clearTimeout(window.__fitT); window.__fitT=setTimeout(fitFieldValues, 120); });
 /* The homeowner row spans the full width beneath the two columns and is
    omitted entirely when both fields are blank, so a job where the customer is
    the homeowner does not carry an empty label. */
