@@ -1139,6 +1139,10 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .lostBox ul{margin:4px 0 8px;padding-left:18px;}
 .lostBox li{margin:2px 0;}
 .lostHead{font-weight:700;margin-top:8px;}
+.lostPart{padding:6px 0 4px;border-bottom:1px dashed var(--line);}
+.lostPart:last-of-type{border-bottom:0;}
+.lostNow{color:var(--muted);font-size:.9em;}
+.lostDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-left:6px;vertical-align:middle;}
 .lostBox .adminPillRow{margin-top:6px;}
 
 /* Every row spans the full width: one button stretches as far as three. */
@@ -4749,21 +4753,36 @@ function mergeWO3(B, L, C){
 }
 
 /* ---------------------------------------------------------------------
-   Safety net for visits and notes.
+   Safety net: Recovered Items.
 
-   If a copy arriving from the cloud is missing a visit or a note this
-   device has, and nobody deliberately deleted it, the missing items are
-   set aside here. An admin can put them back from the Admin tab. A visit
-   whose whole day was taken off the schedule is not counted, because
-   removing a date is a deliberate change.
+   If a copy of a job arriving from the cloud is missing something this
+   device had, and nobody deliberately deleted it, what went missing is set
+   aside. That covers notes, check-in/out visits, scheduled dates, files and
+   admin log lines. When the arriving copy is plainly an older one (it is
+   missing log lines this device has), changes to the Job Details and the
+   customer info that it would undo are set aside too.
+
+   Every device sends what it sets aside to one shared list in the cloud, so
+   admins see the same Recovered Items on any device, including what went
+   missing on someone else's phone. Until a device is online the list is
+   kept on that device and sent later.
 --------------------------------------------------------------------- */
 const LOST_KEY='gh_lost_items_v1';
 function readLostItems(){ try{ return JSON.parse(localStorage.getItem(LOST_KEY)||'[]')||[]; }catch(e){ return []; } }
-function writeLostItems(list){ try{ localStorage.setItem(LOST_KEY, JSON.stringify(list.slice(-60))); }catch(e){} }
+function writeLostItems(list){ try{ localStorage.setItem(LOST_KEY, JSON.stringify(list.slice(-80))); }catch(e){} }
 function noteIdentity(n){ return [n.type,n.by,n.date,n.time,n.followUpDate||''].join('|'); }
+function logIdentity(l){ return [l.text,l.by,l.date,l.time].join('|'); }
+function lostId(){ return 'lost'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+let LOST_SHARED={};     // record id -> record, from the shared list (admins only)
+let LOST_UNSUB=null, LOST_DB=null;
+function lostColl(){
+  if(!syncDb || window.GH_TRAINING) return null;
+  return syncDb.collection('gh_portal').doc('lost').collection('items');
+}
 function backupLostItems(oldWo, newWo){
   try{
     const tomb=new Set(newWo.tombstones||[]);
+    // visits
     const keptSess=new Set(), keptDays=new Set();
     allDayLogsSorted(newWo).forEach(({log})=>{ keptDays.add(log.date); logSessions(log).forEach(s=>keptSess.add(s.id)); });
     const sessions=[];
@@ -4773,68 +4792,230 @@ function backupLostItems(oldWo, newWo){
         if(!keptSess.has(s.id) && !tomb.has('s:'+s.id)) sessions.push({date:log.date, entryId:entry.id, session:s});
       });
     });
+    // notes
     const keptNotes=new Set((newWo.notes||[]).map(noteIdentity));
     const notes=(oldWo.notes||[]).filter(n=>!keptNotes.has(noteIdentity(n)) && !tomb.has('n:'+noteIdentity(n)));
-    if(!sessions.length && !notes.length) return;
+    // whole scheduled dates
+    const keptDates=new Set((newWo.scheduleDates||[]).map(d=>d.id));
+    const dates=(oldWo.scheduleDates||[]).filter(d=>d && d.id && !keptDates.has(d.id) && !tomb.has('d:'+d.id));
+    // files
+    const keptDocs=new Set((newWo.docs||[]).map(d=>d.id));
+    const docs=(oldWo.docs||[]).filter(d=>d && d.id && !keptDocs.has(d.id) && !tomb.has('f:'+d.id));
+    // admin log lines (never deleted, so a missing one means an older copy)
+    const keptLogs=new Set((newWo.adminLog||[]).map(logIdentity));
+    const logs=(oldWo.adminLog||[]).filter(l=>!keptLogs.has(logIdentity(l)));
+    const stale=logs.length>0;
+    const same=(a,b)=>JSON.stringify(a||null)===JSON.stringify(b||null);
+    const details = stale && !same(oldWo.jobDetails, newWo.jobDetails) ? oldWo.jobDetails : null;
+    const customer = stale && !same(oldWo.customer, newWo.customer) ? oldWo.customer : null;
+    if(!sessions.length && !notes.length && !dates.length && !docs.length && !logs.length && !details && !customer) return;
+    const rec={id:lostId(), woId:oldWo.id, at:Date.now(), by:(CURRENT_USER&&CURRENT_USER.displayName)||'',
+      sessions, notes, dates, docs, logs, details, customer, up:false};
     const list=readLostItems();
-    list.push({woId:oldWo.id, at:Date.now(), sessions, notes});
+    list.push(JSON.parse(JSON.stringify(rec)));
     writeLostItems(list);
+    setTimeout(flushLostItems, 0);
   }catch(e){ console.error('Could not set aside missing items', e); }
+}
+/* Sends anything set aside on this device to the shared list. Older entries
+   from before the list was shared are sent too. */
+let LOST_FLUSHING=false;
+async function flushLostItems(){
+  const coll=lostColl();
+  if(!coll || LOST_FLUSHING || !firebase.auth || !firebase.auth().currentUser) return;
+  LOST_FLUSHING=true;
+  try{
+    let list=readLostItems(), changed=false;
+    list.forEach(x=>{ if(!x.id){ x.id=lostId(); x.up=false; changed=true; } });
+    if(changed) writeLostItems(list);
+    for(const x of list.filter(x=>!x.up)){
+      const rec=Object.assign({}, x); delete rec.up;
+      try{
+        await coll.doc(x.id).set({woId:x.woId, at:x.at||Date.now(), by:x.by||'', status:'open', data:JSON.stringify(rec)});
+        x.up=true; changed=true;
+      }catch(e){ console.warn('Recovered item not sent yet', e); break; }
+    }
+    if(changed){
+      // Once sent, the shared list is the copy that counts.
+      writeLostItems(readLostItems().map(y=>{ const m=list.find(z=>z.id===y.id); return m ? Object.assign(y,{up:m.up}) : y; }).filter(y=>!y.up));
+    }
+  }finally{ LOST_FLUSHING=false; }
+}
+function lostSyncStart(){
+  flushLostItems();
+  const coll=lostColl();
+  const admin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
+  if(LOST_UNSUB && (!coll || !admin || LOST_DB!==syncDb)) lostSyncStop();
+  if(!coll || !admin || LOST_UNSUB) return;
+  LOST_DB=syncDb;
+  LOST_UNSUB=coll.where('status','==','open').onSnapshot(snap=>{
+    const next={};
+    snap.forEach(doc=>{
+      try{ const r=JSON.parse(doc.data().data||'{}'); r.id=doc.id; r.handled=doc.data().handled||{}; next[doc.id]=r; }catch(e){}
+    });
+    LOST_SHARED=next;
+    if(OPEN_WO_ID!==null && !document.querySelector('#modalRoot input:focus, #modalRoot textarea:focus')) renderWorkOrderModal(OPEN_WO_ID);
+  }, err=>{ console.warn('Recovered items list unavailable', err); });
+}
+function lostSyncStop(){
+  if(LOST_UNSUB){ try{ LOST_UNSUB(); }catch(e){} }
+  LOST_UNSUB=null; LOST_DB=null; LOST_SHARED={};
+}
+window.addEventListener('online', ()=>setTimeout(flushLostItems, 1500));
+function lostRecordsFor(woId){
+  const out=Object.values(LOST_SHARED).filter(r=>r.woId===woId);
+  readLostItems().filter(x=>x.woId===woId && !x.up && !LOST_SHARED[x.id]).forEach(x=>out.push(Object.assign({handled:{}}, x)));
+  return out.sort((a,b)=>(a.at||0)-(b.at||0));
 }
 function lostItemsFor(woId){
   const wo=getWO(woId);
-  if(!wo) return {sessions:[], notes:[]};
+  const empty={sessions:[], notes:[], dates:[], docs:[], logs:[], details:null, customer:null, records:[]};
+  if(!wo) return empty;
+  const tomb=new Set(wo.tombstones||[]);
   const haveSess=new Set(), haveNotes=new Set((wo.notes||[]).map(noteIdentity));
   allDayLogsSorted(wo).forEach(({log})=>logSessions(log).forEach(s=>haveSess.add(s.id)));
-  const tomb=new Set(wo.tombstones||[]);
-  const sessions=[], notes=[], seenS=new Set(), seenN=new Set();
-  readLostItems().filter(x=>x.woId===woId).forEach(x=>{
-    (x.sessions||[]).forEach(it=>{
-      const id=it.session && it.session.id;
-      if(!id || haveSess.has(id) || seenS.has(id) || tomb.has('s:'+id)) return;
-      if(!findDayLog(wo, it.date)) return;
-      seenS.add(id); sessions.push(it);
-    });
-    (x.notes||[]).forEach(n=>{
-      const k=noteIdentity(n);
-      if(haveNotes.has(k) || seenN.has(k) || tomb.has('n:'+k)) return;
-      seenN.add(k); notes.push(n);
-    });
+  const haveDates=new Set((wo.scheduleDates||[]).map(d=>d.id));
+  const haveDocs=new Set((wo.docs||[]).map(d=>d.id));
+  const haveLogs=new Set((wo.adminLog||[]).map(logIdentity));
+  const res=Object.assign({}, empty, {sessions:[], notes:[], dates:[], docs:[], logs:[], records:[]});
+  const seen=new Set();
+  const same=(a,b)=>JSON.stringify(a||null)===JSON.stringify(b||null);
+  lostRecordsFor(woId).forEach(r=>{
+    res.records.push(r);
+    const h=r.handled||{};
+    if(!h.lists){
+      (r.sessions||[]).forEach(it=>{
+        const id=it.session && it.session.id;
+        if(!id || haveSess.has(id) || seen.has('s'+id) || tomb.has('s:'+id)) return;
+        if(!findDayLog(wo, it.date)) return;
+        seen.add('s'+id); res.sessions.push(it);
+      });
+      (r.notes||[]).forEach(n=>{
+        const k=noteIdentity(n);
+        if(haveNotes.has(k) || seen.has('n'+k) || tomb.has('n:'+k)) return;
+        seen.add('n'+k); res.notes.push(n);
+      });
+      (r.dates||[]).forEach(d=>{
+        if(haveDates.has(d.id) || seen.has('d'+d.id) || tomb.has('d:'+d.id)) return;
+        seen.add('d'+d.id); res.dates.push(d);
+      });
+      (r.docs||[]).forEach(d=>{
+        if(haveDocs.has(d.id) || seen.has('f'+d.id) || tomb.has('f:'+d.id)) return;
+        seen.add('f'+d.id); res.docs.push(d);
+      });
+      (r.logs||[]).forEach(l=>{
+        const k=logIdentity(l);
+        if(haveLogs.has(k) || seen.has('l'+k)) return;
+        seen.add('l'+k); res.logs.push(l);
+      });
+    }
+    // The most recent set-aside copy of each is the one offered.
+    if(!h.details && r.details && !same(r.details, wo.jobDetails)) res.details={rec:r.id, before:r.details};
+    if(!h.customer && r.customer && !same(r.customer, wo.customer)) res.customer={rec:r.id, before:r.customer};
   });
-  return {sessions, notes};
+  return res;
+}
+function lostCount(woId){
+  const L=lostItemsFor(woId);
+  return L.sessions.length+L.notes.length+L.dates.length+L.docs.length+(L.logs.length?1:0)+(L.details?1:0)+(L.customer?1:0);
+}
+function lostDiffRows(before, now, fields){
+  return fields.map(([k,label])=>{
+    const a=before?before[k]:'', b=now?now[k]:'';
+    if(JSON.stringify(a||'')===JSON.stringify(b||'')) return '';
+    const show=v=>Array.isArray(v) ? (v.length ? v.map(e=>typeof e==='string'?e:(e.item||e.text||'')).filter(Boolean).join(', ') : 'None') : (v||'None');
+    return `<li><b>${esc(label)}:</b> ${esc(String(show(a)).slice(0,140))} <span class="lostNow">(now ${esc(String(show(b)).slice(0,80))})</span></li>`;
+  }).join('');
 }
 function lostItemsPanelHTML(woId){
-  const {sessions, notes}=lostItemsFor(woId);
-  if(!sessions.length && !notes.length) return '';
-  const sRows=sessions.map(it=>`<li>${esc(formatDateDisplay(it.date))}: ${esc((it.session.in&&it.session.in.by)||'Unknown')}, ${esc(it.session.in?it.session.in.time:'n/a')} to ${esc(it.session.out?it.session.out.time:'still open')}</li>`).join('');
-  const nRows=notes.map(n=>`<li>${esc(n.type)} note, ${esc(n.date||'')}: ${esc(String(n.text||'').slice(0,80))}</li>`).join('');
+  const L=lostItemsFor(woId);
+  const wo=getWO(woId);
+  const lists=L.sessions.length+L.notes.length+L.dates.length+L.docs.length+L.logs.length;
+  if(!lists && !L.details && !L.customer) return '';
+  const sRows=L.sessions.map(it=>`<li>${esc(formatDateDisplay(it.date))}: ${esc((it.session.in&&it.session.in.by)||'Unknown')}, ${esc(it.session.in?it.session.in.time:'n/a')} to ${esc(it.session.out?it.session.out.time:'still open')}</li>`).join('');
+  const nRows=L.notes.map(n=>`<li>${esc(n.type)} note, ${esc(n.date||'')}: ${esc(String(n.text||'').slice(0,80))}</li>`).join('');
+  const dRows=L.dates.map(d=>`<li>${d.type==='presite'?'Pre-Site':'Whole Job'}: ${esc(formatDateDisplay(d.startDate))}${d.endDate&&d.endDate!==d.startDate?' to '+esc(formatDateDisplay(d.endDate)):''}, ${esc(formatTime12(d.startTime))}-${esc(formatTime12(d.endTime))}</li>`).join('');
+  const fRows=L.docs.map(d=>`<li>${esc(d.name||'Untitled')}${d.tag?' ('+esc(d.tag)+')':''}</li>`).join('');
+  const lRows=L.logs.length ? `<li>${L.logs.length} admin log line${L.logs.length>1?'s':''}</li>` : '';
+  const cust=L.customer ? lostDiffRows(L.customer.before, wo.customer, [['name','Name'],['phone','Phone'],['address','Address'],['email','Email'],['altPhoneName','Alternate Name'],['altPhone','Alternate Phone'],['altPhoneNote','Alternate Note'],['homeownerName','Homeowner'],['homeownerPhone','Homeowner Phone']]) : '';
+  const jd=L.details ? lostDiffRows(L.details.before, wo.jobDetails, [['description','Description'],['labor','Labor'],['materials','Materials'],['tools','Tools'],['issues','Issues'],['exclusions','Exclusions'],['disclaimers','Disclaimers']]) : '';
+  const custBlock = L.customer ? `<div class="lostPart"><div class="lostHead">Customer Info Before</div><ul>${cust||'<li>Other customer details</li>'}</ul>
+      <div class="adminPillRow"><button type="button" class="stageBtn pillNeutral" onclick="restoreLostPart(${woId},'customer')">Put Back</button></div></div>` : '';
+  const jdBlock = L.details ? `<div class="lostPart"><div class="lostHead">Job Details Before</div><ul>${jd||'<li>Other job details</li>'}</ul>
+      <div class="adminPillRow"><button type="button" class="stageBtn pillNeutral" onclick="restoreLostPart(${woId},'details')">Put Back</button></div></div>` : '';
   return `<h4>Recovered Items</h4>
     <div class="lostBox">
-      <div class="small">These went missing from this job when another device sent an older copy.</div>
-      ${sRows?`<div class="lostHead">Visits</div><ul>${sRows}</ul>`:''}
-      ${nRows?`<div class="lostHead">Notes</div><ul>${nRows}</ul>`:''}
-      <div class="adminPillRow">
-        <button type="button" class="stageBtn pillNeutral" onclick="restoreLostItems(${woId})">Restore All</button>
-        <button type="button" class="stageBtn pillNeutral" onclick="dismissLostItems(${woId})">Dismiss</button>
-      </div>
+      <div class="small">These went missing from this job when a device sent an older copy.</div>
+      ${lists?`<div class="lostPart">
+        ${sRows?`<div class="lostHead">Visits</div><ul>${sRows}</ul>`:''}
+        ${dRows?`<div class="lostHead">Scheduled Dates</div><ul>${dRows}</ul>`:''}
+        ${nRows?`<div class="lostHead">Notes</div><ul>${nRows}</ul>`:''}
+        ${fRows?`<div class="lostHead">Files</div><ul>${fRows}</ul>`:''}
+        ${lRows?`<div class="lostHead">Admin Log</div><ul>${lRows}</ul>`:''}
+        <div class="adminPillRow"><button type="button" class="stageBtn pillNeutral" onclick="restoreLostPart(${woId},'lists')">Restore</button></div>
+      </div>`:''}
+      ${custBlock}${jdBlock}
+      <div class="adminPillRow"><button type="button" class="stageBtn pillNeutral" onclick="dismissLostItems(${woId})">Dismiss All</button></div>
     </div>
     <div style="height:14px"></div>`;
 }
-function restoreLostItems(woId){
+/* Marks a part of each record for this job as dealt with, in the shared
+   list and on this device. A record with every part dealt with is closed. */
+function markLostHandled(woId, part){
+  const coll=lostColl();
+  const recs=lostRecordsFor(woId);
+  const local=readLostItems();
+  recs.forEach(r=>{
+    const h=Object.assign({}, r.handled||{});
+    if(part==='all'){ h.lists=h.details=h.customer=true; }
+    else h[part]=true;
+    const hasL=(r.sessions||[]).length+(r.notes||[]).length+(r.dates||[]).length+(r.docs||[]).length+(r.logs||[]).length>0;
+    const done=(!hasL||h.lists) && (!r.details||h.details) && (!r.customer||h.customer);
+    r.handled=h;
+    if(LOST_SHARED[r.id]){
+      if(done) delete LOST_SHARED[r.id]; else LOST_SHARED[r.id].handled=h;
+      if(coll) coll.doc(r.id).set({handled:h, status:done?(part==='all'?'dismissed':'restored'):'open', closedBy:(CURRENT_USER&&CURRENT_USER.displayName)||''}, {merge:true}).catch(e=>console.warn(e));
+    }
+    const li=local.find(x=>x.id===r.id);
+    if(li){ li.handled=h; if(done) li.gone=true; }
+  });
+  writeLostItems(local.filter(x=>!x.gone));
+}
+function restoreLostPart(woId, part){
   const wo=getWO(woId);
   if(!wo) return;
-  const {sessions, notes}=lostItemsFor(woId);
-  sessions.forEach(it=>{
-    const found=findDayLog(wo, it.date);
-    if(!found) return;
-    if(!Array.isArray(found.log.sessions)) found.log.sessions=[];
-    found.log.sessions.push(it.session);
-    found.log.sessions.sort((a,b)=>(parseClockTime(a.in&&a.in.time)||0)-(parseClockTime(b.in&&b.in.time)||0));
-    syncDayLogLegacy(found.log);
-  });
-  notes.forEach(n=>wo.notes.push(n));
-  addAdminLog(wo, `Restored ${sessions.length} visit${sessions.length===1?'':'s'} and ${notes.length} note${notes.length===1?'':'s'} that went missing in a sync.`);
-  writeLostItems(readLostItems().filter(x=>x.woId!==woId));
+  const L=lostItemsFor(woId);
+  let msg='';
+  if(part==='lists'){
+    L.sessions.forEach(it=>{
+      const found=findDayLog(wo, it.date);
+      if(!found) return;
+      if(!Array.isArray(found.log.sessions)) found.log.sessions=[];
+      found.log.sessions.push(it.session);
+      found.log.sessions.sort((a,b)=>(parseClockTime(a.in&&a.in.time)||0)-(parseClockTime(b.in&&b.in.time)||0));
+      syncDayLogLegacy(found.log);
+    });
+    L.notes.forEach(n=>wo.notes.push(n));
+    L.dates.forEach(d=>wo.scheduleDates.push(d));
+    L.docs.forEach(d=>wo.docs.push(d));
+    if(L.logs.length){
+      const at=l=>{ const t=new Date((l.date||'')+' '+(l.time||'')).getTime(); return isNaN(t)?0:t; };
+      wo.adminLog=wo.adminLog.concat(L.logs).sort((a,b)=>at(b)-at(a));
+    }
+    const parts=[];
+    const n=(c,w)=>c ? parts.push(c+' '+w+(c===1?'':'s')) : 0;
+    n(L.sessions.length,'visit'); n(L.dates.length,'scheduled date'); n(L.notes.length,'note'); n(L.docs.length,'file'); n(L.logs.length,'log line');
+    msg='Restored '+parts.join(', ')+' that went missing in a sync.';
+  } else if(part==='customer' && L.customer){
+    wo.customer=JSON.parse(JSON.stringify(L.customer.before));
+    msg='Put back customer info that was undone in a sync.';
+  } else if(part==='details' && L.details){
+    wo.jobDetails=JSON.parse(JSON.stringify(L.details.before));
+    msg='Put back Job Details that were undone in a sync.';
+  } else return;
+  normalizeWO(wo);
+  addAdminLog(wo, msg);
+  markLostHandled(woId, part);
   saveDB(DB);
   renderWorkOrderModal(woId); renderTabCounts(); renderMain();
   toast('Restored.');
@@ -4842,7 +5023,7 @@ function restoreLostItems(woId){
 function dismissLostItems(woId){
   askYesNo('Dismiss these items? They will not be offered again.', yes=>{
     if(!yes) return;
-    writeLostItems(readLostItems().filter(x=>x.woId!==woId));
+    markLostHandled(woId, 'all');
     renderWorkOrderModal(woId);
   });
 }
@@ -4898,6 +5079,7 @@ function saveSyncConfig(){
   toast('Connecting sync…');
 }
 function disconnectSync(){
+  lostSyncStop();
   localStorage.removeItem(SYNC_CFG_KEY);
   if(syncUnsub){ syncUnsub(); syncUnsub=null; }
   syncDb=null;
@@ -5229,6 +5411,7 @@ function lastTab(){
    two arrive in either order and the app can only open once both are in. */
 function onDatabaseReady(){
   DATA_LOADED=true;
+  try{ if(CURRENT_USER) lostSyncStart(); }catch(e){}
   clearTimeout(window._authStallTimer);
   if(!PENDING_AUTH_USER || CURRENT_USER) return;
   const user=PENDING_AUTH_USER;
@@ -5352,6 +5535,7 @@ function sendPasswordReset(){
 }
 function enterApp(u){
   try{ if(window.GH_USAGE && syncDb) GH_USAGE.user(u.username, syncDb, !window.GH_TRAINING); }catch(e){}
+  try{ lostSyncStart(); }catch(e){}
   CURRENT_USER={username:u.username, displayName:fullName(u), isAdmin:u.isAdmin};
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
@@ -7591,6 +7775,8 @@ function removeWholeScheduleEntry(woId, dateId){
   if(!wo) return;
   const gone=(wo.scheduleDates||[]).find(d=>d.id===dateId);
   if(gone) addAdminLog(wo, `Removed a ${schedEntryLabel(gone)}.`);
+  if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+  wo.tombstones.push('d:'+dateId);
   wo.scheduleDates=(wo.scheduleDates||[]).filter(d=>d.id!==dateId);
   if(SCHED_EDIT_ID===dateId){ SCHED_EDIT_ID=null; SCHED_INLINE=false; }
   saveDB(DB);
@@ -9539,7 +9725,7 @@ function renderWorkOrderModal(id){
       headerActions = `<div class="headerTabs fieldNav">
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Group (${priorCount})</button>` : ''}
-          ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
+          ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin${lostCount(id)?'<span class="lostDot" aria-label="Recovered items"></span>':''}</button>` : ''}
         </div>`;
       bodyHTML = fieldModeHTML(wo);
     }catch(err){
@@ -9572,7 +9758,7 @@ function renderWorkOrderModal(id){
     headerActions = `<div class="headerTabs">
           <button class="headerTab" onclick="toggleDocsView(${id})">Docs${wo.docs&&wo.docs.length?` (${wo.docs.length})`:''}</button>
           ${priorCount ? `<button class="headerTab" onclick="togglePriorView(${id})">Group (${priorCount})</button>` : ''}
-          ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin</button>` : ''}
+          ${isAdmin ? `<button class="headerTab" onclick="toggleAdminView(${id})">Admin${lostCount(id)?'<span class="lostDot" aria-label="Recovered items"></span>':''}</button>` : ''}
         </div>`;
     bodyHTML = `
         <div class="woGrid">
@@ -12214,6 +12400,8 @@ async function purgeStorageIfOverCap(){
     if((DB.storageUsedBytes||0) < STORAGE_CAP_BYTES) break;
     try{ await syncStorage.ref(doc.storagePath).delete(); }catch(e){ /* may already be gone, still clean up metadata */ }
     wo.docs=wo.docs.filter(d=>d.id!==doc.id);
+    if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+    wo.tombstones.push('f:'+doc.id);
     DB.storageUsedBytes=Math.max(0, (DB.storageUsedBytes||0)-(doc.size||0));
     wo.adminLog.unshift({text:`Auto-purged document "${doc.name}". 5GB storage cap reached.`, by:'System', date:nowStamp().date, time:nowStamp().time});
     purgedNames.push(doc.name);
@@ -12281,6 +12469,8 @@ function deleteDoc(id, docId){
       DB.storageUsedBytes=Math.max(0, (DB.storageUsedBytes||0)-(d.size||0));
     }
     wo.docs=(wo.docs||[]).filter(x=>x.id!==docId);
+    if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+    wo.tombstones.push('f:'+docId);
     addAdminLog(wo, `Deleted file "${d.name||'Untitled'}".`);
     saveDB(DB); renderWorkOrderModal(id);
     toast('File deleted.');
