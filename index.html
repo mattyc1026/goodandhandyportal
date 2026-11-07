@@ -3466,9 +3466,11 @@ html.hc .woNext{color:var(--hc-fg);}
   /* label on the left, value centred in the card, like the Schedule and
      Check In/Out rows */
   /* label above, value centred under it on one line */
-  .fgHit{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 16px 12px;text-align:center;}
-  .fgHit .fgLabel{margin:0;}
+  .fgHit{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:10px 16px 12px;}
+  .fgHit .fgLabel{margin:0;text-align:left;}
   .fgHit .fgValue{width:100%;}
+  .fgCell.fgName .fgLabel{text-align:left;}
+  .fgCell.fgName .fgName{display:block;width:100%;text-align:center;white-space:nowrap;overflow:hidden;}
   .fgHit .fgValue{min-width:0;display:block;text-align:center;white-space:nowrap;overflow:hidden;overflow-wrap:normal;word-break:normal;}
   .fgHit .fgValue .ic{display:none;}
   .fieldGrid .fgCell:nth-child(2) .fgValue{white-space:nowrap;}
@@ -9730,7 +9732,7 @@ function renderWorkOrderModal(id){
 /* On phones each customer value stays on one line: a value too long for its
    row is shrunk until it fits instead of wrapping. */
 function fitFieldValues(){
-  const vals=document.querySelectorAll('#modalRoot .fieldGrid .fgHit .fgValue');
+  const vals=document.querySelectorAll('#modalRoot .fieldGrid .fgHit .fgValue, #modalRoot .fieldGrid .fgCell.fgName .fgName');
   vals.forEach(v=>{ v.style.fontSize=''; });
   if(!window.matchMedia || !window.matchMedia('(max-width:600px)').matches) return;
   vals.forEach(v=>{
