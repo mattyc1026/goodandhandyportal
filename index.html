@@ -10959,8 +10959,6 @@ function calcPickJob(id, quiet){
     const r=receiptTotal(wo);
     CALC.miles=String(milesLogged(wo));
     CALC.receipts=r.sum.toFixed(2);
-    const m=materialsTotal(wo);
-    CALC.materials=m ? m.toFixed(2) : '';
   }
   if(!quiet) renderExpenseCalc();
 }
