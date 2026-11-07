@@ -3380,7 +3380,7 @@ html.hc .docAmt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc
 .calcInputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .calcInputs .calcBig{grid-column:1 / -1;}
 .calcInputs .field{margin:0;}
-.calcBig .calcMoney input{font-size:max(18px,1.35em);}
+.calcBig:first-child .calcMoney input{font-size:max(18px,1.35em);}
 .calcHint{font-weight:600;color:var(--muted);font-size:.78em;margin-top:5px;}
 .calcHint.warn{color:var(--orange);}
 .calcSelect{width:100%;min-height:46px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);font:inherit;font-weight:600;}
@@ -10919,20 +10919,31 @@ function alyssaPay(total){
   if(capped) pay=cap;
   return {pct, pay, capped};
 }
-function calcBreakdown(invoice, miles, receipts, mpg, gas){
-  const inv=Number(invoice)||0, mi=Number(miles)||0, rc=Number(receipts)||0;
+/* Alyssa's pay comes off the full invoice total; materials, gas and
+   receipts come off after. */
+function calcBreakdown(invoice, miles, receipts, mpg, gas, materials){
+  const inv=Number(invoice)||0, mi=Number(miles)||0, rc=Number(receipts)||0, mat=Number(materials)||0;
   const a=alyssaPay(inv);
   const gallons = mpg>0 ? mi/mpg : 0;
   const gasCost=Math.round(gallons*gas*100)/100;
-  const left=Math.round((inv-a.pay-gasCost-rc)*100)/100;
+  const left=Math.round((inv-a.pay-mat-gasCost-rc)*100)/100;
   const half=Math.round(left*50)/100;
-  return {inv, alyssa:a, gallons, gasCost, receipts:rc, left, matthew:half, scott:Math.round((left-half)*100)/100};
+  return {inv, alyssa:a, materials:mat, gallons, gasCost, receipts:rc, left, matthew:half, scott:Math.round((left-half)*100)/100};
+}
+/* Sum of the priced Materials lines in a job's details. */
+function materialsTotal(wo){
+  let sum=0;
+  ((wo.jobDetails||{}).materials||[]).forEach(e=>{
+    const v=parseMoney(typeof e==='string' ? '' : e.price);
+    if(v!==null && !isNaN(v)) sum+=v;
+  });
+  return Math.round(sum*100)/100;
 }
 let CALC=null;   // {woId, invoice, miles, receipts}
 function openExpenseCalc(woId){
   if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
   closeSettingsMenus();
-  CALC={woId:null, invoice:'', miles:'', receipts:'', back:woId||null};
+  CALC={woId:null, invoice:'', materials:'', miles:'', receipts:'', back:woId||null};
   if(woId) calcPickJob(woId, true);
   renderExpenseCalc();
 }
@@ -10948,6 +10959,8 @@ function calcPickJob(id, quiet){
     const r=receiptTotal(wo);
     CALC.miles=String(milesLogged(wo));
     CALC.receipts=r.sum.toFixed(2);
+    const m=materialsTotal(wo);
+    CALC.materials=m ? m.toFixed(2) : '';
   }
   if(!quiet) renderExpenseCalc();
 }
@@ -10984,6 +10997,8 @@ function renderExpenseCalc(){
         <div class="calcInputs">
           <div class="field calcBig"><label for="calcInv">Invoice Total</label>
             <div class="calcMoney"><span>$</span><input id="calcInv" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.invoice)}" oninput="calcInput('invoice',this)"></div></div>
+          <div class="field calcBig"><label for="calcMat">Materials</label>
+            <div class="calcMoney"><span>$</span><input id="calcMat" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.materials)}" oninput="calcInput('materials',this)"></div></div>
           <div class="field"><label for="calcMiles">Miles</label>
             <div class="calcMoney"><input id="calcMiles" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.miles)}" oninput="calcInput('miles',this)"><span>mi</span></div></div>
           <div class="field"><label for="calcRc">Receipts</label>
@@ -11013,12 +11028,13 @@ function renderCalcResult(){
   const sum=document.getElementById('calcGasSum');
   if(sum) sum.textContent=`${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal`;
   const num=v=>{ const n=parseMoney(v); return (n===null || isNaN(n)) ? 0 : n; };
-  const b=calcBreakdown(num(CALC.invoice), num(CALC.miles), num(CALC.receipts), cs.mpg, cs.gas);
+  const b=calcBreakdown(num(CALC.invoice), num(CALC.miles), num(CALC.receipts), cs.mpg, cs.gas, num(CALC.materials));
   const row=(label, sub, val, cls)=>`<div class="calcRow ${cls||''}"><span class="calcLbl">${label}${sub?`<small>${sub}</small>`:''}</span><span class="calcVal">${val}</span></div>`;
   const aSub = b.alyssa.pct ? `${b.alyssa.pct}%${b.alyssa.capped?', capped at $600':''}` : (b.inv>0?'Under $150':'');
   el.innerHTML=
     row('Invoice Total','',fmtMoney(b.inv),'calcTop')+
     row('Alyssa',aSub,'−'+fmtMoney(b.alyssa.pay),'calcOut')+
+    row('Materials','','−'+fmtMoney(b.materials),'calcOut')+
     row('Gas',`${num(CALC.miles).toLocaleString('en-US',{maximumFractionDigits:1})} mi ÷ ${cs.mpg} mpg × ${fmtMoney(cs.gas)}`,'−'+fmtMoney(b.gasCost),'calcOut')+
     row('Receipts','','−'+fmtMoney(b.receipts),'calcOut')+
     row('Remaining','',fmtMoney(b.left),'calcLeft'+(b.left<0?' neg':''))+
