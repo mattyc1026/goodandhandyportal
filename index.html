@@ -3411,7 +3411,7 @@ html.hc .docAmt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc
 .calcGas summary{cursor:pointer;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;gap:10px;align-items:center;list-style:none;}
 .calcGas summary::-webkit-details-marker{display:none;}
 .calcGas summary{flex-wrap:wrap;}
-@media (max-width:600px){ .calcInputs.two{grid-template-columns:1fr;} }
+@media (max-width:600px){ .calcInputs,.calcInputs.two{grid-template-columns:1fr;} }
 .calcGas summary span{font-weight:600;color:var(--muted);font-size:.78em;}
 .calcGas .calcInputs{margin-top:12px;}
 html.hc .calcPay{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
@@ -11302,11 +11302,14 @@ function renderExpenseCalc(){
           <div class="field calcBig"><label for="calcInv">Invoice Total</label>
             <div class="calcMoney"><span>$</span><input id="calcInv" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.invoice)}" oninput="calcInput('invoice',this)"></div></div>
           <div class="field calcBig"><label for="calcMat">Materials</label>
-            <div class="calcMoney"><span>$</span><input id="calcMat" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.materials)}" oninput="calcInput('materials',this)"></div></div>
+            <div class="calcMoney"><span>$</span><input id="calcMat" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.materials)}" oninput="calcInput('materials',this)"></div>
+            <div class="calcHint">Don't include materials already in Receipts.</div></div>
           <div class="field"><label for="calcMiles">Miles</label>
-            <div class="calcMoney"><input id="calcMiles" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.miles)}" oninput="calcInput('miles',this)"><span>mi</span></div></div>
+            <div class="calcMoney"><input id="calcMiles" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.miles)}" oninput="calcInput('miles',this)"><span>mi</span></div>
+            <div class="calcHint">Don't include gas already in Receipts.</div></div>
           <div class="field"><label for="calcRc">Receipts</label>
             <div class="calcMoney"><span>$</span><input id="calcRc" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.receipts)}" oninput="calcInput('receipts',this)"></div>
+            <div class="calcHint">Don't include anything already in Materials or Gas.</div>
             ${r?`<div class="calcHint${r.missing?' warn':''}">${r.count} receipt${r.count===1?'':'s'}${r.missing?`, ${r.missing} with no amount`:''}</div>`:''}</div>
         </div>
         <div class="calcResult" id="calcResult"></div>
@@ -11336,15 +11339,15 @@ function renderCalcResult(){
   const num=v=>{ const n=parseMoney(v); return (n===null || isNaN(n)) ? 0 : n; };
   const b=calcBreakdown(num(CALC.invoice), num(CALC.miles), num(CALC.receipts), cs.mpg, cs.gas, num(CALC.materials), cs.tax);
   const row=(label, sub, val, cls)=>`<div class="calcRow ${cls||''}"><span class="calcLbl">${label}${sub?`<small>${sub}</small>`:''}</span><span class="calcVal">${val}</span></div>`;
-  const aSub = b.alyssa.pct ? `${b.alyssa.pct}%${b.alyssa.capped?', capped at $600':''}` : (b.inv>0?'Under $150':'');
+  const aSub = b.alyssa.pct ? `${b.alyssa.pct}% of invoice${b.alyssa.capped?', capped at $600':''}` : (b.inv>0?'Invoice under $150':'');
   el.innerHTML=
     row('Invoice Total','',fmtMoney(b.inv),'calcTop')+
-    row('Alyssa',aSub,'−'+fmtMoney(b.alyssa.pay),'calcOut')+
-    row('Tax Fund',`${b.taxPct}% of invoice`,'−'+fmtMoney(b.tax),'calcOut')+
     row('Materials','','−'+fmtMoney(b.materials),'calcOut')+
     row('Gas',`${num(CALC.miles).toLocaleString('en-US',{maximumFractionDigits:1})} mi ÷ ${cs.mpg} mpg × ${fmtMoney(cs.gas)}`,'−'+fmtMoney(b.gasCost),'calcOut')+
     row('Receipts','','−'+fmtMoney(b.receipts),'calcOut')+
-    row('Remaining','',fmtMoney(b.left),'calcLeft'+(b.left<0?' neg':''))+
+    row('Tax Fund',`${b.taxPct}% of invoice`,'−'+fmtMoney(b.tax),'calcOut')+
+    row('Remaining','',fmtMoney(b.left+b.alyssa.pay),'calcLeft'+(b.left+b.alyssa.pay<0?' neg':''))+
+    row('Alyssa',aSub,'−'+fmtMoney(b.alyssa.pay),'calcOut')+
     `<div class="calcSplit">
       <div class="calcPay${b.matthew<0?' neg':''}"><span>Matthew</span><b>${fmtMoney(b.matthew)}</b></div>
       <div class="calcPay${b.scott<0?' neg':''}"><span>Scott</span><b>${fmtMoney(b.scott)}</b></div>
