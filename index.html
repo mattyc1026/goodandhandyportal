@@ -725,13 +725,18 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .actBtn.solid:hover{filter:brightness(1.12);}
 .actBtn.ok{background:var(--green);border-color:var(--greenb);color:var(--greenb);}
 .actBtn.no{background:var(--red);border-color:var(--redb);color:var(--redb);}
-.actBtn.view{background:var(--paper);border-color:var(--navy);color:var(--navy);}
+.actBtn.view{background:#f2f5f8;border-color:#dbe2ea;color:#3f4b5c;}
+.actBtn.modify{background:#ece3d8;border-color:#c9b9a5;color:#6b5745;}
+.actBtn.view:hover{border-color:#b9c4d1;}
+.actBtn.modify:hover{border-color:#a8957e;}
+html.dark .actBtn.view{background:#262d37;border-color:#424c5a;color:#d8dfe8;}
+html.dark .actBtn.modify{background:#3a3229;border-color:#6d5f4f;color:#e6d8c6;}
 .actBtn.ok:hover,.actBtn.no:hover{filter:brightness(.97);}
 html.dark .actBtn.solid{color:var(--paper);}
 /* Dark + high contrast: the dark-mode label colour above would otherwise land
    black on black, which also hid the Check Out label. */
 html.dark.hc .ciBtn.out{color:var(--hc-fg);}
-html.hc .actBtn,html.hc .actBtn.ok,html.hc .actBtn.no{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);box-shadow:none;}
+html.hc .actBtn,html.hc .actBtn.ok,html.hc .actBtn.no,html.hc .actBtn.view,html.hc .actBtn.modify{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);box-shadow:none;}
 html.hc .actBtn.solid{background:var(--hc-fg);color:var(--hc-bg);}
 .docsTab{background:var(--paper);}
 .docsTab h4{margin-top:0;}
@@ -7192,7 +7197,7 @@ function rowHTML(wo, opts){
   const actions={
     buildEstimate:  act('openEstimateSplit','solid','pencil','Build'),
     sendEstimate:   act('openEsignSplit','solid','send','Send'),
-    decide:         (estimateDoc(wo)?act('viewEstimate','view','file-text','View'):'')+act('approveEstimate','ok','check','Approved')+act('modifyEstimate','','pencil','Modify')+act('declineEstimate','no','x','Declined'),
+    decide:         (estimateDoc(wo)?act('viewEstimate','view','file-text','View'):'')+act('approveEstimate','ok','check','Approved')+act('modifyEstimate','modify','pencil','Modify')+act('declineEstimate','no','x','Declined'),
     jobComplete:    act('confirmJobComplete','ok','check-circle','Complete Job'),
     buildInvoice:   act('openInvoiceSplit','solid','pencil','Build'),
     sendInvoice:    act('openSendInvoice','solid','send','Send')
