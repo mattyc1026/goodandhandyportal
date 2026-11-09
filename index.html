@@ -6540,7 +6540,7 @@ function fuSnooze(unit){
     const was=n.followUpDate;
     // A note records the push and carries the new follow-up date, so the
     // earlier note stays exactly as it was written.
-    const who=(CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.displayName)) || 'Someone';
+    const who=userFirstName(CURRENT_USER);
     addNote(wo, 'NOTE', `${who} pushed the work order out ${label}.`, iso);
     addAdminLog(wo, `Follow-up moved from ${formatFollowUp(was)} to ${formatFollowUp(iso)}.`);
     moved++;
@@ -6549,6 +6549,14 @@ function fuSnooze(unit){
   if(moved) saveDB(DB);
   renderTabCounts(); renderMain();
   if(moved) toast(`${moved} follow-up${moved>1?'s':''} moved to ${formatFollowUp(iso)}.`);
+}
+/* Usernames are first name plus last initial, e.g. alyssac is Alyssa. */
+function userFirstName(u){
+  if(!u) return 'Someone';
+  if(u.firstName) return String(u.firstName).trim();
+  const n=String(u.username||u.displayName||'').trim();
+  if(n.length<2) return n || 'Someone';
+  return n.charAt(0).toUpperCase()+n.slice(1,-1).toLowerCase();
 }
 function mostRecentNote(wo){
   return (wo.notes && wo.notes.length) ? wo.notes[0] : null;
