@@ -2668,6 +2668,7 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
   background:linear-gradient(90deg,var(--pink) 0%,var(--paper) 62%);
 }
 .fieldSec--homeowner .fieldSecHead{cursor:default;padding-top:15px;padding-bottom:15px;}
+.fieldSec.fixed > .fieldSecHead{cursor:default;}
 .fieldSec--homeowner .fieldSecHead > span:first-child{color:var(--pink-ink);}
 .hoFace{display:inline-flex;align-items:center;justify-content:center;gap:12px;max-width:100%;}
 .hoFace button{background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap;}
@@ -9911,13 +9912,15 @@ function markPreviewOverflow(){
     el.classList.toggle('more', el.scrollHeight > el.clientHeight+2);
   });
 }
-function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview){
-  const open=!!FIELD_SEC[key];
+/* fixed: the section is always open and its title is just a title, with no
+   + / - to fold it away (used by Notes). */
+function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview, fixed){
+  const open=fixed || !!FIELD_SEC[key];
   const moreCls = moreAlign==='end' ? ' alignEnd' : '';
-  return `<div class="fieldSec fieldSec--${key}${open?' open':''}">
-    <button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
+  return `<div class="fieldSec fieldSec--${key}${open?' open':''}${fixed?' fixed':''}">
+    ${fixed ? `<div class="fieldSecHead"><span>${esc(title)}</span></div>` : `<button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
       <span>${esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
-    </button>
+    </button>`}
     ${(!open && preview) ? preview : ''}
     ${open?`<div class="fieldSecBody">
       ${body}
@@ -9929,7 +9932,7 @@ function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreA
 function fieldNotesSecHTML(wo){
   const notes=wo.notes||[];
   const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
-  if(!notes.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>');
+  if(!notes.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>', '', '', undefined, '', '', true);
   /* idx is the note's real position in wo.notes, because the admin edit and
      delete calls address notes by index and the section shows the first note
      separately from the rest. */
@@ -9951,7 +9954,7 @@ function fieldNotesSecHTML(wo){
   return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0], 0),
     'notesMore', `All notes (${notes.length})`,
     rest.length ? rest.map((n,i)=>one(n, i+1)).join('') : '', 'end',
-    fieldNotePreviewHTML(wo));
+    '', true);
 }
 /* ---- Customer editing, inline ----
    The same fields and the same saveCustomer() the office view uses. It keeps
