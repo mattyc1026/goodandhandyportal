@@ -3736,6 +3736,9 @@ html.dark .dkView{color:var(--cream);}
 .calcPay span{font-size:.78em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.8;}
 .calcPay b{font-size:1.35em;font-family:var(--f-data,inherit);font-variant-numeric:tabular-nums;}
 .calcPay.neg b{color:#ffb4a8;}
+.calcPartsHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 -6px;flex-wrap:wrap;}
+.calcPartsHead > span{font-weight:800;color:var(--navy);}
+.calcPart{margin-top:14px;}
 .calcGas{border-top:1px solid var(--line);padding-top:12px;}
 .calcGas summary{cursor:pointer;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;gap:10px;align-items:center;list-style:none;}
 .calcGas summary::-webkit-details-marker{display:none;}
@@ -11941,7 +11944,7 @@ let CALC=null;   // {woId, invoice, miles, receipts}
 function openExpenseCalc(woId){
   if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
   closeSettingsMenus();
-  CALC={woId:null, invoice:'', materials:'', miles:'', receipts:'', back:woId||null};
+  CALC={woId:null, invoice:'', partial:'', materials:'', miles:'', receipts:'', expMode:'partial', back:woId||null};
   if(woId) calcPickJob(woId, true);
   renderExpenseCalc();
 }
@@ -11993,6 +11996,8 @@ function renderExpenseCalc(){
         <div class="calcInputs">
           <div class="field calcBig"><label for="calcInv">Invoice Total</label>
             <div class="calcMoney"><span>$</span><input id="calcInv" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.invoice)}" oninput="calcInput('invoice',this)"></div></div>
+          <div class="field calcBig"><label for="calcPart">Partial Payment</label>
+            <div class="calcMoney"><span>$</span><input id="calcPart" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.partial||'')}" oninput="calcInput('partial',this)"></div></div>
           <div class="field calcBig"><label for="calcMat">Materials</label>
             <div class="calcMoney"><span>$</span><input id="calcMat" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.materials)}" oninput="calcInput('materials',this)"></div>
             <div class="calcHint">Don't include materials already in Receipts.</div></div>
@@ -12005,6 +12010,7 @@ function renderExpenseCalc(){
             ${r?`<div class="calcHint${r.missing?' warn':''}">${r.count} receipt${r.count===1?'':'s'}${r.missing?`, ${r.missing} with no amount`:''}</div>`:''}</div>
         </div>
         <div class="calcResult" id="calcResult"></div>
+        <div id="calcParts"></div>
         <details class="calcGas">
           <summary>Settings <span id="calcGasSum">${cs.mpg} mpg · ${fmtMoney(cs.gas)}/gal · ${cs.tax}% tax</span></summary>
           <div class="calcInputs two">
@@ -12044,6 +12050,65 @@ function renderCalcResult(){
       <div class="calcPay${b.matthew<0?' neg':''}"><span>Matthew</span><b>${fmtMoney(b.matthew)}</b></div>
       <div class="calcPay${b.scott<0?' neg':''}"><span>Scott</span><b>${fmtMoney(b.scott)}</b></div>
     </div>`;
+  renderCalcParts(b, num(CALC.partial));
+}
+/* Splits one breakdown across a partial payment already received and the
+   balance still to come. Alyssa's pay and the tax fund go by each payment's
+   share of the invoice (same % on each). Materials, gas and receipts either
+   come out of the partial payment first, with anything it can't cover moving
+   to the balance, or are split by each payment's share. The two sections
+   always add up to the full breakdown. */
+function calcSplitPayments(b, partial, mode){
+  const r2=v=>Math.round(v*100)/100;
+  const P=r2(partial), B=r2(b.inv-P);
+  const share=b.inv>0 ? P/b.inv : 0;
+  const aP=r2(b.alyssa.pay*share), tP=r2(b.tax*share);
+  const items=[['materials',b.materials],['gas',b.gasCost],['receipts',b.receipts]];
+  const first={}, rest={};
+  if(mode==='prop'){
+    items.forEach(([k,v])=>{ first[k]=r2(v*share); rest[k]=r2(v-first[k]); });
+  } else {
+    let avail=Math.max(0, r2(P-aP-tP));
+    items.forEach(([k,v])=>{ const take=r2(Math.min(v, avail)); first[k]=take; rest[k]=r2(v-take); avail=r2(avail-take); });
+  }
+  const sec=(amt, alyssa, tax, ex)=>{
+    const left=r2(amt-alyssa-tax-ex.materials-ex.gas-ex.receipts);
+    const half=r2(left/2);
+    return {amt, alyssa, tax, materials:ex.materials, gas:ex.gas, receipts:ex.receipts, left, matthew:half, scott:r2(left-half)};
+  };
+  return [sec(P, aP, tP, first), sec(B, r2(b.alyssa.pay-aP), r2(b.tax-tP), rest)];
+}
+function calcSetExpMode(m){ if(!CALC) return; CALC.expMode=m; renderCalcResult(); }
+function renderCalcParts(b, partial){
+  const el=document.getElementById('calcParts');
+  if(!el) return;
+  if(!(partial>0) || !(b.inv>partial)){ el.innerHTML=''; return; }
+  const mode=CALC.expMode==='prop' ? 'prop' : 'partial';
+  const [p, r]=calcSplitPayments(b, partial, mode);
+  const row=(label, val, cls)=>`<div class="calcRow ${cls||''}"><span class="calcLbl">${label}</span><span class="calcVal">${val}</span></div>`;
+  const out=v=>(v ? '\u2212' : '')+fmtMoney(v);
+  const card=(title, x)=>`<div class="calcResult calcPart">
+      ${row(title, fmtMoney(x.amt), 'calcTop')}
+      ${row('Materials', out(x.materials), 'calcOut')}
+      ${row('Gas', out(x.gas), 'calcOut')}
+      ${row('Receipts', out(x.receipts), 'calcOut')}
+      ${row('Tax Fund', out(x.tax), 'calcOut')}
+      ${row('Remaining', fmtMoney(x.left+x.alyssa), 'calcLeft'+(x.left+x.alyssa<0?' neg':''))}
+      ${row('Alyssa', out(x.alyssa), 'calcOut')}
+      <div class="calcSplit">
+        <div class="calcPay${x.matthew<0?' neg':''}"><span>Matthew</span><b>${fmtMoney(x.matthew)}</b></div>
+        <div class="calcPay${x.scott<0?' neg':''}"><span>Scott</span><b>${fmtMoney(x.scott)}</b></div>
+      </div>
+    </div>`;
+  el.innerHTML=`<div class="calcPartsHead">
+      <span>Expenses</span>
+      <div class="segSwitch small" role="group" aria-label="Where expenses come out">
+        <button type="button" class="${mode==='partial'?'on':''}" aria-pressed="${mode==='partial'}" onclick="calcSetExpMode('partial')">From Partial</button>
+        <button type="button" class="${mode==='prop'?'on':''}" aria-pressed="${mode==='prop'}" onclick="calcSetExpMode('prop')">Proportional</button>
+      </div>
+    </div>
+    ${card('Partial Payment', p)}
+    ${card('Balance', r)}`;
 }
 function isImageDoc(d){
   if(d.type) return d.type.startsWith('image/');
