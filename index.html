@@ -921,6 +921,7 @@ html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(
 .dt-pre-existing-damage{background:#efe9f7;color:#4b2f75;border-color:#d8cbec;}
 .dt-damage-issue{background:#fbe6e6;color:#9b2226;border-color:#efc6c6;}
 .dt-receipt{background:#efe9dc;color:#5c4a20;border-color:#ddd1b6;}
+.dt-covered-receipt{background:#e6eef0;color:#36555e;border-color:#c5d6db;}
 .dt-estimate{background:#fdf3d7;color:#7a5600;border-color:#f0d98f;}
 
 .docTagFilter{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
@@ -11778,7 +11779,9 @@ function storageUsagePct(){ return Math.min(100, Math.round(((DB.storageUsedByte
 /* Photo labels. Optional, one per photo, and purely descriptive: nothing in
    the workflow keys off them. Kept as the visible text rather than a code, so
    an exported or synced record reads the same everywhere. */
-const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt','Estimate'];
+/* Covered Receipt: kept for the job's records, but someone else paid it, so
+   the expenses calculator leaves it out. */
+const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt','Covered Receipt','Estimate'];
 function isPdfDoc(d){ return /pdf/i.test(d.type||'') || /\.pdf$/i.test(d.name||''); }
 /* A PDF with "estimate" in its name is labeled Estimate when it is added. */
 function looksLikeEstimate(name, type){ return /estimate/i.test(name||'') && (/pdf/i.test(type||'') || /\.pdf$/i.test(name||'')); }
@@ -12002,8 +12005,7 @@ function renderExpenseCalc(){
             <div class="calcMoney"><span>$</span><input id="calcMat" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.materials)}" oninput="calcInput('materials',this)"></div>
             <div class="calcHint">Don't include materials already in Receipts.</div></div>
           <div class="field"><label for="calcMiles">Miles</label>
-            <div class="calcMoney"><input id="calcMiles" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.miles)}" oninput="calcInput('miles',this)"><span>mi</span></div>
-            <div class="calcHint">Don't include gas already in Receipts.</div></div>
+            <div class="calcMoney"><input id="calcMiles" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.miles)}" oninput="calcInput('miles',this)"><span>mi</span></div></div>
           <div class="field"><label for="calcRc">Receipts</label>
             <div class="calcMoney"><span>$</span><input id="calcRc" type="text" inputmode="decimal" autocomplete="off" value="${esc(CALC.receipts)}" oninput="calcInput('receipts',this)"></div>
             <div class="calcHint">Don't include anything already in Materials or Gas.</div>
@@ -12054,9 +12056,9 @@ function renderCalcResult(){
 }
 /* Splits one breakdown across a partial payment already received and the
    balance still to come. Alyssa's pay and the tax fund go by each payment's
-   share of the invoice (same % on each). Materials, gas and receipts either
-   come out of the partial payment first, with anything it can't cover moving
-   to the balance, or are split by each payment's share. The two sections
+   share of the invoice (same % on each). Materials, gas and receipts come
+   out of the partial payment first or the balance first (anything one can't
+   cover moves to the other), or are split by each payment's share. The two sections
    always add up to the full breakdown. */
 function calcSplitPayments(b, partial, mode){
   const r2=v=>Math.round(v*100)/100;
@@ -12067,6 +12069,11 @@ function calcSplitPayments(b, partial, mode){
   const first={}, rest={};
   if(mode==='prop'){
     items.forEach(([k,v])=>{ first[k]=r2(v*share); rest[k]=r2(v-first[k]); });
+  } else if(mode==='balance'){
+    // The balance covers expenses first; anything it can't cover moves back
+    // to the partial payment.
+    let avail=Math.max(0, r2(B-r2(b.alyssa.pay-aP)-r2(b.tax-tP)));
+    items.forEach(([k,v])=>{ const take=r2(Math.min(v, avail)); rest[k]=take; first[k]=r2(v-take); avail=r2(avail-take); });
   } else {
     let avail=Math.max(0, r2(P-aP-tP));
     items.forEach(([k,v])=>{ const take=r2(Math.min(v, avail)); first[k]=take; rest[k]=r2(v-take); avail=r2(avail-take); });
@@ -12083,15 +12090,15 @@ function renderCalcParts(b, partial){
   const el=document.getElementById('calcParts');
   if(!el) return;
   if(!(partial>0) || !(b.inv>partial)){ el.innerHTML=''; return; }
-  const mode=CALC.expMode==='prop' ? 'prop' : 'partial';
+  const mode=(CALC.expMode==='prop' || CALC.expMode==='balance') ? CALC.expMode : 'partial';
   const [p, r]=calcSplitPayments(b, partial, mode);
   const row=(label, val, cls)=>`<div class="calcRow ${cls||''}"><span class="calcLbl">${label}</span><span class="calcVal">${val}</span></div>`;
   const out=v=>(v ? '\u2212' : '')+fmtMoney(v);
   const card=(title, x)=>`<div class="calcResult calcPart">
       ${row(title, fmtMoney(x.amt), 'calcTop')}
-      ${row('Materials', out(x.materials), 'calcOut')}
-      ${row('Gas', out(x.gas), 'calcOut')}
-      ${row('Receipts', out(x.receipts), 'calcOut')}
+      ${row('Materials', out(x.materials), x.materials?'calcOut':'')}
+      ${row('Gas', out(x.gas), x.gas?'calcOut':'')}
+      ${row('Receipts', out(x.receipts), x.receipts?'calcOut':'')}
       ${row('Tax Fund', out(x.tax), 'calcOut')}
       ${row('Remaining', fmtMoney(x.left+x.alyssa), 'calcLeft'+(x.left+x.alyssa<0?' neg':''))}
       ${row('Alyssa', out(x.alyssa), 'calcOut')}
@@ -12105,6 +12112,7 @@ function renderCalcParts(b, partial){
       <div class="segSwitch small" role="group" aria-label="Where expenses come out">
         <button type="button" class="${mode==='partial'?'on':''}" aria-pressed="${mode==='partial'}" onclick="calcSetExpMode('partial')">From Partial</button>
         <button type="button" class="${mode==='prop'?'on':''}" aria-pressed="${mode==='prop'}" onclick="calcSetExpMode('prop')">Proportional</button>
+        <button type="button" class="${mode==='balance'?'on':''}" aria-pressed="${mode==='balance'}" onclick="calcSetExpMode('balance')">From Balance</button>
       </div>
     </div>
     ${card('Partial Payment', p)}
@@ -12139,7 +12147,7 @@ function docTagPickHTML(wo, d){
   </span>`;
 }
 function docAmtHTML(wo, d){
-  if(d.tag!=='Receipt') return '';
+  if(d.tag!=='Receipt' && d.tag!=='Covered Receipt') return '';
   return `<button type="button" class="docAmt${typeof d.amount==='number'?'':' empty'}" onclick="askReceiptAmount(${wo.id},'${d.id}')" aria-label="Receipt amount">${typeof d.amount==='number'?fmtMoney(d.amount):'Add Amount'}</button>`;
 }
 /* Download, rename and delete live behind one button so each file shows
