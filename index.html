@@ -138,6 +138,7 @@
   --cyan:#d3f3f7; --cyan-ink:#0b7285;
   --phone-green:#dcf2dc; --phone-green-ink:#2e7d32;
   --yellow-lite:#fff7dc;
+  --busy1:#fff7dc; --busy1b:#f1dc9a; --busy2:#ffe9a8; --busy2b:#e9c45c; --busy3:#ffcf7a; --busy3b:#e0a33a; --busy-dot:#a86a00;
   --radius:12px; --radius-sm:8px; --radius-lg:18px;
   /* Layered shadows read as real elevation instead of a single grey blur. */
   --sh-1:0 1px 2px rgba(15,38,71,.06), 0 1px 3px rgba(15,38,71,.04);
@@ -244,6 +245,7 @@ html.dark{
   --cyan:#0f2c33; --cyan-ink:#5ed8e8;
   --phone-green:#16301a; --phone-green-ink:#6cc070;
   --yellow-lite:#403720;
+  --busy1:#2e2a1c; --busy1b:#4a4128; --busy2:#41371c; --busy2b:#6b5a26; --busy3:#5a4316; --busy3b:#8e6a20; --busy-dot:#f3c65c;
   --grid-line:rgba(180,205,245,.035);
   --sh-1:0 1px 2px rgba(0,0,0,.4);
   --sh-2:0 2px 6px rgba(0,0,0,.44), 0 8px 20px rgba(0,0,0,.34);
@@ -1059,8 +1061,95 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .schedCalDay:not(.empty):not(.past):hover{border-color:var(--navy);transform:translateY(-1px);}
 .schedCalDay.empty{visibility:hidden;cursor:default;}
 .schedCalDay.past{color:#aab3c2;cursor:not-allowed;background:var(--cream);}
-.schedCalDay.hasJob{background:var(--yellow);border-color:var(--yellowb);cursor:pointer;}
-.schedCalDay.hasJob::after{content:'';position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--yellowb);}
+.schedCalDay.hasJob{cursor:pointer;}
+/* Booked days shade deeper the more of the day is taken: under 4 hours,
+   4 to 8, then a full day. The number is how many bookings. */
+.schedCalDay.busy1,.cvDay.busy1,.cvWDay.busy1 .cvWHead{background:var(--busy1);border-color:var(--busy1b);}
+.schedCalDay.busy2,.cvDay.busy2,.cvWDay.busy2 .cvWHead{background:var(--busy2);border-color:var(--busy2b);}
+.schedCalDay.busy3,.cvDay.busy3,.cvWDay.busy3 .cvWHead{background:var(--busy3);border-color:var(--busy3b);}
+.calDots{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:2px;line-height:0;}
+.calDots i{width:4px;height:4px;border-radius:50%;background:var(--busy-dot);}
+.schedTimeRow .field label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.schedCalDay.picked{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600;}
+.schedCalDay.picked .calDots i{background:#ffd48a;}
+.schedCalDay.picked.joinL{border-top-left-radius:3px;border-bottom-left-radius:3px;}
+.schedCalDay.picked.joinR{border-top-right-radius:3px;border-bottom-right-radius:3px;}
+.schedCalDay.infoDay:not(.picked){border-color:var(--navy);border-width:1.5px;}
+.schedPicked{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding:8px 12px;border-radius:var(--radius-sm);background:rgba(15,38,71,.06);font-size:.88em;color:var(--navy);}
+.schedPicked .schedCalLink{flex-shrink:0;}
+.schedTimeRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.schedTabHead{flex-direction:row !important;align-items:center !important;justify-content:space-between;flex-wrap:nowrap;}
+.segSwitch{display:inline-flex;background:var(--cream);border:1.5px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex-shrink:0;}
+.segSwitch button{border:none;background:transparent;border-radius:999px;padding:7px 14px;font-family:inherit;font-weight:700;font-size:.85rem;color:var(--muted);cursor:pointer;min-height:36px;}
+.segSwitch button.on{background:var(--navy);color:#fff;}
+.segSwitch.small button{padding:5px 11px;font-size:.8rem;min-height:32px;}
+.cvWrap{display:flex;flex-direction:column;gap:12px;min-width:0;max-width:100%;}
+.cvGrid .dow .ds{display:none;}
+@media (max-width:899px){ .cvGrid .dow .dl{display:none;} .cvGrid .dow .ds{display:inline;} .cvWrap .cvItem{grid-template-columns:1fr;} .cvWrap .cvItem .cvTime{grid-row:auto;} .cvAgendaHead{font-size:.95em;} .cvBarRight{width:100%;justify-content:space-between;} .cvNav{max-width:none;} }
+.cvBar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;}
+.cvNav{display:flex;align-items:center;gap:10px;flex:1 1 300px;min-width:0;max-width:420px;}
+.cvNav b{flex:1;min-width:0;font-size:1.05em;color:var(--navy);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cvNav button,.cvToday{flex-shrink:0;background:var(--paper);border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:6px 12px;font-family:inherit;font-size:.9rem;font-weight:700;color:var(--navy);cursor:pointer;min-height:38px;}
+.cvBarRight{display:flex;align-items:center;gap:8px;}
+.cvWho{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
+.cvWho .crewChip{flex-shrink:0;min-height:34px;padding:6px 13px;font-size:.85rem;}
+.cvGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+.cvGrid .dow{font-size:.66em;text-transform:uppercase;color:var(--muted);text-align:center;font-weight:700;letter-spacing:.06em;padding-bottom:2px;}
+.cvDay{position:relative;min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:5px 3px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);font:inherit;color:var(--ink);cursor:pointer;text-align:left;min-width:0;overflow:hidden;}
+.cvDay.empty{visibility:hidden;}
+.cvDay.past{opacity:.6;}
+.cvDay.today .cvNum{background:var(--orange);color:#fff;border-radius:999px;padding:0 6px;}
+.cvDay.sel{box-shadow:inset 0 0 0 2px var(--navy);}
+.cvNum{font-family:var(--f-data);font-size:.85em;font-weight:700;line-height:1.5;}
+.cvChips{display:none;}
+.cvAgenda{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);padding:12px;}
+.cvAgendaHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:700;color:var(--navy);margin-bottom:8px;}
+.cvAgendaHead span{font-size:.8em;color:var(--muted);font-weight:600;}
+.cvItem{display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:1px;width:100%;text-align:left;padding:9px 11px;margin-top:6px;border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:var(--radius-sm);background:var(--paper);font:inherit;color:var(--ink);cursor:pointer;}
+.cvItem.presite{border-left-color:var(--purple-ink);}
+.cvItem .cvTime{grid-row:1 / span 2;font-family:var(--f-data);font-size:.78em;font-weight:700;color:var(--navy);white-space:nowrap;align-self:center;}
+.cvItem .cvName{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cvItem .cvMeta{font-size:.8em;color:var(--muted);}
+.cvNone{color:var(--muted);font-size:.88em;padding:4px 2px;}
+.cvWeek{display:flex;flex-direction:column;gap:8px;}
+.cvWDay{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);overflow:hidden;}
+.cvWDay.today{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange);}
+.cvWHead{display:flex;align-items:baseline;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--well);}
+.cvWHead span{font-size:.75em;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted);}
+.cvWHead b{color:var(--navy);}
+.cvWHead em{margin-left:auto;font-style:normal;font-size:.78em;color:var(--muted);font-weight:600;}
+.cvWList{padding:2px 10px 10px;}
+@media (min-width:900px){
+  .cvDay{min-height:104px;align-items:stretch;}
+  .cvDay .cvNum{align-self:flex-start;}
+  .cvDay .calDots{display:none;}
+  .cvChips{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .cvChip{font-size:.72em;padding:2px 5px;border-radius:4px;background:rgba(232,121,26,.14);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--orange);}
+  .cvChip.presite{background:var(--purple);border-left-color:var(--purple-ink);}
+  .cvMore{font-size:.7em;color:var(--muted);font-weight:700;padding-left:2px;}
+  .cvWeek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+  .cvWDay{min-height:180px;}
+  .cvWList .cvItem{grid-template-columns:1fr;}
+  .cvWList .cvItem .cvTime{grid-row:auto;}
+}
+
+/* Time field: type a time, or tap the clock for a 15 minute wheel. */
+.tField{display:flex;align-items:stretch;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);min-width:0;transition:border-color .15s,box-shadow .15s;}
+.tField:focus-within{border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,121,26,.16);}
+.field .tField input.tfText,.tField input.tfText{flex:1 1 auto;min-width:0;width:100%;border:none !important;box-shadow:none !important;background:transparent;padding:11px 4px 11px 12px;font-size:16px;color:var(--ink);font-family:inherit;outline:none;}
+.tfWheel{position:relative;flex:0 0 40px;display:flex;align-items:center;justify-content:center;color:var(--navy);border-left:1px solid var(--line);}
+.tfWheel .ic{width:20px;height:20px;}
+.tfWheel select.tfSel{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;border:none;padding:0;margin:0;-webkit-appearance:none;appearance:none;}
+.crewChips{display:flex;flex-wrap:wrap;gap:8px;}
+.crewChip{display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font-weight:700;font-size:.88em;font-family:inherit;cursor:pointer;}
+.crewChip .ic{width:15px;height:15px;}
+.crewChip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.schedCrewLine{color:var(--navy);font-weight:600;}
+.schedHead{flex-wrap:nowrap !important;align-items:center;}
+.schedHead h2{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;}
+.schedHead .schedHeadName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.schedHead .schedHeadSub{font-family:var(--f-body);font-size:.6em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.schedHead .closeX{flex-shrink:0;}
 /* Today: an orange ring and bold number. Drawn as an inset shadow so it sits
    on top of the booked shading or the selected fill without replacing them. */
 .schedCalDay.today{box-shadow:inset 0 0 0 2px var(--orange);font-weight:800;}
@@ -1079,8 +1168,6 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .schedCalDay.selStart,.schedCalDay.selEnd{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:500;}
 .schedCalDay.inRange{background:rgba(15,38,71,.12);border-color:rgba(15,38,71,.2);}
 .schedCalDay.skipDay{background:repeating-linear-gradient(45deg,rgba(15,38,71,.06),rgba(15,38,71,.06) 4px,transparent 4px,transparent 8px);color:var(--muted);}
-.field select#schedRepeat{width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--line);background:var(--paper);font:inherit;color:var(--ink);}
-.schedRepeatNote{font-size:.8em;color:var(--muted);margin-top:-4px;margin-bottom:8px;line-height:1.5;}
 .schedDayPopup{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 11px;border-radius:var(--radius-sm);font-size:.72em;line-height:1.45;white-space:normal;width:max-content;max-width:200px;z-index:60;box-shadow:var(--sh-3);display:none;text-align:left;cursor:default;font-family:var(--f-body);}
 .schedDayPopup b{color:#fff;display:block;font-size:1em;}
 .schedDayPopup .schedDayPopupRow{margin-top:3px;}
@@ -1367,7 +1454,8 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
 .schedDayTimeRow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) 30px;align-items:center;column-gap:6px;row-gap:2px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);}
 .schedDayTimeRow.changed{background:var(--purple);border-color:var(--purple-line);}
 .schedDayTimeRow .sdtDate{grid-column:1 / -1;font-size:.85em;font-weight:700;color:var(--navy);}
-.schedDayTimeRow input[type=time]{width:100%;min-width:0;padding:5px 4px;margin:0;box-sizing:border-box;font-size:.8em;}
+.schedDayTimeRow .tField input.tfText{padding:7px 2px 7px 8px;}
+.schedDayTimeRow .tfWheel{flex-basis:32px;}
 .schedDayTimeRow .sdtDash{font-size:.85em;color:var(--muted);}
 .schedDayTimeRow .sdtSpacer{width:30px;}
 .schedDayTimeRow .tinyDel{width:30px;height:30px;padding:0;}
@@ -2851,6 +2939,8 @@ html.dark nav.tabs#tabsNav button .count,
 html.dark .schedCalDay.selStart,html.dark .schedCalDay.selEnd,
 html.dark .schedDayPopup,html.dark .schedTypeToggle button.active,
 html.dark .tinyEdit:hover{background:var(--navy2);color:var(--ink);border-color:var(--navy2);}
+html.dark .schedCalDay.picked,html.dark .crewChip.on,html.dark .segSwitch button.on{background:var(--navy);color:var(--cream);border-color:var(--navy);}
+html.dark .schedCalDay.picked .calDots i{background:var(--cream);}
 html.dark #ghStorageRules{background:#0a111d !important;color:var(--ink) !important;}
 html.dark *{scrollbar-color:#3a4a66 transparent;}
 html.dark ::-webkit-scrollbar-thumb{background:#3a4a66;border-color:var(--paper);}
@@ -3720,6 +3810,7 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></symbol>
   <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></symbol>
@@ -6506,7 +6597,11 @@ function renderMain(){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inJobScheduledList).sort((a,b)=>a.id-b.id);
     const inProgress=DB.workOrders.filter(inInvoiceInProgressList).sort((a,b)=>a.id-b.id);
-    html+=`<div class="listHeader"><div><h2>Scheduling</h2></div></div>`;
+    const cal=schedViewMode()==='calendar';
+    html+=`<div class="listHeader schedTabHead"><div><h2>Scheduling</h2></div><div class="segSwitch" role="tablist" aria-label="Scheduling view">
+      <button type="button" role="tab" aria-selected="${!cal}" class="${cal?'':'on'}" onclick="setSchedView('list')">List</button>
+      <button type="button" role="tab" aria-selected="${cal}" class="${cal?'on':''}" onclick="setSchedView('calendar')">Calendar</button></div></div>`;
+    if(cal){ html+=calViewHTML(); main.innerHTML=html; return; }
     html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'activity'});
     html+=subGroupHTML('Scheduled', scheduled, {emptyText:'Nothing scheduled and waiting to start right now.', emptyIcon:'activity'});
     html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', emptyIcon:'activity', action:'jobComplete', showCheckInOut:true});
@@ -6530,6 +6625,114 @@ function renderMain(){
   main.innerHTML=html;
   applyListMotion(main);
   initRolodexes(main);
+}
+/* ---- Scheduling tab: calendar of every booking ---- */
+function schedViewMode(){ try{ return localStorage.getItem('gh_sched_view')==='calendar' ? 'calendar' : 'list'; }catch(e){ return 'list'; } }
+function setSchedView(v){ try{ localStorage.setItem('gh_sched_view', v); }catch(e){} renderMain(); }
+const CALV={mode:'month', cursor:null, day:null, who:'all'};
+function calvCursor(){
+  if(!CALV.cursor){ const t=new Date(); t.setHours(12,0,0,0); CALV.cursor=t; CALV.day=isoOf(t); }
+  return CALV.cursor;
+}
+function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function calvSet(k, v){
+  if(k==='mode'){ CALV.mode=v; }
+  else if(k==='who'){ CALV.who=v; }
+  else if(k==='day'){ CALV.day = CALV.day===v ? null : v; }
+  renderMain();
+}
+function calvMove(delta){
+  const c=new Date(calvCursor());
+  if(delta===0){ const t=new Date(); t.setHours(12,0,0,0); CALV.cursor=t; CALV.day=isoOf(t); renderMain(); return; }
+  if(CALV.mode==='week') c.setDate(c.getDate()+7*delta);
+  else { c.setDate(1); c.setMonth(c.getMonth()+delta); }
+  CALV.cursor=c;
+  renderMain();
+}
+/* Every booking by day, narrowed to one person when a name is picked. */
+function calvBookings(){
+  const map=buildJobDaysMap(null);
+  if(CALV.who==='all') return map;
+  const out={};
+  Object.keys(map).forEach(iso=>{
+    const l=map[iso].filter(b=>(b.crew||[]).indexOf(CALV.who)!==-1);
+    if(l.length) out[iso]=l;
+  });
+  return out;
+}
+function calvAgendaRows(list){
+  if(!list || !list.length) return '<div class="cvNone">Nothing scheduled.</div>';
+  return list.slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||''))).map(b=>
+    `<button type="button" class="cvItem ${b.kind}" onclick="openWorkOrder(${b.woId})">
+      <span class="cvTime">${compactTimeRange(b.startTime, b.endTime)}</span>
+      <span class="cvName">${esc(b.customer)}</span>
+      <span class="cvMeta">${esc(b.type)}${b.crew&&b.crew.length?' · '+esc(crewNames(b.crew)):''}</span>
+    </button>`).join('');
+}
+function calViewHTML(){
+  const cur=calvCursor();
+  const today=isoToday();
+  const map=calvBookings();
+  const week=CALV.mode==='week';
+  let label, body;
+  if(week){
+    const s=new Date(cur); s.setDate(s.getDate()-s.getDay());
+    const days=[...Array(7)].map((_,i)=>{ const d=new Date(s); d.setDate(s.getDate()+i); return d; });
+    const e=days[6];
+    label = s.getMonth()===e.getMonth()
+      ? `${s.toLocaleDateString('en-US',{month:'short'})} ${s.getDate()}–${e.getDate()}, ${e.getFullYear()}`
+      : `${s.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${e.toLocaleDateString('en-US',{month:'short',day:'numeric'})}, ${e.getFullYear()}`;
+    body=`<div class="cvWeek">${days.map(d=>{
+      const iso=isoOf(d), list=map[iso]||[], lvl=busyLevel(list);
+      return `<div class="cvWDay${iso===today?' today':''}${lvl?' busy'+lvl:''}">
+        <div class="cvWHead"><span>${d.toLocaleDateString('en-US',{weekday:'short'})}</span><b>${d.getDate()}</b>${list.length?`<em>${formatHoursShort(bookedHours(list))}</em>`:''}</div>
+        <div class="cvWList">${calvAgendaRows(list)}</div>
+      </div>`;
+    }).join('')}</div>`;
+  } else {
+    const y=cur.getFullYear(), m=cur.getMonth();
+    label=new Date(y,m,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const startDow=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
+    let cells='';
+    for(let i=0;i<startDow;i++) cells+='<div class="cvDay empty"></div>';
+    for(let day=1; day<=dim; day++){
+      const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      const list=(map[iso]||[]).slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||'')));
+      const lvl=busyLevel(list);
+      const cls=['cvDay']; if(lvl) cls.push('busy'+lvl); if(iso===today) cls.push('today'); if(iso===CALV.day) cls.push('sel'); if(iso<today) cls.push('past');
+      const names=list.slice(0,3).map(b=>`<span class="cvChip ${b.kind}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`).join('')+(list.length>3?`<span class="cvMore">+${list.length-3} more</span>`:'');
+      cells+=`<button type="button" class="${cls.join(' ')}" onclick="calvSet('day','${iso}')" aria-pressed="${iso===CALV.day}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${list.length?', '+list.length+' booked':''}">
+        <span class="cvNum">${day}</span>${calDotsHTML(list.length)}<span class="cvChips">${names}</span></button>`;
+    }
+    const dayIso=CALV.day;
+    const inMonth=dayIso && dayIso.slice(0,7)===`${y}-${String(m+1).padStart(2,'0')}`;
+    const agenda=inMonth ? `<div class="cvAgenda"><div class="cvAgendaHead">${new Date(dayIso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${(map[dayIso]||[]).length?`<span>${formatHoursShort(bookedHours(map[dayIso]))} booked</span>`:''}</div>${calvAgendaRows(map[dayIso])}</div>` : '';
+    body=`<div class="cvGrid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="dow"><span class="dl">${d}</span><span class="ds">${d.charAt(0)}</span></div>`).join('')}${cells}</div>${agenda}`;
+  }
+  const users=crewUsers();
+  const who=users.length ? `<div class="cvWho">${[{username:'all',name:'Everyone'}].concat(users).map(u=>
+    `<button type="button" class="crewChip${CALV.who===u.username?' on':''}" aria-pressed="${CALV.who===u.username}" onclick="calvSet('who','${esc(u.username)}')">${esc(u.name)}</button>`).join('')}</div>` : '';
+  return `<div class="cvWrap">
+    <div class="cvBar">
+      <div class="cvNav"><button type="button" onclick="calvMove(-1)" aria-label="Previous">&larr;</button><b>${label}</b><button type="button" onclick="calvMove(1)" aria-label="Next">&rarr;</button></div>
+      <div class="cvBarRight">
+        <button type="button" class="cvToday" onclick="calvMove(0)">Today</button>
+        <div class="segSwitch small"><button type="button" class="${week?'':'on'}" onclick="calvSet('mode','month')">Month</button><button type="button" class="${week?'on':''}" onclick="calvSet('mode','week')">Week</button></div>
+      </div>
+    </div>
+    ${who}
+    ${body}
+  </div>`;
+}
+/* "8:00" -> "8a", "13:30" -> "1:30p" */
+function shortTime(t){
+  if(!t) return '';
+  const [h,m]=t.split(':').map(Number);
+  return ((h%12)||12)+(m?':'+String(m).padStart(2,'0'):'')+(h<12?'a':'p');
+}
+function formatHoursShort(h){
+  const r=Math.round(h*4)/4;
+  return (r%1===0 ? r : r.toFixed(2).replace(/0$/,''))+' hr'+(r===1?'':'s');
 }
 /* Runs the entrance cascade on a freshly rendered board. Each row carries its
    own index as --i, which the stylesheet turns into a delay; the index is
@@ -7664,14 +7867,14 @@ function selectSearchResult(id){
    SCHEDULE DATE(S) + APPLE CALENDAR (.ics) INTEGRATION
 ========================================================================= */
 let SCHED_WO_ID=null, SCHED_CAL_MONTH=null, SCHED_TYPE='full', SCHED_START=null, SCHED_END=null, SCHED_PENDING=[];
-/* Start/end times are now held in state too. The time inputs used to be
-   re-emitted with a hard-coded value="", so switching Pre-Site/Whole Job or
-   adding a second date silently erased whatever times had been typed. */
+/* The days picked on the calendar, sorted. Back-to-back days are saved as one
+   booking and any gap starts a new one, so a job can run Mon-Thu, skip Friday
+   and pick up again Monday, or be three separate single days. */
+let SCHED_DAYS=[];
+/* Usernames of the people going on the dates being scheduled. */
+let SCHED_CREW=[];
 let SCHED_STIME='', SCHED_ETIME='';
-/* How a scheduled date repeats. 'none' is a single occurrence on the start
-   date; 'daily' repeats the same start/end time every day through the
-   Repeat Until date. Only the scheduled time window is booked on each
-   occurrence day, never the full 24 hours. */
+/* Kept for older saved drafts; dates are picked as days now, not as a repeat. */
 let SCHED_REPEAT='none';
 /* Whole job days that run on a different time window than the rest.
    Keyed by date: {startTime, endTime}. Days not listed use the entry's own
@@ -7699,82 +7902,214 @@ function cleanDayTimes(map, startDate, endDate, repeat, startTime, endTime){
 function dayTimesValid(map){
   return Object.keys(map||{}).every(iso=>map[iso].endTime>map[iso].startTime);
 }
-function schedDayTimesApply(){ return SCHED_TYPE==='full' && SCHED_REPEAT==='daily' && SCHED_START && SCHED_END && SCHED_END>SCHED_START; }
+/* Keeps SCHED_START / SCHED_END (still read by the calendar) in step with the
+   picked days. */
+function schedSyncRange(){
+  SCHED_DAYS=[...new Set(SCHED_DAYS)].sort();
+  SCHED_START=SCHED_DAYS[0]||null;
+  SCHED_END=SCHED_DAYS[SCHED_DAYS.length-1]||null;
+  Object.keys(SCHED_DAYTIMES).forEach(iso=>{ if(SCHED_DAYS.indexOf(iso)===-1) delete SCHED_DAYTIMES[iso]; });
+}
+/* Splits sorted days into runs of back-to-back days. */
+function daysToRuns(days){
+  const runs=[]; let cur=[];
+  days.slice().sort().forEach(iso=>{
+    if(cur.length && addDaysIso(cur[cur.length-1],1)!==iso){ runs.push(cur); cur=[]; }
+    cur.push(iso);
+  });
+  if(cur.length) runs.push(cur);
+  return runs;
+}
+function addDaysIso(iso, n){
+  const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function schedDayTimesApply(){ return SCHED_TYPE==='full' && SCHED_DAYS.length>1; }
 function setSchedDayTime(iso, field, val){
   captureSchedFields();
   const cur=SCHED_DAYTIMES[iso] || {startTime:SCHED_STIME, endTime:SCHED_ETIME};
   const next=Object.assign({}, cur, {[field]:val});
   if(next.startTime===SCHED_STIME && next.endTime===SCHED_ETIME) delete SCHED_DAYTIMES[iso];
   else SCHED_DAYTIMES[iso]=next;
-  renderScheduleWidget();
+  refreshSchedDayTimes();
 }
 function resetSchedDayTime(iso){
   captureSchedFields();
   delete SCHED_DAYTIMES[iso];
-  renderScheduleWidget();
+  refreshSchedDayTimes();
 }
 function toggleSchedDayTimes(){
   captureSchedFields();
   SCHED_DAYTIMES_OPEN=!SCHED_DAYTIMES_OPEN;
-  renderScheduleWidget();
+  refreshSchedDayTimes();
+}
+/* Redraws only the by-day times, so a tap on Save right after typing a time
+   is never lost to the whole form being rebuilt under the finger. */
+function refreshSchedDayTimes(){
+  const box=document.getElementById('schedDayTimesBox');
+  if(box) box.outerHTML=schedDayTimesHTML();
+  else renderScheduleWidget();
 }
 function onSchedTimeChange(field, val){
   if(field==='start') SCHED_STIME=val; else SCHED_ETIME=val;
-  if(SCHED_DAYTIMES_OPEN && schedDayTimesApply()){ captureSchedFields(); renderScheduleWidget(); }
+  if(SCHED_DAYTIMES_OPEN && schedDayTimesApply()) refreshSchedDayTimes();
 }
 function schedDayTimesHTML(){
-  if(!schedDayTimesApply()) return '';
-  const days=datesInRange(SCHED_START, SCHED_END);
+  if(!schedDayTimesApply()) return '<div id="schedDayTimesBox"></div>';
+  const days=SCHED_DAYS;
   const custom=days.filter(iso=>SCHED_DAYTIMES[iso]).length;
   const link=`<button type="button" class="schedCalLink" onclick="toggleSchedDayTimes()">${SCHED_DAYTIMES_OPEN?'Hide start/end times by day':'Edit start/end times by day'}${custom?' ('+custom+' changed)':''}</button>`;
-  if(!SCHED_DAYTIMES_OPEN) return `<div class="schedDayTimesLink">${link}</div>`;
+  if(!SCHED_DAYTIMES_OPEN) return `<div id="schedDayTimesBox"><div class="schedDayTimesLink">${link}</div></div>`;
   const rows=days.map(iso=>{
     const t=SCHED_DAYTIMES[iso] || {startTime:SCHED_STIME, endTime:SCHED_ETIME};
     const changed=!!SCHED_DAYTIMES[iso];
     const label=new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
     return `<div class="schedDayTimeRow${changed?' changed':''}">
       <span class="sdtDate">${label}</span>
-      <input type="time" step="900" value="${t.startTime||''}" aria-label="Start time ${label}" onchange="setSchedDayTime('${iso}','startTime',this.value)">
+      ${timeFieldHTML('', t.startTime||'', `setSchedDayTime('${iso}','startTime',this.value)`, 'Start time '+label)}
       <span class="sdtDash">to</span>
-      <input type="time" step="900" value="${t.endTime||''}" aria-label="End time ${label}" onchange="setSchedDayTime('${iso}','endTime',this.value)">
+      ${timeFieldHTML('', t.endTime||'', `setSchedDayTime('${iso}','endTime',this.value)`, 'End time '+label)}
       ${changed?`<button type="button" class="tinyDel" title="Use the default time" aria-label="Use the default time for ${label}" onclick="resetSchedDayTime('${iso}')">&#8634;</button>`:'<span class="sdtSpacer"></span>'}
     </div>`;
   }).join('');
-  return `<div class="schedDayTimesLink">${link}</div><div class="schedDayTimes">${rows}</div>`;
-}
-/* The repeat picker, shared by the office widget and the field view form so
-   the two can't drift apart. A job either runs on one day or on consecutive
-   days, so those are the only two choices. */
-function schedRepeatOptionsHTML(){
-  const opt=(v,label)=>`<option value="${v}" ${SCHED_REPEAT===v?'selected':''}>${label}</option>`;
-  return opt('none','Does not repeat') + opt('daily','Every day');
+  return `<div id="schedDayTimesBox"><div class="schedDayTimesLink">${link}</div><div class="schedDayTimes">${rows}</div></div>`;
 }
 /* When set, the schedule widget is editing that existing saved date instead of
-   building a list of new ones. */
+   adding new ones. */
 let SCHED_EDIT_ID=null;
 /* True while the schedule form is being shown inside field view instead of in
    its own full-screen widget. Every validation, conflict check and save path
    below is shared between the two; this only decides what gets redrawn. */
 let SCHED_INLINE=false;
-/* The inline scheduler's calendar, off until asked for. A month grid is the
-   one part of scheduling that wants a screen rather than a thumb, so it is a
-   link rather than something always sitting open above the fields. */
 let FIELD_SCHED_CAL=false;
-function toggleFieldSchedCal(id){
-  FIELD_SCHED_CAL=!FIELD_SCHED_CAL;
-  renderWorkOrderModal(id);
-}
 function captureSchedFields(){
+  commitTimeFields();
   const g=id=>{ const el=document.getElementById(id); return el?el.value:null; };
-  const sd=g('schedStartDate'), st=g('schedStartTime'), ed=g('schedEndDate'), et=g('schedEndTime'), rp=g('schedRepeat');
-  if(sd!==null) SCHED_START=sd||null;
-  if(ed!==null) SCHED_END=ed||null;
+  const st=g('schedStartTime'), et=g('schedEndTime');
   if(st!==null) SCHED_STIME=st||'';
   if(et!==null) SCHED_ETIME=et||'';
-  if(rp!==null) SCHED_REPEAT=rp||'none';
 }
 /* The day whose bookings are listed under the calendar, set by tapping it. */
 let SCHED_INFO_DAY=null;
+
+/* ---- Time fields: type it (930a, 330p, 1415) or spin a 15 minute wheel ----
+   The visible box is plain text; the "HH:MM" value lives in a hidden input
+   that carries the id and the change handler, so everything that read a
+   time input before reads this the same way. */
+function timeOptionsHTML(sel){
+  let out='';
+  for(let m=0;m<1440;m+=15){
+    const v=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+    out+=`<option value="${v}"${v===sel?' selected':''}>${formatTime12(v)}</option>`;
+  }
+  return out;
+}
+function roundTo15(hhmm){
+  if(!hhmm) return '';
+  const [h,m]=hhmm.split(':').map(Number);
+  let t=Math.round((h*60+m)/15)*15;
+  if(t>=1440) t=1425;
+  return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+}
+/* "930a" 9:30 AM, "330p" 3:30 PM, "9" 9:00 AM, "1415" 2:15 PM, "noon".
+   With no AM/PM given, 6 through 11 read as morning and 12 through 5 as
+   afternoon, the way a work day runs. Always lands on a 15 minute step. */
+function parseTimeInput(raw){
+  let s=String(raw||'').toLowerCase().replace(/[\s.]/g,'');
+  if(!s) return '';
+  if(s==='noon') return '12:00';
+  if(s==='midnight') return '00:00';
+  const m=s.match(/^(\d{1,4})(?::(\d{1,2}))?(a|p|am|pm)?$/);
+  if(!m) return null;
+  let h, min;
+  if(m[2]!=null){ h=+m[1]; min=+m[2]; if(m[1].length>2) return null; }
+  else if(m[1].length<=2){ h=+m[1]; min=0; }
+  else { h=+m[1].slice(0,-2); min=+m[1].slice(-2); }
+  if(min>59) return null;
+  const ap=m[3] ? m[3].charAt(0) : '';
+  if(ap){
+    if(h<1 || h>12) return null;
+    h = (h%12) + (ap==='p' ? 12 : 0);
+  } else {
+    if(h>23) return null;
+    if(h>=1 && h<=5) h+=12;
+  }
+  return roundTo15(String(h).padStart(2,'0')+':'+String(min).padStart(2,'0'));
+}
+function timeFieldHTML(id, value, onchange, label){
+  const v=value||'';
+  const shown=v ? formatTime12(v) : '';
+  return `<div class="tField"><input type="text" class="tfText" data-nodraft="1" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" value="${shown}" aria-label="${esc(label)}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="tfCommit(this)"><span class="tfWheel">${icon('clock')}<select class="tfSel" data-nodraft="1" aria-label="${esc(label)}, pick from list" onchange="tfPick(this)" onblur="tfPick(this,true)">${timeOptionsHTML(v ? roundTo15(v) : '08:00')}</select></span><input type="hidden"${id?` id="${id}"`:''} value="${v}" onchange="${onchange}"></div>`;
+}
+function tfSet(box, v){
+  const hid=box.querySelector('input[type=hidden]'), txt=box.querySelector('.tfText'), sel=box.querySelector('.tfSel');
+  txt.value = v ? formatTime12(v) : '';
+  if(v && sel) sel.value=roundTo15(v);
+  if(hid.value===v) return;
+  hid.value=v;
+  hid.dispatchEvent(new Event('change'));
+}
+function tfCommit(txt){
+  const box=txt.closest('.tField'); if(!box) return;
+  const hid=box.querySelector('input[type=hidden]');
+  const v=parseTimeInput(txt.value);
+  if(v===null){
+    toast('Couldn’t read that time. Try something like 930a or 330p.');
+    txt.value = hid.value ? formatTime12(hid.value) : '';
+    return;
+  }
+  tfSet(box, v);
+}
+/* A spin of the wheel sets the time. Closing the wheel on an empty field
+   without moving it takes the time it opened on. */
+function tfPick(sel, closing){
+  const box=sel.closest('.tField'); if(!box) return;
+  const hid=box.querySelector('input[type=hidden]');
+  if(closing && hid.value) return;
+  tfSet(box, sel.value);
+}
+/* Anything typed but not yet committed (the field still has focus) is read
+   before a save, so tapping Save straight after typing keeps the time. */
+function commitTimeFields(){
+  const a=document.activeElement;
+  if(a && a.classList && a.classList.contains('tfText')) tfCommit(a);
+}
+
+/* ---- Who's going ---- */
+function crewUsers(){
+  const list=Object.values(DB.users||{}).filter(u=>u && u.username);
+  const first=u=>userFirstName(u);
+  const counts={};
+  list.forEach(u=>{ const f=first(u).toLowerCase(); counts[f]=(counts[f]||0)+1; });
+  return list.map(u=>({username:u.username, name: counts[first(u).toLowerCase()]>1 ? first(u)+' '+String(u.lastInitial||u.username.slice(-1)).toUpperCase() : first(u)}))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+}
+function crewName(username){
+  const u=crewUsers().find(x=>x.username===username);
+  return u ? u.name : username;
+}
+function crewNames(list){ return (list||[]).map(crewName).join(', '); }
+function crewPickerHTML(){
+  const users=crewUsers();
+  if(!users.length) return '';
+  return `<div class="field"><label>Who's Going</label><div class="crewChips">${users.map(u=>{
+    const on=SCHED_CREW.indexOf(u.username)!==-1;
+    return `<button type="button" class="crewChip${on?' on':''}" aria-pressed="${on}" onclick="toggleSchedCrew('${esc(u.username)}')">${on?icon('check'):''}${esc(u.name)}</button>`;
+  }).join('')}</div></div>`;
+}
+function toggleSchedCrew(username){
+  captureSchedFields();
+  const i=SCHED_CREW.indexOf(username);
+  if(i===-1) SCHED_CREW.push(username); else SCHED_CREW.splice(i,1);
+  renderScheduleWidget();
+}
+/* Two bookings only clash when they share someone. A booking with nobody
+   assigned could be anyone, so it is checked against everything. */
+function crewOverlap(a, b){
+  a=a||[]; b=b||[];
+  if(!a.length || !b.length) return true;
+  return a.some(x=>b.indexOf(x)!==-1);
+}
 
 /* Picks a maps link based on the device: Apple Maps for iPhone/iPad/Mac
    (maps.apple.com hands off to the Maps app there), Google Maps for
@@ -7839,7 +8174,7 @@ function schedRowHTML(woId, d, inline){
   // An intentional double-booking is flagged so it never looks like an oversight.
   const dblNote = d.overridden ? `<span class="schedDblTag" title="Double-booked over another appointment">double-booked</span>` : '';
   return `<div class="schedRow">
-    <div><b>${range}</b>${loggedNote}${hoursNote}${dblNote}<br><span class="small">${formatArrivalWindow(d.startTime)}${repeatLabel(d)}${hasCustomDayTimes(d)?', times vary by day':''}</span></div>
+    <div><b>${range}</b>${loggedNote}${hoursNote}${dblNote}<br><span class="small">${formatArrivalWindow(d.startTime)}${repeatLabel(d)}${hasCustomDayTimes(d)?', times vary by day':''}</span>${(d.crew&&d.crew.length)?`<br><span class="small schedCrewLine">${esc(crewNames(d.crew))}</span>`:''}</div>
     <div class="schedRowBtns">
       <button class="tinyEdit" title="Edit this date" aria-label="Edit this scheduled date" onclick="openScheduleEdit(${woId},'${d.id}'${inline?',true':''})">Edit</button>
       <button class="tinyDel" title="Remove" aria-label="Remove this scheduled date" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
@@ -7848,8 +8183,7 @@ function schedRowHTML(woId, d, inline){
 }
 
 /* ---- Editing an existing scheduled date ----
-   Reuses the same calendar/form as adding, switched into a single-entry mode
-   by SCHED_EDIT_ID rather than the pending-list mode used for new dates. */
+   Reuses the same calendar/form as adding, with SCHED_EDIT_ID set. */
 function openScheduleEdit(woId, dateId, inline){
   SCHED_INLINE=!!inline;
   if(SCHED_INLINE) FIELD_SEC.sched=true;
@@ -7861,21 +8195,21 @@ function openScheduleEdit(woId, dateId, inline){
   SCHED_PENDING=[];
   SCHED_INFO_DAY=null;
   SCHED_TYPE=d.type||'full';
-  SCHED_START=d.startDate;
-  SCHED_END=d.endDate||d.startDate;
+  SCHED_DAYS=scheduleDays(d);
+  SCHED_CREW=(d.crew||[]).slice();
   SCHED_STIME=d.startTime||'';
   SCHED_ETIME=d.endTime||'';
-  SCHED_REPEAT=d.repeat||'none';
+  SCHED_REPEAT='none';
   SCHED_DAYTIMES=JSON.parse(JSON.stringify(d.dayTimes||{}));
   SCHED_DAYTIMES_OPEN=hasCustomDayTimes(d);
+  schedSyncRange();
   const anchor=new Date(d.startDate+'T00:00:00');
   SCHED_CAL_MONTH=new Date(anchor.getFullYear(), anchor.getMonth(), 1);
   renderScheduleWidget();
 }
 
 /* Rebuilds the per-day check in/out list for a new date range, carrying over
-   any stamps for days that are still in range. Days dropped from the range
-   lose their stamps, which is why saveScheduleEdit() confirms first. */
+   any stamps for days that are still in range. */
 function remapDayLogs(existing, startDate, endDate, repeat){
   const old={};
   (existing||[]).forEach(l=>{ old[l.date]=l; });
@@ -7884,75 +8218,91 @@ function remapDayLogs(existing, startDate, endDate, repeat){
   );
 }
 
-function saveScheduleEdit(){
+/* One save for both adding and editing. The picked days become one booking
+   per run of back-to-back days. */
+function saveSchedule(){
   captureSchedFields();
   const wo=getWO(SCHED_WO_ID);
-  const d=wo && (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID);
-  if(!d){ toast('That scheduled date no longer exists.'); return; }
+  if(!wo) return;
+  schedSyncRange();
+  const days=SCHED_DAYS.slice();
+  const startTime=SCHED_STIME, endTime=SCHED_ETIME;
+  if(!days.length){ toast('Pick a day on the calendar.'); return; }
+  if(!startTime || !endTime){ toast('Start time and end time are both required.'); return; }
+  if(endTime<=startTime){ toast('End time must be after the start time.'); return; }
+  const allTimes = SCHED_TYPE==='full' ? cleanDayTimes(Object.fromEntries(days.map(iso=>[iso, SCHED_DAYTIMES[iso]]).filter(x=>x[1])), days[0], days[days.length-1], 'daily', startTime, endTime) : {};
+  if(!dayTimesValid(allTimes)){ toast('Each day\'s end time must be after its start time.'); return; }
+  const crew=SCHED_CREW.slice();
+  const editing=SCHED_EDIT_ID ? (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID) : null;
+  if(SCHED_EDIT_ID && !editing){ toast('That scheduled date no longer exists.'); return; }
 
-  const startDate=(document.getElementById('schedStartDate')||{}).value || SCHED_START;
-  const startTime=(document.getElementById('schedStartTime')||{}).value || SCHED_STIME;
-  const endTime=(document.getElementById('schedEndTime')||{}).value || SCHED_ETIME;
-  const repeat=((document.getElementById('schedRepeat')||{}).value || SCHED_REPEAT || 'none');
-  let endDate;
-  if(repeat==='none'){
-    endDate=startDate;
-  } else {
-    endDate=(document.getElementById('schedEndDate')||{}).value || SCHED_END;
-    if(!endDate){ toast('Pick a date to end the repeat.'); return; }
+  if(editing){
+    const same = JSON.stringify(scheduleDays(editing))===JSON.stringify(days) &&
+      editing.startTime===startTime && editing.endTime===endTime && (editing.type||'full')===SCHED_TYPE &&
+      JSON.stringify((editing.crew||[]).slice().sort())===JSON.stringify(crew.slice().sort()) &&
+      JSON.stringify(cleanDayTimes(editing.dayTimes, editing.startDate, editing.endDate, editing.repeat, editing.startTime, editing.endTime))===JSON.stringify(allTimes);
+    if(same){ closeScheduleForm(); return; }
   }
 
-  if(!startDate || !startTime || !endTime){ toast('Start date, start time, and end time are all required.'); return; }
-  if(endDate<startDate){ toast('The repeat must end on or after the start date.'); return; }
-  if(endTime<=startTime){ toast('End time must be after the start time.'); return; }
-  const dayTimes = SCHED_TYPE==='full' ? cleanDayTimes(SCHED_DAYTIMES, startDate, endDate, repeat, startTime, endTime) : {};
-  if(!dayTimesValid(dayTimes)){ toast('Each day\'s end time must be after its start time.'); return; }
-  const unchanged = d.startDate===startDate && d.startTime===startTime &&
-                    (d.endDate||d.startDate)===endDate && d.endTime===endTime && d.type===SCHED_TYPE &&
-                    (d.repeat||'none')===repeat &&
-                    JSON.stringify(cleanDayTimes(d.dayTimes,d.startDate,d.endDate,d.repeat,d.startTime,d.endTime))===JSON.stringify(dayTimes);
-  if(unchanged){ SCHED_EDIT_ID=null; SCHED_INLINE=false; renderWorkOrderModal(SCHED_WO_ID); return; }
-
-  withConflictOverride(startDate, startTime, endDate, endTime, SCHED_EDIT_ID, (overridden)=>{
-    // Warn before silently discarding logged time on days leaving the range
-    // that are no longer in range.
-    const kept=expandRepeatDates(startDate, endDate, repeat);
-    const losing=(d.dayLogs||[]).filter(l=>logSessions(l).length && kept.indexOf(l.date)===-1);
-    const commit=()=>applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, overridden, dayTimes);
-    if(losing.length){
-      askYesNo(`This removes ${losing.length} day${losing.length>1?'s':''} that already ${losing.length>1?'have':'has'} logged time (${losing.map(l=>formatDateDisplay(l.date)).join(', ')}). That time log will be deleted. Continue?`,
-        (yes)=>{ if(yes) commit(); });
-    } else {
-      commit();
+  withConflictOverride(days, startTime, endTime, allTimes, crew, editing ? editing.id : null, (overridden)=>{
+    const build=()=>commitSchedule(wo, editing, days, startTime, endTime, allTimes, crew, overridden);
+    if(editing){
+      const losing=(editing.dayLogs||[]).filter(l=>logSessions(l).length && days.indexOf(l.date)===-1);
+      if(losing.length){
+        askYesNo(`This removes ${losing.length} day${losing.length>1?'s':''} that already ${losing.length>1?'have':'has'} logged time (${losing.map(l=>formatDateDisplay(l.date)).join(', ')}). That time log will be deleted. Continue?`,
+          (yes)=>{ if(yes) build(); });
+        return;
+      }
     }
-  }, repeat, dayTimes);
+    build();
+  });
 }
-
-function applyScheduleEdit(d, startDate, startTime, endDate, endTime, repeat, overridden, dayTimes){
-  const wo=getWO(SCHED_WO_ID);
-  const before=`${formatDateDisplay(d.startDate)}${d.multiDay?' – '+formatDateDisplay(d.endDate):''} @ ${formatTime12(d.startTime)}-${formatTime12(d.endTime)}`;
-  d.type=SCHED_TYPE;
-  d.startDate=startDate;
-  d.startTime=startTime;
-  d.endDate=endDate;
-  d.endTime=endTime;
-  d.multiDay=endDate!==startDate;
-  d.repeat=repeat||'daily';
-  d.overridden=!!overridden;
-  d.dayTimes=dayTimes||{};
-  SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
-  d.dayLogs=remapDayLogs(d.dayLogs, startDate, endDate, d.repeat);
-  const after=`${formatDateDisplay(startDate)}${d.multiDay?' – '+formatDateDisplay(endDate):''} @ ${formatTime12(startTime)}-${formatTime12(endTime)}`;
-  addAdminLog(wo, `Changed a scheduled date from ${before} to ${after}.${overridden?' Double-booked over an existing appointment (override).':''}`);
+function commitSchedule(wo, editing, days, startTime, endTime, allTimes, crew, overridden){
+  const runs=daysToRuns(days);
+  const logs={};
+  if(editing) (editing.dayLogs||[]).forEach(l=>{ logs[l.date]=l; });
+  const before=editing ? schedEntryLabel(editing) : '';
+  const entries=runs.map((run, i)=>{
+    const e=(editing && i===0) ? editing : {id:'sd'+Date.now()+i+Math.random().toString(36).slice(2,7)};
+    e.type=SCHED_TYPE;
+    e.startDate=run[0];
+    e.endDate=run[run.length-1];
+    e.multiDay=run.length>1;
+    e.repeat=run.length>1 ? 'daily' : 'none';
+    e.startTime=startTime;
+    e.endTime=endTime;
+    e.dayTimes=cleanDayTimes(allTimes, e.startDate, e.endDate, e.repeat, startTime, endTime);
+    // A day on its own takes its own times as the booking's times.
+    const own=run.length===1 && e.dayTimes[run[0]];
+    if(own){ e.startTime=own.startTime; e.endTime=own.endTime; e.dayTimes={}; }
+    e.crew=crew.slice();
+    e.overridden=!!overridden;
+    e.dayLogs=run.map(iso=>logs[iso] ? migrateDayLogSessions(JSON.parse(JSON.stringify(logs[iso]))) : newDayLog(iso));
+    return e;
+  });
+  if(!Array.isArray(wo.scheduleDates)) wo.scheduleDates=[];
+  if(editing){
+    const at=wo.scheduleDates.indexOf(editing);
+    wo.scheduleDates.splice(at+1, 0, ...entries.slice(1));
+    addAdminLog(wo, `Changed a ${before} to ${entries.map(schedEntryLabel).join(' and ')}.${overridden?' Double-booked over an existing appointment (override).':''}`);
+  } else {
+    wo.scheduleDates=wo.scheduleDates.concat(entries);
+    addAdminLog(wo, `Added ${entries.map(schedEntryLabel).join(' and ')}.${overridden?' Double-booked over an existing appointment (override).':''}`);
+  }
   saveDB(DB);
-  const woId=SCHED_WO_ID, editedId=d.id;
-  SCHED_EDIT_ID=null;
-  SCHED_INLINE=false;
-  renderWorkOrderModal(woId);
+  const woId=wo.id;
+  closeScheduleForm(true);
   renderMain();
-  // The .ics already sent to a calendar can't be edited in place, so a
-  // corrected one is offered along with the updated email.
-  offerScheduleWrapUp(woId, [editedId], 'Schedule Updated', true);
+  const n=entries.length;
+  offerScheduleWrapUp(woId, entries.map(e=>e.id), editing ? 'Schedule Updated' : (n>1||days.length>1 ? 'Dates Saved' : 'Date Saved'), !!editing);
+}
+function closeScheduleForm(){
+  const id=SCHED_WO_ID;
+  SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_DAYS=[]; SCHED_CREW=[]; SCHED_START=null; SCHED_END=null;
+  SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
+  SCHED_INFO_DAY=null; SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
+  SCHED_INLINE=false; SCHED_WO_ID=null;
+  if(id!=null) renderWorkOrderModal(id);
 }
 function schedEntryLabel(d){
   return `${d.type==='presite'?'pre-site':'whole job'} date ${formatDateDisplay(d.startDate)}${d.multiDay?' to '+formatDateDisplay(d.endDate):''} @ ${formatTime12(d.startTime)}-${formatTime12(d.endTime)}`;
@@ -8169,6 +8519,7 @@ function openScheduleWidget(id, inline){
   const today=new Date();
   SCHED_CAL_MONTH=new Date(today.getFullYear(), today.getMonth(), 1);
   SCHED_TYPE=hasPresiteScheduled(getWO(id)) ? 'full' : 'presite';
+  SCHED_DAYS=[]; SCHED_CREW=[];
   SCHED_START=null; SCHED_END=null;
   SCHED_STIME=''; SCHED_ETIME='';
   SCHED_REPEAT='none';
@@ -8176,17 +8527,35 @@ function openScheduleWidget(id, inline){
   SCHED_PENDING=[];
   renderScheduleWidget();
 }
+/* The form fields shared by the office widget and field view. */
+function schedFormFieldsHTML(short){
+  return `
+    <div class="schedTypeToggle">
+      <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">${short?'Pre-Site':'Pre-Site Inspection'}</button>
+      <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
+    </div>
+    <div class="schedTimeRow">
+      <div class="field"><label>Start Time</label>${timeFieldHTML('schedStartTime', SCHED_STIME, "onSchedTimeChange('start',this.value)", 'Start time')}</div>
+      <div class="field"><label>End Time</label>${timeFieldHTML('schedEndTime', SCHED_ETIME, "onSchedTimeChange('end',this.value)", 'End time')}</div>
+    </div>
+    ${schedDayTimesHTML()}
+    ${crewPickerHTML()}`;
+}
 function renderScheduleWidget(){
   /* In field view the form lives in the work order itself, so everything that
      would have redrawn the widget redraws the work order instead. */
   if(SCHED_INLINE){ renderWorkOrderModal(SCHED_WO_ID); return; }
   const wo=getWO(SCHED_WO_ID);
+  if(!wo) return;
   const modal=document.getElementById('modalRoot');
+  const keep=modal.querySelector('.schedModal .modalBody');
+  const scroll=keep ? keep.scrollTop : 0;
+  const winScroll=window.scrollY;
   modal.innerHTML=`
   <div class="overlay">
-    <div class="modal" style="max-width:900px;">
-      <div class="modalHead">
-        <h2>${esc(wo.customer.name) || 'Work Order'}, ${SCHED_EDIT_ID?'Edit Scheduled Date':'Schedule Date(s)'}</h2>
+    <div class="modal schedModal" style="max-width:900px;">
+      <div class="modalHead schedHead">
+        <h2><span class="schedHeadName">${esc(wo.customer.name) || 'Work Order'}</span><span class="schedHeadSub">${SCHED_EDIT_ID?'Edit Scheduled Date':'Schedule Dates'}</span></h2>
         <button class="closeX" aria-label="Close" onclick="cancelScheduleWidget()">&times;</button>
       </div>
       <div class="modalBody">
@@ -8195,105 +8564,41 @@ function renderScheduleWidget(){
             ${scheduleCalendarHTML()}
           </div>
           <div class="schedFormCol">
-            <div class="schedTypeToggle">
-              <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site Inspection</button>
-              <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
-            </div>
-            <div class="field"><label>Repeat</label>
-              <select id="schedRepeat" onchange="onSchedRepeatChange(this.value)">
-                ${schedRepeatOptionsHTML()}
-              </select>
-            </div>
-            <div class="schedRepeatNote">Set this field first if scheduling a job that runs more than one day.</div>
-            <div class="field"><label>Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
-            ${SCHED_REPEAT!=='none' ? `
-            <div class="field"><label>End Date (Repeats Until)</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>
-            ` : ''}
-            <div class="field"><label>Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="onSchedTimeChange('start',this.value)"></div>
-            <div class="field"><label>End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="onSchedTimeChange('end',this.value)"></div>
-            ${schedDayTimesHTML()}
-            ${SCHED_EDIT_ID ? '' : `<button class="btn secondary" style="width:100%;margin-top:8px;" onclick="addPendingScheduleDate()">Add This Date</button>`}
-
-            ${(!SCHED_EDIT_ID && SCHED_PENDING.length) ? `
-              <div class="schedPendingList">
-                <div class="panelTitle" style="margin-top:16px;">Dates to Add</div>
-                ${SCHED_PENDING.map((p,i)=>`
-                  <div class="schedPendingItem">
-                    <span>${p.overridden?'⚠ ':''}${p.type==='presite'?'Pre-Site':'Whole Job'}, ${formatDateDisplay(p.startDate)}${p.multiDay?' – '+formatDateDisplay(p.endDate):''} @ ${formatTime12(p.startTime)}${repeatLabel(p)}${hasCustomDayTimes(p)?', times vary by day':''}</span>
-                    <button class="tinyDel" onclick="removePendingScheduleDate(${i})">&times;</button>
-                  </div>
-                `).join('')}
-              </div>
-            ` : ''}
+            ${schedFormFieldsHTML(false)}
           </div>
         </div>
       </div>
       <div class="footerActions">
         <button class="btn secondary" onclick="cancelScheduleWidget()">Cancel</button>
-        ${SCHED_EDIT_ID
-          ? `<button class="btn" onclick="saveScheduleEdit()">Save Changes</button>`
-          : `<button class="btn" ${SCHED_PENDING.length?'':'disabled'} onclick="finalizeScheduleDates()">Add to Calendar</button>`}
+        <button class="btn" onclick="saveSchedule()">${SCHED_EDIT_ID?'Save Changes':'Save'}</button>
       </div>
     </div>
   </div>`;
-}
-function cancelScheduleWidget(){
-  const id=SCHED_WO_ID;
-  // Leaving edit mode set would make the next "+ Add" open as an edit.
-  SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
-  SCHED_INFO_DAY=null;
-  SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
-  SCHED_INLINE=false;
-  renderWorkOrderModal(id);
-}
-function setSchedType(t){ captureSchedFields(); SCHED_TYPE=t; renderScheduleWidget(); }
-/* Switching the repeat option changes which fields are shown (Repeat Until
-   only appears once a repeat is chosen), so this re-renders the whole
-   widget rather than just the calendar column. */
-function onSchedRepeatChange(val){
-  captureSchedFields();
-  SCHED_REPEAT=val||'none';
-  if(SCHED_REPEAT==='none') SCHED_END=SCHED_START;
-  renderScheduleWidget();
-}
-function onSchedStartDateChange(val){
-  val=val||null;
-  SCHED_START=val;
-  // With no repeat chosen, the occurrence is single-day, so keep the
-  // (hidden) end date in sync with the start date automatically.
-  if(SCHED_REPEAT==='none') SCHED_END=val;
-  if(SCHED_DAYTIMES_OPEN || SCHED_TYPE==='full'){ captureSchedFields(); SCHED_START=val; if(SCHED_REPEAT==='none') SCHED_END=val; renderScheduleWidget(); return; }
-  refreshSchedCalendar();
-}
-function onSchedEndDateChange(val){
-  val=val||null;
-  if(val && SCHED_START && val<SCHED_START){
-    toast('The repeat must end on or after the start date.');
-    document.getElementById('schedEndDate').value=SCHED_END||'';
-    return;
+  if(keep){
+    const body=modal.querySelector('.schedModal .modalBody');
+    if(body) body.scrollTop=scroll;
+    window.scrollTo(0, winScroll);
   }
-  SCHED_END=val;
-  if(SCHED_TYPE==='full'){ captureSchedFields(); SCHED_END=val; renderScheduleWidget(); return; }
-  refreshSchedCalendar();
 }
+function cancelScheduleWidget(){ closeScheduleForm(); }
+function setSchedType(t){ captureSchedFields(); SCHED_TYPE=t; renderScheduleWidget(); }
 
 /* Collects every scheduled date (across all work orders), keyed by ISO date,
-   with the job details needed for the hover/tap info popup and for
-   start/end-time overlap checks. */
+   with what the calendars and the overlap check need. */
 function buildJobDaysMap(excludeDateId){
   const map={};
   (DB.workOrders||[]).forEach(w=>{
     (w.scheduleDates||[]).forEach(d=>{
       // When editing an existing date, that date must not be treated as a
-      // conflict with itself, otherwise nudging the time by five minutes
-      // would always report a double-booking.
+      // conflict with itself.
       if(excludeDateId && d.id===excludeDateId) return;
       const base={
         customer: (w.customer && w.customer.name) ? w.customer.name : 'None',
-        type: d.type==='presite' ? 'Pre-Site' : 'Whole Job'
+        type: d.type==='presite' ? 'Pre-Site' : 'Whole Job',
+        kind: d.type==='presite' ? 'presite' : 'full',
+        crew: (d.crew||[]).slice(),
+        woId: w.id, dateId: d.id
       };
-      // Only the days this entry's repeat pattern actually covers are
-      // booked, so a single-day entry never blocks off the days around it.
       expandRepeatDates(d.startDate, d.endDate||d.startDate, d.repeat).forEach(iso=>{
         (map[iso]=map[iso]||[]).push(Object.assign({}, base, dayTimesFor(d, iso)));
       });
@@ -8302,46 +8607,22 @@ function buildJobDaysMap(excludeDateId){
   return map;
 }
 /* Whether two start/end time-of-day strings ("HH:MM") overlap. Missing
-   times are treated conservatively as a conflict, since we can't confirm
-   there's no overlap without both times. */
+   times are treated conservatively as a conflict. */
 function timesOverlap(aStart,aEnd,bStart,bEnd){
   if(!aStart || !aEnd || !bStart || !bEnd) return true;
   return aStart<bEnd && bStart<aEnd;
 }
-/* Expands the not-yet-saved SCHED_PENDING list (this session, for the work
-   order currently being scheduled) into per-day time bookings, so a second
-   pending date being added in the same session is also checked for
-   overlap, not just dates already saved to the database. */
-function pendingDayBookings(iso){
+/* A day is only a real double-booking when the times overlap and the two
+   bookings share someone (or either has nobody assigned yet). */
+function findScheduleConflicts(days, startTime, endTime, dayTimes, crew, excludeDateId){
   const out=[];
-  (SCHED_PENDING||[]).forEach(d=>{
-    const endDate=d.endDate||d.startDate;
-    if(expandRepeatDates(d.startDate, endDate, d.repeat).indexOf(iso)!==-1){
-      out.push(dayTimesFor(d, iso));
-    }
-  });
-  return out;
-}
-/* Multiple jobs are allowed on the same day, a day is only a real
-   double-booking if the new start/end time overlaps an existing
-   appointment's start/end time on one of the days in range. */
-/* Returns the list of clashing bookings (empty when there are none) so the
-   override prompt can say exactly what is being double-booked, rather than
-   just refusing with a generic message. */
-function findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDateId, repeat, dayTimes){
-  const out=[];
-  if(!startDate || !startTime || !endDate || !endTime) return out;
+  if(!days.length || !startTime || !endTime) return out;
   const map=buildJobDaysMap(excludeDateId);
-  // Only the days this entry's own repeat cycle books are checked, e.g. a
-  // single-day entry never conflicts with the days around it.
-  expandRepeatDates(startDate, endDate, repeat).forEach(iso=>{
-    // In edit mode there is no pending list to check against.
-    const bookings=(map[iso]||[]).concat(SCHED_EDIT_ID ? [] : pendingDayBookings(iso).map(b=>
-      Object.assign({customer:'another date you just added', type:'Pending'}, b)));
+  days.forEach(iso=>{
     const own=(dayTimes && dayTimes[iso]) || {startTime, endTime};
-    bookings.forEach(b=>{
-      if(timesOverlap(own.startTime, own.endTime, b.startTime, b.endTime)){
-        out.push({date:iso, customer:b.customer||'None', type:b.type||'', startTime:b.startTime, endTime:b.endTime});
+    (map[iso]||[]).forEach(b=>{
+      if(timesOverlap(own.startTime, own.endTime, b.startTime, b.endTime) && crewOverlap(crew, b.crew)){
+        out.push({date:iso, customer:b.customer||'None', type:b.type||'', startTime:b.startTime, endTime:b.endTime, crew:b.crew});
       }
     });
   });
@@ -8355,16 +8636,17 @@ function describeConflicts(list){
     if(seen.indexOf(key)!==-1) return;
     seen.push(key);
     const when=c.startTime&&c.endTime ? `${formatTime12(c.startTime)}–${formatTime12(c.endTime)}` : 'time not set';
-    lines.push(`• ${formatDateDisplay(c.date)}, ${c.customer} (${when})`);
+    const who=(c.crew&&c.crew.length) ? `, ${crewNames(c.crew)}` : '';
+    lines.push(`• ${formatDateDisplay(c.date)}, ${c.customer} (${when}${who})`);
   });
   const shown=lines.slice(0,4).join('\n');
   const more=lines.length>4 ? `\n…and ${lines.length-4} more` : '';
   return shown+more;
 }
-/* Shared override gate. Runs onOk() when clear; otherwise lays out the clash
-   and lets the user book over it deliberately. */
-function withConflictOverride(startDate, startTime, endDate, endTime, excludeDateId, onOk, repeat, dayTimes){
-  const clashes=findScheduleConflicts(startDate, startTime, endDate, endTime, excludeDateId, repeat, dayTimes);
+/* Runs onOk() when clear; otherwise lays out the clash and lets the user book
+   over it deliberately. */
+function withConflictOverride(days, startTime, endTime, dayTimes, crew, excludeDateId, onOk){
+  const clashes=findScheduleConflicts(days, startTime, endTime, dayTimes, crew, excludeDateId);
   if(!clashes.length){ onOk(false); return; }
   askYesNo(
     `This overlaps something already on the calendar:\n\n${describeConflicts(clashes)}\n\nSchedule it anyway (double-book)?`,
@@ -8372,16 +8654,24 @@ function withConflictOverride(startDate, startTime, endDate, endTime, excludeDat
     {yes:'Double-book it', no:'Pick another time'}
   );
 }
-/* Worded for the input the device actually has, not for its width: the office
-   view gets opened on a phone held in desktop mode often enough that a width
-   test would tell somebody to hover on a screen with no pointer. */
-function isFinePointer(){
-  return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+/* Hours booked in a list of one day's bookings, overlapping times counted once. */
+function bookedHours(list){
+  const spans=(list||[]).filter(b=>b.startTime&&b.endTime&&b.endTime>b.startTime)
+    .map(b=>[toMin(b.startTime), toMin(b.endTime)]).sort((a,b)=>a[0]-b[0]);
+  let total=0, cs=-1, ce=-1;
+  spans.forEach(([s,e])=>{
+    if(s>ce){ if(ce>cs) total+=ce-cs; cs=s; ce=e; }
+    else ce=Math.max(ce,e);
+  });
+  if(ce>cs) total+=ce-cs;
+  return total/60;
 }
-function schedCalendarHint(){
-  return isFinePointer()
-    ? "Click a date to set the start, then a later date for the end. Shaded days have a job booked. Hover over one for a quick look, or click any day to see its bookings below. Today is circled in orange."
-    : "Tap a date to set the start, then a later date for the end. Shaded days have a job booked. Tap any day to see its bookings below. Today is circled in orange.";
+function toMin(hhmm){ const [h,m]=String(hhmm).split(':').map(Number); return h*60+(m||0); }
+/* 1 light, 2 medium, 3 full day (8 hours or more booked). */
+function busyLevel(list){
+  if(!list || !list.length) return 0;
+  const h=bookedHours(list);
+  return h>=8 ? 3 : h>=4 ? 2 : 1;
 }
 function scheduleCalendarHTML(){
   const month=SCHED_CAL_MONTH;
@@ -8392,64 +8682,64 @@ function scheduleCalendarHTML(){
   const monthLabel=month.toLocaleDateString([], {month:'long', year:'numeric'});
   const todayIso=isoToday();
   const jobDays=buildJobDaysMap(SCHED_EDIT_ID);
-  // Which days within the current start/repeat-until selection are actually
-  // booked, per the chosen repeat pattern, the rest (e.g. the 6 of 7 days
-  // outside the repeat) get hatched out below.
-  const includedDays = (SCHED_START && SCHED_END && SCHED_REPEAT!=='none')
-    ? expandRepeatDates(SCHED_START, SCHED_END, SCHED_REPEAT) : null;
-
+  const minIso=minSchedDate();
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="schedCalDay empty"></div>';
   for(let day=1; day<=daysInMonth; day++){
     const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-    // Normally past days are unselectable. When editing a date that already
-    // started, its own days must stay reachable so the entry can be corrected
-    // after the fact (e.g. fixing yesterday's arrival time).
-    const isPast = iso < (SCHED_EDIT_ID ? minSchedDate() : todayIso);
-    const isStart = iso===SCHED_START;
-    const isEnd = SCHED_END && iso===SCHED_END;
-    const inRange = SCHED_START && SCHED_END && iso>SCHED_START && iso<SCHED_END;
-    // Days inside the range that the repeat pattern doesn't actually land on
-    // are shown hatched so it's clear before saving that they're never booked.
-    const isSkipped = inRange && includedDays && includedDays.indexOf(iso)===-1;
+    // Past days can't be picked, except the days of a booking being edited.
+    const isPast = iso < minIso;
+    const picked = SCHED_DAYS.indexOf(iso)!==-1;
     const booked = jobDays[iso];
+    const lvl = busyLevel(booked);
     const cls=['schedCalDay'];
     if(isPast) cls.push('past');
     if(iso===todayIso) cls.push('today');
-    if(booked) cls.push('hasJob');
-    if(isStart) cls.push('selStart');
-    if(isEnd) cls.push('selEnd');
-    if(inRange) cls.push('inRange');
-    if(isSkipped) cls.push('skipDay');
-    let popup='';
-    let clickAttr='';
-    if(booked){
-      popup=`<div class="schedDayPopup" onclick="event.stopPropagation()">
-        ${booked.map(b=>`<div class="schedDayPopupRow"><b>${esc(b.customer)}</b>${esc(b.type)} \u2022 ${formatTime12(b.startTime)}${b.endTime && b.endTime!==b.startTime ? ' \u2013 '+formatTime12(b.endTime) : ''}</div>`).join('')}
-      </div>`;
+    if(lvl) cls.push('hasJob','busy'+lvl);
+    if(picked){
+      cls.push('picked');
+      if(SCHED_DAYS.indexOf(addDaysIso(iso,-1))!==-1 && (startDow+day-1)%7!==0) cls.push('joinL');
+      if(SCHED_DAYS.indexOf(addDaysIso(iso,1))!==-1 && (startDow+day)%7!==0) cls.push('joinR');
     }
-    if(!isPast){
-      // One tap selects the day and lists what is booked on it below the grid.
-      clickAttr = `onclick="pickSchedDay('${iso}')"`;
-    }
-    cells += `<div class="${cls.join(' ')}" ${clickAttr} title="${iso===todayIso?'Today. ':''}${booked?'Already has a job that day. You can still schedule here if your time doesn\u2019t conflict.':''}">${day}${popup}</div>`;
+    if(iso===SCHED_INFO_DAY) cls.push('infoDay');
+    const count = booked ? calDotsHTML(booked.length) : '';
+    const clickAttr = isPast ? '' : `onclick="pickSchedDay('${iso}')"`;
+    cells += `<div class="${cls.join(' ')}" ${clickAttr} role="button" aria-pressed="${picked}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${booked?', '+booked.length+' booked':''}">${day}${count}</div>`;
   }
-
   return `
     <div class="schedCalNav">
-      <button onclick="changeSchedMonth(-1)">&larr;</button>
+      <button onclick="changeSchedMonth(-1)" aria-label="Previous month">&larr;</button>
       <b>${monthLabel}</b>
-      <button onclick="changeSchedMonth(1)">&rarr;</button>
+      <button onclick="changeSchedMonth(1)" aria-label="Next month">&rarr;</button>
     </div>
     <div class="schedCalGrid">
       <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
       ${cells}
     </div>
-    ${schedDayInfoHTML(jobDays)}
-    <div class="small" style="margin-top:8px;">${schedCalendarHint()}</div>`;
+    ${schedPickedHTML()}
+    ${schedDayInfoHTML(jobDays)}`;
 }
-/* Lists the bookings on the last day tapped. Nothing is drawn until a day has
-   been tapped, so the box takes no room until it is wanted. */
+/* One dot per booking, up to four. */
+function calDotsHTML(n){ return n ? `<span class="calDots" aria-hidden="true">${'<i></i>'.repeat(Math.min(n,4))}</span>` : ''; }
+/* "Nov 4 - 7, Nov 9" style summary of the picked days. */
+function daysSummary(days){
+  const md=iso=>new Date(iso+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return daysToRuns(days).map(r=>{
+    if(r.length===1) return md(r[0]);
+    const a=new Date(r[0]+'T00:00:00'), b=new Date(r[r.length-1]+'T00:00:00');
+    return a.getMonth()===b.getMonth() ? `${md(r[0])}–${b.getDate()}` : `${md(r[0])}–${md(r[r.length-1])}`;
+  }).join(', ');
+}
+function schedPickedHTML(){
+  if(!SCHED_DAYS.length) return '';
+  const n=SCHED_DAYS.length;
+  return `<div class="schedPicked"><span><b>${n} day${n>1?'s':''}:</b> ${daysSummary(SCHED_DAYS)}</span><button type="button" class="schedCalLink" onclick="clearSchedDays()">Clear</button></div>`;
+}
+function clearSchedDays(){
+  captureSchedFields();
+  SCHED_DAYS=[]; schedSyncRange();
+  renderScheduleWidget();
+}
 /* "9:00"-"10:00" -> "9-10 AM", "11:30"-"13:00" -> "11:30 AM-1 PM". */
 function compactTimeRange(st, et){
   const part=t=>{ const [h,m]=String(t).split(':').map(Number); return {h12:(h%12)||12, m, ap:h<12?'AM':'PM'}; };
@@ -8458,8 +8748,9 @@ function compactTimeRange(st, et){
   const a=part(st);
   if(!et || et===st) return txt(a)+' '+a.ap;
   const b=part(et);
-  return a.ap===b.ap ? txt(a)+'\u2013'+txt(b)+' '+b.ap : txt(a)+' '+a.ap+'\u2013'+txt(b)+' '+b.ap;
+  return a.ap===b.ap ? txt(a)+'–'+txt(b)+' '+b.ap : txt(a)+' '+a.ap+'–'+txt(b)+' '+b.ap;
 }
+/* Lists the bookings on the last day tapped. */
 function schedDayInfoHTML(jobDays){
   const iso=SCHED_INFO_DAY;
   if(!iso) return '';
@@ -8467,15 +8758,12 @@ function schedDayInfoHTML(jobDays){
   const list=(jobDays||{})[iso]||[];
   const rows=list.length
     ? list.slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||''))).map(b=>{
-        return `<div class="sdiRow"><b>${esc(b.customer)}</b> \u00b7 <span>${esc(b.type)}</span> \u00b7 <span>${compactTimeRange(b.startTime, b.endTime)}</span></div>`;
+        return `<div class="sdiRow"><b>${esc(b.customer)}</b> · <span>${esc(b.type)}</span> · <span>${compactTimeRange(b.startTime, b.endTime)}</span>${b.crew&&b.crew.length?` · <span>${esc(crewNames(b.crew))}</span>`:''}</div>`;
       }).join('')
     : '<div class="sdiNone">Nothing scheduled.</div>';
   return `<div class="schedDayInfo${list.length?'':' empty'}" aria-live="polite"><div class="sdiDate">${label}</div>${rows}</div>`;
 }
-/* Re-renders only the calendar column, leaving the form fields (and the
-   rest of the page) untouched so typing/tapping in the date & time inputs
-   doesn't lose focus, close native pickers mid-interaction, or reset the
-   modal's scroll position back to the top. */
+/* Re-renders only the calendar column, leaving the form fields untouched. */
 function refreshSchedCalendar(){
   const col=document.getElementById('schedCalCol');
   if(col) col.innerHTML=scheduleCalendarHTML();
@@ -8484,91 +8772,24 @@ function changeSchedMonth(delta){
   SCHED_CAL_MONTH=new Date(SCHED_CAL_MONTH.getFullYear(), SCHED_CAL_MONTH.getMonth()+delta, 1);
   refreshSchedCalendar();
 }
+/* Tap a day to pick it. With one day picked, tapping another fills in every
+   day between. Tap a picked day to take it out, which is how a day is skipped. */
 function pickSchedDay(iso){
   captureSchedFields();
   SCHED_INFO_DAY=iso;
-  if(SCHED_REPEAT==='none'){
-    // No repeat chosen, the calendar just picks a single occurrence day.
-    SCHED_START=iso; SCHED_END=iso;
-  } else if(!SCHED_START || (SCHED_START && SCHED_END) || iso<=SCHED_START){
-    SCHED_START=iso; SCHED_END=null;
-  } else {
-    SCHED_END=iso;
+  const had=SCHED_DAYS.length;
+  const i=SCHED_DAYS.indexOf(iso);
+  if(i!==-1) SCHED_DAYS.splice(i,1);
+  else if(had===1){
+    const a=SCHED_DAYS[0]<iso ? SCHED_DAYS[0] : iso, b=SCHED_DAYS[0]<iso ? iso : SCHED_DAYS[0];
+    SCHED_DAYS=datesInRange(a, b);
   }
-  const startEl=document.getElementById('schedStartDate');
-  const endEl=document.getElementById('schedEndDate');
-  if(startEl) startEl.value=SCHED_START||'';
-  if(endEl) endEl.value=SCHED_END||'';
-  if(SCHED_TYPE==='full' && SCHED_REPEAT==='daily'){ renderScheduleWidget(); return; }
+  else SCHED_DAYS.push(iso);
+  schedSyncRange();
+  // The by-day times appear or go away as the day count crosses one.
+  const multi=SCHED_DAYS.length>1, wasMulti=had>1;
+  if(SCHED_TYPE==='full' && (multi!==wasMulti || SCHED_DAYTIMES_OPEN)){ refreshSchedCalendar(); refreshSchedDayTimes(); return; }
   refreshSchedCalendar();
-}
-function addPendingScheduleDate(){
-  captureSchedFields();
-  const startDate=document.getElementById('schedStartDate').value || SCHED_START;
-  const startTime=document.getElementById('schedStartTime').value;
-  const endTimeEl=document.getElementById('schedEndTime');
-  const endTime=endTimeEl ? endTimeEl.value : '';
-  const repeatEl=document.getElementById('schedRepeat');
-  const repeat=(repeatEl ? repeatEl.value : SCHED_REPEAT) || 'none';
-  let endDate;
-  if(repeat==='none'){
-    endDate=startDate;
-  } else {
-    const endDateEl=document.getElementById('schedEndDate');
-    endDate=endDateEl ? endDateEl.value : (SCHED_END||'');
-    if(!endDate){ toast('Pick a date to end the repeat.'); return; }
-  }
-  if(!startDate || !startTime || !endTime){ toast('Start date, start time, and end time are all required.'); return; }
-  if(endDate<startDate){ toast('The repeat must end on or after the start date.'); return; }
-  if(endTime<=startTime){ toast('End time must be after the start time.'); return; }
-  const dayTimes = SCHED_TYPE==='full' ? cleanDayTimes(SCHED_DAYTIMES, startDate, endDate, repeat, startTime, endTime) : {};
-  if(!dayTimesValid(dayTimes)){ toast('Each day\'s end time must be after its start time.'); return; }
-  // A clash no longer blocks the booking outright, it asks, and records the
-  // decision on the entry so the double-booking stays visible afterwards.
-  withConflictOverride(startDate, startTime, endDate, endTime, null, (overridden)=>{
-    const entry={
-      id:'sd'+Date.now()+Math.random().toString(36).slice(2,7),
-      type:SCHED_TYPE,
-      startDate, startTime,
-      multiDay: endDate!==startDate,
-      endDate, endTime,
-      repeat,
-      dayTimes,
-      overridden: !!overridden
-    };
-    SCHED_PENDING.push(entry);
-    if(entry.type==='presite') SCHED_TYPE='full';
-    SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
-    // Keep the times so back-to-back visits at the same hour don't need retyping.
-    SCHED_START=null; SCHED_END=null;
-    renderScheduleWidget();
-    toast(overridden
-      ? 'Double-booked date added.'
-      : 'Date added.');
-  }, repeat, dayTimes);
-}
-function removePendingScheduleDate(i){
-  captureSchedFields();
-  SCHED_PENDING.splice(i,1);
-  renderScheduleWidget();
-}
-function finalizeScheduleDates(){
-  const wo=getWO(SCHED_WO_ID);
-  if(!SCHED_PENDING.length) return;
-  SCHED_PENDING.forEach(entry=>{
-    entry.dayLogs=expandRepeatDates(entry.startDate, entry.endDate||entry.startDate, entry.repeat).map(date=>newDayLog(date));
-  });
-  wo.scheduleDates=(wo.scheduleDates||[]).concat(SCHED_PENDING);
-  const dbl=SCHED_PENDING.filter(e=>e.overridden).length;
-  addAdminLog(wo, `Added ${SCHED_PENDING.length} schedule date(s).`+
-    (dbl?` ${dbl} of them double-booked over an existing appointment (override).`:''));
-  saveDB(DB);
-  const doneId=SCHED_WO_ID;
-  const added=SCHED_PENDING.slice();
-  SCHED_PENDING=[]; SCHED_WO_ID=null; SCHED_INLINE=false;
-  renderWorkOrderModal(doneId);
-  renderMain();
-  offerScheduleWrapUp(doneId, added.map(e=>e.id), added.length>1?'Dates Saved':'Date Saved', false);
 }
 
 /* ---- after scheduling: calendar file and customer email in one sheet ---- */
@@ -9460,7 +9681,7 @@ function cancelFieldCustEdit(id){
 }
 /* ---- Schedule Date(s), inline ----
    Adding and editing run through the same openScheduleWidget /
-   openScheduleEdit / saveScheduleEdit / finalizeScheduleDates functions the
+   openScheduleEdit / saveSchedule functions the
    desktop widget uses, with SCHED_INLINE telling them to redraw the work order
    instead of the widget. The inputs below deliberately carry the widget's own
    element ids, because those functions read the values straight off them. */
@@ -9480,40 +9701,14 @@ function fieldSchedGroupHTML(id, title, list){
 }
 function fieldSchedFormHTML(){
   const editing=!!SCHED_EDIT_ID;
-  /* The calendar keeps the widget's own element id so the existing
-     refreshSchedCalendar() redraws it in place when a day is picked. */
+  /* The calendar keeps the widget's own element id so refreshSchedCalendar()
+     redraws it in place when a day is picked. */
   return `<div class="fieldSubPanel fieldSchedForm">
     <div class="fsKey">${editing?'Edit Date':'New Date'}</div>
-    <button type="button" class="schedCalLink" onclick="toggleFieldSchedCal(${SCHED_WO_ID})">${FIELD_SCHED_CAL?'Hide calendar':'View calendar'}</button>
-    ${FIELD_SCHED_CAL?`<div id="schedCalCol" class="fieldSchedCal">${scheduleCalendarHTML()}</div>`:''}
-    <div class="schedTypeToggle">
-      <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site</button>
-      <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
-    </div>
-    <div class="field"><label for="schedRepeat">Repeat</label>
-      <select id="schedRepeat" onchange="onSchedRepeatChange(this.value)">
-        ${schedRepeatOptionsHTML()}
-      </select>
-    </div>
-    <div class="fieldSchedNote" style="margin-top:-4px;margin-bottom:10px;">Set this field first if scheduling a job that runs more than one day.</div>
-    <div class="field"><label for="schedStartDate">Start Date</label><input type="date" id="schedStartDate" value="${SCHED_START||''}" min="${minSchedDate()}" onchange="onSchedStartDateChange(this.value)"></div>
-    ${SCHED_REPEAT!=='none' ? `
-    <div class="field"><label for="schedEndDate">End Date (Repeats Until)</label><input type="date" id="schedEndDate" value="${SCHED_END||''}" min="${SCHED_START||minSchedDate()}" onchange="onSchedEndDateChange(this.value)"></div>` : ''}
-    <div class="field"><label for="schedStartTime">Start Time</label><input type="time" id="schedStartTime" step="900" value="${SCHED_STIME}" onchange="onSchedTimeChange('start',this.value)"></div>
-    <div class="field"><label for="schedEndTime">End Time</label><input type="time" id="schedEndTime" step="900" value="${SCHED_ETIME}" onchange="onSchedTimeChange('end',this.value)"></div>
-    ${schedDayTimesHTML()}
-    ${(!editing && SCHED_PENDING.length) ? `<div class="fsList" style="margin-top:14px;">
-      <div class="fsKey">Dates to add</div>
-      ${SCHED_PENDING.map((pd,i)=>`<div class="schedPendingItem">
-        <span>${pd.overridden?'&#9888; ':''}${pd.type==='presite'?'Pre-Site':'Whole Job'}, ${formatDateDisplay(pd.startDate)}${pd.multiDay?' &ndash; '+formatDateDisplay(pd.endDate):''} @ ${formatTime12(pd.startTime)}${repeatLabel(pd)}${hasCustomDayTimes(pd)?', times vary by day':''}</span>
-        <button class="tinyDel" onclick="removePendingScheduleDate(${i})">&times;</button>
-      </div>`).join('')}
-    </div>` : ''}
+    <div id="schedCalCol" class="fieldSchedCal">${scheduleCalendarHTML()}</div>
+    ${schedFormFieldsHTML(true)}
     <div class="fieldNoteBtns">
-      ${editing
-        ? `<button class="btn" onclick="saveScheduleEdit()">Save Changes</button>`
-        : `<button class="btn secondary" onclick="addPendingScheduleDate()">Add This Date</button>
-           <button class="btn" ${SCHED_PENDING.length?'':'disabled'} onclick="finalizeScheduleDates()">Save${SCHED_PENDING.length?' ('+SCHED_PENDING.length+')':''}</button>`}
+      <button class="btn" onclick="saveSchedule()">${editing?'Save Changes':'Save'}</button>
       <button class="btn secondary" onclick="cancelScheduleWidget()">Cancel</button>
     </div>
   </div>`;
@@ -13136,7 +13331,7 @@ function closeModal(){
   WO_CUST_EDIT=false; WO_ADMIN_VIEW=false; WO_DOCS_VIEW=false; WO_PRIOR_VIEW=false;
   WO_LIST_OPEN={};
   PRESITE_STATE=null;
-  SCHED_WO_ID=null; SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
+  SCHED_WO_ID=null; SCHED_EDIT_ID=null; SCHED_PENDING=[]; SCHED_DAYS=[]; SCHED_CREW=[]; SCHED_START=null; SCHED_END=null; SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
 }
 /* Toasts used to be individually position:fixed at the same coordinates, so
    two in quick succession landed exactly on top of each other and only the
@@ -16434,7 +16629,7 @@ function srSave(){
       WO_DOCS_VIEW, WO_EDIT_NOTE_IDX, WO_LIST_OPEN, DOC_TAG_FILTER,
       PRESITE_STATE:srPresiteSnapshot(), PS_UID,
       SCHED_WO_ID, SCHED_EDIT_ID, SCHED_TYPE, SCHED_START, SCHED_END,
-      SCHED_STIME, SCHED_ETIME, SCHED_REPEAT, SCHED_PENDING, SCHED_DAYTIMES, SCHED_DAYTIMES_OPEN
+      SCHED_STIME, SCHED_ETIME, SCHED_REPEAT, SCHED_PENDING, SCHED_DAYTIMES, SCHED_DAYTIMES_OPEN, SCHED_DAYS, SCHED_CREW
     }
   };
   try{
@@ -16514,7 +16709,9 @@ function restoreSession(){
     SCHED_END=st.SCHED_END==null?null:st.SCHED_END;
     SCHED_STIME=st.SCHED_STIME||''; SCHED_ETIME=st.SCHED_ETIME||'';
     SCHED_REPEAT=st.SCHED_REPEAT||'none';
-    SCHED_PENDING=Array.isArray(st.SCHED_PENDING)?st.SCHED_PENDING:[];
+    SCHED_PENDING=[];
+    SCHED_DAYS=Array.isArray(st.SCHED_DAYS)?st.SCHED_DAYS:[];
+    SCHED_CREW=Array.isArray(st.SCHED_CREW)?st.SCHED_CREW:[];
     SCHED_DAYTIMES=(st.SCHED_DAYTIMES && typeof st.SCHED_DAYTIMES==='object')?st.SCHED_DAYTIMES:{};
     SCHED_DAYTIMES_OPEN=!!st.SCHED_DAYTIMES_OPEN;
     PS_UID=st.PS_UID||1;
