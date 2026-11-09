@@ -3576,6 +3576,115 @@ html.dark.hc select:not([multiple]):not([size]){
 .amtCard .btnRow{justify-content:flex-start;flex-wrap:nowrap;margin-top:14px;}
 .amtCard .btnRow .btn{flex:1 1 auto;}
 html.hc .docAmt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
+/* ---- Docs tab ----
+   Four big ways in at the top, photos as a contact sheet the job can be read
+   from at a glance, and documents as tidy rows with a type badge. Each file
+   has one obvious action (view); the rest sit behind a menu. */
+.docsTab.dk{display:flex;flex-direction:column;gap:22px;font-size:.88em;}
+.dk h4{margin:0;}
+.dkAdd{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.dk .dkAdd .dkAddTile{position:relative;display:flex;flex-direction:row;align-items:center;gap:12px;min-height:64px;padding:12px 14px;margin:0;border-radius:16px;border:1px solid var(--line);background:var(--paper);color:var(--navy);font-family:inherit;font-size:.95em;font-weight:700;text-align:left;cursor:pointer;box-shadow:var(--sh-1);transition:transform var(--t-press) var(--e-out),box-shadow var(--t-fast),border-color var(--t-fast);}
+.dk .dkAddTile:hover{box-shadow:var(--sh-2);border-color:var(--tc);}
+.dk .dkAddTile:active{transform:scale(.97);}
+.dk .dkAddTile:focus-visible,.dk .dkAddTile:focus-within{outline:2px solid var(--orange);outline-offset:2px;}
+.dkAddIc{flex-shrink:0;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--tbg);color:var(--tc);}
+.dkAddIc .ic{width:22px;height:22px;}
+.dkAddTile.t-photo{--tc:#e8791a;--tbg:rgba(232,121,26,.14);}
+.dkAddTile.t-receipt{--tc:#1f9d6b;--tbg:rgba(31,157,107,.14);}
+.dkAddTile.t-doc{--tc:#2f6fed;--tbg:rgba(47,111,237,.13);}
+.dkAddTile.t-upload{--tc:#0f2647;--tbg:rgba(15,38,71,.09);}
+html.dark .dkAddTile.t-upload{--tc:#c9d6ee;--tbg:rgba(201,214,238,.12);}
+.dk input.dkFileInput{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;padding:0;border:0;font-size:16px;}
+.dk input.dkFileInput:disabled{cursor:progress;}
+.dk .dkAddTile.t-upload:has(input:disabled){opacity:.6;}
+.dkStatus{color:var(--orange);font-weight:600;min-height:0;margin:-12px 0 0;}
+.dkStatus:empty{display:none;}
+.dkStorage{display:flex;align-items:center;gap:10px;margin-top:-10px;font-size:.8em;color:var(--muted);font-weight:600;}
+.dkMeter{flex:0 0 90px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;}
+.dkMeter i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffc04d,#e8791a);}
+
+.dkSec{display:flex;flex-direction:column;gap:10px;}
+.dkSecHead{display:flex;align-items:center;gap:10px;}
+.dkSecHead h4{font-family:var(--f-display);font-weight:400;font-size:1.55em;color:var(--navy);letter-spacing:.005em;}
+.dkCount{min-width:26px;height:26px;padding:0 8px;border-radius:999px;display:inline-grid;place-items:center;background:var(--navy);color:#fff;font-size:.8em;font-weight:800;}
+html.dark .dkCount{color:var(--cream);}
+html.dark .docTagChip.active{color:var(--cream);}
+.dk .docTagFilter{margin:0;gap:7px;}
+.dk .docTagChip{padding:7px 13px;font-size:.82em;letter-spacing:0;min-height:34px;}
+
+/* Photos: a contact sheet */
+.dkGallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px 12px;}
+.dkPhoto{position:relative;margin:0;min-width:0;}
+.dkPhotoFrame{position:relative;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:var(--well);box-shadow:var(--sh-2);}
+.dkPhotoBtn{display:block;width:100%;height:100%;padding:0;margin:0;border:none;background:none;cursor:zoom-in;}
+.dkPhotoBtn img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .5s var(--e-out);}
+.dkPhotoBtn:hover img{transform:scale(1.04);}
+.dkPhotoBtn:focus-visible{outline:3px solid var(--orange);outline-offset:-3px;}
+.dkPhotoNone{display:grid;place-items:center;width:100%;height:100%;color:var(--muted);}
+.dkPhotoFrame::after{content:'';position:absolute;left:0;right:0;bottom:0;height:46%;background:linear-gradient(180deg,transparent,rgba(8,20,40,.55));pointer-events:none;}
+.dkPhotoTags{position:absolute;left:8px;right:8px;bottom:8px;z-index:1;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.dk .dkPhotoTags .docTagPick{margin:0;min-height:28px;padding:5px 9px 5px 10px;font-size:.74em;letter-spacing:0;text-transform:none;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.dk .dkPhotoTags .docTagPick.empty{background:rgba(255,255,255,.88);border-color:transparent;border-style:solid;color:#33405a;}
+.dk .dkPhotoTags .docAmt{min-height:28px;padding:4px 10px;font-size:.78em;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.dk .dkPhotoTags .docAmt.empty{background:rgba(255,255,255,.88);border-color:transparent;color:#33405a;font-size:.72em;}
+.dkPhoto figcaption{display:flex;flex-direction:column;gap:1px;padding:7px 2px 0;min-width:0;}
+.dkPhotoName{font-size:.85em;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dkPhotoMeta{font-size:.76em;color:var(--muted);}
+.dkPhoto > .dkMenu{position:absolute;top:8px;right:8px;z-index:3;}
+.dkPhoto > .dkMenu summary{background:rgba(255,255,255,.9);color:#0f2647;box-shadow:0 2px 8px rgba(0,0,0,.2);border-color:transparent;}
+
+/* The menu */
+.dkMenu{position:relative;}
+.dkMenu summary{list-style:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--navy);background:var(--paper);border:1px solid var(--line);}
+.dkMenu summary::-webkit-details-marker{display:none;}
+.dkMenu summary .ic{width:20px;height:20px;}
+.dkMenu summary:focus-visible{outline:2px solid var(--orange);outline-offset:2px;}
+.dkMenu[open] summary{background:var(--navy);color:var(--paper);border-color:var(--navy);}
+.dkMenuPop{position:absolute;right:0;top:calc(100% + 6px);min-width:168px;padding:6px;border-radius:14px;background:var(--paper);border:1px solid var(--line);box-shadow:var(--sh-3);z-index:20;display:flex;flex-direction:column;gap:2px;animation:dkPop .16s var(--e-out);}
+@keyframes dkPop{from{opacity:0;transform:translateY(-4px) scale(.97);}to{opacity:1;transform:none;}}
+.dkMenuPop button{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:8px 12px;border:none;border-radius:9px;background:transparent;color:var(--ink);font-family:inherit;font-size:.92em;font-weight:600;text-align:left;cursor:pointer;}
+.dkMenuPop button .ic{width:18px;height:18px;color:var(--muted);}
+.dkMenuPop button:hover,.dkMenuPop button:focus-visible{background:var(--well);outline:none;}
+.dkMenuPop button.danger{color:var(--redb);}
+.dkMenuPop button.danger .ic{color:var(--redb);}
+
+/* Documents */
+.dkFiles{display:flex;flex-direction:column;gap:10px;}
+.dkFile{display:flex;align-items:center;gap:14px;padding:12px 12px 12px 12px;border-radius:16px;background:var(--paper);border:1px solid var(--line);box-shadow:var(--sh-1);}
+.dkBadge{position:relative;flex-shrink:0;width:52px;height:62px;border:none;padding:0;border-radius:10px 16px 10px 10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:8px;color:#fff;cursor:pointer;background:var(--bc);box-shadow:inset 0 -18px 0 rgba(0,0,0,.08);}
+.dkBadge::before{content:'';position:absolute;top:0;right:0;width:16px;height:16px;border-bottom-left-radius:6px;background:rgba(255,255,255,.35);}
+.dkBadge .ic{position:absolute;top:12px;width:20px;height:20px;opacity:.85;}
+.dk .dkBadge{font-size:11px;}
+.dkBadge b{font-size:1em;font-weight:800;letter-spacing:.04em;}
+.dkBadge.pdf{--bc:#d64545;} .dkBadge.doc{--bc:#2f6fed;} .dkBadge.xls{--bc:#1f9d6b;} .dkBadge.ppt{--bc:#e8791a;} .dkBadge.txt{--bc:#5f6e87;} .dkBadge.other{--bc:#7c5cd6;}
+.dkFileInfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;align-items:flex-start;}
+.dkFileName{max-width:100%;padding:0;border:none;background:none;font-family:inherit;font-size:1em;font-weight:700;color:var(--navy);text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dkFileName:hover{text-decoration:underline;text-underline-offset:3px;}
+.dkFileMeta{font-size:.8em;color:var(--muted);}
+.dkFileTags{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
+.dk .dkFileTags .docTagPick{margin:0;min-height:28px;padding:5px 9px 5px 10px;font-size:.74em;letter-spacing:0;text-transform:none;}
+.dk .dkFileTags .docAmt{min-height:28px;padding:4px 10px;font-size:.78em;}
+.dkFileActs{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.dkView{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:7px 14px;border-radius:999px;border:none;background:var(--navy);color:#fff;font-family:inherit;font-size:.86em;font-weight:700;cursor:pointer;}
+html.dark .dkView{color:var(--cream);}
+.dkView .ic{width:17px;height:17px;}
+.dkView:focus-visible{outline:2px solid var(--orange);outline-offset:2px;}
+@media (max-width:600px){
+  .dkGallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;}
+  .dkFile{align-items:flex-start;gap:12px;padding:12px;}
+  .dkBadge{width:46px;height:56px;}
+  .dkFileActs .dkView{display:none;}
+  .dkFile{padding:12px 10px 12px 12px;}
+  .dk .dkAdd .dkAddTile{font-size:.86em;gap:10px;padding:10px 11px;min-height:60px;line-height:1.2;}
+  .dkAddIc{width:36px;height:36px;}
+}
+@media (min-width:901px){
+  .dkAdd{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .dk .dkAdd .dkAddTile.docCameraBtn{display:none;}
+  .dkGallery{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px 14px;}
+}
+@media (prefers-reduced-motion:reduce){ .dkPhotoBtn img,.dk .dkAddTile{transition:none;} .dkMenuPop{animation:none;} }
+
 /* ---- expenses calculator ---- */
 .modal.calcModal{max-width:520px;}
 .calcInputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -3914,6 +4023,9 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5h3l1.6-2.5h6.8L17 8.5h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.2" r="3.4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15.5V4.5M7.5 9L12 4.5 16.5 9M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></symbol>
@@ -11885,40 +11997,96 @@ function isImageDoc(d){
   if(d.type) return d.type.startsWith('image/');
   return /\.(jpe?g|png|gif|webp|heic|heif|bmp|svg)$/i.test(d.name||'');
 }
-function docRowHTML(wo, d){
-  /* An uploaded photo shows the photo. Only when it has a real Storage URL:
-     a local-only doc has no source to point at, so it falls back to the
-     icon rather than rendering a broken image. The thumbnail is clickable
-     for the same action as the View button, which is what anyone will try
-     first. */
-  const isImg=isImageDoc(d);
-  const lead = (isImg && d.url)
-    ? `<img class="docThumb" src="${esc(d.url)}" alt="" loading="lazy" decoding="async" onclick="viewDoc(${wo.id},'${d.id}')" title="View ${esc(d.name||'image')}">`
-    : `<div class="docIconBox">${icon(isImg?'image':'file','lg')}</div>`;
-  return `
-    <div class="docRow">
-      <div class="docLead">
-        ${lead}
-        <div class="docInfo">
-          <span class="docName">${esc(d.name||'Untitled')}</span>
-          <span class="small">${esc(d.uploadedBy)} · ${esc(d.date)} ${d.size?('· '+fmtBytes(d.size)):''}${!d.url?' · local only (not synced)':''}</span>
-          ${(isImg || d.tag || isPdfDoc(d)) ? `<span class="docTagLine"><span class="docTagPick ${d.tag?docTagClass(d.tag):'empty'}">
-            <span class="docTagDot"></span><span class="docTagTxt">${esc(d.tag||'Add Label')}</span>${icon('chevron')}
-            <select class="docTagSel" title="Photo label" aria-label="Photo label" onchange="setDocTag(${wo.id},'${d.id}',this.value)">
-              <option value="" ${!d.tag?'selected':''}>${d.tag?'No Label':'Add Label'}</option>
-              ${DOC_TAGS.map(t=>`<option value="${esc(t)}" ${d.tag===t?'selected':''}>${esc(t)}</option>`).join('')}
-            </select>
-          </span>${d.tag==='Receipt' ? `<button type="button" class="docAmt${typeof d.amount==='number'?'':' empty'}" onclick="askReceiptAmount(${wo.id},'${d.id}')" aria-label="Receipt amount">${typeof d.amount==='number'?fmtMoney(d.amount):'Add Amount'}</button>` : ''}</span>` : ''}
-        </div>
-      </div>
-      <div class="docActions">
-        <button class="btn secondary" onclick="viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
-        <button class="btn secondary" onclick="downloadDoc(${wo.id},'${d.id}')">${icon('download')}Download</button>
-        <button class="btn secondary" onclick="renameDoc(${wo.id},'${d.id}')">${icon('pencil')}Rename</button>
-        <button class="btn danger" onclick="deleteDoc(${wo.id},'${d.id}')">${icon('trash')}Delete</button>
-      </div>
-    </div>`;
+/* "11/02/2026" -> "Nov 2" (adds the year when it isn't this year). */
+function docShortDate(str){
+  const m=String(str||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m) return String(str||'');
+  const d=new Date(+m[3], +m[1]-1, +m[2]);
+  const opts={month:'short', day:'numeric'};
+  if(d.getFullYear()!==new Date().getFullYear()) opts.year='numeric';
+  return d.toLocaleDateString('en-US', opts);
 }
+function docMetaText(d){
+  const who=d.uploadedBy ? capName(String(d.uploadedBy)) : '';
+  return [who, docShortDate(d.date)].filter(Boolean).join(', ');
+}
+/* The label picker: a pill in the label's color with a real select laid
+   over it, so phones open their own picker. */
+function docTagPickHTML(wo, d){
+  return `<span class="docTagPick ${d.tag?docTagClass(d.tag):'empty'}">
+    <span class="docTagDot"></span><span class="docTagTxt">${esc(d.tag||'Add Label')}</span>${icon('chevron')}
+    <select class="docTagSel" title="Label" aria-label="Label for ${esc(d.name||'file')}" onchange="setDocTag(${wo.id},'${d.id}',this.value)">
+      <option value="" ${!d.tag?'selected':''}>${d.tag?'No Label':'Add Label'}</option>
+      ${DOC_TAGS.map(t=>`<option value="${esc(t)}" ${d.tag===t?'selected':''}>${esc(t)}</option>`).join('')}
+    </select>
+  </span>`;
+}
+function docAmtHTML(wo, d){
+  if(d.tag!=='Receipt') return '';
+  return `<button type="button" class="docAmt${typeof d.amount==='number'?'':' empty'}" onclick="askReceiptAmount(${wo.id},'${d.id}')" aria-label="Receipt amount">${typeof d.amount==='number'?fmtMoney(d.amount):'Add Amount'}</button>`;
+}
+/* Download, rename and delete live behind one button so each file shows
+   one clear action (view) instead of four. */
+function docMenuHTML(wo, d){
+  return `<details class="dkMenu" ontoggle="dkMenuToggle(this)">
+    <summary aria-label="More for ${esc(d.name||'file')}">${icon('more')}</summary>
+    <div class="dkMenuPop" role="menu">
+      <button type="button" role="menuitem" onclick="dkMenuClose();viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
+      <button type="button" role="menuitem" onclick="dkMenuClose();downloadDoc(${wo.id},'${d.id}')">${icon('download')}Download</button>
+      <button type="button" role="menuitem" onclick="dkMenuClose();renameDoc(${wo.id},'${d.id}')">${icon('pencil')}Rename</button>
+      <button type="button" role="menuitem" class="danger" onclick="dkMenuClose();deleteDoc(${wo.id},'${d.id}')">${icon('trash')}Delete</button>
+    </div>
+  </details>`;
+}
+function dkMenuToggle(el){
+  if(!el.open) return;
+  document.querySelectorAll('details.dkMenu[open]').forEach(x=>{ if(x!==el) x.open=false; });
+}
+function dkMenuClose(){ document.querySelectorAll('details.dkMenu[open]').forEach(x=>{ x.open=false; }); }
+document.addEventListener('click', e=>{
+  if(!e.target.closest || !e.target.closest('details.dkMenu')) dkMenuClose();
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') dkMenuClose(); });
+/* Short type badge for a file: PDF, DOC, XLS... */
+function docKind(d){
+  const ext=(String(d.name||'').match(/\.([a-z0-9]{2,5})$/i)||[])[1];
+  const e=(ext||'').toLowerCase();
+  if(e==='pdf' || /pdf/.test(d.type||'')) return {t:'PDF', c:'pdf'};
+  if(/^docx?$|^rtf$|^pages$/.test(e)) return {t:'DOC', c:'doc'};
+  if(/^xlsx?$|^csv$|^numbers$/.test(e)) return {t:e==='csv'?'CSV':'XLS', c:'xls'};
+  if(/^pptx?$|^key$/.test(e)) return {t:'PPT', c:'ppt'};
+  if(e==='txt') return {t:'TXT', c:'txt'};
+  return {t:(e||'FILE').toUpperCase().slice(0,4), c:'other'};
+}
+function docPhotoTileHTML(wo, d){
+  const img = d.url
+    ? `<img src="${esc(d.url)}" alt="${esc(d.name||'Photo')}" loading="lazy" decoding="async">`
+    : `<span class="dkPhotoNone">${icon('image','lg')}</span>`;
+  return `<figure class="dkPhoto">
+    <div class="dkPhotoFrame">
+      <button type="button" class="dkPhotoBtn" onclick="viewDoc(${wo.id},'${d.id}')" aria-label="View ${esc(d.name||'photo')}">${img}</button>
+      <div class="dkPhotoTags">${docTagPickHTML(wo,d)}${docAmtHTML(wo,d)}</div>
+    </div>
+    ${docMenuHTML(wo,d)}
+    <figcaption><span class="dkPhotoName">${esc(d.name||'Untitled')}</span><span class="dkPhotoMeta">${esc(docMetaText(d))}${!d.url?', not synced':''}</span></figcaption>
+  </figure>`;
+}
+function docFileRowHTML(wo, d){
+  const k=docKind(d);
+  return `<div class="dkFile">
+    <button type="button" class="dkBadge ${k.c}" onclick="viewDoc(${wo.id},'${d.id}')" aria-label="View ${esc(d.name||'file')}">${icon('file')}<b>${k.t}</b></button>
+    <div class="dkFileInfo">
+      <button type="button" class="dkFileName" onclick="viewDoc(${wo.id},'${d.id}')">${esc(d.name||'Untitled')}</button>
+      <span class="dkFileMeta">${esc(docMetaText(d))}${d.size?', '+fmtBytes(d.size):''}${!d.url?', not synced':''}</span>
+      <span class="dkFileTags">${docTagPickHTML(wo,d)}${docAmtHTML(wo,d)}</span>
+    </div>
+    <div class="dkFileActs">
+      <button type="button" class="dkView" onclick="viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
+      ${docMenuHTML(wo,d)}
+    </div>
+  </div>`;
+}
+function docRowHTML(wo, d){ return isImageDoc(d) ? docPhotoTileHTML(wo,d) : docFileRowHTML(wo,d); }
 /* Turns a Firebase Storage error code into a plain explanation and the actual
    fix. The generic "check your Storage rules" message named a likely cause but
    gave nothing to act on; the code is what distinguishes a rules rejection
@@ -11992,9 +12160,9 @@ function docsTabHTML(wo){
     : DOC_TAG_FILTER==='none' ? images.filter(d=>!d.tag)
     : images.filter(d=>d.tag===DOC_TAG_FILTER);
   const imageRows = images.length
-    ? (shown.length ? shown.map(d=>docRowHTML(wo,d)).join('')
+    ? (shown.length ? `<div class="dkGallery">${shown.map(d=>docPhotoTileHTML(wo,d)).join('')}</div>`
       : emptyStateHTML('No photos with that label.', {icon:'image', style:'padding:24px 18px;'}))
-    : emptyStateHTML('No images uploaded yet.', {icon:'image', style:'padding:30px 18px;'});
+    : emptyStateHTML('No photos yet.', {icon:'image', style:'padding:30px 18px;'});
   // The filter bar is pointless with nothing to filter, so it only appears
   // once at least one photo actually carries a label.
   const anyTagged = images.some(d=>d.tag);
@@ -12004,8 +12172,8 @@ function docsTabHTML(wo){
       ${DOC_TAGS.filter(t=>images.some(d=>d.tag===t)).map(t=>chip(t,t,images.filter(d=>d.tag===t).length)).join('')}
       ${images.some(d=>!d.tag) ? chip('none','No label', images.filter(d=>!d.tag).length) : ''}
     </div>` : '';
-  const fileRows = files.length ? files.map(d=>docRowHTML(wo,d)).join('')
-    : emptyStateHTML('No documents uploaded yet.', {icon:'folder', style:'padding:30px 18px;'});
+  const fileRows = files.length ? `<div class="dkFiles">${files.map(d=>docFileRowHTML(wo,d)).join('')}</div>`
+    : emptyStateHTML('No documents yet.', {icon:'folder', style:'padding:30px 18px;'});
   // Three distinct states, because "no uploader" previously always blamed
   // Multi-Device Sync, misleading and unactionable when sync is connected
   // and working, and only Storage is the problem.
@@ -12015,14 +12183,15 @@ function docsTabHTML(wo){
     const bucketNote = cfg.__derivedBucket
       ? `<div class="small" style="margin-top:2px;color:var(--muted);">Your sync config had no <code>storageBucket</code>, so uploads are using <b>${esc(cfg.storageBucket||'')}</b>. If uploads fail, copy the exact <code>storageBucket</code> from your Firebase console into the sync config.</div>`
       : '';
-    uploaderHTML = `<button class="btn secondary docCameraBtn" onclick="openFieldCamera(${wo.id})">${icon('image')}Take Photo</button>
-       <div class="docScanBtns">
-         <button class="btn secondary" onclick="openScanner(${wo.id},'receipt')">${icon('receipt')}Scan Receipt</button>
-         <button class="btn secondary" onclick="openScanner(${wo.id},'document')">${icon('file-text')}Scan Document</button>
+    const pct=storageUsagePct();
+    uploaderHTML = `<div class="dkAdd">
+         <button type="button" class="dkAddTile docCameraBtn t-photo" onclick="openFieldCamera(${wo.id})"><span class="dkAddIc">${icon('camera')}</span>Take Photo</button>
+         <button type="button" class="dkAddTile t-receipt" onclick="openScanner(${wo.id},'receipt')"><span class="dkAddIc">${icon('receipt')}</span>Scan Receipt</button>
+         <button type="button" class="dkAddTile t-doc" onclick="openScanner(${wo.id},'document')"><span class="dkAddIc">${icon('file-text')}</span>Scan Document</button>
+         <label class="dkAddTile t-upload"><input type="file" class="dkFileInput" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)"><span class="dkAddIc">${icon('upload')}</span>Upload Files</label>
        </div>
-       <input type="file" id="docUpload_${wo.id}" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" onchange="handleDocUpload(${wo.id}, this)">
-       <div id="docUploadStatus_${wo.id}" class="small" style="color:var(--orange);font-weight:600;min-height:1.2em;margin-top:4px;"></div>
-       <div class="small" style="margin-top:2px;color:var(--muted);">Cloud storage used: ${fmtBytes(DB.storageUsedBytes||0)} of 5 GB (${storageUsagePct()}%). Oldest documents are auto-removed if this fills up.</div>
+       <div id="docUploadStatus_${wo.id}" class="small dkStatus"></div>
+       <div class="dkStorage" title="Oldest documents are removed automatically if storage fills up."><span class="dkMeter"><i style="width:${Math.max(pct, DB.storageUsedBytes?1:0)}%"></i></span><span>${fmtBytes(DB.storageUsedBytes||0)} of 5 GB used</span></div>
        ${bucketNote}
        ${docUploadErrorHTML()}`;
   } else if(syncDb){
@@ -12040,14 +12209,17 @@ function docsTabHTML(wo){
   } else {
     uploaderHTML = `<div class="small" style="background:var(--notice);color:var(--notice-ink);border:1px solid var(--notice-line);padding:10px;border-radius:8px;">Document uploads need Multi-Device Sync connected first, since files are stored in your Firebase project rather than on this device. <button class="btn secondary" onclick="openSyncModal()">Set up Sync</button></div>`;
   }
-  return `<div class="docsTab">
-    <h4>Documents</h4>
+  return `<div class="docsTab dk">
     ${uploaderHTML}
-    <h4 style="margin-top:18px;">Images${images.length?` (${images.length})`:''}</h4>
-    ${filterBar}
-    <div class="docList" style="margin-top:8px;">${imageRows}</div>
-    <h4 style="margin-top:18px;">Documents${files.length?` (${files.length})`:''}</h4>
-    <div class="docList" style="margin-top:8px;">${fileRows}</div>
+    <section class="dkSec">
+      <div class="dkSecHead"><h4>Photos</h4>${images.length?`<span class="dkCount">${images.length}</span>`:''}</div>
+      ${filterBar}
+      ${imageRows}
+    </section>
+    <section class="dkSec">
+      <div class="dkSecHead"><h4>Documents</h4>${files.length?`<span class="dkCount">${files.length}</span>`:''}</div>
+      ${fileRows}
+    </section>
   </div>`;
 }
 function compressImageToBlob(file){
