@@ -3434,10 +3434,17 @@ html.hc .calcPay{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var
   background:var(--navy);color:#fff;box-shadow:var(--sh-4);}
 .fuBarTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:.85em;}
 .fuAll{white-space:nowrap;align-self:flex-start;flex:none;background:none;border:0;color:var(--orange2,#ffb067);font:inherit;font-weight:800;cursor:pointer;padding:4px 0;}
-.fuBarBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.fuBarBtns .btn{background:#fff;color:var(--navy);min-height:44px;padding:8px 4px;font-weight:800;font-size:.8em;white-space:nowrap;}
+.fuBarBtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 6px auto;gap:6px;}
+.fuBarBtns .fuClearBtn{grid-column:5;padding:8px 10px;}
+.fuBarBtns .btn{background:#fff;color:var(--navy);min-height:44px;min-width:0;padding:8px 2px;font-weight:800;font-size:.8em;white-space:nowrap;}
+@media (max-width:480px){ .fuBar{padding:12px 10px;} .fuBarBtns{gap:5px;} .fuBarBtns .btn{font-size:.72em;} .fuBarBtns .fuClearBtn{padding:8px 8px;} }
 .fuBarBtns .btn[disabled],.fuClearBtn[disabled]{opacity:.45;cursor:not-allowed;}
-.fuBar .fuClearBtn{display:block;width:100%;margin-top:8px;min-height:44px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55);font-weight:800;font-size:.8em;}
+.fuBar .fuBarBtns .fuClearBtn{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6);}
+.fuCardClear{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;min-height:32px;border-radius:999px;
+  border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font:inherit;font-size:.8em;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
+.fuCardClear .ic{width:13px;height:13px;stroke-width:3;}
+.fuCardClear:hover{border-color:var(--redb);color:var(--redb);}
+html.hc .fuCardClear{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
 @media (max-width:900px){ .fuBar{bottom:calc(96px + env(safe-area-inset-bottom,0px));} }
 html.hc .fuBar{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
 html.hc .fuBarBtns .btn{background:var(--hc-fg);color:var(--hc-bg);}
@@ -4633,6 +4640,38 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    Raise it whenever a change needs every device on the newest version. */
 var APP_BUILD=2026110701;
 var NEWER_APP=false;
+/* Checking for a new version of the app. The published page is fetched now
+   and then (usually answered with "unchanged" and no download) and its code
+   compared with the code running here. If they differ, a new version was
+   published, and this copy reloads itself once nobody is mid-edit. */
+var APP_RUNNING_FP=null, APP_LAST_TAG=null, APP_CHECKING=false, APP_LAST_CHECK=0;
+function appCodeFingerprint(doc){
+  const big=sel=>{ let best=''; doc.querySelectorAll(sel).forEach(el=>{ const t=el.textContent||''; if(t.length>best.length) best=t; }); return best; };
+  const text=big('script:not([src])')+'\u0000'+big('style');
+  let h=2166136261;
+  for(let i=0;i<text.length;i++){ h^=text.charCodeAt(i); h=Math.imul(h,16777619); }
+  return text.length+':'+(h>>>0);
+}
+async function checkForAppUpdate(){
+  if(NEWER_APP || APP_CHECKING || window.GH_TRAINING || window.GH_PRIVATE || !/^https?:$/.test(location.protocol)) return;
+  APP_CHECKING=true; APP_LAST_CHECK=Date.now();
+  try{
+    if(APP_RUNNING_FP===null) APP_RUNNING_FP=appCodeFingerprint(document);
+    const u=new URL(location.href); u.search=''; u.hash='';
+    const r=await fetch(u.toString(), {cache:'no-cache'});
+    if(!r.ok) return;
+    const tag=r.headers.get('etag')||r.headers.get('last-modified')||'';
+    if(tag && tag===APP_LAST_TAG) return;
+    const html=await r.text();
+    APP_LAST_TAG=tag;
+    const fp=appCodeFingerprint(new DOMParser().parseFromString(html, 'text/html'));
+    if(fp!==APP_RUNNING_FP) noteNewerApp();
+  }catch(e){}
+  finally{ APP_CHECKING=false; }
+}
+setTimeout(checkForAppUpdate, 20000);
+setInterval(checkForAppUpdate, 10*60*1000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && Date.now()-APP_LAST_CHECK>60000) checkForAppUpdate(); });
 function noteNewerApp(){
   if(NEWER_APP || window.GH_TRAINING || window.GH_PRIVATE) return;
   NEWER_APP=true;
@@ -6538,8 +6577,8 @@ function fuBarHTML(list){
       <button type="button" class="btn" ${dis} onclick="fuSnooze('day')">1 Day</button>
       <button type="button" class="btn" ${dis} onclick="fuSnooze('week')">1 Week</button>
       <button type="button" class="btn" ${dis} onclick="fuSnooze('month')">1 Month</button>
+      <button type="button" class="btn fuClearBtn" ${dis} onclick="fuClear()">Clear</button>
     </div>
-    <button type="button" class="btn fuClearBtn" ${dis} onclick="fuClear()">Clear Follow-Up</button>
   </div>`;
 }
 function fuSnooze(unit){
@@ -6575,26 +6614,34 @@ function userFirstName(u){
   if(n.length<2) return n || 'Someone';
   return n.charAt(0).toUpperCase()+n.slice(1,-1).toLowerCase();
 }
+/* Voids every follow-up date entered on these jobs so far. */
+function clearFollowUps(ids){
+  let cleared=0;
+  ids.forEach(id=>{
+    const wo=getWO(id);
+    if(!wo || !currentFollowUp(wo)) return;
+    wo.followUpClearedAt=Date.now();
+    addAdminLog(wo, 'Follow-up cleared.');
+    cleared++;
+  });
+  if(cleared) saveDB(DB);
+  renderTabCounts(); renderMain();
+  if(cleared) toast(`Follow-up cleared${cleared>1?' on '+cleared+' work orders':''}.`);
+}
 function fuClear(){
   if(!FU_SELECT || !FU_SELECT.size) return;
   const n=FU_SELECT.size;
   askYesNo(`Clear the follow-up on ${n} work order${n>1?'s':''}?`, yes=>{
     if(!yes || !FU_SELECT) return;
-    let cleared=0;
-    const who=userFirstName(CURRENT_USER);
-    FU_SELECT.forEach(id=>{
-      const wo=getWO(id);
-      if(!wo || !currentFollowUp(wo)) return;
-      wo.followUpClearedAt=Date.now();
-      addNote(wo, 'NOTE', `${who} cleared the follow-up.`, null);
-      addAdminLog(wo, 'Follow-up cleared.');
-      cleared++;
-    });
+    const ids=[...FU_SELECT];
     FU_SELECT=null;
-    if(cleared) saveDB(DB);
-    renderTabCounts(); renderMain();
-    if(cleared) toast(`Follow-up cleared on ${cleared} work order${cleared>1?'s':''}.`);
+    clearFollowUps(ids);
   }, {yes:'Clear', no:'Cancel'});
+}
+function fuClearOne(id){
+  const wo=getWO(id);
+  if(!wo) return;
+  askYesNo(`Clear the follow-up for ${wo.customer.name||'this work order'}?`, yes=>{ if(yes) clearFollowUps([id]); }, {yes:'Clear', no:'Cancel'});
 }
 function mostRecentNote(wo){
   return (wo.notes && wo.notes.length) ? wo.notes[0] : null;
@@ -6698,6 +6745,7 @@ function rowHTML(wo, opts){
       ${nextDateChip(wo)}
       <span class="woAddr">${wo.customer.address?icon('map-pin')+' ':''}${esc(wo.customer.address)}</span>
       ${cardActs}
+      ${(opts.followUpNav && !picking) ? `<button type="button" class="fuCardClear" onclick="event.stopPropagation();fuClearOne(${wo.id})" aria-label="Clear follow-up">${icon('x')}Clear</button>` : ''}
     </div>
   </div>`;
 }
