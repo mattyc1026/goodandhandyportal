@@ -9126,15 +9126,16 @@ function renderScheduleWrapUp(first){
   const row=(key, on, label, sub)=>`<button type="button" class="wrapOpt${on?' on':''}" aria-pressed="${on}" onclick="toggleScheduleWrap('${key}')">
       <span class="wrapBox">${icon('check')}</span><span class="wrapTxt"><b>${label}</b>${sub?`<span>${esc(sub)}</span>`:''}</span>
     </button>`;
-  root.innerHTML=`<div class="confirmBox${first?'':' noAnim'}" onclick="if(event.target===this)finishScheduleWrap(false)"><div class="confirmCard wrapCard" role="dialog" aria-modal="true" aria-label="${esc(W.title)}">
+  /* No Skip: to send nothing, untick both and Save. Tapping outside does
+     nothing either, so the choice is always made on purpose. */
+  root.innerHTML=`<div class="confirmBox${first?'':' noAnim'}"><div class="confirmCard wrapCard" role="dialog" aria-modal="true" aria-label="${esc(W.title)}">
     <h3>${esc(W.title)}</h3>
     <div class="wrapOpts">
       ${row('ics', W.ics, W.updated?'Updated Calendar File':'Calendar File', '.ics')}
       ${W.canEmail ? row('email', W.email, W.updated?'Updated Email to Customer':'Email Customer', W.to) : `<div class="wrapNone">${W.to?'':'No email on file'}</div>`}
     </div>
     <div class="btnRow">
-      <button class="btn" id="wrapDone" onclick="finishScheduleWrap(true)">Done</button>
-      <button class="btn secondary" onclick="finishScheduleWrap(false)">Skip</button>
+      <button class="btn" id="wrapDone" onclick="finishScheduleWrap(true)">Save</button>
     </div>
   </div></div>`;
   const b=document.getElementById('wrapDone'); if(b) b.focus();
