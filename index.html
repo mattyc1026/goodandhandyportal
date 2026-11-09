@@ -12111,8 +12111,8 @@ function renderCalcParts(b, partial){
       <span>Expenses</span>
       <div class="segSwitch small" role="group" aria-label="Where expenses come out">
         <button type="button" class="${mode==='partial'?'on':''}" aria-pressed="${mode==='partial'}" onclick="calcSetExpMode('partial')">From Partial</button>
-        <button type="button" class="${mode==='prop'?'on':''}" aria-pressed="${mode==='prop'}" onclick="calcSetExpMode('prop')">Proportional</button>
         <button type="button" class="${mode==='balance'?'on':''}" aria-pressed="${mode==='balance'}" onclick="calcSetExpMode('balance')">From Balance</button>
+        <button type="button" class="${mode==='prop'?'on':''}" aria-pressed="${mode==='prop'}" onclick="calcSetExpMode('prop')">Proportional</button>
       </div>
     </div>
     ${card('Partial Payment', p)}
