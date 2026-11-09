@@ -721,6 +721,7 @@ input[type="checkbox"]{width:19px;height:19px;cursor:pointer;accent-color:var(--
 .actBtn.solid:hover{filter:brightness(1.12);}
 .actBtn.ok{background:var(--green);border-color:var(--greenb);color:var(--greenb);}
 .actBtn.no{background:var(--red);border-color:var(--redb);color:var(--redb);}
+.actBtn.view{background:var(--paper);border-color:var(--navy);color:var(--navy);}
 .actBtn.ok:hover,.actBtn.no:hover{filter:brightness(.97);}
 html.dark .actBtn.solid{color:var(--paper);}
 /* Dark + high contrast: the dark-mode label colour above would otherwise land
@@ -911,6 +912,7 @@ html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(
 .dt-pre-existing-damage{background:#efe9f7;color:#4b2f75;border-color:#d8cbec;}
 .dt-damage-issue{background:#fbe6e6;color:#9b2226;border-color:#efc6c6;}
 .dt-receipt{background:#efe9dc;color:#5c4a20;border-color:#ddd1b6;}
+.dt-estimate{background:#fdf3d7;color:#7a5600;border-color:#f0d98f;}
 
 .docTagFilter{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .docTagChip{
@@ -1824,6 +1826,7 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
     .trio .actGrid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);}
     .trio .actGrid .actBtn{flex-direction:column;gap:4px;padding:9px 2px;font-size:.7em;letter-spacing:0;min-height:54px;min-width:0;}
     .trio .actGrid .actBtn .ic{width:18px;height:18px;}
+    .trio .actGrid:has(.actBtn.view) .actBtn{font-size:.64em;}
   }
 }
 
@@ -6590,7 +6593,7 @@ function rowHTML(wo, opts){
   const actions={
     buildEstimate:  act('openEstimateSplit','solid','pencil','Build'),
     sendEstimate:   act('openEsignSplit','solid','send','Send'),
-    decide:         act('approveEstimate','ok','check','Approved')+act('modifyEstimate','','pencil','Modify')+act('declineEstimate','no','x','Declined'),
+    decide:         (estimateDoc(wo)?act('viewEstimate','view','file-text','View'):'')+act('approveEstimate','ok','check','Approved')+act('modifyEstimate','','pencil','Modify')+act('declineEstimate','no','x','Declined'),
     jobComplete:    act('confirmJobComplete','ok','check-circle','Complete Job'),
     buildInvoice:   act('openInvoiceSplit','solid','pencil','Build'),
     sendInvoice:    act('openSendInvoice','solid','send','Send')
@@ -11119,7 +11122,19 @@ function storageUsagePct(){ return Math.min(100, Math.round(((DB.storageUsedByte
 /* Photo labels. Optional, one per photo, and purely descriptive: nothing in
    the workflow keys off them. Kept as the visible text rather than a code, so
    an exported or synced record reads the same everywhere. */
-const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt'];
+const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt','Estimate'];
+function isPdfDoc(d){ return /pdf/i.test(d.type||'') || /\.pdf$/i.test(d.name||''); }
+/* A PDF with "estimate" in its name is labeled Estimate when it is added. */
+function looksLikeEstimate(name, type){ return /estimate/i.test(name||'') && (/pdf/i.test(type||'') || /\.pdf$/i.test(name||'')); }
+/* The newest estimate in a job's Docs: labeled Estimate, or a PDF named as one. */
+function estimateDoc(wo){
+  const ds=(wo && wo.docs||[]).filter(d=>d.tag==='Estimate' || (!d.tag && looksLikeEstimate(d.name, d.type)));
+  return ds.length ? ds[ds.length-1] : null;
+}
+function viewEstimate(id){
+  const wo=getWO(id), d=estimateDoc(wo);
+  if(d) viewDoc(id, d.id);
+}
 function docTagClass(tag){
   return 'dt-'+String(tag||'').toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,'');
 }
@@ -11374,7 +11389,7 @@ function docRowHTML(wo, d){
         <div class="docInfo">
           <span class="docName">${esc(d.name||'Untitled')}</span>
           <span class="small">${esc(d.uploadedBy)} · ${esc(d.date)} ${d.size?('· '+fmtBytes(d.size)):''}${!d.url?' · local only (not synced)':''}</span>
-          ${(isImg || d.tag) ? `<span class="docTagLine"><span class="docTagPick ${d.tag?docTagClass(d.tag):'empty'}">
+          ${(isImg || d.tag || isPdfDoc(d)) ? `<span class="docTagLine"><span class="docTagPick ${d.tag?docTagClass(d.tag):'empty'}">
             <span class="docTagDot"></span><span class="docTagTxt">${esc(d.tag||'Add Label')}</span>${icon('chevron')}
             <select class="docTagSel" title="Photo label" aria-label="Photo label" onchange="setDocTag(${wo.id},'${d.id}',this.value)">
               <option value="" ${!d.tag?'selected':''}>${d.tag?'No Label':'Add Label'}</option>
@@ -11632,7 +11647,7 @@ async function handleDocUpload(id, inputEl, opts){
         wo.docs.push({
           id: docId, name: name, type: file.type||'', size: blob.size,
           url, storagePath, uploadedBy: CURRENT_USER.displayName, date: ts.date, uploadedAt: Date.now(),
-          tag: DOC_TAGS.includes(opts.tag) ? opts.tag : ''
+          tag: DOC_TAGS.includes(opts.tag) ? opts.tag : (looksLikeEstimate(file.name, file.type) ? 'Estimate' : '')
         });
         addedIds.push(docId);
         DB.storageUsedBytes=(DB.storageUsedBytes||0)+blob.size;
