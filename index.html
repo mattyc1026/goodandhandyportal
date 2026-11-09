@@ -3436,7 +3436,8 @@ html.hc .calcPay{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var
 .fuAll{white-space:nowrap;align-self:flex-start;flex:none;background:none;border:0;color:var(--orange2,#ffb067);font:inherit;font-weight:800;cursor:pointer;padding:4px 0;}
 .fuBarBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .fuBarBtns .btn{background:#fff;color:var(--navy);min-height:44px;padding:8px 4px;font-weight:800;font-size:.8em;white-space:nowrap;}
-.fuBarBtns .btn[disabled]{opacity:.45;cursor:not-allowed;}
+.fuBarBtns .btn[disabled],.fuClearBtn[disabled]{opacity:.45;cursor:not-allowed;}
+.fuBar .fuClearBtn{display:block;width:100%;margin-top:8px;min-height:44px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55);font-weight:800;font-size:.8em;}
 @media (max-width:900px){ .fuBar{bottom:calc(96px + env(safe-area-inset-bottom,0px));} }
 html.hc .fuBar{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
 html.hc .fuBarBtns .btn{background:var(--hc-fg);color:var(--hc-bg);}
@@ -4123,7 +4124,7 @@ function sortDropdownHTML(){
    the job currently lives in (its place in the workflow). */
 function followUpDueList(){
   return DB.workOrders.filter(inWorkOrdersList).filter(woIsFollowUpDue).sort((a,b)=>{
-    const na=mostRecentNote(a), nb=mostRecentNote(b);
+    const na=currentFollowUp(a), nb=currentFollowUp(b);
     const da=(na&&na.followUpDate)||'';
     const db=(nb&&nb.followUpDate)||'';
     return da.localeCompare(db);
@@ -5175,6 +5176,18 @@ const NOTE_TYPES=['NOTE','L/M','WCB','SCHD PRESITE','SCHD','RESCHD','PRESITE','S
 /* Ensure work orders created before this feature set have the newer fields. */
 function normalizeWO(wo){
   fixPracticeName(wo);
+  /* Follow-ups used to count only on the newest note, so a newer note without
+     one voided the older ones. Jobs from before the change keep exactly the
+     follow-up they had: anything entered before the newest note is voided. */
+  if(wo.fuV!==2){
+    wo.fuV=2;
+    const top=Array.isArray(wo.notes) ? wo.notes[0] : null;
+    if(top){
+      const t=noteMs(top)-(top.followUpDate?1:0);
+      if(t>(wo.followUpClearedAt||0)) wo.followUpClearedAt=t;
+    }
+  }
+  sortNotes(wo);
   if(!wo.customer || typeof wo.customer!=='object') wo.customer={name:'',phone:'',altPhone:'',email:'',address:''};
   /* Homeowner is optional and often blank: on a management-company or agent
      job the customer on the account is not the person who answers the door.
@@ -5878,7 +5891,10 @@ function addAdminLog(wo, text){
 }
 function addNote(wo, type, text, followUpDate){
   const ts=nowStamp();
-  wo.notes.unshift({type, text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time, followUpDate: followUpDate || null});
+  const at=Date.now();
+  const n={type, text, by:CURRENT_USER.displayName, date:ts.date, time:ts.time, followUpDate: followUpDate || null, at};
+  if(followUpDate) n.fuAt=at;
+  wo.notes.unshift(n);
 }
 function isFollowUpDue(dateStr){
   if(!dateStr) return false;
@@ -6517,12 +6533,13 @@ function fuBarHTML(list){
   const all=n && ids.every(id=>FU_SELECT.has(id));
   const dis=n?'':'disabled';
   return `<div class="fuBar" role="toolbar" aria-label="Move follow-ups">
-    <div class="fuBarTop"><b>Push ${n} selected work order${n===1?'':'s'} out for:</b><button type="button" class="fuAll" onclick="fuPickAll([${ids.join(',')}])">${all?'Clear':'Select All'}</button></div>
+    <div class="fuBarTop"><b>Push ${n} selected work order${n===1?'':'s'} out for:</b><button type="button" class="fuAll" onclick="fuPickAll([${ids.join(',')}])">${all?'Deselect All':'Select All'}</button></div>
     <div class="fuBarBtns">
       <button type="button" class="btn" ${dis} onclick="fuSnooze('day')">1 Day</button>
       <button type="button" class="btn" ${dis} onclick="fuSnooze('week')">1 Week</button>
       <button type="button" class="btn" ${dis} onclick="fuSnooze('month')">1 Month</button>
     </div>
+    <button type="button" class="btn fuClearBtn" ${dis} onclick="fuClear()">Clear Follow-Up</button>
   </div>`;
 }
 function fuSnooze(unit){
@@ -6535,7 +6552,7 @@ function fuSnooze(unit){
   const label={day:'1 day', week:'1 week', month:'1 month'}[unit];
   let moved=0;
   FU_SELECT.forEach(id=>{
-    const wo=getWO(id), n=wo && mostRecentNote(wo);
+    const wo=getWO(id), n=wo && currentFollowUp(wo);
     if(!n || !n.followUpDate) return;
     const was=n.followUpDate;
     // A note records the push and carries the new follow-up date, so the
@@ -6558,11 +6575,63 @@ function userFirstName(u){
   if(n.length<2) return n || 'Someone';
   return n.charAt(0).toUpperCase()+n.slice(1,-1).toLowerCase();
 }
+function fuClear(){
+  if(!FU_SELECT || !FU_SELECT.size) return;
+  const n=FU_SELECT.size;
+  askYesNo(`Clear the follow-up on ${n} work order${n>1?'s':''}?`, yes=>{
+    if(!yes || !FU_SELECT) return;
+    let cleared=0;
+    const who=userFirstName(CURRENT_USER);
+    FU_SELECT.forEach(id=>{
+      const wo=getWO(id);
+      if(!wo || !currentFollowUp(wo)) return;
+      wo.followUpClearedAt=Date.now();
+      addNote(wo, 'NOTE', `${who} cleared the follow-up.`, null);
+      addAdminLog(wo, 'Follow-up cleared.');
+      cleared++;
+    });
+    FU_SELECT=null;
+    if(cleared) saveDB(DB);
+    renderTabCounts(); renderMain();
+    if(cleared) toast(`Follow-up cleared on ${cleared} work order${cleared>1?'s':''}.`);
+  }, {yes:'Clear', no:'Cancel'});
+}
 function mostRecentNote(wo){
   return (wo.notes && wo.notes.length) ? wo.notes[0] : null;
 }
+/* When a note was written, in ms. Older notes only have a date and a
+   minute, so those are read instead. */
+function noteMs(n){
+  if(!n) return 0;
+  if(n.at) return n.at;
+  const m=String(n.date||'').match(/(\d+)\/(\d+)\/(\d+)/);
+  if(!m) return 0;
+  let h=0, mi=0;
+  const t=String(n.time||'').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if(t){ h=Number(t[1]); mi=Number(t[2]); if(t[3]){ h=h%12; if(t[3].toUpperCase()==='PM') h+=12; } }
+  return new Date(Number(m[3]), Number(m[1])-1, Number(m[2]), h, mi).getTime();
+}
+/* The follow-up that counts is the one entered last, on any note. Earlier
+   ones don't matter, and clearing a job's follow-up voids every date entered
+   before the clear. */
+function currentFollowUp(wo){
+  let best=null, bestAt=-1;
+  (wo && wo.notes || []).forEach(n=>{
+    if(!n || !n.followUpDate) return;
+    const t=n.fuAt || noteMs(n);
+    if(t>bestAt){ bestAt=t; best=n; }
+  });
+  if(!best) return null;
+  if(wo.followUpClearedAt && bestAt<=wo.followUpClearedAt) return null;
+  return best;
+}
+/* Notes are kept newest first, also after two devices' notes are put
+   together. */
+function sortNotes(wo){
+  if(Array.isArray(wo.notes) && wo.notes.length>1) wo.notes.sort((a,b)=>noteMs(b)-noteMs(a));
+}
 function woIsFollowUpDue(wo){
-  const n=mostRecentNote(wo);
+  const n=currentFollowUp(wo);
   return !!(n && n.followUpDate && isFollowUpDue(n.followUpDate));
 }
 /* Today or the next booked day, shown on the card. */
@@ -6592,8 +6661,9 @@ function rowHTML(wo, opts){
   const lastNoteHTML = n
     ? `<div class="woLastNote"><b>${esc(n.type)}:</b> ${esc((n.text||'').slice(0,90))}${(n.text||'').length>90?'…':''} <span class="woNoteDate">(${esc(n.date)})</span></div>`
     : '';
-  const followUpBadge = (n && n.followUpDate)
-    ? `<span class="followupBadge ${isFollowUpDue(n.followUpDate)?'due':''}"><span class="fuWord">${isFollowUpDue(n.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(n.followUpDate)}</span><span class="fuShort">${isFollowUpDue(n.followUpDate)?'Due':'Follow-up'} ${formatFollowUpShort(n.followUpDate)}</span></span>`
+  const fu=currentFollowUp(wo);
+  const followUpBadge = fu
+    ? `<span class="followupBadge ${isFollowUpDue(fu.followUpDate)?'due':''}"><span class="fuWord">${isFollowUpDue(fu.followUpDate)?'Follow-up due':'Follow-up'} ${formatFollowUp(fu.followUpDate)}</span><span class="fuShort">${isFollowUpDue(fu.followUpDate)?'Due':'Follow-up'} ${formatFollowUpShort(fu.followUpDate)}</span></span>`
     : '';
   /* The action for this sub-list, drawn on the right of the card. Each one
      either opens a tool or asks to confirm before the job moves on. */
@@ -9205,7 +9275,9 @@ function saveFieldNoteEdit(id){
   const oldText=n.text;
   n.type=type;
   n.text=text;
+  const fuWas=n.followUpDate||'';
   n.followUpDate=(followEl && followEl.value) ? followEl.value : null;
+  if((n.followUpDate||'')!==fuWas){ if(n.followUpDate) n.fuAt=Date.now(); else delete n.fuAt; }
   addAdminLog(wo, `Edited a ${type} note (was: "${oldText}")`);
   WO_EDIT_NOTE_IDX=null;
   FIELD_NOTE_OPEN=false;
@@ -9251,7 +9323,7 @@ function fieldNotePreviewHTML(wo){
     <div class="fsNote">
       <div class="fsNoteTop">
         <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.time?' '+esc(n.time):''}${n.by?' &middot; '+esc(n.by):''}</span>
-        ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
+        ${(n.followUpDate && n===currentFollowUp(wo)) ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
       </div>
       <div class="fspNoteText">${esc(n.text)}</div>
     </div>
@@ -9288,7 +9360,7 @@ function fieldNotesSecHTML(wo){
   const one=(n, idx)=>`<div class="fsNote">
       <div class="fsNoteTop">
         <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.time?' '+esc(n.time):''}${n.by?' &middot; '+esc(n.by):''}</span>
-        ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
+        ${(n.followUpDate && n===currentFollowUp(wo)) ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
         ${isAdmin ? `<span class="fsNoteActions">
           <button onclick="adminEditNote(${wo.id},${idx})">Edit</button>
           <button onclick="adminDeleteNote(${wo.id},${idx})">Delete</button>
@@ -11109,7 +11181,7 @@ function notesHTML(wo){
     <div class="noteItem">
       <div class="noteMeta">
         <span><span class="noteType">${esc(n.type)}</span>, ${esc(n.by)} · ${esc(n.date)} ${esc(n.time)}
-          ${n.followUpDate ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
+          ${(n.followUpDate && n===currentFollowUp(wo)) ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
         </span>
         ${CURRENT_USER.isAdmin ? `<span class="noteActions">
           <button onclick="adminEditNote(${wo.id},${idx})">Edit</button>
@@ -12899,7 +12971,9 @@ function saveNoteEdit(id){
   }
   n.type=type;
   n.text=text;
+  const fuWas=n.followUpDate||'';
   n.followUpDate=followUp;
+  if((n.followUpDate||'')!==fuWas){ if(n.followUpDate) n.fuAt=Date.now(); else delete n.fuAt; }
   addAdminLog(wo, `Edited a ${type} note (was: "${oldText}")`);
   WO_EDIT_NOTE_IDX=null;
   saveDB(DB);
