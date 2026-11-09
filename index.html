@@ -6532,16 +6532,16 @@ function fuSnooze(unit){
   else if(unit==='week') d.setDate(d.getDate()+7);
   else { const day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+1); d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth()+1, 0).getDate())); }
   const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const label={day:'1 day', week:'1 week', month:'1 month'}[unit];
   let moved=0;
   FU_SELECT.forEach(id=>{
     const wo=getWO(id), n=wo && mostRecentNote(wo);
     if(!n || !n.followUpDate) return;
     const was=n.followUpDate;
-    // The old version of the note is marked as replaced, so other devices
-    // don't set it aside as a lost note.
-    if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
-    wo.tombstones.push('n:'+noteIdentity(n));
-    n.followUpDate=iso;
+    // A note records the push and carries the new follow-up date, so the
+    // earlier note stays exactly as it was written.
+    const who=(CURRENT_USER && (CURRENT_USER.firstName || CURRENT_USER.displayName)) || 'Someone';
+    addNote(wo, 'NOTE', `${who} pushed the work order out ${label}.`, iso);
     addAdminLog(wo, `Follow-up moved from ${formatFollowUp(was)} to ${formatFollowUp(iso)}.`);
     moved++;
   });
