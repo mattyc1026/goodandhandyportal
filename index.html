@@ -3619,6 +3619,20 @@ html.dark .dkAddTile.t-upload{--tc:#c9d6ee;--tbg:rgba(201,214,238,.12);}
 .dkCount{min-width:26px;height:26px;padding:0 8px;border-radius:999px;display:inline-grid;place-items:center;background:var(--navy);color:#fff;font-size:.8em;font-weight:800;}
 html.dark .dkCount{color:var(--cream);}
 html.dark .docTagChip.active{color:var(--cream);}
+.estSheet{max-width:520px;text-align:left;padding:22px 20px 20px;}
+.estSheetHead{display:flex;align-items:center;gap:10px;}
+.estSheetHead h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.6em;color:var(--navy);}
+.estSheetHead .closeX{margin-left:auto;}
+.estSheetSub{color:var(--muted);font-size:.9em;margin:2px 0 14px;}
+.estSheetList{display:flex;flex-direction:column;gap:10px;font-size:.92em;}
+.estSheetList .dkFile{box-shadow:none;}
+.estSheetList .dkView{flex-shrink:0;}
+.estThumb{flex-shrink:0;width:52px;height:62px;padding:0;border:none;border-radius:10px;overflow:hidden;cursor:pointer;background:var(--well);}
+.estThumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.estRow{cursor:pointer;}
+.estSheetList .dkFileName{white-space:normal;overflow-wrap:anywhere;line-height:1.25;}
+@media (max-width:600px){ .estSheetList .dkView{display:none;} }
+
 .dk .docTagFilter{margin:0;gap:7px;}
 .dk .docTagChip{padding:7px 13px;font-size:.82em;letter-spacing:0;min-height:34px;}
 
@@ -11765,15 +11779,39 @@ const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Dama
 function isPdfDoc(d){ return /pdf/i.test(d.type||'') || /\.pdf$/i.test(d.name||''); }
 /* A PDF with "estimate" in its name is labeled Estimate when it is added. */
 function looksLikeEstimate(name, type){ return /estimate/i.test(name||'') && (/pdf/i.test(type||'') || /\.pdf$/i.test(name||'')); }
-/* The newest estimate in a job's Docs: labeled Estimate, or a PDF named as one. */
-function estimateDoc(wo){
-  const ds=(wo && wo.docs||[]).filter(d=>d.tag==='Estimate' || (!d.tag && looksLikeEstimate(d.name, d.type)));
-  return ds.length ? ds[ds.length-1] : null;
+/* Every estimate in a job's Docs, newest first: labeled Estimate, or an
+   unlabeled PDF named as one. */
+function estimateDocs(wo){
+  return (wo && wo.docs||[]).filter(d=>d.tag==='Estimate' || (!d.tag && looksLikeEstimate(d.name, d.type))).slice().reverse();
 }
+function estimateDoc(wo){ return estimateDocs(wo)[0] || null; }
+/* One estimate opens straight away. With more than one, they all come up
+   together in a sheet, since a phone only lets one new tab open per tap. */
 function viewEstimate(id){
-  const wo=getWO(id), d=estimateDoc(wo);
-  if(d) viewDoc(id, d.id);
+  const wo=getWO(id), list=estimateDocs(wo);
+  if(!list.length) return;
+  if(list.length===1){ viewDoc(id, list[0].id); return; }
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox" onclick="if(event.target===this)closeEstimateSheet()"><div class="confirmCard estSheet" role="dialog" aria-modal="true" aria-label="Estimates">
+    <div class="estSheetHead"><h3>Estimates</h3><span class="dkCount">${list.length}</span><button type="button" class="closeX" aria-label="Close" onclick="closeEstimateSheet()">&times;</button></div>
+    <div class="estSheetSub">${esc((wo.customer||{}).name||'')}</div>
+    <div class="dk estSheetList">${list.map(d=>{
+      const k=docKind(d);
+      const thumb = isImageDoc(d) && d.url
+        ? `<button type="button" class="estThumb" onclick="viewDoc(${id},'${d.id}')" aria-label="View ${esc(d.name||'estimate')}"><img src="${esc(d.url)}" alt=""></button>`
+        : `<button type="button" class="dkBadge ${k.c}" onclick="viewDoc(${id},'${d.id}')" aria-label="View ${esc(d.name||'estimate')}">${icon('file')}<b>${k.t}</b></button>`;
+      return `<div class="dkFile estRow" onclick="if(!event.target.closest('button'))viewDoc(${id},'${d.id}')">
+        ${thumb}
+        <div class="dkFileInfo">
+          <button type="button" class="dkFileName" onclick="viewDoc(${id},'${d.id}')">${esc(d.name||'Untitled')}</button>
+          <span class="dkFileMeta">${esc(docMetaText(d))}${d.size?', '+fmtBytes(d.size):''}</span>
+        </div>
+        <button type="button" class="dkView" onclick="viewDoc(${id},'${d.id}')">${icon('eye')}View</button>
+      </div>`;
+    }).join('')}</div>
+  </div></div>`;
 }
+function closeEstimateSheet(){ const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
 function docTagClass(tag){
   return 'dt-'+String(tag||'').toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,'');
 }
