@@ -1064,14 +1064,14 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .schedCalDay.hasJob{cursor:pointer;}
 /* Booked days shade deeper the more of the day is taken: under 4 hours,
    4 to 8, then a full day. The number is how many bookings. */
-.schedCalDay.busy1,.cvDay.busy1,.cvWDay.busy1 .cvWHead{background:var(--busy1);border-color:var(--busy1b);}
-.schedCalDay.busy2,.cvDay.busy2,.cvWDay.busy2 .cvWHead{background:var(--busy2);border-color:var(--busy2b);}
-.schedCalDay.busy3,.cvDay.busy3,.cvWDay.busy3 .cvWHead{background:var(--busy3);border-color:var(--busy3b);}
+.schedCalDay.busy1{background:var(--busy1);border-color:var(--busy1b);}
+.schedCalDay.busy2{background:var(--busy2);border-color:var(--busy2b);}
+.schedCalDay.busy3{background:var(--busy3);border-color:var(--busy3b);}
 .calDots{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:2px;line-height:0;}
-.calDots i{width:4px;height:4px;border-radius:50%;background:var(--busy-dot);}
+.calDots i{width:5px;height:5px;border-radius:50%;background:var(--busy-dot);}
 .schedTimeRow .field label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .schedCalDay.picked{background:var(--navy);color:#fff;border-color:var(--navy);font-weight:600;}
-.schedCalDay.picked .calDots i{background:#ffd48a;}
+.schedCalDay.picked .calDots i{box-shadow:0 0 0 1px #fff;}
 .schedCalDay.picked.joinL{border-top-left-radius:3px;border-bottom-left-radius:3px;}
 .schedCalDay.picked.joinR{border-top-right-radius:3px;border-bottom-right-radius:3px;}
 .schedCalDay.infoDay:not(.picked){border-color:var(--navy);border-width:1.5px;}
@@ -1083,55 +1083,158 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .segSwitch button{border:none;background:transparent;border-radius:999px;padding:7px 14px;font-family:inherit;font-weight:700;font-size:.85rem;color:var(--muted);cursor:pointer;min-height:36px;}
 .segSwitch button.on{background:var(--navy);color:#fff;}
 .segSwitch.small button{padding:5px 11px;font-size:.8rem;min-height:32px;}
-.cvWrap{display:flex;flex-direction:column;gap:12px;min-width:0;max-width:100%;}
-.cvGrid .dow .ds{display:none;}
-@media (max-width:899px){ .cvGrid .dow .dl{display:none;} .cvGrid .dow .ds{display:inline;} .cvWrap .cvItem{grid-template-columns:1fr;} .cvWrap .cvItem .cvTime{grid-row:auto;} .cvAgendaHead{font-size:.95em;} .cvBarRight{width:100%;justify-content:space-between;} .cvNav{max-width:none;} }
-.cvBar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;}
-.cvNav{display:flex;align-items:center;gap:10px;flex:1 1 300px;min-width:0;max-width:420px;}
-.cvNav b{flex:1;min-width:0;font-size:1.05em;color:var(--navy);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cvNav button,.cvToday{flex-shrink:0;background:var(--paper);border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:6px 12px;font-family:inherit;font-size:.9rem;font-weight:700;color:var(--navy);cursor:pointer;min-height:38px;}
-.cvBarRight{display:flex;align-items:center;gap:8px;}
-.cvWho{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
-.cvWho .crewChip{flex-shrink:0;min-height:34px;padding:6px 13px;font-size:.85rem;}
+/* ---- Scheduling calendar ----
+   The header is a strip of blueprint paper with the month set big in the
+   display serif. Hours booked on a day are drawn as a strip of measuring
+   tape (a tick every two hours, full at eight), and each person keeps one
+   color across chips, dots and avatars. */
+:root{ --cv-unassigned:#9aa6b8; --cv-tape-track:#e7ebf2; --cv-wknd:#f6f8fb; }
+html.dark{ --cv-unassigned:#6f7c92; --cv-tape-track:#26324a; --cv-wknd:#131c2c; }
+.cvWrap{display:flex;flex-direction:column;gap:14px;min-width:0;max-width:100%;}
+.cvHero{position:relative;overflow:hidden;border-radius:var(--radius-lg);padding:18px 14px 26px;color:#fff;text-align:center;
+  background:
+    linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px) 0 0/22px 22px,
+    linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px) 0 0/22px 22px,
+    radial-gradient(120% 140% at 50% -20%, #24497e 0%, #0f2647 58%, #0a1c37 100%);
+  box-shadow:0 10px 30px rgba(10,28,55,.22);}
+/* The tape along the bottom edge of the header. */
+.cvHero::after{content:'';position:absolute;left:0;right:0;bottom:0;height:9px;
+  background:
+    repeating-linear-gradient(90deg, rgba(15,38,71,.55) 0 1px, transparent 1px 11px) 0 0/100% 5px no-repeat,
+    repeating-linear-gradient(90deg, rgba(15,38,71,.7) 0 1.5px, transparent 1.5px 55px) 0 0/100% 8px no-repeat,
+    linear-gradient(180deg,#ffc04d,#f39a1d);}
+.cvPick{display:flex;align-items:center;justify-content:center;gap:14px;}
+.cvArrow{flex-shrink:0;width:42px;height:42px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;display:grid;place-items:center;cursor:pointer;transition:background var(--t-fast),transform var(--t-press) var(--e-out);}
+.cvArrow svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.cvArrow:hover{background:rgba(255,255,255,.16);}
+.cvArrow:active{transform:scale(.92);}
+.cvArrow:focus-visible,.cvToday:focus-visible,.cvSeg button:focus-visible{outline:2px solid #ffc04d;outline-offset:2px;}
+.cvTitle{min-width:0;display:flex;flex-direction:column;align-items:center;line-height:1;}
+.cvTitle b{font-family:var(--f-display);font-weight:400;font-size:2.15rem;letter-spacing:.005em;white-space:nowrap;}
+.cvTitle span{margin-top:5px;font-size:.82rem;font-weight:600;letter-spacing:.14em;color:#ffcf86;font-variant-numeric:tabular-nums;}
+.cvCtrls{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.cvToday{min-height:36px;padding:6px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;}
+.cvToday:hover{background:rgba(255,255,255,.1);}
+.cvSeg{display:inline-flex;padding:3px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);}
+.cvSeg button{min-height:32px;padding:5px 15px;border:none;border-radius:999px;background:transparent;color:rgba(255,255,255,.78);font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:background var(--t-fast),color var(--t-fast);}
+.cvSeg button.on{background:#fff;color:#0f2647;box-shadow:0 2px 6px rgba(0,0,0,.18);}
+
+/* People */
+.crewAv{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--pc,#0f2647);color:#fff;font-size:.72rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px var(--paper);}
+.crewChip .crewAv{box-shadow:none;}
+.crewChip.on{background:var(--pc);border-color:var(--pc);color:#fff;}
+.crewChip.on .crewAv{background:#fff;color:var(--pc);}
+.crewChip.on .crewAv.all{box-shadow:0 0 0 2px #fff;}
+.cvWho{display:flex;flex-wrap:wrap;gap:7px;padding:2px;justify-content:center;}
+.cvWho .crewChip{flex-shrink:0;min-height:38px;padding:5px 14px 5px 6px;font-size:.88rem;gap:7px;color:var(--ink);background:var(--paper);box-shadow:var(--sh-1);}
+.cvWho .crewChip.on{color:#fff;background:var(--pc);}
+html.dark .cvWho .crewChip.on{background:var(--pc);color:#fff;border-color:var(--pc);}
+html.dark .cvWho .crewChip.isAll{--pc:#2f5a96 !important;}
+html.dark .crewChip.on .crewAv{background:#fff;}
+
+/* Month grid */
+.cvBoard{background:var(--paper);border-radius:var(--radius-lg);padding:10px 8px 8px;box-shadow:var(--sh-2);}
 .cvGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
-.cvGrid .dow{font-size:.66em;text-transform:uppercase;color:var(--muted);text-align:center;font-weight:700;letter-spacing:.06em;padding-bottom:2px;}
-.cvDay{position:relative;min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding:5px 3px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);font:inherit;color:var(--ink);cursor:pointer;text-align:left;min-width:0;overflow:hidden;}
+.cvGrid .dow{font-size:.74rem;color:var(--muted);text-align:center;font-weight:700;padding:2px 0 6px;}
+.cvGrid .dow .ds{display:none;}
+.cvDay{position:relative;min-height:56px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 6px 12px;border:1px solid transparent;border-radius:11px;background:transparent;font:inherit;color:var(--ink);cursor:pointer;text-align:left;min-width:0;overflow:hidden;transition:background var(--t-fast),box-shadow var(--t-fast),transform var(--t-press) var(--e-out);}
+.cvDay.wknd:not(.booked) .cvNum{color:var(--muted);}
+.cvDay.booked{background:var(--well);border-color:var(--line);}
+.cvDay:hover{border-color:var(--line);}
+.cvDay:active{transform:scale(.96);}
+.cvDay:focus-visible{outline:2px solid var(--orange);outline-offset:1px;}
 .cvDay.empty{visibility:hidden;}
-.cvDay.past{opacity:.6;}
-.cvDay.today .cvNum{background:var(--orange);color:#fff;border-radius:999px;padding:0 6px;}
-.cvDay.sel{box-shadow:inset 0 0 0 2px var(--navy);}
-.cvNum{font-family:var(--f-data);font-size:.85em;font-weight:700;line-height:1.5;}
+.cvNum{font-size:.92rem;font-weight:700;line-height:1;min-width:24px;height:24px;display:inline-grid;place-items:center;border-radius:999px;font-variant-numeric:tabular-nums;margin:-2px 0 0 -2px;}
+.cvDay.past .cvNum{color:var(--muted);font-weight:500;}
+.cvDay.today .cvNum{background:var(--orange);color:#fff;font-weight:800;box-shadow:0 3px 10px rgba(232,121,26,.38);}
+.cvDay.sel{background:var(--paper);border-color:transparent;box-shadow:0 0 0 2px #0f2647, 0 8px 18px rgba(15,38,71,.16);z-index:1;}
+html.dark .cvDay.sel{box-shadow:0 0 0 2px var(--navy), 0 8px 18px rgba(0,0,0,.4);}
+.cvDots{position:absolute;top:7px;right:6px;display:flex;gap:2px;}
+.cvDots i{width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px var(--paper);}
 .cvChips{display:none;}
-.cvAgenda{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);padding:12px;}
-.cvAgendaHead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:700;color:var(--navy);margin-bottom:8px;}
-.cvAgendaHead span{font-size:.8em;color:var(--muted);font-weight:600;}
-.cvItem{display:grid;grid-template-columns:auto 1fr;column-gap:10px;row-gap:1px;width:100%;text-align:left;padding:9px 11px;margin-top:6px;border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:var(--radius-sm);background:var(--paper);font:inherit;color:var(--ink);cursor:pointer;}
-.cvItem.presite{border-left-color:var(--purple-ink);}
-.cvItem .cvTime{grid-row:1 / span 2;font-family:var(--f-data);font-size:.78em;font-weight:700;color:var(--navy);white-space:nowrap;align-self:center;}
-.cvItem .cvName{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.cvItem .cvMeta{font-size:.8em;color:var(--muted);}
-.cvNone{color:var(--muted);font-size:.88em;padding:4px 2px;}
+/* Tape: track with a tick every 2 hours; fill turns deeper as the day fills. */
+.cvTape{position:relative;display:block;height:5px;border-radius:3px;overflow:hidden;
+  background:repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(15,38,71,.16) calc(25% - 1px) 25%), var(--cv-tape-track);}
+.cvTape i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;}
+.cvTape.t1 i{background:linear-gradient(90deg,#ffd27a,#f6b23c);}
+.cvTape.t2 i{background:linear-gradient(90deg,#f6b23c,#ec8a1f);}
+.cvTape.t3 i{background:linear-gradient(90deg,#ec8a1f,#d9480f);}
+.cvDay .cvTape{position:absolute;left:6px;right:6px;bottom:5px;}
+.cvTapeLbl{font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums;}
+
+/* Day detail */
+.cvAgenda{background:var(--paper);border-radius:var(--radius-lg);padding:14px 14px 10px;box-shadow:var(--sh-2);}
+.cvAgendaHead{display:flex;align-items:center;gap:12px;padding-bottom:10px;margin-bottom:4px;border-bottom:1px solid var(--line);}
+.cvADay{font-family:var(--f-display);font-weight:400;font-size:2.5rem;line-height:.9;color:var(--orange);min-width:1.3em;text-align:center;}
+.cvADate{display:flex;flex-direction:column;line-height:1.2;min-width:0;}
+.cvADate span{font-weight:800;color:var(--navy);font-size:1.02rem;}
+.cvADate small{color:var(--muted);font-size:.8rem;}
+.cvATape{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;width:92px;flex-shrink:0;}
+.cvATape .cvTape{width:100%;height:7px;}
+.cvATape .cvTape.empty{opacity:.7;}
+.cvItem{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 10px 10px 0;margin-top:6px;border:none;border-radius:var(--radius);background:transparent;font:inherit;color:var(--ink);cursor:pointer;transition:background var(--t-fast);}
+.cvItem:hover{background:var(--well);}
+.cvItem:focus-visible{outline:2px solid var(--orange);outline-offset:1px;}
+.cvTimeCol{position:relative;flex:0 0 74px;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-end;column-gap:3px;padding-right:12px;text-align:right;font-variant-numeric:tabular-nums;}
+.cvTimeCol::after{content:'';position:absolute;right:0;top:2px;bottom:2px;width:3px;border-radius:2px;background:var(--orange);}
+.cvItem.presite .cvTimeCol::after{background:var(--purple-ink);}
+.cvTimeCol b{font-size:1rem;font-weight:800;color:var(--navy);}
+.cvTimeCol small{font-size:.68rem;font-weight:700;color:var(--muted);}
+.cvTo{flex-basis:100%;font-size:.72rem;color:var(--muted);white-space:nowrap;}
+.cvMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.cvName{font-weight:700;font-size:.98rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cvType{align-self:flex-start;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(232,121,26,.13);color:#b4560a;}
+.cvItem.presite .cvType{background:var(--purple);color:var(--purple-ink);}
+html.dark .cvType{color:#ffb36b;}
+.cvCrew{display:flex;flex-shrink:0;padding-left:4px;}
+.cvCrew .crewAv{width:26px;height:26px;font-size:.78rem;margin-left:-6px;}
+.cvNone{color:var(--muted);font-size:.88rem;padding:10px 4px 6px;font-style:italic;}
+
+/* Week */
 .cvWeek{display:flex;flex-direction:column;gap:8px;}
-.cvWDay{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);overflow:hidden;}
-.cvWDay.today{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange);}
-.cvWHead{display:flex;align-items:baseline;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--well);}
-.cvWHead span{font-size:.75em;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--muted);}
-.cvWHead b{color:var(--navy);}
-.cvWHead em{margin-left:auto;font-style:normal;font-size:.78em;color:var(--muted);font-weight:600;}
-.cvWList{padding:2px 10px 10px;}
-@media (min-width:900px){
-  .cvDay{min-height:104px;align-items:stretch;}
-  .cvDay .cvNum{align-self:flex-start;}
-  .cvDay .calDots{display:none;}
-  .cvChips{display:flex;flex-direction:column;gap:2px;min-width:0;}
-  .cvChip{font-size:.72em;padding:2px 5px;border-radius:4px;background:rgba(232,121,26,.14);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--orange);}
-  .cvChip.presite{background:var(--purple);border-left-color:var(--purple-ink);}
-  .cvMore{font-size:.7em;color:var(--muted);font-weight:700;padding-left:2px;}
-  .cvWeek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
-  .cvWDay{min-height:180px;}
-  .cvWList .cvItem{grid-template-columns:1fr;}
-  .cvWList .cvItem .cvTime{grid-row:auto;}
+.cvWDay{background:var(--paper);border-radius:var(--radius);box-shadow:var(--sh-1);padding:10px 12px 6px;border-left:4px solid transparent;}
+.cvWDay.today{border-left-color:var(--orange);}
+.cvWDay.past{opacity:.72;}
+.cvWHead{display:flex;align-items:center;gap:8px;}
+.cvWDow{font-size:.85rem;font-weight:700;color:var(--muted);width:2.4em;}
+.cvWNum{font-family:var(--f-display);font-weight:400;font-size:1.6rem;line-height:1;color:var(--navy);}
+.cvWDay.today .cvWNum{color:var(--orange);}
+.cvWTape{margin-left:auto;display:flex;align-items:center;gap:8px;width:118px;}
+.cvWTape .cvTape{flex:1;}
+.cvWList .cvNone{padding:4px 2px 6px;}
+.cvWList .cvItem{margin-top:4px;padding-top:7px;padding-bottom:7px;}
+
+@media (max-width:899px){
+  .cvGrid .dow .dl{display:none;} .cvGrid .dow .ds{display:inline;}
+  .cvGrid{gap:3px;}
+  .cvDay{padding:5px 4px 12px;min-height:54px;align-items:center;}
+  .cvNum{margin:0;}
+  .cvDots{top:auto;bottom:11px;left:0;right:0;justify-content:center;}
+  .cvDots i{width:5px;height:5px;box-shadow:none;}
+  .cvDay .cvTape{left:5px;right:5px;bottom:4px;height:4px;}
+  .cvTitle b{font-size:1.9rem;}
 }
+@media (min-width:900px){
+  .cvBoard{padding:14px 12px 12px;}
+  .cvGrid{gap:6px;}
+  .cvDay{min-height:112px;padding:8px 8px 16px;}
+  .cvDay .cvTape{left:8px;right:8px;bottom:7px;}
+  .cvChips{display:flex;flex-direction:column;gap:3px;min-width:0;width:100%;margin-top:4px;}
+  .cvChip{font-size:.74rem;font-weight:600;padding:3px 6px;border-radius:5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--pc);}
+  .cvMore{font-size:.72rem;color:var(--muted);font-weight:700;padding-left:4px;}
+  .cvTitle b{font-size:2.6rem;}
+  .cvHero{padding:22px 20px 30px;}
+  .cvWeek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;}
+  .cvWDay{min-height:220px;border-left:none;border-top:4px solid transparent;padding:10px 8px 8px;}
+  .cvWDay.today{border-top-color:var(--orange);}
+  .cvWHead{flex-wrap:wrap;row-gap:6px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .cvWTape{width:100%;margin-left:0;}
+  .cvWList .cvItem{flex-direction:column;align-items:stretch;gap:4px;padding:8px;background:var(--well);}
+  .cvWList .cvTimeCol{flex:none;justify-content:flex-start;text-align:left;padding:0 0 0 9px;}
+  .cvWList .cvTimeCol::after{left:0;right:auto;}
+  .cvWList .cvCrew{padding-left:6px;}
+}
+@media (prefers-reduced-motion:reduce){ .cvDay,.cvArrow,.cvItem{transition:none;} .cvDay:active,.cvArrow:active{transform:none;} }
 
 /* Time field: type a time, or tap the clock for a 15 minute wheel. */
 .tField{display:flex;align-items:stretch;border:1.5px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);min-width:0;transition:border-color .15s,box-shadow .15s;}
@@ -1141,9 +1244,9 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
 .tfWheel .ic{width:20px;height:20px;}
 .tfWheel select.tfSel{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;border:none;padding:0;margin:0;-webkit-appearance:none;appearance:none;}
 .crewChips{display:flex;flex-wrap:wrap;gap:8px;}
-.crewChip{display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font-weight:700;font-size:.88em;font-family:inherit;cursor:pointer;}
+.crewChip{--pc:#0f2647;display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:6px 14px 6px 7px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font-weight:700;font-size:.88em;font-family:inherit;cursor:pointer;}
 .crewChip .ic{width:15px;height:15px;}
-.crewChip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.crewChip.on{background:var(--pc);border-color:var(--pc);color:#fff;}
 .schedCrewLine{color:var(--navy);font-weight:600;}
 .schedHead{flex-wrap:nowrap !important;align-items:center;}
 .schedHead h2{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;}
@@ -2939,8 +3042,8 @@ html.dark nav.tabs#tabsNav button .count,
 html.dark .schedCalDay.selStart,html.dark .schedCalDay.selEnd,
 html.dark .schedDayPopup,html.dark .schedTypeToggle button.active,
 html.dark .tinyEdit:hover{background:var(--navy2);color:var(--ink);border-color:var(--navy2);}
-html.dark .schedCalDay.picked,html.dark .crewChip.on,html.dark .segSwitch button.on{background:var(--navy);color:var(--cream);border-color:var(--navy);}
-html.dark .schedCalDay.picked .calDots i{background:var(--cream);}
+html.dark .schedCalDay.picked,html.dark .segSwitch button.on{background:var(--navy);color:var(--cream);border-color:var(--navy);}
+html.dark .schedCalDay.picked .calDots i{box-shadow:0 0 0 1px var(--cream);}
 html.dark #ghStorageRules{background:#0a111d !important;color:var(--ink) !important;}
 html.dark *{scrollbar-color:#3a4a66 transparent;}
 html.dark ::-webkit-scrollbar-thumb{background:#3a4a66;border-color:var(--paper);}
@@ -6660,64 +6763,115 @@ function calvBookings(){
   });
   return out;
 }
+/* "8:00" -> {t:"8:00", ap:"AM"} */
+function timeParts(t){
+  if(!t) return {t:'', ap:''};
+  const [h,m]=t.split(':').map(Number);
+  return {t:((h%12)||12)+':'+String(m||0).padStart(2,'0'), ap:h<12?'AM':'PM'};
+}
+/* A day's booked hours drawn as a strip of tape: one tick per two hours,
+   full at an eight hour day. */
+function hoursTapeHTML(list, withLabel){
+  const h=bookedHours(list||[]);
+  if(!h) return withLabel ? '<span class="cvTape empty"><i></i></span>' : '';
+  const lvl=busyLevel(list);
+  const pct=Math.min(100, h/8*100);
+  return `<span class="cvTape t${lvl}" title="${formatHoursShort(h)} booked"><i style="width:${pct}%"></i></span>${withLabel?`<span class="cvTapeLbl">${formatHoursShort(h)}</span>`:''}`;
+}
+/* One dot per person going that day (grey when nobody is assigned yet). */
+function crewDotsHTML(list){
+  const seen=[];
+  (list||[]).forEach(b=>{
+    const c=(b.crew&&b.crew.length) ? b.crew : [''];
+    c.forEach(u=>{ if(seen.indexOf(u)===-1) seen.push(u); });
+  });
+  if(!seen.length) return '';
+  return `<span class="cvDots" aria-hidden="true">${seen.slice(0,4).map(u=>`<i style="background:${u?crewColor(u):'var(--cv-unassigned)'}"></i>`).join('')}</span>`;
+}
 function calvAgendaRows(list){
-  if(!list || !list.length) return '<div class="cvNone">Nothing scheduled.</div>';
-  return list.slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||''))).map(b=>
-    `<button type="button" class="cvItem ${b.kind}" onclick="openWorkOrder(${b.woId})">
-      <span class="cvTime">${compactTimeRange(b.startTime, b.endTime)}</span>
-      <span class="cvName">${esc(b.customer)}</span>
-      <span class="cvMeta">${esc(b.type)}${b.crew&&b.crew.length?' · '+esc(crewNames(b.crew)):''}</span>
-    </button>`).join('');
+  if(!list || !list.length) return '<div class="cvNone">Open day</div>';
+  return list.slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||''))).map(b=>{
+    const st=timeParts(b.startTime), et=timeParts(b.endTime);
+    const crew=(b.crew&&b.crew.length) ? `<span class="cvCrew">${b.crew.map(crewAvatarHTML).join('')}</span>` : '';
+    return `<button type="button" class="cvItem ${b.kind}" onclick="openWorkOrder(${b.woId})">
+      <span class="cvTimeCol"><b>${st.t||'--'}</b><small>${st.ap}</small><span class="cvTo">to ${et.t?et.t+' '+et.ap:'--'}</span></span>
+      <span class="cvMain"><span class="cvName">${esc(b.customer)}</span><span class="cvType">${esc(b.type)}</span></span>
+      ${crew}
+    </button>`;
+  }).join('');
 }
 function calViewHTML(){
   const cur=calvCursor();
   const today=isoToday();
   const map=calvBookings();
   const week=CALV.mode==='week';
-  let label, body;
+  let title, sub, body;
+  const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   if(week){
     const s=new Date(cur); s.setDate(s.getDate()-s.getDay());
     const days=[...Array(7)].map((_,i)=>{ const d=new Date(s); d.setDate(s.getDate()+i); return d; });
     const e=days[6];
-    label = s.getMonth()===e.getMonth()
-      ? `${s.toLocaleDateString('en-US',{month:'short'})} ${s.getDate()}–${e.getDate()}, ${e.getFullYear()}`
-      : `${s.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${e.toLocaleDateString('en-US',{month:'short',day:'numeric'})}, ${e.getFullYear()}`;
+    title = s.getMonth()===e.getMonth()
+      ? `${s.toLocaleDateString('en-US',{month:'short'})} ${s.getDate()}–${e.getDate()}`
+      : `${s.toLocaleDateString('en-US',{month:'short',day:'numeric'})}–${e.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    sub=String(e.getFullYear());
     body=`<div class="cvWeek">${days.map(d=>{
-      const iso=isoOf(d), list=map[iso]||[], lvl=busyLevel(list);
-      return `<div class="cvWDay${iso===today?' today':''}${lvl?' busy'+lvl:''}">
-        <div class="cvWHead"><span>${d.toLocaleDateString('en-US',{weekday:'short'})}</span><b>${d.getDate()}</b>${list.length?`<em>${formatHoursShort(bookedHours(list))}</em>`:''}</div>
+      const iso=isoOf(d), list=map[iso]||[];
+      return `<div class="cvWDay${iso===today?' today':''}${iso<today?' past':''}">
+        <div class="cvWHead"><span class="cvWDow">${dows[d.getDay()]}</span><b class="cvWNum">${d.getDate()}</b><span class="cvWTape">${hoursTapeHTML(list, true)}</span></div>
         <div class="cvWList">${calvAgendaRows(list)}</div>
       </div>`;
     }).join('')}</div>`;
   } else {
     const y=cur.getFullYear(), m=cur.getMonth();
-    label=new Date(y,m,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    title=new Date(y,m,1).toLocaleDateString('en-US',{month:'long'});
+    sub=String(y);
     const startDow=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
     let cells='';
     for(let i=0;i<startDow;i++) cells+='<div class="cvDay empty"></div>';
     for(let day=1; day<=dim; day++){
       const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
       const list=(map[iso]||[]).slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||'')));
-      const lvl=busyLevel(list);
-      const cls=['cvDay']; if(lvl) cls.push('busy'+lvl); if(iso===today) cls.push('today'); if(iso===CALV.day) cls.push('sel'); if(iso<today) cls.push('past');
-      const names=list.slice(0,3).map(b=>`<span class="cvChip ${b.kind}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`).join('')+(list.length>3?`<span class="cvMore">+${list.length-3} more</span>`:'');
+      const dow=(startDow+day-1)%7;
+      const cls=['cvDay']; if(list.length) cls.push('booked'); if(dow===0||dow===6) cls.push('wknd'); if(iso===today) cls.push('today'); if(iso===CALV.day) cls.push('sel'); if(iso<today) cls.push('past');
+      const names=list.slice(0,3).map(b=>{
+        const c=(b.crew&&b.crew[0]) ? crewColor(b.crew[0]) : '#8a96a8';
+        return `<span class="cvChip" style="--pc:${c};background:${hexA(c,.13)}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`;
+      }).join('')+(list.length>3?`<span class="cvMore">${list.length-3} more</span>`:'');
       cells+=`<button type="button" class="${cls.join(' ')}" onclick="calvSet('day','${iso}')" aria-pressed="${iso===CALV.day}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${list.length?', '+list.length+' booked':''}">
-        <span class="cvNum">${day}</span>${calDotsHTML(list.length)}<span class="cvChips">${names}</span></button>`;
+        <span class="cvNum">${day}</span>${crewDotsHTML(list)}<span class="cvChips">${names}</span>${hoursTapeHTML(list)}</button>`;
     }
     const dayIso=CALV.day;
     const inMonth=dayIso && dayIso.slice(0,7)===`${y}-${String(m+1).padStart(2,'0')}`;
-    const agenda=inMonth ? `<div class="cvAgenda"><div class="cvAgendaHead">${new Date(dayIso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${(map[dayIso]||[]).length?`<span>${formatHoursShort(bookedHours(map[dayIso]))} booked</span>`:''}</div>${calvAgendaRows(map[dayIso])}</div>` : '';
-    body=`<div class="cvGrid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="dow"><span class="dl">${d}</span><span class="ds">${d.charAt(0)}</span></div>`).join('')}${cells}</div>${agenda}`;
+    let agenda='';
+    if(inMonth){
+      const dd=new Date(dayIso+'T00:00:00');
+      agenda=`<div class="cvAgenda"><div class="cvAgendaHead">
+        <b class="cvADay">${dd.getDate()}</b>
+        <span class="cvADate"><span>${dd.toLocaleDateString('en-US',{weekday:'long'})}</span><small>${dd.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</small></span>
+        <span class="cvATape">${hoursTapeHTML(map[dayIso], true)}</span>
+      </div>${calvAgendaRows(map[dayIso])}</div>`;
+    }
+    body=`<div class="cvBoard"><div class="cvGrid">${dows.map(d=>`<div class="dow"><span class="dl">${d}</span><span class="ds">${d.charAt(0)}</span></div>`).join('')}${cells}</div></div>${agenda}`;
   }
   const users=crewUsers();
-  const who=users.length ? `<div class="cvWho">${[{username:'all',name:'Everyone'}].concat(users).map(u=>
-    `<button type="button" class="crewChip${CALV.who===u.username?' on':''}" aria-pressed="${CALV.who===u.username}" onclick="calvSet('who','${esc(u.username)}')">${esc(u.name)}</button>`).join('')}</div>` : '';
+  const all=users.map(u=>crewColor(u.username));
+  const ring=all.length ? `conic-gradient(${all.map((c,i)=>`${c} ${i/all.length*100}% ${(i+1)/all.length*100}%`).join(',')})` : 'var(--navy)';
+  const who=users.length ? `<div class="cvWho">${[{username:'all',name:'Everyone',first:''}].concat(users).map(u=>{
+    const on=CALV.who===u.username;
+    const av=u.username==='all' ? `<span class="crewAv all" style="background:${ring}"></span>` : `<span class="crewAv">${esc(u.first.charAt(0))}</span>`;
+    return `<button type="button" class="crewChip${on?' on':''}${u.username==='all'?' isAll':''}" style="--pc:${u.username==='all'?'#0f2647':crewColor(u.username)}" aria-pressed="${on}" onclick="calvSet('who','${esc(u.username)}')">${av}${esc(u.name)}</button>`;
+  }).join('')}</div>` : '';
   return `<div class="cvWrap">
-    <div class="cvBar">
-      <div class="cvNav"><button type="button" onclick="calvMove(-1)" aria-label="Previous">&larr;</button><b>${label}</b><button type="button" onclick="calvMove(1)" aria-label="Next">&rarr;</button></div>
-      <div class="cvBarRight">
+    <div class="cvHero">
+      <div class="cvPick">
+        <button type="button" class="cvArrow" onclick="calvMove(-1)" aria-label="${week?'Previous week':'Previous month'}"><svg viewBox="0 0 24 24"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+        <div class="cvTitle"><b>${title}</b><span>${sub}</span></div>
+        <button type="button" class="cvArrow" onclick="calvMove(1)" aria-label="${week?'Next week':'Next month'}"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button>
+      </div>
+      <div class="cvCtrls">
         <button type="button" class="cvToday" onclick="calvMove(0)">Today</button>
-        <div class="segSwitch small"><button type="button" class="${week?'':'on'}" onclick="calvSet('mode','month')">Month</button><button type="button" class="${week?'on':''}" onclick="calvSet('mode','week')">Week</button></div>
+        <div class="cvSeg"><button type="button" class="${week?'':'on'}" aria-pressed="${!week}" onclick="calvSet('mode','month')">Month</button><button type="button" class="${week?'on':''}" aria-pressed="${week}" onclick="calvSet('mode','week')">Week</button></div>
       </div>
     </div>
     ${who}
@@ -8076,17 +8230,48 @@ function commitTimeFields(){
 }
 
 /* ---- Who's going ---- */
+/* The crew list everywhere runs in this order; anyone else follows,
+   alphabetically. */
+const CREW_ORDER=['matthew','scott','starla','alyssa'];
+/* Each person keeps one color across the calendar, the chips and the dots,
+   so a glance at a day shows who is out. */
+const CREW_COLORS={matthew:'#2f6fed', scott:'#1f9d6b', starla:'#d6407f', alyssa:'#0e9aa7'};
+const CREW_SPARE=['#7c5cd6','#c77d12','#5b6b82','#b5463c','#3f8f2f','#a0527a'];
+function capName(n){ return String(n||'').trim().split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
 function crewUsers(){
   const list=Object.values(DB.users||{}).filter(u=>u && u.username);
-  const first=u=>userFirstName(u);
+  const first=u=>capName(userFirstName(u));
   const counts={};
   list.forEach(u=>{ const f=first(u).toLowerCase(); counts[f]=(counts[f]||0)+1; });
-  return list.map(u=>({username:u.username, name: counts[first(u).toLowerCase()]>1 ? first(u)+' '+String(u.lastInitial||u.username.slice(-1)).toUpperCase() : first(u)}))
-    .sort((a,b)=>a.name.localeCompare(b.name));
+  const rank=u=>{ const i=CREW_ORDER.indexOf(first(u).toLowerCase()); return i===-1 ? 99 : i; };
+  return list.slice().sort((a,b)=>rank(a)-rank(b) || first(a).localeCompare(first(b)))
+    .map((u,i)=>{
+      const f=first(u);
+      return {username:u.username, first:f, name: counts[f.toLowerCase()]>1 ? f+' '+String(u.lastInitial||u.username.slice(-1)).toUpperCase() : f};
+    });
+}
+function crewColor(username){
+  const u=crewUsers().find(x=>x.username===username);
+  const key=(u ? u.first : String(username||'')).toLowerCase();
+  if(CREW_COLORS[key]) return CREW_COLORS[key];
+  let h=0; for(const c of String(username||'')) h=(h*31+c.charCodeAt(0))>>>0;
+  return CREW_SPARE[h % CREW_SPARE.length];
+}
+function crewInitial(username){
+  const u=crewUsers().find(x=>x.username===username);
+  return (u ? u.first : String(username||'?')).charAt(0).toUpperCase();
+}
+function hexA(hex, a){
+  const h=hex.replace('#','');
+  const n=parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h, 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+function crewAvatarHTML(username){
+  return `<span class="crewAv" style="--pc:${crewColor(username)}" title="${esc(crewName(username))}">${esc(crewInitial(username))}</span>`;
 }
 function crewName(username){
   const u=crewUsers().find(x=>x.username===username);
-  return u ? u.name : username;
+  return u ? u.name : capName(username);
 }
 function crewNames(list){ return (list||[]).map(crewName).join(', '); }
 function crewPickerHTML(){
@@ -8094,7 +8279,7 @@ function crewPickerHTML(){
   if(!users.length) return '';
   return `<div class="field"><label>Who's Going</label><div class="crewChips">${users.map(u=>{
     const on=SCHED_CREW.indexOf(u.username)!==-1;
-    return `<button type="button" class="crewChip${on?' on':''}" aria-pressed="${on}" onclick="toggleSchedCrew('${esc(u.username)}')">${on?icon('check'):''}${esc(u.name)}</button>`;
+    return `<button type="button" class="crewChip${on?' on':''}" style="--pc:${crewColor(u.username)}" aria-pressed="${on}" onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}</button>`;
   }).join('')}</div></div>`;
 }
 function toggleSchedCrew(username){
@@ -8702,7 +8887,7 @@ function scheduleCalendarHTML(){
       if(SCHED_DAYS.indexOf(addDaysIso(iso,1))!==-1 && (startDow+day)%7!==0) cls.push('joinR');
     }
     if(iso===SCHED_INFO_DAY) cls.push('infoDay');
-    const count = booked ? calDotsHTML(booked.length) : '';
+    const count = booked ? calDotsHTML(booked) : '';
     const clickAttr = isPast ? '' : `onclick="pickSchedDay('${iso}')"`;
     cells += `<div class="${cls.join(' ')}" ${clickAttr} role="button" aria-pressed="${picked}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${booked?', '+booked.length+' booked':''}">${day}${count}</div>`;
   }
@@ -8719,8 +8904,13 @@ function scheduleCalendarHTML(){
     ${schedPickedHTML()}
     ${schedDayInfoHTML(jobDays)}`;
 }
-/* One dot per booking, up to four. */
-function calDotsHTML(n){ return n ? `<span class="calDots" aria-hidden="true">${'<i></i>'.repeat(Math.min(n,4))}</span>` : ''; }
+/* One dot per person going that day, grey when nobody is assigned. */
+function calDotsHTML(list){
+  if(!list || !list.length) return '';
+  const seen=[];
+  list.forEach(b=>{ ((b.crew&&b.crew.length)?b.crew:['']).forEach(u=>{ if(seen.indexOf(u)===-1) seen.push(u); }); });
+  return `<span class="calDots" aria-hidden="true">${seen.slice(0,4).map(u=>`<i style="background:${u?crewColor(u):'var(--cv-unassigned)'}"></i>`).join('')}</span>`;
+}
 /* "Nov 4 - 7, Nov 9" style summary of the picked days. */
 function daysSummary(days){
   const md=iso=>new Date(iso+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
