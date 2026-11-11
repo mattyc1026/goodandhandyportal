@@ -9198,7 +9198,7 @@ function apptClock(h,m){
 function apptWindowText(hhmm){
   if(!hhmm) return '';
   const [h,m]=hhmm.split(':').map(Number);
-  return 'between '+apptClock(h,m)+' and '+apptClock(h+1,m);
+  return 'with an arrival window between '+apptClock(h,m)+' and '+apptClock(h+1,m);
 }
 function apptNextIso(iso){
   const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+1);
