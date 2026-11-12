@@ -1243,6 +1243,37 @@ html.dark .cvType{color:#ffb36b;}
   .cvWList .cvTimeCol::after{left:0;right:auto;}
   .cvWList .cvCrew{padding-left:6px;}
 }
+/* Job History: completed, not completed and declined jobs read apart at a
+   glance. Completed keeps a green rail and wash; Not Completed goes quiet
+   (grey rail, faded text); Declined gets a soft red. */
+.woRow.st-grey.ho-done::before{background:var(--greenb);}
+.woRow.st-grey.ho-done{background-image:linear-gradient(90deg,var(--green),var(--paper) 42%);}
+.woRow.st-grey.ho-declined::before{background:var(--redb);}
+.woRow.st-grey.ho-declined{background-image:linear-gradient(90deg,var(--red),var(--paper) 42%);}
+.woRow.st-grey.ho-notdone{background-image:repeating-linear-gradient(135deg,transparent 0 10px,rgba(95,110,135,.05) 10px 20px),linear-gradient(90deg,var(--grey),var(--paper) 42%);}
+.woRow.st-grey.ho-notdone .woName,.woRow.st-grey.ho-notdone .woSub,.woRow.st-grey.ho-notdone .woLastNote{opacity:.72;}
+@media (max-width:900px){
+  .woRow.st-grey.ho-done{background-image:linear-gradient(90deg,var(--green),var(--paper) 72%);}
+  .woRow.st-grey.ho-declined{background-image:linear-gradient(90deg,var(--red),var(--paper) 72%);}
+  .woRow.st-grey.ho-notdone{background-image:repeating-linear-gradient(135deg,transparent 0 10px,rgba(95,110,135,.05) 10px 20px),linear-gradient(90deg,var(--grey),var(--paper) 72%);}
+}
+.tag.ho-done{background:var(--greenb);color:#fff;border-color:var(--greenb);display:inline-flex;align-items:center;gap:4px;}
+.tag.ho-declined{background:var(--red);color:var(--redb);border-color:var(--redb);display:inline-flex;align-items:center;gap:4px;}
+.tag.ho-notdone{background:transparent;color:var(--greyb);border:1.5px dashed var(--greyb);}
+.tag.ho-done .ic,.tag.ho-declined .ic{width:12px;height:12px;stroke-width:3;}
+html.dark .tag.ho-done{color:#0e1a14;}
+.hoChips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
+.hoChip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px 6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-size:.8em;font-weight:700;cursor:pointer;box-shadow:var(--sh-1);}
+.hoChip span{min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;background:var(--well);font-size:.9em;font-weight:800;}
+.hoChip.ho-done span{background:var(--green);color:var(--greenb);}
+.hoChip.ho-notdone span{background:var(--grey);color:var(--greyb);}
+.hoChip.ho-declined span{background:var(--red);color:var(--redb);}
+.hoChip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+html.dark .hoChip.on{color:var(--cream);}
+.hoChip.ho-done.on{background:var(--greenb);border-color:var(--greenb);}
+.hoChip.ho-notdone.on{background:var(--greyb);border-color:var(--greyb);}
+.hoChip.ho-declined.on{background:var(--redb);border-color:var(--redb);}
+.hoChip.on span{background:rgba(255,255,255,.25);color:inherit;}
 .cvAddJob{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin-top:10px;border-radius:14px;border:1.5px dashed var(--orange);background:rgba(232,121,26,.07);color:#b4560a;font-family:inherit;font-size:.95rem;font-weight:800;cursor:pointer;transition:background var(--t-fast);}
 .cvAddJob:hover{background:rgba(232,121,26,.14);}
 .cvAddJob .ic{width:18px;height:18px;}
@@ -6178,13 +6209,27 @@ function statusClass(wo){
   if(wo.presiteScheduled) return 'st-red';               // Pre-Site > Scheduled
   return 'st-red-bold';                                  // Pre-Site > Incomplete
 }
+/* Whether a job in Job History was actually done, read from what the job
+   left behind: a SURVEY note, time checked in on a Whole Job day, or an
+   invoice that went out. A declined estimate says Declined. Anything with
+   none of those is Not Completed. */
+function historyOutcome(wo){
+  const survey=(wo.notes||[]).some(n=>n.type==='SURVEY');
+  const logged=(wo.scheduleDates||[]).some(d=>(d.type||'full')==='full' && (d.dayLogs||[]).some(l=>logSessions(l).length));
+  const invoiced=!!(wo.invoiceDone && wo.invoiceSent);
+  if(survey || logged || invoiced) return {key:'done', label:'Completed'};
+  if(wo.estimateDeclined) return {key:'declined', label:'Declined'};
+  return {key:'notdone', label:'Not Completed'};
+}
 function statusTag(wo){
   /* A finished job that is only still on the board because of an upcoming
      visit says so. Labelling it "Job History" while it sits in the work order
      list would read like a bug. */
-  if(wo.movedToHistoryAt) return hasUpcomingSchedule(wo)
-    ? '<span class="tag visit">Visit Scheduled</span>'
-    : '<span class="tag hist">Job History</span>';
+  if(wo.movedToHistoryAt){
+    if(hasUpcomingSchedule(wo)) return '<span class="tag visit">Visit Scheduled</span>';
+    const o=historyOutcome(wo);
+    return `<span class="tag ho-${o.key}">${o.key==='done'?icon('check'):o.key==='declined'?icon('x'):''}${o.label}</span>`;
+  }
   if(wo.invoiceDone && wo.invoiceSent) return '<span class="tag survey">Awaiting Survey</span>';
   if(wo.invoiceDone) return '<span class="tag send-inv">Send Invoice</span>';
   if(wo.jobComplete) return '<span class="tag build-inv">Build Invoice</span>';
@@ -6886,15 +6931,23 @@ function renderMain(){
     html+= list.length ? listBodyHTML(list, {}, 'surveys:Surveys')
       : emptyStateHTML('Nothing awaiting a survey right now.', {icon:'star'});
   } else {
-    const list=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
+    const all=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
+    const counts={done:0, notdone:0, declined:0};
+    all.forEach(w=>{ counts[historyOutcome(w).key]++; });
+    const f=HIST_FILTER;
+    const list = f==='all' ? all : all.filter(w=>historyOutcome(w).key===f);
+    const chip=(k,label,n)=>`<button type="button" class="hoChip ho-${k}${f===k?' on':''}" aria-pressed="${f===k}" onclick="setHistFilter('${k}')">${label}<span>${n}</span></button>`;
     html+=`<div class="listHeader"><div><h2>Job History</h2></div></div>`;
+    if(all.length) html+=`<div class="hoChips">${chip('all','All',all.length)}${chip('done','Completed',counts.done)}${chip('notdone','Not Completed',counts.notdone)}${counts.declined?chip('declined','Declined',counts.declined):''}</div>`;
     html+= list.length ? listBodyHTML(list, {}, 'jobhistory:Job History')
-      : emptyStateHTML('No completed jobs on file yet.', {icon:'archive'});
+      : emptyStateHTML(all.length ? 'No jobs in this group.' : 'No completed jobs on file yet.', {icon:'archive'});
   }
   main.innerHTML=html;
   applyListMotion(main);
   initRolodexes(main);
 }
+let HIST_FILTER='all';
+function setHistFilter(k){ HIST_FILTER = HIST_FILTER===k && k!=='all' ? 'all' : k; renderMain(); }
 /* ---- Scheduling tab: calendar of every booking ---- */
 function schedViewMode(){ try{ return localStorage.getItem('gh_sched_view')==='calendar' ? 'calendar' : 'list'; }catch(e){ return 'list'; } }
 function setSchedView(v){ try{ localStorage.setItem('gh_sched_view', v); }catch(e){} renderMain(); }
@@ -7366,7 +7419,8 @@ function rowHTML(wo, opts){
   const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? ''
     : '';
-  return `<div class="woRow ${cls}${glowCls}${picking?' fuPickable':''}${picked?' fuPicked':''}" data-wo-id="${wo.id}"${openFn?` onclick="${openFn}"`:''}${picking?` role="checkbox" aria-checked="${picked?'true':'false'}"`:''}>
+  const hoCls = (wo.movedToHistoryAt && !hasUpcomingSchedule(wo)) ? ' ho-'+historyOutcome(wo).key : '';
+  return `<div class="woRow ${cls}${hoCls}${glowCls}${picking?' fuPickable':''}${picked?' fuPicked':''}" data-wo-id="${wo.id}"${openFn?` onclick="${openFn}"`:''}${picking?` role="checkbox" aria-checked="${picked?'true':'false'}"`:''}>
     ${picking?`<span class="fuCheck" aria-hidden="true">${icon('check')}</span>`:''}
     <div class="woMain">
       <div class="woName">${esc(wo.customer.name) || '(No name yet)'}</div>
