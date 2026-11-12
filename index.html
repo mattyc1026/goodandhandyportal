@@ -1244,23 +1244,21 @@ html.dark .cvType{color:#ffb36b;}
   .cvWList .cvCrew{padding-left:6px;}
 }
 /* Job History stays grey, like the tab always was. The outcome shows in
-   the label: a solid charcoal Completed, a dashed outline Not Completed and a
-   muted plum Declined, none of them colors the workflow already uses. Not
-   Completed cards also fade a little so the finished work stands out. */
+   the label only: muted marigold for Completed, muted plum for Not Completed.
+   Not Completed cards also fade a little so the finished work stands out. */
 .woRow.st-grey.ho-notdone .woName,.woRow.st-grey.ho-notdone .woSub,.woRow.st-grey.ho-notdone .woLastNote{opacity:.68;}
-.tag.ho-done{background:#3a4352;color:#fff;border-color:#3a4352;display:inline-flex;align-items:center;gap:4px;}
-.tag.ho-declined{background:#f3e8ef;color:#7a4a68;border-color:#c9a6bd;display:inline-flex;align-items:center;gap:4px;}
-.tag.ho-notdone{background:transparent;color:var(--greyb);border:1.5px dashed var(--greyb);}
-.tag.ho-done .ic,.tag.ho-declined .ic{width:12px;height:12px;stroke-width:3;}
-html.dark .tag.ho-done{background:#d9dee6;color:#1b2230;border-color:#d9dee6;}
-html.dark .tag.ho-declined{background:#3a2836;color:#e2b9d4;border-color:#6e4a63;}
+.tag.ho-done{background:#f6e3b4;color:#7a5410;border-color:#d6a84a;display:inline-flex;align-items:center;gap:4px;}
+.tag.ho-notdone{background:#efe3ec;color:#6e4462;border-color:#c4a3ba;}
+.tag.ho-done .ic{width:12px;height:12px;stroke-width:3;}
+html.dark .tag.ho-done{background:#3d3018;color:#f0cb7c;border-color:#7d6227;}
+html.dark .tag.ho-notdone{background:#33242f;color:#ddb3cf;border-color:#664a5c;}
 .hoChips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
 .hoChip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px 6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-size:.8em;font-weight:700;cursor:pointer;box-shadow:var(--sh-1);}
 .hoChip span{min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;background:var(--grey);color:var(--greyb);font-size:.9em;font-weight:800;}
-.hoChip.ho-done span{background:#3a4352;color:#fff;}
-.hoChip.ho-declined span{background:#f3e8ef;color:#7a4a68;}
-html.dark .hoChip.ho-done span{background:#d9dee6;color:#1b2230;}
-html.dark .hoChip.ho-declined span{background:#3a2836;color:#e2b9d4;}
+.hoChip.ho-done span{background:#f6e3b4;color:#7a5410;}
+.hoChip.ho-notdone span{background:#efe3ec;color:#6e4462;}
+html.dark .hoChip.ho-done span{background:#3d3018;color:#f0cb7c;}
+html.dark .hoChip.ho-notdone span{background:#33242f;color:#ddb3cf;}
 .hoChip.on{background:var(--greyb);border-color:var(--greyb);color:#fff;}
 html.dark .hoChip.on{color:#111827;}
 .hoChip.on span{background:rgba(255,255,255,.25);color:inherit;}
@@ -6205,10 +6203,10 @@ function statusClass(wo){
 }
 /* Whether a job in Job History was actually done, read from what the job
    left behind: a SURVEY note, time checked in on a Whole Job day, or an
-   invoice that went out. A declined estimate says Declined. Anything with
-   none of those is Not Completed. */
+   invoice that went out. Anything else, a declined estimate included, is
+   Not Completed. */
 function historyOutcome(wo){
-  const LABEL={done:'Completed', notdone:'Not Completed', declined:'Declined'};
+  const LABEL={done:'Completed', notdone:'Not Completed'};
   // An admin's call on the job always wins.
   if(wo.outcomeOverride && LABEL[wo.outcomeOverride]) return {key:wo.outcomeOverride, label:LABEL[wo.outcomeOverride], manual:true};
   const survey=(wo.notes||[]).some(n=>n.type==='SURVEY');
@@ -6218,7 +6216,6 @@ function historyOutcome(wo){
      invoice flags too, so those flags alone say nothing about the work. */
   const worked=(wo.adminLog||[]).some(l=>/job marked complete|invoice sent/i.test(l.text||'') && !/Overrode workflow/i.test(l.text||''));
   if(survey || logged || worked) return {key:'done', label:LABEL.done};
-  if(wo.estimateDeclined) return {key:'declined', label:LABEL.declined};
   return {key:'notdone', label:LABEL.notdone};
 }
 function setHistoryOutcome(id, v){
@@ -6247,7 +6244,7 @@ function statusTag(wo){
   if(wo.movedToHistoryAt){
     if(hasUpcomingSchedule(wo)) return '<span class="tag visit">Visit Scheduled</span>';
     const o=historyOutcome(wo);
-    return `<span class="tag ho-${o.key}">${o.key==='done'?icon('check'):o.key==='declined'?icon('x'):''}${o.label}</span>`;
+    return `<span class="tag ho-${o.key}">${o.key==='done'?icon('check'):''}${o.label}</span>`;
   }
   if(wo.invoiceDone && wo.invoiceSent) return '<span class="tag survey">Awaiting Survey</span>';
   if(wo.invoiceDone) return '<span class="tag send-inv">Send Invoice</span>';
@@ -6951,13 +6948,13 @@ function renderMain(){
       : emptyStateHTML('Nothing awaiting a survey right now.', {icon:'star'});
   } else {
     const all=DB.workOrders.filter(inJobHistoryList).sort((a,b)=>(b.movedToHistoryAt||0)-(a.movedToHistoryAt||0));
-    const counts={done:0, notdone:0, declined:0};
+    const counts={done:0, notdone:0};
     all.forEach(w=>{ counts[historyOutcome(w).key]++; });
     const f=HIST_FILTER;
     const list = f==='all' ? all : all.filter(w=>historyOutcome(w).key===f);
     const chip=(k,label,n)=>`<button type="button" class="hoChip ho-${k}${f===k?' on':''}" aria-pressed="${f===k}" onclick="setHistFilter('${k}')">${label}<span>${n}</span></button>`;
     html+=`<div class="listHeader"><div><h2>Job History</h2></div></div>`;
-    if(all.length) html+=`<div class="hoChips">${chip('all','All',all.length)}${chip('done','Completed',counts.done)}${chip('notdone','Not Completed',counts.notdone)}${counts.declined?chip('declined','Declined',counts.declined):''}</div>`;
+    if(all.length) html+=`<div class="hoChips">${chip('all','All',all.length)}${chip('done','Completed',counts.done)}${chip('notdone','Not Completed',counts.notdone)}</div>`;
     html+= list.length ? listBodyHTML(list, {}, 'jobhistory:Job History')
       : emptyStateHTML(all.length ? 'No jobs in this group.' : 'No completed jobs on file yet.', {icon:'archive'});
   }
