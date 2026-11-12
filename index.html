@@ -1262,6 +1262,10 @@ html.dark .cvType{color:#ffb36b;}
 .tag.ho-notdone{background:transparent;color:var(--greyb);border:1.5px dashed var(--greyb);}
 .tag.ho-done .ic,.tag.ho-declined .ic{width:12px;height:12px;stroke-width:3;}
 html.dark .tag.ho-done{color:#0e1a14;}
+.hoAdmin{margin-top:14px;}
+.hoAdmin h4{margin:0 0 8px;}
+.hoSeg{display:flex;flex-wrap:wrap;border-radius:14px;}
+.hoSeg button{flex:1 1 auto;border-radius:11px;}
 .hoChips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
 .hoChip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px 6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-size:.8em;font-weight:700;cursor:pointer;box-shadow:var(--sh-1);}
 .hoChip span{min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;background:var(--well);font-size:.9em;font-weight:800;}
@@ -6214,12 +6218,37 @@ function statusClass(wo){
    invoice that went out. A declined estimate says Declined. Anything with
    none of those is Not Completed. */
 function historyOutcome(wo){
+  const LABEL={done:'Completed', notdone:'Not Completed', declined:'Declined'};
+  // An admin's call on the job always wins.
+  if(wo.outcomeOverride && LABEL[wo.outcomeOverride]) return {key:wo.outcomeOverride, label:LABEL[wo.outcomeOverride], manual:true};
   const survey=(wo.notes||[]).some(n=>n.type==='SURVEY');
   const logged=(wo.scheduleDates||[]).some(d=>(d.type||'full')==='full' && (d.dayLogs||[]).some(l=>logSessions(l).length));
-  const invoiced=!!(wo.invoiceDone && wo.invoiceSent);
-  if(survey || logged || invoiced) return {key:'done', label:'Completed'};
-  if(wo.estimateDeclined) return {key:'declined', label:'Declined'};
-  return {key:'notdone', label:'Not Completed'};
+  /* Only the real workflow counts here: Complete Job tapped, or an invoice
+     actually sent. Forcing a job into Job History from Admin switches on the
+     invoice flags too, so those flags alone say nothing about the work. */
+  const worked=(wo.adminLog||[]).some(l=>/job marked complete|invoice sent/i.test(l.text||'') && !/Overrode workflow/i.test(l.text||''));
+  if(survey || logged || worked) return {key:'done', label:LABEL.done};
+  if(wo.estimateDeclined) return {key:'declined', label:LABEL.declined};
+  return {key:'notdone', label:LABEL.notdone};
+}
+function setHistoryOutcome(id, v){
+  const wo=getWO(id); if(!wo) return;
+  const was=historyOutcome(wo).label;
+  wo.outcomeOverride = v==='auto' ? null : v;
+  const now=historyOutcome(wo).label;
+  addAdminLog(wo, v==='auto' ? `Job outcome set back to automatic (${now}).` : `Job outcome set to ${now}${was!==now?' (was '+was+')':''}.`);
+  saveDB(DB);
+  renderWorkOrderModal(id);
+  renderMain();
+}
+function historyOutcomeAdminHTML(wo){
+  if(!wo.movedToHistoryAt) return '';
+  const cur=wo.outcomeOverride||'auto';
+  let autoLbl='';
+  if(cur!=='auto'){ const o=wo.outcomeOverride; wo.outcomeOverride=null; autoLbl=historyOutcome(wo).label; wo.outcomeOverride=o; }
+  else autoLbl=historyOutcome(wo).label;
+  const b=(v,l)=>`<button type="button" class="${cur===v?'on':''}" aria-pressed="${cur===v}" onclick="setHistoryOutcome(${wo.id},'${v}')">${l}</button>`;
+  return `<div class="hoAdmin"><h4>Job Outcome</h4><div class="segSwitch hoSeg">${b('auto','Auto ('+autoLbl+')')}${b('done','Completed')}${b('notdone','Not Completed')}</div></div>`;
 }
 function statusTag(wo){
   /* A finished job that is only still on the board because of an upcoming
@@ -13603,6 +13632,7 @@ function adminTabHTML(wo){
     <div class="adminStageList">
       ${adminStageButtonsHTML(wo.id)}
     </div>
+    ${historyOutcomeAdminHTML(wo)}
     <h4 style="margin-top:14px;">Admin Log</h4>
     <div class="adminLogBox">${logHTML}</div>
   </div>`;
