@@ -653,25 +653,23 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
   letter-spacing:.07em;white-space:nowrap;text-transform:uppercase;
   border:1.5px solid transparent;
 }
-/* Solid labels: the job is waiting on us (build, send, schedule).
-   Outlined labels: it's in motion or waiting on someone else. */
+/* Every stage label is solid in its stage color. */
 .tag.pending{background:var(--s-pi-b);color:#fff;}
 .tag.build-est{background:var(--s-be-b);color:#2a1d00;}
 .tag.send-est{background:var(--s-se-b);color:#1d1a00;}
 .tag.go{background:var(--s-sj-b);color:#173000;}
 .tag.build-inv{background:var(--s-bi-b);color:#fff;}
 .tag.send-inv{background:var(--s-si-b);color:#fff;}
-/* in flight, outlined */
-.tag.sched{background:var(--s-ps);color:color-mix(in srgb,var(--s-ps-b) 75%,var(--ink));border-color:var(--s-ps-b);}
-.tag.presite-done{background:var(--s-pc);color:color-mix(in srgb,var(--s-pc-b) 55%,var(--ink));border-color:var(--s-pc-b);}
-.tag.awaiting-approval{background:var(--s-pa);color:color-mix(in srgb,var(--s-pa-b) 50%,var(--ink));border-color:var(--s-pa-b);}
-.tag.job-sched{background:var(--s-js);color:color-mix(in srgb,var(--s-js-b) 75%,var(--ink));border-color:var(--s-js-b);}
-.tag.in-prog{background:var(--s-ip);color:color-mix(in srgb,var(--s-ip-b) 70%,var(--ink));border-color:var(--s-ip-b);}
-.tag.survey{background:var(--s-sv);color:color-mix(in srgb,var(--s-sv-b) 70%,var(--ink));border-color:var(--s-sv-b);}
+.tag.sched{background:var(--s-ps-b);color:#fff;}
+.tag.presite-done{background:var(--s-pc-b);color:#2b1400;}
+.tag.awaiting-approval{background:var(--s-pa-b);color:#2a2200;}
+.tag.job-sched{background:var(--s-js-b);color:#fff;}
+.tag.in-prog{background:var(--s-ip-b);color:#fff;}
+.tag.survey{background:var(--s-sv-b);color:#fff;}
 /* closed */
 .tag.hist{background:var(--grey);color:var(--greyb);border-color:var(--line);}
 .tag.visit{background:var(--orange);color:#fff;}
-html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.send-est,html.hc .tag.go,html.hc .tag.build-inv,html.hc .tag.send-inv,html.hc .tag.visit{color:var(--hc-bg);}
+html.hc .tag.pending,html.hc .tag.build-est,html.hc .tag.send-est,html.hc .tag.go,html.hc .tag.build-inv,html.hc .tag.send-inv,html.hc .tag.visit,html.hc .tag.sched,html.hc .tag.presite-done,html.hc .tag.awaiting-approval,html.hc .tag.job-sched,html.hc .tag.in-prog,html.hc .tag.survey{color:var(--hc-bg);}
 .emptyState{
   text-align:center;padding:64px 24px;color:var(--muted);
   background:var(--paper);border:1px dashed var(--line);border-radius:var(--radius);
@@ -3073,7 +3071,9 @@ html.dark #loginScreen{
 /* Solid status pills carry white text in light mode; in dark the pill colour
    is the bright one, so the text has to flip to the dark ground instead. */
 html.dark .tag.pending,html.dark .tag.build-est,html.dark .tag.send-est,
-html.dark .tag.go,html.dark .tag.build-inv,html.dark .tag.send-inv,html.dark .tag.visit{color:#0e1522;}
+html.dark .tag.go,html.dark .tag.build-inv,html.dark .tag.send-inv,html.dark .tag.visit,
+html.dark .tag.sched,html.dark .tag.presite-done,html.dark .tag.awaiting-approval,
+html.dark .tag.job-sched,html.dark .tag.in-prog,html.dark .tag.survey{color:#0e1522;}
 html.dark .subListHeader .count{background:var(--navy2);color:var(--ink);}
 html.dark .toastItem{background:#22304a;color:var(--ink);}
 /* Dark mode flips the primary button's label to dark ink, because its fill is
