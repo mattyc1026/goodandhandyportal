@@ -1243,41 +1243,31 @@ html.dark .cvType{color:#ffb36b;}
   .cvWList .cvTimeCol::after{left:0;right:auto;}
   .cvWList .cvCrew{padding-left:6px;}
 }
-/* Job History: completed, not completed and declined jobs read apart at a
-   glance. Completed keeps a green rail and wash; Not Completed goes quiet
-   (grey rail, faded text); Declined gets a soft red. */
-.woRow.st-grey.ho-done::before{background:var(--greenb);}
-.woRow.st-grey.ho-done{background-image:linear-gradient(90deg,var(--green),var(--paper) 42%);}
-.woRow.st-grey.ho-declined::before{background:var(--redb);}
-.woRow.st-grey.ho-declined{background-image:linear-gradient(90deg,var(--red),var(--paper) 42%);}
-.woRow.st-grey.ho-notdone{background-image:repeating-linear-gradient(135deg,transparent 0 10px,rgba(95,110,135,.05) 10px 20px),linear-gradient(90deg,var(--grey),var(--paper) 42%);}
-.woRow.st-grey.ho-notdone .woName,.woRow.st-grey.ho-notdone .woSub,.woRow.st-grey.ho-notdone .woLastNote{opacity:.72;}
-@media (max-width:900px){
-  .woRow.st-grey.ho-done{background-image:linear-gradient(90deg,var(--green),var(--paper) 72%);}
-  .woRow.st-grey.ho-declined{background-image:linear-gradient(90deg,var(--red),var(--paper) 72%);}
-  .woRow.st-grey.ho-notdone{background-image:repeating-linear-gradient(135deg,transparent 0 10px,rgba(95,110,135,.05) 10px 20px),linear-gradient(90deg,var(--grey),var(--paper) 72%);}
-}
-.tag.ho-done{background:var(--greenb);color:#fff;border-color:var(--greenb);display:inline-flex;align-items:center;gap:4px;}
-.tag.ho-declined{background:var(--red);color:var(--redb);border-color:var(--redb);display:inline-flex;align-items:center;gap:4px;}
+/* Job History stays grey, like the tab always was. The outcome shows in
+   the label: a solid charcoal Completed, a dashed outline Not Completed and a
+   muted plum Declined, none of them colors the workflow already uses. Not
+   Completed cards also fade a little so the finished work stands out. */
+.woRow.st-grey.ho-notdone .woName,.woRow.st-grey.ho-notdone .woSub,.woRow.st-grey.ho-notdone .woLastNote{opacity:.68;}
+.tag.ho-done{background:#3a4352;color:#fff;border-color:#3a4352;display:inline-flex;align-items:center;gap:4px;}
+.tag.ho-declined{background:#f3e8ef;color:#7a4a68;border-color:#c9a6bd;display:inline-flex;align-items:center;gap:4px;}
 .tag.ho-notdone{background:transparent;color:var(--greyb);border:1.5px dashed var(--greyb);}
 .tag.ho-done .ic,.tag.ho-declined .ic{width:12px;height:12px;stroke-width:3;}
-html.dark .tag.ho-done{color:#0e1a14;}
+html.dark .tag.ho-done{background:#d9dee6;color:#1b2230;border-color:#d9dee6;}
+html.dark .tag.ho-declined{background:#3a2836;color:#e2b9d4;border-color:#6e4a63;}
+.hoChips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
+.hoChip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px 6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-size:.8em;font-weight:700;cursor:pointer;box-shadow:var(--sh-1);}
+.hoChip span{min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;background:var(--grey);color:var(--greyb);font-size:.9em;font-weight:800;}
+.hoChip.ho-done span{background:#3a4352;color:#fff;}
+.hoChip.ho-declined span{background:#f3e8ef;color:#7a4a68;}
+html.dark .hoChip.ho-done span{background:#d9dee6;color:#1b2230;}
+html.dark .hoChip.ho-declined span{background:#3a2836;color:#e2b9d4;}
+.hoChip.on{background:var(--greyb);border-color:var(--greyb);color:#fff;}
+html.dark .hoChip.on{color:#111827;}
+.hoChip.on span{background:rgba(255,255,255,.25);color:inherit;}
 .hoAdmin{margin-top:14px;}
 .hoAdmin h4{margin:0 0 8px;}
 .hoSeg{display:flex;flex-wrap:wrap;border-radius:14px;}
 .hoSeg button{flex:1 1 auto;border-radius:11px;}
-.hoChips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
-.hoChip{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px 6px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-size:.8em;font-weight:700;cursor:pointer;box-shadow:var(--sh-1);}
-.hoChip span{min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;background:var(--well);font-size:.9em;font-weight:800;}
-.hoChip.ho-done span{background:var(--green);color:var(--greenb);}
-.hoChip.ho-notdone span{background:var(--grey);color:var(--greyb);}
-.hoChip.ho-declined span{background:var(--red);color:var(--redb);}
-.hoChip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
-html.dark .hoChip.on{color:var(--cream);}
-.hoChip.ho-done.on{background:var(--greenb);border-color:var(--greenb);}
-.hoChip.ho-notdone.on{background:var(--greyb);border-color:var(--greyb);}
-.hoChip.ho-declined.on{background:var(--redb);border-color:var(--redb);}
-.hoChip.on span{background:rgba(255,255,255,.25);color:inherit;}
 .cvAddJob{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin-top:10px;border-radius:14px;border:1.5px dashed var(--orange);background:rgba(232,121,26,.07);color:#b4560a;font-family:inherit;font-size:.95rem;font-weight:800;cursor:pointer;transition:background var(--t-fast);}
 .cvAddJob:hover{background:rgba(232,121,26,.14);}
 .cvAddJob .ic{width:18px;height:18px;}
