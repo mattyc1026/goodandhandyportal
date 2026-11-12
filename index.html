@@ -1242,6 +1242,28 @@ html.dark .cvType{color:#ffb36b;}
   .cvWList .cvTimeCol::after{left:0;right:auto;}
   .cvWList .cvCrew{padding-left:6px;}
 }
+.cvAddJob{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin-top:10px;border-radius:14px;border:1.5px dashed var(--orange);background:rgba(232,121,26,.07);color:#b4560a;font-family:inherit;font-size:.95rem;font-weight:800;cursor:pointer;transition:background var(--t-fast);}
+.cvAddJob:hover{background:rgba(232,121,26,.14);}
+.cvAddJob .ic{width:18px;height:18px;}
+.cvAddJob.small{min-height:38px;font-size:.85rem;margin-top:6px;}
+html.dark .cvAddJob{color:#ffb36b;}
+.cvAddModal{max-width:560px;}
+.cvAddSearch{display:flex;align-items:center;gap:8px;padding:0 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);margin-bottom:14px;}
+.cvAddSearch .ic{width:18px;height:18px;color:var(--muted);flex-shrink:0;}
+.cvAddSearch input{flex:1;min-width:0;border:none !important;box-shadow:none !important;background:transparent;padding:12px 0;font-size:16px;outline:none;color:var(--ink);}
+.cvAddSearch:focus-within{border-color:var(--orange);}
+.cvAddGroup{margin-bottom:16px;}
+.cvAddGroupHead{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--navy);margin-bottom:8px;}
+.cvAddJobRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:12px;background:var(--paper);font:inherit;color:var(--ink);cursor:pointer;box-shadow:var(--sh-1);}
+.cvAddJobRow.presite{border-left-color:var(--purple-ink);}
+.cvAddJobRow:hover{background:var(--well);}
+.cvAddJobRow:focus-visible{outline:2px solid var(--orange);outline-offset:1px;}
+.cvAddJobMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.cvAddJobMain b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cvAddJobMain span{font-size:.82em;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cvAddJobRow.presite .cvType{background:var(--purple);color:var(--purple-ink);}
+.cvAddHas{color:var(--muted);display:grid;place-items:center;}
+.cvAddHas .ic{width:16px;height:16px;}
 @media (prefers-reduced-motion:reduce){ .cvDay,.cvArrow,.cvItem{transition:none;} .cvDay:active,.cvArrow:active{transform:none;} }
 
 /* Time field: type a time, or tap the clock for a 15 minute wheel. */
@@ -6959,7 +6981,7 @@ function calViewHTML(){
       const iso=isoOf(d), list=map[iso]||[];
       return `<div class="cvWDay${iso===today?' today':''}${iso<today?' past':''}">
         <div class="cvWHead"><span class="cvWDow">${dows[d.getDay()]}</span><b class="cvWNum">${d.getDate()}</b><span class="cvWTape">${hoursTapeHTML(list, true)}</span></div>
-        <div class="cvWList">${calvAgendaRows(list)}</div>
+        <div class="cvWList">${calvAgendaRows(list)}${iso>=today?`<button type="button" class="cvAddJob small" onclick="calvAddJob('${iso}')">${icon('plus')}Add Job</button>`:''}</div>
       </div>`;
     }).join('')}</div>`;
   } else {
@@ -6990,7 +7012,7 @@ function calViewHTML(){
         <b class="cvADay">${dd.getDate()}</b>
         <span class="cvADate"><span>${dd.toLocaleDateString('en-US',{weekday:'long'})}</span><small>${dd.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</small></span>
         <span class="cvATape">${hoursTapeHTML(map[dayIso], true)}</span>
-      </div>${calvAgendaRows(map[dayIso])}</div>`;
+      </div>${calvAgendaRows(map[dayIso])}${dayIso>=today?`<button type="button" class="cvAddJob" onclick="calvAddJob('${dayIso}')">${icon('plus')}Add Job</button>`:''}</div>`;
     }
     body=`<div class="cvBoard"><div class="cvGrid">${dows.map(d=>`<div class="dow"><span class="dl">${d}</span><span class="ds">${d.charAt(0)}</span></div>`).join('')}${cells}</div></div>${agenda}`;
   }
@@ -7017,6 +7039,114 @@ function calViewHTML(){
     ${who}
     ${body}
   </div>`;
+}
+/* ---- Booking a job straight from the calendar ----
+   Add Job on a day lists every job waiting on a date: approved jobs in
+   Schedule Job (booked as a Whole Job) and jobs in Pre-Site Incomplete
+   (booked as a Pre-Site). Picking one opens the usual scheduler with that day
+   already picked. Saving also adds the SCHD / SCHD PRESITE note, which is
+   what moves the job along, so it never needs opening. */
+let CALV_ADD=null;   // {iso, q}
+function calvAddJob(iso){
+  CALV_ADD={iso, q:''};
+  renderCalvAdd();
+  setTimeout(()=>{ const el=document.getElementById('cvAddSearch'); if(el && !isNarrowScreen()) el.focus(); }, 60);
+}
+function calvAddGroups(){
+  const q=(CALV_ADD && CALV_ADD.q || '').trim().toLowerCase();
+  const match=w=>{
+    if(!q) return true;
+    const c=w.customer||{};
+    return [c.name, c.address, c.phone, c.email].some(v=>String(v||'').toLowerCase().indexOf(q)!==-1);
+  };
+  const byName=(a,b)=>String((a.customer||{}).name||'').localeCompare(String((b.customer||{}).name||''));
+  return [
+    {title:'Schedule Job', kind:'full', list:DB.workOrders.filter(w=>inScheduleJobList(w) && match(w)).sort(byName)},
+    {title:'Pre-Site Incomplete', kind:'presite', list:DB.workOrders.filter(w=>inPresiteIncompleteList(w) && match(w)).sort(byName)}
+  ];
+}
+function calvAddListHTML(){
+  const groups=calvAddGroups();
+  const any=groups.some(g=>g.list.length);
+  if(!any) return emptyStateHTML(CALV_ADD.q ? 'No jobs match that search.' : 'No jobs are waiting to be scheduled.', {icon:'nav-calendar', style:'padding:28px 16px;'});
+  return groups.filter(g=>g.list.length).map(g=>`<div class="cvAddGroup">
+      <div class="cvAddGroupHead"><span>${esc(g.title)}</span><span class="dkCount">${g.list.length}</span></div>
+      ${g.list.map(w=>{
+        const c=w.customer||{};
+        const addr=splitAddress(c.address||'');
+        const scheduled=(w.scheduleDates||[]).some(d=>(d.type||'full')===g.kind);
+        return `<button type="button" class="cvAddJobRow ${g.kind}" onclick="calvPickJob(${w.id},'${g.kind}')">
+          <span class="cvAddJobMain"><b>${esc(c.name||'No name')}</b><span>${esc(addr.line1||c.address||'')}</span></span>
+          <span class="cvType">${g.kind==='presite'?'Pre-Site':'Whole Job'}</span>
+          ${scheduled?'<span class="cvAddHas" title="Already has dates">'+icon('nav-calendar')+'</span>':''}
+        </button>`;
+      }).join('')}
+    </div>`).join('');
+}
+function renderCalvAdd(){
+  if(!CALV_ADD) return;
+  const d=new Date(CALV_ADD.iso+'T00:00:00');
+  const root=document.getElementById('modalRoot');
+  root.innerHTML=`<div class="overlay" onclick="if(event.target===this)closeCalvAdd()">
+    <div class="modal cvAddModal" role="dialog" aria-modal="true" aria-label="Add job">
+      <div class="modalHead schedHead">
+        <h2><span class="schedHeadName">Add Job</span><span class="schedHeadSub">${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</span></h2>
+        <button class="closeX" aria-label="Close" onclick="closeCalvAdd()">&times;</button>
+      </div>
+      <div class="modalBody">
+        <div class="cvAddSearch">${icon('search')}<input id="cvAddSearch" type="search" aria-label="Search jobs" autocomplete="off" value="${esc(CALV_ADD.q)}" oninput="CALV_ADD.q=this.value;document.getElementById('cvAddList').innerHTML=calvAddListHTML();"></div>
+        <div id="cvAddList">${calvAddListHTML()}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function closeCalvAdd(){
+  CALV_ADD=null;
+  const root=document.getElementById('modalRoot');
+  if(root) root.innerHTML='';
+}
+let SCHED_FROM_CAL=false, SCHED_NOTE='';
+function calvPickJob(woId, kind){
+  const iso=CALV_ADD ? CALV_ADD.iso : isoToday();
+  CALV_ADD=null;
+  openScheduleWidget(woId);
+  SCHED_FROM_CAL=true;
+  SCHED_NOTE='';
+  SCHED_TYPE=kind==='presite' ? 'presite' : 'full';
+  SCHED_DAYS=[iso];
+  SCHED_INFO_DAY=iso;
+  schedSyncRange();
+  const a=new Date(iso+'T00:00:00');
+  SCHED_CAL_MONTH=new Date(a.getFullYear(), a.getMonth(), 1);
+  renderScheduleWidget();
+}
+/* The note saved with a booking made from the calendar. Whatever is typed is
+   the note; left blank, it says who booked what. */
+function calendarSchedNote(wo, entries){
+  const typed=(SCHED_NOTE||'').trim();
+  const presite=SCHED_TYPE==='presite';
+  const type=presite ? 'SCHD PRESITE' : 'SCHD';
+  if(typed) return {type, text:typed};
+  const days=[]; entries.forEach(e=>scheduleDays(e).forEach(x=>days.push(x)));
+  const st=entries[0] && entries[0].startTime, et=entries[0] && entries[0].endTime;
+  const who=userFirstName(CURRENT_USER) ? capName(userFirstName(CURRENT_USER)) : 'Someone';
+  const text=`${who} scheduled the ${presite?'pre-site inspection':'job'} for ${daysSummary(days)}, ${compactTimeRange(st, et)}.`;
+  return {type, text};
+}
+function applyCalendarSchedNote(wo, entries){
+  const n=calendarSchedNote(wo, entries);
+  const stageBefore=stageNameOf(wo);
+  addNote(wo, n.type, n.text, null);
+  let moved='';
+  if(n.type==='SCHD PRESITE' && inPresiteIncompleteList(wo)){
+    wo.presiteScheduled=true; moved='Moved to Pre-Site Scheduled.';
+  } else if(n.type==='SCHD' && inScheduleJobList(wo)){
+    wo.jobScheduled=true; wo.jobStarted=false; wo.jobStartHold=null;
+    moved='Moved to Scheduled.';
+    if(wholeJobDayArrived(wo)){ wo.jobStarted=true; moved='Moved to In Progress.'; }
+  }
+  logStageChange(wo, stageBefore, n.type+' note added');
+  return moved;
 }
 /* "8:00" -> "8a", "13:30" -> "1:30p" */
 function shortTime(t){
@@ -8511,6 +8641,7 @@ function schedRowHTML(woId, d, inline){
 /* ---- Editing an existing scheduled date ----
    Reuses the same calendar/form as adding, with SCHED_EDIT_ID set. */
 function openScheduleEdit(woId, dateId, inline){
+  SCHED_FROM_CAL=false; SCHED_NOTE='';
   SCHED_INLINE=!!inline;
   if(SCHED_INLINE) FIELD_SEC.sched=true;
   const wo=getWO(woId);
@@ -8615,7 +8746,10 @@ function commitSchedule(wo, editing, days, startTime, endTime, allTimes, crew, o
     wo.scheduleDates=wo.scheduleDates.concat(entries);
     addAdminLog(wo, `Added ${entries.map(schedEntryLabel).join(' and ')}.${overridden?' Double-booked over an existing appointment (override).':''}`);
   }
+  const fromCal=SCHED_FROM_CAL && !editing;
+  const moved = fromCal ? applyCalendarSchedNote(wo, entries) : '';
   saveDB(DB);
+  if(fromCal){ renderTabCounts(); if(moved) toast(moved); }
   const woId=wo.id;
   closeScheduleForm(true);
   renderMain();
@@ -8628,6 +8762,8 @@ function closeScheduleForm(){
   SCHED_STIME=''; SCHED_ETIME=''; SCHED_REPEAT='none';
   SCHED_INFO_DAY=null; SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
   SCHED_INLINE=false; SCHED_WO_ID=null;
+  // Booked from the calendar: go back to the calendar, not into the job.
+  if(SCHED_FROM_CAL){ SCHED_FROM_CAL=false; SCHED_NOTE=''; closeModal(); renderMain(); return; }
   if(id!=null) renderWorkOrderModal(id);
 }
 function schedEntryLabel(d){
@@ -8839,6 +8975,7 @@ function hasPresiteScheduled(wo){
   return (wo.scheduleDates||[]).some(d=>d.type==='presite');
 }
 function openScheduleWidget(id, inline){
+  SCHED_FROM_CAL=false; SCHED_NOTE='';
   SCHED_INLINE=!!inline;
   if(SCHED_INLINE) FIELD_SEC.sched=true;
   SCHED_WO_ID=id;
@@ -8867,7 +9004,8 @@ function schedFormFieldsHTML(short){
       <div class="field"><label>End Time</label>${timeFieldHTML('schedEndTime', SCHED_ETIME, "onSchedTimeChange('end',this.value)", 'End time')}</div>
     </div>
     ${schedDayTimesHTML()}
-    ${crewPickerHTML()}`;
+    ${crewPickerHTML()}
+    ${SCHED_FROM_CAL && !SCHED_EDIT_ID ? `<div class="field"><label for="schedNote">${SCHED_TYPE==='presite'?'SCHD PRESITE':'SCHD'} Note</label><textarea id="schedNote" rows="2" data-nodraft="1" oninput="SCHED_NOTE=this.value">${esc(SCHED_NOTE)}</textarea></div>` : ''}`;
 }
 function renderScheduleWidget(){
   /* In field view the form lives in the work order itself, so everything that
