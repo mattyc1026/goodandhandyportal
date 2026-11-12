@@ -116,18 +116,18 @@
      Progress bold green, green, seafoam; Invoices deep blue; Surveys
      periwinkle. Kept apart from --red/--green etc. so alerts and buttons
      that use those are unaffected. */
-  --s-pi:#ffb3b3; --s-pi-b:#c0392b;
-  --s-ps:#ffd0c2; --s-ps-b:#de5a3a;
-  --s-pc:#ffe5c9; --s-pc-b:#ec9a45;
-  --s-be:#ffd84a; --s-be-b:#dea200;
-  --s-se:#fff27a; --s-se-b:#bfa900;
-  --s-pa:#fff3bd; --s-pa-b:#d9b62e;
-  --s-sj:#a8ecc4; --s-sj-b:#1f8a55;
-  --s-js:#d0f0dc; --s-js-b:#36a066;
-  --s-ip:#d3f4ec; --s-ip-b:#3bb89a;
-  --s-bi:#aec4f0; --s-bi-b:#1a3c8c;
-  --s-si:#c9d8f8; --s-si-b:#3b64c6;
-  --s-sv:#e0e2fb; --s-sv-b:#7d82db;
+  --s-pi:#f2a8a8; --s-pi-b:#e03131;
+  --s-ps:#fcddd5; --s-ps-b:#f2542d;
+  --s-pc:#fde7d2; --s-pc-b:#f7861f;
+  --s-be:#f9d994; --s-be-b:#f0a500;
+  --s-se:#f2eba8; --s-se-b:#d9c400;
+  --s-pa:#f9f4dc; --s-pa-b:#e3c94f;
+  --s-sj:#c8e5a0; --s-sj-b:#7cc11c;
+  --s-js:#d5ecda; --s-js-b:#2b9e45;
+  --s-ip:#cfefed; --s-ip-b:#11ada3;
+  --s-bi:#a0c3ee; --s-bi-b:#1c6fd6;
+  --s-si:#c2cefa; --s-si-b:#4b6ef0;
+  --s-sv:#e8dbf7; --s-sv-b:#8d4dd6;
   --blue:#d8e6ff; --blueb:#1f5aa8; --blue-bold:#aecdfa;
   --grey:#e9edf2; --greyb:#5f6e87;
   /* Chartreuse sits outside the status palette on purpose: the schedule strip
@@ -226,18 +226,18 @@ html.dark{
   --yellow:#372f19; --yellowb:#f3c65c; --yellow-bold:#4a3f1e;
   --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
   --green-lite:#16261e; --green-liteb:#92cfae;
-  --s-pi:#4b2733; --s-pi-b:#ff8f7d;
-  --s-ps:#45292a; --s-ps-b:#ff9f7c;
-  --s-pc:#3b2c1f; --s-pc-b:#f5b77a;
-  --s-be:#4a3d0e; --s-be-b:#f5c518;
-  --s-se:#3a3a10; --s-se-b:#ece04c;
-  --s-pa:#36321c; --s-pa-b:#ecd67a;
-  --s-sj:#1a4229; --s-sj-b:#4fd48a;
-  --s-js:#14321f; --s-js-b:#69d295;
-  --s-ip:#11312c; --s-ip-b:#62dcc1;
-  --s-bi:#1c2f5e; --s-bi-b:#7fa6ff;
-  --s-si:#1d3152; --s-si-b:#9ab8ff;
-  --s-sv:#272a4f; --s-sv-b:#afb3ff;
+  --s-pi:#60232b; --s-pi-b:#e96b6b;
+  --s-ps:#3f2629; --s-ps-b:#f68468;
+  --s-pc:#403026; --s-pc-b:#f9a85e;
+  --s-be:#664f19; --s-be-b:#f4be47;
+  --s-se:#4e4d1c; --s-se-b:#e4d547;
+  --s-pa:#3c3d30; --s-pa-b:#ebd880;
+  --s-sj:#3a5923; --s-sj-b:#a1d25c;
+  --s-js:#17342e; --s-js-b:#66b979;
+  --s-ip:#123741; --s-ip-b:#54c4bd;
+  --s-bi:#163a6a; --s-bi-b:#5c97e1;
+  --s-si:#233364; --s-si-b:#7d97f4;
+  --s-sv:#2b244b; --s-sv-b:#ad7fe1;
   --blue:#152840; --blueb:#82b6ff; --blue-bold:#1e3757;
   --grey:#1b2536; --greyb:#93a3ba;
   --chartreuse:#1e2a10; --chartreuse-ink:#b7e254; --chartreuse-line:#3a4d1c;
@@ -653,11 +653,12 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
   letter-spacing:.07em;white-space:nowrap;text-transform:uppercase;
   border:1.5px solid transparent;
 }
-/* needs doing, solid */
+/* Solid labels: the job is waiting on us (build, send, schedule).
+   Outlined labels: it's in motion or waiting on someone else. */
 .tag.pending{background:var(--s-pi-b);color:#fff;}
 .tag.build-est{background:var(--s-be-b);color:#2a1d00;}
 .tag.send-est{background:var(--s-se-b);color:#1d1a00;}
-.tag.go{background:var(--s-sj-b);color:#fff;}
+.tag.go{background:var(--s-sj-b);color:#173000;}
 .tag.build-inv{background:var(--s-bi-b);color:#fff;}
 .tag.send-inv{background:var(--s-si-b);color:#fff;}
 /* in flight, outlined */
