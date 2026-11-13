@@ -28,9 +28,12 @@ const CALLS=[
  ['4','Google Voice app, open only','googlevoice://']
 ];
 const TEXTS=[
- ['5','Google Voice website, text','https://voice.google.com/u/0/messages?itemId=t.%2B{n}'],
- ['6','Google Voice app, text (A)','googlevoice://sms?number=%2B{n}&body=Test'],
- ['7','Google Voice app, text (B)','googlevoice://text?number=%2B{n}&text=Test']
+ ['5','Website, new text (A)','https://voice.google.com/u/0/messages?a=nc,%2B{n}'],
+ ['6','Website, new text (B)','https://voice.google.com/messages?a=nc,%2B{n}'],
+ ['7','Website, new text (C)','https://voice.google.com/u/0/messages?a=nm,%2B{n}'],
+ ['8','Website, text thread','https://voice.google.com/u/0/messages?itemId=t.%2B{n}&a=nc'],
+ ['9','App, text (C)','googlevoice://messages?a=nc,%2B{n}'],
+ ['10','App, text (D)','googlevoice://sms/%2B{n}']
 ];
 function draw(){
   let d=(document.getElementById('num').value||'').replace(/\D/g,'');
