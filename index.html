@@ -4971,9 +4971,65 @@ function trainingSampleWOs(by){
       id, createdAt:day(-14+i).getTime(),
       customer:{name:r[0], phone:'(619) 555-01'+String(10+i), altPhone:'', altPhoneName:'', altPhoneNote:'', email:first+'.'+last+'@example.com', address:r[1], homeownerName:'', homeownerPhone:''},
       jobDetails:r[3], notes:r[4]||[], adminLog:[{text:'Practice job created.', by, date:us(-14+i), time:'08:00 AM'}],
-      docs:[], scheduleDates:r[5]||[]
+      docs:[], scheduleDates:r[5]||[], trainingDay:iso(0)
     }, base0, F[r[2]]);
   });
+}
+/* The practice jobs are laid out around the day they were seeded (Rob's job
+   starts in three days, Jen's is under way, and so on). Left alone, the
+   calendar catches up with them: Rob's start date arrives and he slides into
+   In Progress. So each new day, every practice job's dates move forward by the
+   days that have passed, keeping the set exactly as it was laid out against
+   today, practice work included. */
+function trainingKeepCurrent(){
+  if(!window.GH_TRAINING) return false;
+  const today=isoToday();
+  const dayMs=86400000;
+  const isoOfMs=ms=>{ const d=new Date(ms); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+  const daysBetween=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/dayMs);
+  const usAdd=(str,n)=>{ const m=String(str||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(!m) return str; const d=new Date(+m[3],+m[1]-1,+m[2]+n,12); return d.toLocaleDateString(); };
+  let changed=false;
+  (DB.workOrders||[]).forEach(wo=>{
+    let anchor=wo.trainingDay;
+    // Jobs from before this was added: work the seed day out from when the
+    // job was made (job i was created 14-i days before the seed day).
+    if(!anchor && wo.id>=9000001 && wo.id<=9000013 && wo.createdAt){
+      anchor=isoOfMs(wo.createdAt+(14-(wo.id-9000001))*dayMs);
+    }
+    if(!anchor || anchor>=today) return;
+    const n=daysBetween(anchor, today);
+    if(n<=0) return;
+    const iso=v=>v ? addDaysIso(v,n) : v;
+    (wo.scheduleDates||[]).forEach(d=>{
+      d.startDate=iso(d.startDate); d.endDate=iso(d.endDate);
+      if(d.dayTimes){ const o={}; Object.keys(d.dayTimes).forEach(k=>{ o[addDaysIso(k,n)]=d.dayTimes[k]; }); d.dayTimes=o; }
+      (d.dayLogs||[]).forEach(l=>{
+        l.date=iso(l.date);
+        (l.sessions||[]).forEach(x=>{ if(x.in) x.in.date=usAdd(x.in.date,n); if(x.out) x.out.date=usAdd(x.out.date,n); });
+        if(l.checkIn && l.checkIn.date) l.checkIn.date=usAdd(l.checkIn.date,n);
+        if(l.checkOut && l.checkOut.date) l.checkOut.date=usAdd(l.checkOut.date,n);
+      });
+    });
+    (wo.notes||[]).forEach(x=>{
+      x.date=usAdd(x.date,n);
+      if(x.followUpDate) x.followUpDate=iso(x.followUpDate);
+      if(x.fuAt) x.fuAt+=n*dayMs;
+      if(x.at) x.at+=n*dayMs;
+    });
+    if(wo.movedToHistoryAt) wo.movedToHistoryAt+=n*dayMs;
+    if(wo.followUpClearedAt) wo.followUpClearedAt+=n*dayMs;
+    if(wo.createdAt) wo.createdAt+=n*dayMs;
+    if(wo.jobStartHold) wo.jobStartHold=iso(wo.jobStartHold);
+    wo.trainingDay=today;
+    // A job marked started only because its date arrived goes back to
+    // Scheduled once that date is in the future again.
+    const worked=(wo.scheduleDates||[]).some(d=>d.type!=='presite' && (d.dayLogs||[]).some(l=>logSessions(l).length));
+    if(wo.jobStarted && !wo.jobComplete && !wo.invoiceDone && !wo.movedToHistoryAt && !worked && !wholeJobDayArrived(wo)){
+      wo.jobStarted=false;
+    }
+    changed=true;
+  });
+  return changed;
 }
 function seedTrainingDB(){
   const users=trainingRealUsers();
@@ -6529,6 +6585,7 @@ function renderTabCounts(){
     LAST_HISTORY_PURGE=Date.now();
     if(purgeOldHistory(DB)) saveDB(DB);
   }
+  if(CURRENT_USER && window.GH_TRAINING && trainingKeepCurrent()) saveDB(DB);
   if(CURRENT_USER && autoStartScheduledJobs()) saveDB(DB);
   setCount('cnt-workorders', DB.workOrders.filter(inWorkOrdersList).length);
   setCount('cnt-presite', DB.workOrders.filter(inPresiteList).length);
@@ -17520,6 +17577,7 @@ setInterval(srSave, 5000);
    left open overnight. */
 setInterval(()=>{
   try{
+    if(CURRENT_USER && window.GH_TRAINING && trainingKeepCurrent()){ saveDB(DB); renderTabCounts(); renderMain(); }
     if(CURRENT_USER && autoStartScheduledJobs()){ saveDB(DB); renderTabCounts(); renderMain(); }
   }catch(e){ console.error(e); }
 }, 60000);
