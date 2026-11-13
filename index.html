@@ -923,6 +923,7 @@ html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(
 .dt-receipt{background:#efe9dc;color:#5c4a20;border-color:#ddd1b6;}
 .dt-covered-receipt{background:#e6eef0;color:#36555e;border-color:#c5d6db;}
 .dt-estimate{background:#fdf3d7;color:#7a5600;border-color:#f0d98f;}
+.dt-invoice{background:#fbe8df;color:#8a3b1e;border-color:#efc7b4;}
 
 .docTagFilter{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .docTagChip{
@@ -12056,10 +12057,12 @@ function storageUsagePct(){ return Math.min(100, Math.round(((DB.storageUsedByte
    an exported or synced record reads the same everywhere. */
 /* Covered Receipt: kept for the job's records, but someone else paid it, so
    the expenses calculator leaves it out. */
-const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt','Covered Receipt','Estimate'];
+const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt','Covered Receipt','Estimate','Invoice'];
 function isPdfDoc(d){ return /pdf/i.test(d.type||'') || /\.pdf$/i.test(d.name||''); }
 /* A PDF with "estimate" in its name is labeled Estimate when it is added. */
 function looksLikeEstimate(name, type){ return /estimate/i.test(name||'') && (/pdf/i.test(type||'') || /\.pdf$/i.test(name||'')); }
+/* A PDF named as an invoice gets the Invoice label on upload. */
+function looksLikeInvoice(name, type){ return /invoice/i.test(name||'') && (/pdf/i.test(type||'') || /\.pdf$/i.test(name||'')); }
 /* Every estimate in a job's Docs, newest first: labeled Estimate, or an
    unlabeled PDF named as one. */
 function estimateDocs(wo){
@@ -12732,7 +12735,7 @@ async function handleDocUpload(id, inputEl, opts){
         wo.docs.push({
           id: docId, name: name, type: file.type||'', size: blob.size,
           url, storagePath, uploadedBy: CURRENT_USER.displayName, date: ts.date, uploadedAt: Date.now(),
-          tag: DOC_TAGS.includes(opts.tag) ? opts.tag : (looksLikeEstimate(file.name, file.type) ? 'Estimate' : '')
+          tag: DOC_TAGS.includes(opts.tag) ? opts.tag : (looksLikeEstimate(file.name, file.type) ? 'Estimate' : looksLikeInvoice(file.name, file.type) ? 'Invoice' : '')
         });
         addedIds.push(docId);
         DB.storageUsedBytes=(DB.storageUsedBytes||0)+blob.size;
