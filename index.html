@@ -3859,20 +3859,15 @@ html.hc .calcPay{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var
 .fuBar{position:sticky;bottom:16px;z-index:20;margin:4px 0 14px;padding:12px 14px;border-radius:16px;
   background:var(--navy);color:#fff;box-shadow:var(--sh-4);}
 .fuBarTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:.85em;}
-.fuAll{white-space:nowrap;align-self:flex-start;flex:none;background:none;border:0;color:var(--orange2,#ffb067);font:inherit;font-weight:800;cursor:pointer;padding:4px 0;}
-/* Six push-out times in two rows of three, with Clear on the right spanning
-   both rows, set a little apart from them. */
-.fuBarBtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:6px;}
-.fuBarBtns .fuClearBtn{grid-column:4;grid-row:1 / span 2;margin-left:8px;padding:8px 12px;}
+/* Six push-out times in two rows of three. */
+.fuBarBtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.fuAllRow{position:relative;display:flex;align-items:center;min-height:40px;margin:0 0 8px;padding:0 0 0 62px;background:none;border:0;
+  font-family:inherit;font-weight:800;font-size:.86em;color:var(--navy);cursor:pointer;}
+.fuAllRow .fuCheck{left:25px;}
+.fuAllRow.on .fuCheck{background:var(--navy);border-color:var(--navy);color:#fff;}
 .fuBarBtns .btn{background:#fff;color:var(--navy);min-height:44px;min-width:0;padding:8px 2px;font-weight:800;font-size:.8em;white-space:nowrap;}
-@media (max-width:480px){ .fuBar{padding:12px 10px;} .fuBarBtns{gap:5px;} .fuBarBtns .btn{font-size:.68em;padding:8px 1px;letter-spacing:0;} .fuBarBtns .fuClearBtn{padding:8px 9px;margin-left:5px;} }
-.fuBarBtns .btn[disabled],.fuClearBtn[disabled]{opacity:.45;cursor:not-allowed;}
-.fuBar .fuBarBtns .fuClearBtn{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.6);}
-.fuCardClear{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;min-height:32px;border-radius:999px;
-  border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font:inherit;font-size:.8em;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
-.fuCardClear .ic{width:13px;height:13px;stroke-width:3;}
-.fuCardClear:hover{border-color:var(--redb);color:var(--redb);}
-html.hc .fuCardClear{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
+@media (max-width:480px){ .fuBar{padding:12px 10px;} .fuBarBtns{gap:5px;} .fuBarBtns .btn{font-size:.68em;padding:8px 1px;letter-spacing:0;} }
+.fuBarBtns .btn[disabled]{opacity:.45;cursor:not-allowed;}
 @media (max-width:900px){ .fuBar{bottom:calc(96px + env(safe-area-inset-bottom,0px));} }
 html.hc .fuBar{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
 html.hc .fuBarBtns .btn{background:var(--hc-fg);color:var(--hc-bg);}
@@ -5178,7 +5173,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111602;
+var APP_BUILD=2026111701;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7196,7 +7191,7 @@ function subGroupHTML(label, list, opts){
   } else {
     inner=listBodyHTML(list, opts, ACTIVE_TAB+':'+label);
   }
-  return `<h3 class="subListHeader">${label} <span class="count">${list.length}</span>${opts.headerExtra||''}</h3>${inner}${opts.after||''}`;
+  return `<h3 class="subListHeader">${label} <span class="count">${list.length}</span>${opts.headerExtra||''}</h3>${opts.before||''}${inner}${opts.after||''}`;
 }
 /* A list of cards, either plain or as a rolodex drum when that view is on. */
 function listBodyHTML(list, opts, key){
@@ -7224,6 +7219,7 @@ function renderMain(){
       if(picking) FU_SELECT=new Set([...FU_SELECT].filter(id=>dueList.some(w=>w.id===id)));
       html+=subGroupHTML('Follow-Up Due', dueList, {followUpNav:true, plain:picking,
         headerExtra:`<button type="button" class="fuSelBtn${picking?' on':''}" onclick="toggleFuSelect()">${picking?'Cancel':'Select'}</button>`,
+        before: picking ? fuAllHTML(dueList) : '',
         after: picking ? fuBarHTML(dueList) : ''});
       html+='<hr class="subDivider">';
     }
@@ -7588,16 +7584,19 @@ function fuPickAll(ids){
   FU_SELECT = new Set(all ? [] : ids);
   renderMain();
 }
+/* Select All sits above the cards, its box lined up with theirs. */
+function fuAllHTML(list){
+  const ids=list.map(w=>w.id);
+  const all=!!(FU_SELECT && FU_SELECT.size && ids.every(id=>FU_SELECT.has(id)));
+  return `<button type="button" class="fuAllRow${all?' on':''}" role="checkbox" aria-checked="${all}" onclick="fuPickAll([${ids.join(',')}])"><span class="fuCheck" aria-hidden="true">${icon('check')}</span>${all?'Deselect All':'Select All'}</button>`;
+}
 function fuBarHTML(list){
   const n=FU_SELECT ? FU_SELECT.size : 0;
-  const ids=list.map(w=>w.id);
-  const all=n && ids.every(id=>FU_SELECT.has(id));
   const dis=n?'':'disabled';
   return `<div class="fuBar" role="toolbar" aria-label="Move follow-ups">
-    <div class="fuBarTop"><b>Push ${n} selected work order${n===1?'':'s'} out for:</b><button type="button" class="fuAll" onclick="fuPickAll([${ids.join(',')}])">${all?'Deselect All':'Select All'}</button></div>
+    <div class="fuBarTop"><b>Push ${n} selected work order${n===1?'':'s'} out for:</b></div>
     <div class="fuBarBtns">
       ${[['day',1,'1 Day'],['day',2,'2 Days'],['day',3,'3 Days'],['week',1,'1 Week'],['week',2,'2 Weeks'],['month',1,'1 Month']].map(([u,k,l])=>`<button type="button" class="btn" ${dis} onclick="fuSnooze('${u}',${k})">${l}</button>`).join('')}
-      <button type="button" class="btn fuClearBtn" ${dis} onclick="fuClear()">Clear</button>
     </div>
   </div>`;
 }
@@ -7634,35 +7633,6 @@ function userFirstName(u){
   const n=String(u.username||u.displayName||'').trim();
   if(n.length<2) return n || 'Someone';
   return n.charAt(0).toUpperCase()+n.slice(1,-1).toLowerCase();
-}
-/* Voids every follow-up date entered on these jobs so far. */
-function clearFollowUps(ids){
-  let cleared=0;
-  ids.forEach(id=>{
-    const wo=getWO(id);
-    if(!wo || !currentFollowUp(wo)) return;
-    wo.followUpClearedAt=Date.now();
-    addAdminLog(wo, 'Follow-up cleared.');
-    cleared++;
-  });
-  if(cleared) saveDB(DB);
-  renderTabCounts(); renderMain();
-  if(cleared) toast(`Follow-up cleared${cleared>1?' on '+cleared+' work orders':''}.`);
-}
-function fuClear(){
-  if(!FU_SELECT || !FU_SELECT.size) return;
-  const n=FU_SELECT.size;
-  askYesNo(`Clear the follow-up on ${n} work order${n>1?'s':''}?`, yes=>{
-    if(!yes || !FU_SELECT) return;
-    const ids=[...FU_SELECT];
-    FU_SELECT=null;
-    clearFollowUps(ids);
-  }, {yes:'Clear', no:'Cancel'});
-}
-function fuClearOne(id){
-  const wo=getWO(id);
-  if(!wo) return;
-  askYesNo(`Clear the follow-up for ${wo.customer.name||'this work order'}?`, yes=>{ if(yes) clearFollowUps([id]); }, {yes:'Clear', no:'Cancel'});
 }
 function mostRecentNote(wo){
   return (wo.notes && wo.notes.length) ? wo.notes[0] : null;
@@ -7772,7 +7742,6 @@ function rowHTML(wo, opts){
       ${nextDateChip(wo)}
       <span class="woAddr">${wo.customer.address?icon('map-pin')+' ':''}${esc(wo.customer.address)}</span>
       ${cardActs}
-      ${(opts.followUpNav && !picking) ? `<button type="button" class="fuCardClear" onclick="event.stopPropagation();fuClearOne(${wo.id})" aria-label="Clear follow-up">${icon('x')}Clear</button>` : ''}
     </div>
   </div>`;
 }
