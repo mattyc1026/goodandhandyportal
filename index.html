@@ -5178,7 +5178,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111601;
+var APP_BUILD=2026111602;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7679,19 +7679,19 @@ function noteMs(n){
   if(t){ h=Number(t[1]); mi=Number(t[2]); if(t[3]){ h=h%12; if(t[3].toUpperCase()==='PM') h+=12; } }
   return new Date(Number(m[3]), Number(m[1])-1, Number(m[2]), h, mi).getTime();
 }
-/* The follow-up that counts is the one entered last, on any note. Earlier
-   ones don't matter, and clearing a job's follow-up voids every date entered
-   before the clear. */
+/* The follow-up that counts is the one on the newest note. Writing any newer
+   note without a follow-up date ends it, and so does Clear. */
 function currentFollowUp(wo){
-  let best=null, bestAt=-1;
+  let top=null, topAt=-1;
   (wo && wo.notes || []).forEach(n=>{
-    if(!n || !n.followUpDate) return;
-    const t=n.fuAt || noteMs(n);
-    if(t>bestAt){ bestAt=t; best=n; }
+    if(!n) return;
+    const t=noteMs(n);
+    if(t>topAt){ topAt=t; top=n; }
   });
-  if(!best) return null;
-  if(wo.followUpClearedAt && bestAt<=wo.followUpClearedAt) return null;
-  return best;
+  if(!top || !top.followUpDate) return null;
+  const at=Math.max(top.fuAt||0, topAt);
+  if(wo.followUpClearedAt && at<=wo.followUpClearedAt) return null;
+  return top;
 }
 /* Notes are kept newest first, also after two devices' notes are put
    together. */
