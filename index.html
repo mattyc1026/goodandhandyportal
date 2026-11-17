@@ -5178,7 +5178,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111501;
+var APP_BUILD=2026111601;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7746,7 +7746,7 @@ function rowHTML(wo, opts){
   }[opts.action];
   /* Today's Check In / Check Out sits in the same row as the card's action
      (Complete Job), the two side by side and the same size. */
-  const ciBtn = (opts.showCheckInOut && todayLog) ? checkBtnHTML(wo.id, todayLog.log) : '';
+  const ciBtn = (opts.showCheckInOut && todayLog && checkAllowed(wo, todayLog.log)) ? checkBtnHTML(wo.id, todayLog.log) : '';
   /* Cards that can check in keep their buttons in the same two slots whether
      or not there is a visit today, so Complete Job is always the same size
      and in the same place down the list. */
@@ -8170,6 +8170,13 @@ function saveSessionTime(woId, date, sessionId, which){
 /* The only control a day carries is one button, and it is always whichever
    action is actually available. Same footprint as the two boxes it replaced,
    so nothing around it shifts. */
+/* Once Complete Job has moved a job on to invoicing there is nothing left to
+   check in to, even on a day it was scheduled for. The one exception is
+   someone still on site at that moment, who can still check out. */
+function checkAllowed(wo, log){
+  if(!wo || !(wo.jobComplete || wo.invoiceDone)) return true;
+  return !!openSession(log);
+}
 function checkBtnHTML(woId, log){
   const open=openSession(log);
   return open
@@ -8313,7 +8320,7 @@ function dayLogRowHTML(woId, log, isAdmin, showNames){
   const today=isoToday();
   const isToday = log.date===today;
   const stranded = !isToday && !!openSession(log);
-  const showBtn = isToday || stranded;
+  const showBtn = (isToday || stranded) && checkAllowed(getWO(woId), log);
   const label=shortDayLabel(log.date);
   const lines=ss.map((s,i)=>{
     const h=sessionHours(s);
@@ -10285,7 +10292,7 @@ function fieldCheckHTML(wo){
      available action, because this has to share a line with the title and the
      chevron. It stops its own clicks from reaching the strip so logging a time
      never also folds the card. */
-  const todayHTML=entry ? fieldTodayInlineHTML(id, entry.log, isAdmin) : '';
+  const todayHTML=(entry && checkAllowed(wo, entry.log)) ? fieldTodayInlineHTML(id, entry.log, isAdmin) : '';
 
   const legacy = (wo.checkIn || wo.checkOut) ? `<div class="fsList" style="margin-top:14px;">
       <div class="fsKey">Legacy job-level stamp</div>
