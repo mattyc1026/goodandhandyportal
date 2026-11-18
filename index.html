@@ -3722,10 +3722,19 @@ html.dark.hc select:not([multiple]):not([size]){
   .acDisp{min-height:0;padding:5px 10px;margin-bottom:6px;}
   .acRes{font-size:21px;}
   .acPad .acUse{margin-top:6px;min-height:42px;padding-top:8px;padding-bottom:8px;}
-  .amtDocCard.calcOn .adForm h3,.amtDocCard.calcOn .adForm .amtName,.amtDocCard.calcOn .errMsg:empty{display:none;}
+  .amtDocCard.calcOn .adForm h3,.amtDocCard.calcOn .adForm .amtName,.amtDocCard.calcOn .errMsg:empty,.amtDocCard.calcOn .rateSeg,.amtDocCard.calcOn .rateOther{display:none;}
   .amtDocCard.calcOn .amtTax{min-height:0;margin:6px 2px;}
   .amtDocCard.calcOn .btnRow{margin-top:6px;}
 }
+.rateSeg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;}
+.rateSeg button{min-height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;}
+.rateSeg button.on{border-color:var(--navy);background:var(--navy);color:var(--paper);}
+.rateSeg button:focus-visible{outline:3px solid var(--navy2);outline-offset:1px;}
+.rateOther{display:flex;align-items:center;gap:6px;margin-top:8px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;background:var(--paper);}
+.rateOther[hidden]{display:none;}
+.rateOther:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,38,71,.12);}
+.rateOther input{flex:1;min-width:0;border:0 !important;box-shadow:none !important;background:transparent;padding:10px 0;font-size:16px;font-weight:700;outline:none;}
+.rateOther span{font-weight:800;color:var(--muted);}
 .amtTax{min-height:1.3em;margin:8px 2px 10px;font-size:.88em;font-weight:700;color:var(--muted);}
 .secTagSeg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
 .secTagSeg button{min-height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-weight:700;font-size:.86em;cursor:pointer;}
@@ -5287,7 +5296,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111807;
+var APP_BUILD=2026111808;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12417,7 +12426,43 @@ function parseMoney(str){
    was typed and tax is never added twice. Totals entered before this have
    no amountPre and are left exactly as they were unless retyped. */
 const SALES_TAX=0.0775;
-function withTax(v){ return Math.round(v*(1+SALES_TAX)*100)/100; }
+const TAX_PRESETS=[0.0775, 0.0875];
+function withTax(v, rate){ return Math.round(v*(1+(typeof rate==='number'?rate:SALES_TAX))*100)/100; }
+function fmtRate(r){ return (+(r*100).toFixed(3))+'%'; }
+function docTaxRate(d){ return d && typeof d.taxRate==='number' ? d.taxRate : SALES_TAX; }
+/* One rate per receipt, picked to match the store that printed it, and
+   shared by the reimbursement total and the second total. */
+function rateSegHTML(rate){
+  const other=!TAX_PRESETS.some(p=>Math.abs(p-rate)<1e-9);
+  const b=(v,lab,on)=>`<button type="button" role="radio" aria-checked="${on}" class="${on?'on':''}" data-rate="${v}" onclick="pickTaxRate('${v}')">${lab}</button>`;
+  return `<div class="rateSeg" id="rateSeg" role="radiogroup" aria-label="Tax rate">
+    ${TAX_PRESETS.map(p=>b(p, fmtRate(p), !other && Math.abs(p-rate)<1e-9)).join('')}${b('other','Other',other)}
+  </div>
+  <label class="rateOther" id="rateOther"${other?'':' hidden'}><input id="rateInput" type="text" inputmode="decimal" autocomplete="off" value="${other?esc(String(+(rate*100).toFixed(3))):''}" aria-label="Tax rate percent" oninput="rateTyped()"
+    onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('.adForm .btnRow .btn').click();}else if(event.key==='Escape'){closeReceiptAmount();}"><span>%</span></label>`;
+}
+function curTaxRate(){
+  const C=AMTCALC; if(!C) return SALES_TAX;
+  if(!C.rateOther) return C.rate;
+  const i=document.getElementById('rateInput');
+  const v=parseFloat(String(i?i.value:'').replace(/[%\s]/g,''));
+  return (isFinite(v) && v>=0 && v<=20) ? Math.round(v*1000)/100000 : null;
+}
+function pickTaxRate(v){
+  const C=AMTCALC; if(!C) return;
+  C.rateOther = v==='other';
+  if(!C.rateOther) C.rate=Number(v);
+  document.querySelectorAll('#rateSeg button').forEach(b=>{ const on=b.dataset.rate===String(v); b.classList.toggle('on',on); b.setAttribute('aria-checked',on); });
+  const o=document.getElementById('rateOther'); if(o) o.hidden=!C.rateOther;
+  if(C.rateOther){ const i=document.getElementById('rateInput'); if(i){ i.focus(); i.select(); } }
+  rateTyped();
+}
+function rateTyped(){
+  const C=AMTCALC; if(!C) return;
+  const wo=getWO(C.woId), d=wo && getDoc(wo, C.docId);
+  const err=document.getElementById('amtErr'); if(err) err.textContent='';
+  updateTaxLine(d, C.key);
+}
 function taxedAmountIn(d, key){
   const pre=d[key+'Pre'];
   return typeof pre==='number' ? pre : (typeof d[key]==='number' ? d[key] : null);
@@ -12428,11 +12473,18 @@ function updateTaxLine(d, key){
   if(!el || !inp || !d) return;
   const v=parseMoney(inp.value);
   const old=typeof d[key+'Pre']!=='number' && typeof d[key]==='number' && v===d[key];
-  el.textContent=(v===null || isNaN(v) || v<0 || old) ? '' : `With ${(SALES_TAX*100).toFixed(2)}% tax: ${fmtMoney(withTax(v))}`;
+  const rate=curTaxRate();
+  el.textContent=(v===null || isNaN(v) || v<0 || old || rate===null) ? '' : `With ${fmtRate(rate)} tax: ${fmtMoney(withTax(v, rate))}`;
 }
-function applyTaxed(d, key, v){
+function applyTaxed(d, key, v, rate){
   if(typeof d[key+'Pre']!=='number' && typeof d[key]==='number' && v===d[key]) return; // older total, unchanged
-  d[key+'Pre']=v; d[key]=withTax(v);
+  d[key+'Pre']=v; d[key]=withTax(v, rate);
+}
+/* Saves the picked rate on the receipt and brings the other total on the
+   same receipt up to the same rate. */
+function setDocTaxRate(d, rate){
+  d.taxRate=rate;
+  ['amount','amount2'].forEach(k=>{ if(typeof d[k+'Pre']==='number') d[k]=withTax(d[k+'Pre'], rate); });
 }
 function askReceiptAmount(woId, docId){
   const wo=getWO(woId), d=wo && getDoc(wo, docId);
@@ -12446,7 +12498,7 @@ function askReceiptAmount(woId, docId){
     <div class="amtName">${esc(d.name||'')}</div>
     <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Receipt amount"${taxed?` oninput="updateTaxLine(getDoc(getWO(${woId}),'${docId}'),'amount')"`:''}
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveReceiptAmount(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}">${taxed?amtCalcBtnHTML():''}</label>
-    ${taxed?taxLineHTML()+amtCalcPadHTML():''}
+    ${taxed?rateSegHTML(docTaxRate(d))+taxLineHTML()+amtCalcPadHTML():''}
     <div class="errMsg" id="amtErr"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveReceiptAmount(${woId},'${docId}')">Save</button>
@@ -12455,7 +12507,7 @@ function askReceiptAmount(woId, docId){
   root.innerHTML=taxed
     ? amtDocShellHTML(woId, d, amtTitle, form)
     : `<div class="confirmBox"><div class="confirmCard amtCard" role="dialog" aria-modal="true" aria-label="${amtTitle}">${form}</div></div>`;
-  AMTCALC={woId, docId, key:'amount', t:[], done:false};
+  AMTCALC={woId, docId, key:'amount', t:[], done:false, rate:docTaxRate(d), rateOther:!TAX_PRESETS.some(p=>Math.abs(p-docTaxRate(d))<1e-9)};
   if(taxed) updateTaxLine(d,'amount');
   amtFocusSoon(taxed);
 }
@@ -12598,11 +12650,14 @@ function saveReceiptAmount(woId, docId){
   if(!d){ closeReceiptAmount(); return; }
   const v=parseMoney(document.getElementById('amtInput').value);
   if(v!==null && (isNaN(v) || v<0)){ document.getElementById('amtErr').textContent='Enter a dollar amount.'; return; }
-  const was=typeof d.amount==='number' ? d.amount : null;
+  const rate=d.tag==='Reimbursement' ? curTaxRate() : null;
+  if(d.tag==='Reimbursement' && rate===null){ document.getElementById('amtErr').textContent='Enter a tax rate.'; return; }
+  const was=typeof d.amount==='number' ? d.amount : null, wasRate=docTaxRate(d);
   if(v===null){ delete d.amount; delete d.amountPre; }
-  else if(d.tag==='Reimbursement') applyTaxed(d,'amount',v);
+  else if(d.tag==='Reimbursement'){ applyTaxed(d,'amount',v,rate); setDocTaxRate(d, rate); }
   else { d.amount=v; delete d.amountPre; }
-  if(was!==(v===null?null:d.amount)) addAdminLog(wo, `${d.tag==='Reimbursement'?'Reimbursement':'Receipt'} "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(d.amount)+(d.tag==='Reimbursement'&&d.amountPre===v&&d.amount!==v?' ('+fmtMoney(v)+' + tax)':'')}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
+  if(was!==(v===null?null:d.amount)) addAdminLog(wo, `${d.tag==='Reimbursement'?'Reimbursement':'Receipt'} "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(d.amount)+(d.tag==='Reimbursement'&&d.amountPre===v&&d.amount!==v?' ('+fmtMoney(v)+' + '+fmtRate(rate)+' tax)':'')}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
+  else if(rate!==null && v!==null && Math.abs(rate-wasRate)>1e-9) addAdminLog(wo, `Reimbursement "${d.name}" tax rate set to ${fmtRate(rate)}.`);
   closeReceiptAmount();
   saveDB(DB);
   renderWorkOrderModal(woId);
@@ -13293,22 +13348,17 @@ function docSecondHTML(wo, d){
   const amt=typeof d.amount2==='number' ? fmtMoney(d.amount2) : 'Add Amount';
   return `<button type="button" class="docAmt second ${docTagClass(d.tag2)}" onclick="askSecondTotal(${wo.id},'${d.id}')" aria-label="Second total">${esc(d.tag2)} ${amt}</button>`;
 }
-let SECOND_TAG='Receipt';
 function askSecondTotal(woId, docId){
   const wo=getWO(woId), d=wo && getDoc(wo, docId);
   const root=document.getElementById('confirmRoot');
   if(!d || !root) return;
-  SECOND_TAG=d.tag2==='Covered Receipt' ? 'Covered Receipt' : 'Receipt';
   const base=taxedAmountIn(d,'amount2');
   const cur=base!==null ? base.toFixed(2) : '';
   const form=`<h3>Second Total</h3>
     <div class="amtName">${esc(d.name||'')}</div>
-    <div class="secTagSeg" role="radiogroup" aria-label="Label for the second total">
-      ${['Receipt','Covered Receipt'].map(t=>`<button type="button" role="radio" aria-checked="${SECOND_TAG===t}" class="${SECOND_TAG===t?'on':''}" onclick="pickSecondTag(this,'${t}')">${t}</button>`).join('')}
-    </div>
     <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Second total amount" oninput="updateTaxLine(getDoc(getWO(${woId}),'${docId}'),'amount2')"
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveSecondTotal(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}">${amtCalcBtnHTML()}</label>
-    ${taxLineHTML()+amtCalcPadHTML()}
+    ${rateSegHTML(docTaxRate(d))+taxLineHTML()+amtCalcPadHTML()}
     <div class="errMsg" id="amtErr"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveSecondTotal(${woId},'${docId}')">Save</button>
@@ -13316,13 +13366,9 @@ function askSecondTotal(woId, docId){
     </div>
     ${d.tag2?`<button type="button" class="secRemove" onclick="saveSecondTotal(${woId},'${docId}',true)">Remove Second Total</button>`:''}`;
   root.innerHTML=amtDocShellHTML(woId, d, 'Second total', form);
-  AMTCALC={woId, docId, key:'amount2', t:[], done:false};
+  AMTCALC={woId, docId, key:'amount2', t:[], done:false, rate:docTaxRate(d), rateOther:!TAX_PRESETS.some(p=>Math.abs(p-docTaxRate(d))<1e-9)};
   updateTaxLine(d,'amount2');
   amtFocusSoon(true);
-}
-function pickSecondTag(btn, t){
-  SECOND_TAG=t;
-  btn.parentElement.querySelectorAll('button').forEach(b=>{ const on=b===btn; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
 }
 function saveSecondTotal(woId, docId, remove){
   const wo=getWO(woId), d=wo && getDoc(wo, docId);
@@ -13333,9 +13379,11 @@ function saveSecondTotal(woId, docId, remove){
   } else {
     const v=parseMoney(document.getElementById('amtInput').value);
     if(v===null || isNaN(v) || v<0){ document.getElementById('amtErr').textContent='Enter a dollar amount.'; return; }
+    const rate=curTaxRate();
+    if(rate===null){ document.getElementById('amtErr').textContent='Enter a tax rate.'; return; }
     const was=d.tag2 ? `${d.tag2} ${typeof d.amount2==='number'?fmtMoney(d.amount2):''}`.trim() : '';
-    d.tag2=SECOND_TAG; applyTaxed(d,'amount2',v);
-    addAdminLog(wo, `Reimbursement "${d.name}" second total set to ${d.tag2} ${fmtMoney(d.amount2)}${d.amount2Pre===v&&d.amount2!==v?' ('+fmtMoney(v)+' + tax)':''}${was?' (was '+was+')':''}.`);
+    d.tag2='Receipt'; applyTaxed(d,'amount2',v,rate); setDocTaxRate(d, rate);
+    addAdminLog(wo, `Reimbursement "${d.name}" second total set to ${d.tag2} ${fmtMoney(d.amount2)}${d.amount2Pre===v&&d.amount2!==v?' ('+fmtMoney(v)+' + '+fmtRate(rate)+' tax)':''}${was?' (was '+was+')':''}.`);
   }
   closeReceiptAmount();
   saveDB(DB);
@@ -14640,6 +14688,7 @@ async function runMakePdf(){
     if(first.date) pdf.date=first.date;
     if(first.uploadedAt) pdf.uploadedAt=first.uploadedAt;
     if(first.uploadedBy) pdf.uploadedBy=first.uploadedBy;
+    if(typeof first.taxRate==='number') pdf.taxRate=first.taxRate;
     // Amounts carry over. When several labelled photos are combined their
     // amounts add up, so nothing entered is lost.
     const nums=k=>live.filter(x=>typeof x[k]==='number');
