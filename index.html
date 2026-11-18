@@ -3678,6 +3678,7 @@ html.dark.hc select:not([multiple]):not([size]){
 .confirmCard.amtCard{max-width:360px;text-align:left;padding:24px 22px 20px;}
 .amtCard h3{margin:0 0 4px;font-size:1.2em;}
 .amtName{color:var(--muted);font-size:.85em;margin-bottom:14px;overflow-wrap:anywhere;}
+.amtTax{min-height:1.3em;margin:8px 2px 10px;font-size:.88em;font-weight:700;color:var(--muted);}
 .secTagSeg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
 .secTagSeg button{min-height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-weight:700;font-size:.86em;cursor:pointer;}
 .secTagSeg button.on{border-color:var(--navy);background:var(--navy);color:#fff;}
@@ -5237,7 +5238,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111804;
+var APP_BUILD=2026111805;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12362,23 +12363,49 @@ function parseMoney(str){
   const v=Number(t);
   return isFinite(v) ? Math.round(v*100)/100 : NaN;
 }
+/* Reimbursement totals get San Diego sales tax added. The typed amount is
+   kept as amountPre (amount2Pre for the second total) so editing shows what
+   was typed and tax is never added twice. Totals entered before this have
+   no amountPre and are left exactly as they were unless retyped. */
+const SALES_TAX=0.0775;
+function withTax(v){ return Math.round(v*(1+SALES_TAX)*100)/100; }
+function taxedAmountIn(d, key){
+  const pre=d[key+'Pre'];
+  return typeof pre==='number' ? pre : (typeof d[key]==='number' ? d[key] : null);
+}
+function taxLineHTML(){ return `<div class="amtTax" id="amtTax" aria-live="polite"></div>`; }
+function updateTaxLine(d, key){
+  const el=document.getElementById('amtTax'), inp=document.getElementById('amtInput');
+  if(!el || !inp || !d) return;
+  const v=parseMoney(inp.value);
+  const old=typeof d[key+'Pre']!=='number' && typeof d[key]==='number' && v===d[key];
+  el.textContent=(v===null || isNaN(v) || v<0 || old) ? '' : `With ${(SALES_TAX*100).toFixed(2)}% tax: ${fmtMoney(withTax(v))}`;
+}
+function applyTaxed(d, key, v){
+  if(typeof d[key+'Pre']!=='number' && typeof d[key]==='number' && v===d[key]) return; // older total, unchanged
+  d[key+'Pre']=v; d[key]=withTax(v);
+}
 function askReceiptAmount(woId, docId){
   const wo=getWO(woId), d=wo && getDoc(wo, docId);
   const root=document.getElementById('confirmRoot');
   if(!d || !root) return;
-  const cur=typeof d.amount==='number' ? d.amount.toFixed(2) : '';
-  const amtTitle=d.tag==='Reimbursement' ? 'Reimbursement Amount' : 'Receipt Amount';
+  const taxed=d.tag==='Reimbursement';
+  const base=taxed ? taxedAmountIn(d,'amount') : (typeof d.amount==='number' ? d.amount : null);
+  const cur=base!==null ? base.toFixed(2) : '';
+  const amtTitle=taxed ? 'Reimbursement Amount' : 'Receipt Amount';
   root.innerHTML=`<div class="confirmBox"><div class="confirmCard amtCard" role="dialog" aria-modal="true" aria-label="${amtTitle}">
     <h3>${amtTitle}</h3>
     <div class="amtName">${esc(d.name||'')}</div>
-    <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Receipt amount"
+    <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Receipt amount"${taxed?` oninput="updateTaxLine(getDoc(getWO(${woId}),'${docId}'),'amount')"`:''}
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveReceiptAmount(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}"></label>
+    ${taxed?taxLineHTML():''}
     <div class="errMsg" id="amtErr"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveReceiptAmount(${woId},'${docId}')">Save</button>
       <button class="btn secondary" onclick="closeReceiptAmount()">${cur?'Cancel':'Skip'}</button>
     </div>
   </div></div>`;
+  if(taxed) updateTaxLine(d,'amount');
   setTimeout(()=>{ const i=document.getElementById('amtInput'); if(i){ i.focus(); i.select(); } }, 60);
 }
 function closeReceiptAmount(){ const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
@@ -12388,8 +12415,10 @@ function saveReceiptAmount(woId, docId){
   const v=parseMoney(document.getElementById('amtInput').value);
   if(v!==null && (isNaN(v) || v<0)){ document.getElementById('amtErr').textContent='Enter a dollar amount.'; return; }
   const was=typeof d.amount==='number' ? d.amount : null;
-  if(v===null) delete d.amount; else d.amount=v;
-  if(was!==v) addAdminLog(wo, `${d.tag==='Reimbursement'?'Reimbursement':'Receipt'} "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(v)}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
+  if(v===null){ delete d.amount; delete d.amountPre; }
+  else if(d.tag==='Reimbursement') applyTaxed(d,'amount',v);
+  else { d.amount=v; delete d.amountPre; }
+  if(was!==(v===null?null:d.amount)) addAdminLog(wo, `${d.tag==='Reimbursement'?'Reimbursement':'Receipt'} "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(d.amount)+(d.tag==='Reimbursement'&&d.amountPre===v&&d.amount!==v?' ('+fmtMoney(v)+' + tax)':'')}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
   closeReceiptAmount();
   saveDB(DB);
   renderWorkOrderModal(woId);
@@ -13086,15 +13115,17 @@ function askSecondTotal(woId, docId){
   const root=document.getElementById('confirmRoot');
   if(!d || !root) return;
   SECOND_TAG=d.tag2==='Covered Receipt' ? 'Covered Receipt' : 'Receipt';
-  const cur=typeof d.amount2==='number' ? d.amount2.toFixed(2) : '';
+  const base=taxedAmountIn(d,'amount2');
+  const cur=base!==null ? base.toFixed(2) : '';
   root.innerHTML=`<div class="confirmBox"><div class="confirmCard amtCard" role="dialog" aria-modal="true" aria-label="Second total">
     <h3>Second Total</h3>
     <div class="amtName">${esc(d.name||'')}</div>
     <div class="secTagSeg" role="radiogroup" aria-label="Label for the second total">
       ${['Receipt','Covered Receipt'].map(t=>`<button type="button" role="radio" aria-checked="${SECOND_TAG===t}" class="${SECOND_TAG===t?'on':''}" onclick="pickSecondTag(this,'${t}')">${t}</button>`).join('')}
     </div>
-    <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Second total amount"
+    <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Second total amount" oninput="updateTaxLine(getDoc(getWO(${woId}),'${docId}'),'amount2')"
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveSecondTotal(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}"></label>
+    ${taxLineHTML()}
     <div class="errMsg" id="amtErr"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveSecondTotal(${woId},'${docId}')">Save</button>
@@ -13102,6 +13133,7 @@ function askSecondTotal(woId, docId){
     </div>
     ${d.tag2?`<button type="button" class="secRemove" onclick="saveSecondTotal(${woId},'${docId}',true)">Remove Second Total</button>`:''}
   </div></div>`;
+  updateTaxLine(d,'amount2');
   setTimeout(()=>{ const i=document.getElementById('amtInput'); if(i){ i.focus(); i.select(); } }, 60);
 }
 function pickSecondTag(btn, t){
@@ -13112,14 +13144,14 @@ function saveSecondTotal(woId, docId, remove){
   const wo=getWO(woId), d=wo && getDoc(wo, docId);
   if(!d){ closeReceiptAmount(); return; }
   if(remove){
-    delete d.tag2; delete d.amount2;
+    delete d.tag2; delete d.amount2; delete d.amount2Pre;
     addAdminLog(wo, `Reimbursement "${d.name}" second total removed.`);
   } else {
     const v=parseMoney(document.getElementById('amtInput').value);
     if(v===null || isNaN(v) || v<0){ document.getElementById('amtErr').textContent='Enter a dollar amount.'; return; }
     const was=d.tag2 ? `${d.tag2} ${typeof d.amount2==='number'?fmtMoney(d.amount2):''}`.trim() : '';
-    d.tag2=SECOND_TAG; d.amount2=v;
-    addAdminLog(wo, `Reimbursement "${d.name}" second total set to ${d.tag2} ${fmtMoney(v)}${was?' (was '+was+')':''}.`);
+    d.tag2=SECOND_TAG; applyTaxed(d,'amount2',v);
+    addAdminLog(wo, `Reimbursement "${d.name}" second total set to ${d.tag2} ${fmtMoney(d.amount2)}${d.amount2Pre===v&&d.amount2!==v?' ('+fmtMoney(v)+' + tax)':''}${was?' (was '+was+')':''}.`);
   }
   closeReceiptAmount();
   saveDB(DB);
@@ -14427,12 +14459,19 @@ async function runMakePdf(){
     // Amounts carry over. When several labelled photos are combined their
     // amounts add up, so nothing entered is lost.
     const nums=k=>live.filter(x=>typeof x[k]==='number');
-    if(nums('amount').length) pdf.amount=Math.round(nums('amount').reduce((t,x)=>t+x.amount,0)*100)/100;
+    const sum=(list,k)=>Math.round(list.reduce((t,x)=>t+x[k],0)*100)/100;
+    if(nums('amount').length){
+      pdf.amount=sum(nums('amount'),'amount');
+      if(nums('amount').every(x=>typeof x.amountPre==='number')) pdf.amountPre=sum(nums('amount'),'amountPre');
+    }
     const t2=live.find(x=>x.tag2);
     if(t2){
       pdf.tag2=t2.tag2;
       const a2=live.filter(x=>x.tag2===t2.tag2 && typeof x.amount2==='number');
-      if(a2.length) pdf.amount2=Math.round(a2.reduce((t,x)=>t+x.amount2,0)*100)/100;
+      if(a2.length){
+        pdf.amount2=sum(a2,'amount2');
+        if(a2.every(x=>typeof x.amount2Pre==='number')) pdf.amount2Pre=sum(a2,'amount2Pre');
+      }
     }
     if(first.tag==='Reimbursement'){
       const rb=live.filter(x=>x.tag==='Reimbursement');
