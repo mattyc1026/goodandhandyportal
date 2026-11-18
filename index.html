@@ -3703,9 +3703,8 @@ html.dark .docAmt.second.dt-covered-receipt{background:#22343a;color:#bcd8e0;bor
 .mpTile:focus-visible{outline:3px solid var(--navy2);outline-offset:2px;}
 .mpNum{position:absolute;top:6px;left:6px;min-width:26px;height:26px;border-radius:13px;background:var(--orange);color:#fff;font-weight:800;font-size:.85em;display:flex;align-items:center;justify-content:center;padding:0 6px;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,.3);}
 .mpStatus{min-height:1.3em;margin-top:10px;font-size:.86em;color:var(--muted);}
-.mpCard .btnRow{justify-content:flex-start;flex-wrap:nowrap;margin-top:8px;}
-.mpCard .btnRow .btn{flex:1 1 auto;width:auto;min-width:0;white-space:nowrap;padding-left:14px;padding-right:14px;}
-.mpCard .btnRow .btn.secondary{flex:0 0 auto;}
+.mpCard .btnRow{justify-content:flex-start;flex-wrap:wrap;margin-top:8px;}
+.mpCard .btnRow .btn{flex:1 1 auto;width:auto;white-space:nowrap;padding-left:16px;padding-right:16px;}
 .mpCard .btnRow .btn:disabled{opacity:.55;cursor:default;}
 html.hc .docAmt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
 /* ---- Docs tab ----
@@ -5238,7 +5237,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111803;
+var APP_BUILD=2026111804;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -13135,7 +13134,7 @@ function docMenuHTML(wo, d){
       <button type="button" role="menuitem" onclick="dkMenuClose();viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
       <button type="button" role="menuitem" onclick="dkMenuClose();downloadDoc(${wo.id},'${d.id}')">${icon('download')}Download</button>
       <button type="button" role="menuitem" onclick="dkMenuClose();renameDoc(${wo.id},'${d.id}')">${icon('pencil')}Rename</button>
-      ${isImageDoc(d)&&(d.url||d.dataUrl)?`<button type="button" role="menuitem" onclick="dkMenuClose();openMakePdf(${wo.id},'${d.id}')">${icon('file-text')}Make PDF</button>`:''}
+      ${isImageDoc(d)&&(d.url||d.dataUrl)?`<button type="button" role="menuitem" onclick="dkMenuClose();openMakePdf(${wo.id},'${d.id}')">${icon('file-text')}Convert to PDF</button>`:''}
       <button type="button" role="menuitem" class="danger" onclick="dkMenuClose();deleteDoc(${wo.id},'${d.id}')">${icon('trash')}Delete</button>
     </div>
   </details>`;
@@ -14308,7 +14307,7 @@ function deleteDoc(id, docId){
     toast('File deleted.');
   });
 }
-/* ---- Make PDF ----
+/* ---- Convert to PDF ----
    One photo, or several in the order they're tapped, become the pages of
    one PDF. The PDF takes the photos' place: it keeps the first photo's name,
    label and date, and the photos are removed once it is safely uploaded. */
@@ -14335,12 +14334,12 @@ function renderMakePdf(){
       ${k>=0?`<span class="mpNum">${k+1}</span>`:''}
     </button>`;
   }).join('');
-  root.innerHTML=`<div class="confirmBox noAnim" onclick="if(event.target===this)closeMakePdf()"><div class="confirmCard mpCard" role="dialog" aria-modal="true" aria-label="Make PDF">
-    <h3>Make PDF</h3>
+  root.innerHTML=`<div class="confirmBox noAnim" onclick="if(event.target===this)closeMakePdf()"><div class="confirmCard mpCard" role="dialog" aria-modal="true" aria-label="Convert to PDF">
+    <h3>Convert to PDF</h3>
     <div class="mpGrid">${tiles}</div>
     <div class="mpStatus" id="mpStatus" role="status">${esc(S.status||'')}</div>
     <div class="btnRow">
-      <button class="btn" onclick="runMakePdf()"${(!n||S.busy)?' disabled':''}>${S.busy?'Making PDF…':'Make PDF'}</button>
+      <button class="btn" onclick="runMakePdf()"${(!n||S.busy)?' disabled':''}>${S.busy?'Converting…':'Convert to PDF'}</button>
       <button class="btn secondary" onclick="closeMakePdf()"${S.busy?' disabled':''}>Cancel</button>
     </div>
   </div></div>`;
@@ -14400,7 +14399,7 @@ async function runMakePdf(){
     catch(e){
       const nm=picks[i].name||'a photo';
       if(e && e.message==='decode') return fail(`"${nm}" is in a format this device can't open. Nothing was changed.`);
-      recordError('Make PDF could not download a photo: '+((e&&e.cause&&e.cause.message)||'blocked'), 'runMakePdf');
+      recordError('Convert to PDF could not download a photo: '+((e&&e.cause&&e.cause.message)||'blocked'), 'runMakePdf');
       return fail(`Couldn't download "${nm}". Nothing was changed.`);
     }
   }
@@ -14453,13 +14452,13 @@ async function runMakePdf(){
   if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
   gone.forEach(id=>wo.tombstones.push('f:'+id));
   addAdminLog(wo, live.length>1
-    ? `Made PDF "${base}" from ${live.length} photos: ${live.map(d=>'"'+(d.name||'Untitled')+'"').join(', ')}.`
-    : `Made PDF "${base}" from photo "${first.name||'Untitled'}".`);
+    ? `Converted ${live.length} photos to PDF "${base}": ${live.map(d=>'"'+(d.name||'Untitled')+'"').join(', ')}.`
+    : `Converted photo "${first.name||'Untitled'}" to PDF.`);
   saveDB(DB);
   S.busy=false;
   if(MKPDF===S) closeMakePdf();
   renderWorkOrderModal(S.woId);
-  toast('PDF made.');
+  toast('Converted to PDF.');
 }
 function adminTabHTML(wo){
   const logHTML = wo.adminLog.length
