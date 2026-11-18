@@ -493,6 +493,37 @@ html.training:has(#modalRoot .overlay){overflow:hidden;}
   background:var(--orange);color:#fff;font-size:.66em;padding:3px 9px;border-radius:20px;
   font-weight:700;letter-spacing:.1em;text-transform:uppercase;
 }
+/* the ADMIN badge is the admin menu's button */
+.userBadge button.adminBtn.settingsBtn{border:0;cursor:pointer;font-family:inherit;position:relative;min-width:0;min-height:26px;padding:3px 10px;border-radius:20px;
+  background:var(--orange);color:#fff;font-size:.66em;line-height:1.4;}
+.userBadge button.adminBtn.settingsBtn:hover{filter:brightness(1.08);background:var(--orange);}
+.userBadge button.adminBtn.settingsBtn.hidden{display:none;}
+/* ---- reimbursements ---- */
+.rbHead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 2px 8px;font-weight:800;color:var(--navy);}
+.rbHead:first-child{margin-top:0;}
+.rbHead span{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:700;font-size:.92em;}
+.rbCard{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--paper);margin-bottom:8px;}
+.rbCard.done{background:transparent;}
+.rbMain{flex:1 1 auto;min-width:0;cursor:pointer;border:0;background:none;padding:0;text-align:left;font:inherit;color:inherit;}
+.rbMain b{display:block;color:var(--navy);overflow-wrap:anywhere;}
+.rbMain .rbFile{display:block;font-size:.84em;color:var(--ink);overflow-wrap:anywhere;}
+.rbMain .rbMeta{display:block;font-size:.76em;color:var(--muted);font-weight:600;margin-top:2px;}
+.rbAmt{flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums;color:var(--navy);}
+.rbAmt.none{color:var(--muted);font-weight:600;font-size:.82em;}
+.rbCard .rbBtn{flex:0 0 auto;width:auto;padding:8px 12px;min-height:38px;font-size:.84em;}
+.rbUndo{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--muted);display:grid;place-items:center;cursor:pointer;}
+.rbUndo:hover{color:var(--navy);border-color:var(--navy);}
+.rbUndo svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+@media (max-width:600px){
+  .rbCard{flex-wrap:wrap;row-gap:8px;}
+  .rbMain{flex:1 1 100%;}
+  .rbAmt{margin-right:auto;}
+}
+.rbCard.done .rbMain b,.rbCard.done .rbAmt{color:var(--muted);}
+.rbEmpty{color:var(--muted);font-weight:600;padding:10px 2px 4px;}
+button.adminBtn[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.35);}
+.admDot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--orange);}
+.admCount{display:inline-block;margin-left:6px;min-width:1.6em;padding:0 6px;border-radius:999px;background:var(--orange);color:#fff;font-size:.82em;text-align:center;font-weight:700;}
 .logoutBtn{
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.22);color:#fff;
   padding:7px 14px;border-radius:var(--radius-sm);font-size:.82em;font-weight:600;
@@ -923,6 +954,7 @@ html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(
 .dt-damage-issue{background:#fbe6e6;color:#9b2226;border-color:#efc6c6;}
 .dt-receipt{background:#efe9dc;color:#5c4a20;border-color:#ddd1b6;}
 .dt-covered-receipt{background:#e6eef0;color:#36555e;border-color:#c5d6db;}
+.dt-reimbursement{background:#e4f2ee;color:#1f6150;border-color:#bfe0d6;}
 .dt-estimate{background:#fdf3d7;color:#7a5600;border-color:#f0d98f;}
 .dt-invoice{background:#fbe8df;color:#8a3b1e;border-color:#efc7b4;}
 
@@ -4149,6 +4181,7 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></symbol>
   <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/></symbol>
 </defs></svg>
@@ -4231,7 +4264,35 @@ window._bootSafety = setTimeout(function(){
     </div>
     <div class="userBadge">
       <span id="whoami"></span>
-      <span id="adminPill" class="adminPill hidden">ADMIN</span>
+      <div class="settingsWrap adminWrap">
+        <button type="button" id="adminPill" class="adminPill adminBtn hidden settingsBtn" onclick="toggleSettingsMenu('adminMenu')" aria-label="Admin" aria-haspopup="true" aria-expanded="false">ADMIN<i class="admDot hidden" id="admDot"></i></button>
+        <div class="settingsMenu adminMenu" id="adminMenu">
+          <div class="settingsRow adminOnly hidden" id="calcRow">
+            <span>Expenses Calculator</span>
+            <button class="editLink" onclick="openExpenseCalc()">Open</button>
+          </div>
+          <div class="settingsRow" id="reimbRow">
+            <span>Reimbursements <b class="admCount hidden" id="reimbCount"></b></span>
+            <button class="editLink" onclick="openReimbursements()">Open</button>
+          </div>
+          <div class="settingsRow adminOnly hidden" id="approvalsRow">
+            <span>Logins <b class="admCount hidden" id="loginCount"></b></span>
+            <button class="editLink" onclick="openApprovals()">Manage</button>
+          </div>
+          <div class="settingsRow adminOnly hidden" id="summaryRow">
+            <span>Summary</span>
+            <button class="editLink" onclick="openSummary()">Open</button>
+          </div>
+          <div class="settingsRow adminOnly hidden" id="backupRow">
+            <span>Backup</span>
+            <button class="editLink" onclick="openBackup()">Download</button>
+          </div>
+          <div class="settingsRow adminOnly hidden" id="errorLogRow">
+            <span>Error Log</span>
+            <button class="editLink" onclick="openErrorLog()">Open</button>
+          </div>
+        </div>
+      </div>
       <span class="practicePill">PRACTICE</span>
       <button class="hdrIcon searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
       <div class="settingsWrap">
@@ -4267,26 +4328,6 @@ window._bootSafety = setTimeout(function(){
           <div class="settingsRow" id="feedRow">
             <span>Phone Calendar</span>
             <button class="editLink" onclick="openPhoneCalendar()">Open</button>
-          </div>
-          <div class="settingsRow adminOnly hidden" id="calcRow">
-            <span>Expenses Calculator</span>
-            <button class="editLink" onclick="openExpenseCalc()">Open</button>
-          </div>
-          <div class="settingsRow adminOnly hidden" id="approvalsRow">
-            <span>Logins</span>
-            <button class="editLink" onclick="openApprovals()">Manage</button>
-          </div>
-          <div class="settingsRow adminOnly hidden" id="summaryRow">
-            <span>Summary</span>
-            <button class="editLink" onclick="openSummary()">Open</button>
-          </div>
-          <div class="settingsRow adminOnly hidden" id="backupRow">
-            <span>Backup</span>
-            <button class="editLink" onclick="openBackup()">Download</button>
-          </div>
-          <div class="settingsRow adminOnly hidden" id="errorLogRow">
-            <span>Error Log</span>
-            <button class="editLink" onclick="openErrorLog()">Open</button>
           </div>
           <div class="settingsRow logoutRow">
             <button class="logoutBtn" onclick="closeSettingsMenus(); confirmLogout()">Sign Out</button>
@@ -4490,6 +4531,7 @@ function saveDB(db){
   writeLocalCopy(dbJsonFrom(db, wj.list));
   if(!applyingRemote) pushToCloud();
   if(!applyingRemote && isMain){ try{ feedSoon(); }catch(e){} }
+  if(isMain){ try{ refreshAdminBadges(); }catch(e){} }
 }
 /* Declared here, above the load-time normalizeDB() call below, because that
    call reads it. A const declared further down the file is not reachable from
@@ -5173,7 +5215,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111701;
+var APP_BUILD=2026111801;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -6209,6 +6251,7 @@ function stopAccessAdmin(){
   ACCESS_REQS=[]; ACCESS_SEEDED=false; refreshReqNudge();
 }
 function refreshReqNudge(){
+  try{ refreshAdminBadges(); }catch(e){}
   const el=document.getElementById('reqNudge'); if(!el) return;
   const n=(CURRENT_USER && CURRENT_USER.isAdmin) ? ACCESS_REQS.length : 0;
   el.classList.toggle('show', n>0);
@@ -6379,6 +6422,7 @@ function enterApp(u){
   document.getElementById('whoami').textContent=CURRENT_USER.displayName;
   document.getElementById('adminPill').classList.toggle('hidden', !u.isAdmin);
   ['calcRow','summaryRow','backupRow','errorLogRow','approvalsRow'].forEach(id=>{ const r=document.getElementById(id); if(r) r.classList.toggle('hidden', !u.isAdmin); });
+  try{ refreshAdminBadges(); }catch(e){}
   PW_NUDGE_DISMISSED=false;
   refreshPwNudge();
   document.getElementById('siErr').textContent='';
@@ -6844,6 +6888,7 @@ function fitTabLabelsSoon(){
    the function, so the early call reads 0 and behaves correctly. */
 var LAST_HISTORY_PURGE=0;
 function renderTabCounts(){
+  try{ refreshAdminBadges(); }catch(e){}
   if(CURRENT_USER && window.GH_TRAINING && trainingKeepCurrent()) saveDB(DB);
   if(CURRENT_USER && autoStartScheduledJobs()) saveDB(DB);
   setCount('cnt-workorders', DB.workOrders.filter(inWorkOrdersList).length);
@@ -12224,7 +12269,7 @@ function storageUsedNow(){
    an exported or synced record reads the same everywhere. */
 /* Covered Receipt: kept for the job's records, but someone else paid it, so
    the expenses calculator leaves it out. */
-const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt','Covered Receipt','Estimate','Invoice'];
+const DOC_TAGS=['Pre-Site','Before','During','After','Pre-Existing Damage','Damage/Issue','Receipt','Covered Receipt','Reimbursement','Estimate','Invoice'];
 /* A PDF with "estimate" in its name is labeled Estimate when it is added. */
 function looksLikeEstimate(name, type){ return /estimate/i.test(name||'') && (/pdf/i.test(type||'') || /\.pdf$/i.test(name||'')); }
 /* A PDF named as an invoice gets the Invoice label on upload. */
@@ -12280,7 +12325,7 @@ function setDocTag(woId, docId, tag){
   if(oldTag!==d.tag) addAdminLog(wo, `Photo "${d.name}" label changed from ${oldTag||'none'} to ${d.tag||'none'}.`);
   saveDB(DB);
   renderWorkOrderModal(woId);
-  if(d.tag==='Receipt' && oldTag!=='Receipt' && typeof d.amount!=='number'){ askReceiptAmount(woId, docId); return; }
+  if((d.tag==='Receipt' || d.tag==='Reimbursement') && oldTag!==d.tag && typeof d.amount!=='number'){ askReceiptAmount(woId, docId); return; }
   toast(d.tag ? `Labeled "${d.tag}".` : 'Label removed.');
 }
 
@@ -12300,8 +12345,9 @@ function askReceiptAmount(woId, docId){
   const root=document.getElementById('confirmRoot');
   if(!d || !root) return;
   const cur=typeof d.amount==='number' ? d.amount.toFixed(2) : '';
-  root.innerHTML=`<div class="confirmBox"><div class="confirmCard amtCard" role="dialog" aria-modal="true" aria-label="Receipt amount">
-    <h3>Receipt Amount</h3>
+  const amtTitle=d.tag==='Reimbursement' ? 'Reimbursement Amount' : 'Receipt Amount';
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard amtCard" role="dialog" aria-modal="true" aria-label="${amtTitle}">
+    <h3>${amtTitle}</h3>
     <div class="amtName">${esc(d.name||'')}</div>
     <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Receipt amount"
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveReceiptAmount(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}"></label>
@@ -12321,7 +12367,7 @@ function saveReceiptAmount(woId, docId){
   if(v!==null && (isNaN(v) || v<0)){ document.getElementById('amtErr').textContent='Enter a dollar amount.'; return; }
   const was=typeof d.amount==='number' ? d.amount : null;
   if(v===null) delete d.amount; else d.amount=v;
-  if(was!==v) addAdminLog(wo, `Receipt "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(v)}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
+  if(was!==v) addAdminLog(wo, `${d.tag==='Reimbursement'?'Reimbursement':'Receipt'} "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(v)}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
   closeReceiptAmount();
   saveDB(DB);
   renderWorkOrderModal(woId);
@@ -12457,6 +12503,75 @@ function copyFeedLink(btn){
   const url=feedUrl('https');
   const done=()=>{ btn.textContent='Copied'; setTimeout(()=>{ btn.textContent='Copy Link'; }, 1800); };
   try{ navigator.clipboard.writeText(url).then(done, ()=>toast(url)); }catch(e){ toast(url); }
+}
+
+/* ---- reimbursements ----
+   Every file labeled Reimbursement, on any job, starts out pending. Tapping
+   Reimbursed moves it to the reimbursed list with who and when; the arrow
+   puts it back if it was tapped by mistake. Amounts are kept for the record
+   only and are not counted as job expenses. */
+function reimbItems(){
+  const out=[];
+  (DB.workOrders||[]).forEach(wo=>(wo.docs||[]).forEach(d=>{ if(d && d.tag==='Reimbursement') out.push({wo, d}); }));
+  return out;
+}
+function reimbPending(){ return reimbItems().filter(x=>!x.d.reimbursedAt); }
+function refreshAdminBadges(){
+  const admin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
+  const rp=admin ? reimbPending().length : 0;
+  const lr=(admin && !window.GH_TRAINING && typeof ACCESS_REQS!=='undefined') ? ACCESS_REQS.length : 0;
+  const set=(id,n)=>{ const el=document.getElementById(id); if(!el) return; el.textContent=n||''; el.classList.toggle('hidden', !n); };
+  set('reimbCount', rp); set('loginCount', lr);
+  const dot=document.getElementById('admDot'); if(dot) dot.classList.toggle('hidden', !(rp||lr));
+}
+function openReimbursements(){
+  if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
+  closeSettingsMenus();
+  renderReimbursements();
+}
+function renderReimbursements(){
+  const all=reimbItems();
+  const pend=all.filter(x=>!x.d.reimbursedAt).sort((a,b)=>(a.d.uploadedAt||0)-(b.d.uploadedAt||0));
+  const done=all.filter(x=>x.d.reimbursedAt).sort((a,b)=>(b.d.reimbursedAt||0)-(a.d.reimbursedAt||0));
+  const sum=list=>list.reduce((t,x)=>t+(typeof x.d.amount==='number'?x.d.amount:0),0);
+  const day=ms=>new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const card=(x,isDone)=>{
+    const c=x.wo.customer||{}, d=x.d;
+    const amt=typeof d.amount==='number' ? `<span class="rbAmt">${fmtMoney(d.amount)}</span>` : `<span class="rbAmt none">No amount</span>`;
+    const meta=isDone
+      ? `Reimbursed ${day(d.reimbursedAt)}${d.reimbursedBy?' by '+esc(firstOf(d.reimbursedBy)):''}`
+      : `Added ${d.uploadedAt?day(d.uploadedAt):esc(d.date||'')}${d.uploadedBy?' by '+esc(firstOf(d.uploadedBy)):''}`;
+    return `<div class="rbCard${isDone?' done':''}">
+      <button type="button" class="rbMain" onclick="viewDoc(${x.wo.id},'${d.id}')" aria-label="View ${esc(d.name||'file')}">
+        <b>${esc(c.name||'Customer')}</b><span class="rbFile">${esc(d.name||'File')}</span><span class="rbMeta">${meta}</span></button>
+      ${amt}
+      ${isDone
+        ? `<button type="button" class="rbUndo" onclick="setReimbursed(${x.wo.id},'${d.id}',false)" aria-label="Move back to pending" title="Move back to pending">${icon('undo')}</button>`
+        : `<button type="button" class="btn rbBtn" onclick="setReimbursed(${x.wo.id},'${d.id}',true)">Reimbursed</button>`}
+    </div>`;
+  };
+  document.getElementById('modalRoot').innerHTML=`
+  <div class="overlay" id="reimbModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:560px;">
+      <div class="modalHead"><h2>Reimbursements</h2><button class="closeX" onclick="closeModal()" aria-label="Close">&times;</button></div>
+      <div class="modalBody">
+        <div class="rbHead">Pending Reimbursement <span>${fmtMoney(sum(pend))}</span></div>
+        ${pend.length ? pend.map(x=>card(x,false)).join('') : `<div class="rbEmpty">Nothing pending.</div>`}
+        ${done.length ? `<div class="rbHead">Reimbursed <span>${fmtMoney(sum(done))}</span></div>${done.map(x=>card(x,true)).join('')}` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+const firstOf=n=>capName(String(n||'').trim().split(/\s+/)[0]);
+function setReimbursed(woId, docId, on){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  if(!d) return;
+  if(on){ d.reimbursedAt=Date.now(); d.reimbursedBy=(DB.users[CURRENT_USER.username] ? userFirstName(DB.users[CURRENT_USER.username]) : CURRENT_USER.displayName); }
+  else { delete d.reimbursedAt; delete d.reimbursedBy; }
+  addAdminLog(wo, `Reimbursement "${d.name}" ${on?'marked reimbursed':'moved back to pending'}.`);
+  saveDB(DB);
+  renderReimbursements(); refreshAdminBadges();
+  toast(on ? 'Marked reimbursed.' : 'Moved back to pending.');
 }
 
 /* ---- backup ---- */
@@ -12923,7 +13038,7 @@ function docTagPickHTML(wo, d){
   </span>`;
 }
 function docAmtHTML(wo, d){
-  if(d.tag!=='Receipt' && d.tag!=='Covered Receipt') return '';
+  if(d.tag!=='Receipt' && d.tag!=='Covered Receipt' && d.tag!=='Reimbursement') return '';
   return `<button type="button" class="docAmt${typeof d.amount==='number'?'':' empty'}" onclick="askReceiptAmount(${wo.id},'${d.id}')" aria-label="Receipt amount">${typeof d.amount==='number'?fmtMoney(d.amount):'Add Amount'}</button>`;
 }
 /* Download, rename and delete live behind one button so each file shows
@@ -17512,6 +17627,10 @@ function toggleSettingsMenu(menuId){
     menu.classList.add('open');
     const btn = menu.previousElementSibling;
     if(btn) btn.setAttribute('aria-expanded','true');
+    // keep the whole menu on the screen when its button sits left of the edge
+    menu.style.right='';
+    const wrap=menu.parentElement, left=wrap.getBoundingClientRect().right-menu.offsetWidth;
+    if(left<8) menu.style.right=(left-8)+'px';
   }
 }
 function closeSettingsMenus(){
