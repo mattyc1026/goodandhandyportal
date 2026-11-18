@@ -3693,6 +3693,20 @@ html.dark .docAmt.second.dt-covered-receipt{background:#22343a;color:#bcd8e0;bor
 .amtField input,.calcMoney input{flex:1;min-width:0;border:0 !important;box-shadow:none !important;background:transparent;padding:12px 0;font-size:max(16px,1.1em);font-weight:700;outline:none;}
 .amtCard .btnRow{justify-content:flex-start;flex-wrap:nowrap;margin-top:14px;}
 .amtCard .btnRow .btn{flex:1 1 auto;}
+.confirmCard.mpCard{max-width:460px;text-align:left;padding:24px 20px 20px;}
+.mpCard h3{margin:0 0 12px;font-size:1.2em;}
+.mpGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;max-height:min(52vh,420px);overflow-y:auto;padding:3px;margin:-3px;}
+.mpTile{position:relative;aspect-ratio:1/1;border:0;padding:0;border-radius:12px;overflow:hidden;background:var(--well);cursor:pointer;box-shadow:0 0 0 1.5px var(--line);}
+.mpTile img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .15s;}
+.mpTile.on{box-shadow:0 0 0 3px var(--orange);}
+.mpTile.on img{opacity:.82;}
+.mpTile:focus-visible{outline:3px solid var(--navy2);outline-offset:2px;}
+.mpNum{position:absolute;top:6px;left:6px;min-width:26px;height:26px;border-radius:13px;background:var(--orange);color:#fff;font-weight:800;font-size:.85em;display:flex;align-items:center;justify-content:center;padding:0 6px;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+.mpStatus{min-height:1.3em;margin-top:10px;font-size:.86em;color:var(--muted);}
+.mpCard .btnRow{justify-content:flex-start;flex-wrap:nowrap;margin-top:8px;}
+.mpCard .btnRow .btn{flex:1 1 auto;width:auto;min-width:0;white-space:nowrap;padding-left:14px;padding-right:14px;}
+.mpCard .btnRow .btn.secondary{flex:0 0 auto;}
+.mpCard .btnRow .btn:disabled{opacity:.55;cursor:default;}
 html.hc .docAmt{background:var(--hc-bg);color:var(--hc-fg);border-color:var(--hc-fg);}
 /* ---- Docs tab ----
    Four big ways in at the top, photos as a contact sheet the job can be read
@@ -5224,7 +5238,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111802;
+var APP_BUILD=2026111803;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -13121,6 +13135,7 @@ function docMenuHTML(wo, d){
       <button type="button" role="menuitem" onclick="dkMenuClose();viewDoc(${wo.id},'${d.id}')">${icon('eye')}View</button>
       <button type="button" role="menuitem" onclick="dkMenuClose();downloadDoc(${wo.id},'${d.id}')">${icon('download')}Download</button>
       <button type="button" role="menuitem" onclick="dkMenuClose();renameDoc(${wo.id},'${d.id}')">${icon('pencil')}Rename</button>
+      ${isImageDoc(d)&&(d.url||d.dataUrl)?`<button type="button" role="menuitem" onclick="dkMenuClose();openMakePdf(${wo.id},'${d.id}')">${icon('file-text')}Make PDF</button>`:''}
       <button type="button" role="menuitem" class="danger" onclick="dkMenuClose();deleteDoc(${wo.id},'${d.id}')">${icon('trash')}Delete</button>
     </div>
   </details>`;
@@ -13414,7 +13429,8 @@ async function handleDocUpload(id, inputEl, opts){
     setStatus('');
     inputEl.disabled=false;
   }
-  if(addedCount){
+  if(addedCount && opts.quiet){ LAST_DOC_ERROR=null; }
+  else if(addedCount){
     LAST_DOC_ERROR=null;
     const added=(wo.docs||[]).slice(-addedCount).map(d=>'"'+d.name+'"');
     addAdminLog(wo, `Uploaded ${addedCount} file${addedCount>1?'s':''}: ${added.join(', ')}.`);
@@ -13422,7 +13438,7 @@ async function handleDocUpload(id, inputEl, opts){
     renderWorkOrderModal(id);
     toast(addedCount>1 ? `${addedCount} documents uploaded.` : 'Document uploaded.');
   }
-  if(failed.length){
+  if(failed.length && !opts.quiet){
     toast(failed.length===1
       ? `Couldn't upload "${failed[0]}".`
       : `${failed.length} files failed to upload.`);
@@ -14291,6 +14307,159 @@ function deleteDoc(id, docId){
     saveDB(DB); renderWorkOrderModal(id);
     toast('File deleted.');
   });
+}
+/* ---- Make PDF ----
+   One photo, or several in the order they're tapped, become the pages of
+   one PDF. The PDF takes the photos' place: it keeps the first photo's name,
+   label and date, and the photos are removed once it is safely uploaded. */
+let MKPDF=null;
+function pdfPhotos(wo){ return (wo.docs||[]).filter(d=>isImageDoc(d) && (d.url||d.dataUrl)); }
+function openMakePdf(woId, docId){
+  const wo=getWO(woId);
+  if(!wo) return;
+  if(!syncStorage){ toast('Set up Multi-Device Sync first. Documents are stored in your Firebase project.'); return; }
+  MKPDF={woId, order:pdfPhotos(wo).some(d=>d.id===docId)?[docId]:[], busy:false, status:''};
+  renderMakePdf();
+}
+function renderMakePdf(){
+  const S=MKPDF, root=document.getElementById('confirmRoot');
+  const wo=S && getWO(S.woId);
+  if(!S || !wo || !root) return;
+  const photos=pdfPhotos(wo);
+  S.order=S.order.filter(id=>photos.some(d=>d.id===id));
+  const n=S.order.length;
+  const tiles=photos.map(d=>{
+    const k=S.order.indexOf(d.id);
+    return `<button type="button" class="mpTile${k>=0?' on':''}" onclick="toggleMakePdf('${d.id}')" aria-pressed="${k>=0}" aria-label="${esc(d.name||'Photo')}${k>=0?', page '+(k+1):''}"${S.busy?' disabled':''}>
+      <img src="${esc(d.url||d.dataUrl)}" alt="" loading="lazy" decoding="async">
+      ${k>=0?`<span class="mpNum">${k+1}</span>`:''}
+    </button>`;
+  }).join('');
+  root.innerHTML=`<div class="confirmBox noAnim" onclick="if(event.target===this)closeMakePdf()"><div class="confirmCard mpCard" role="dialog" aria-modal="true" aria-label="Make PDF">
+    <h3>Make PDF</h3>
+    <div class="mpGrid">${tiles}</div>
+    <div class="mpStatus" id="mpStatus" role="status">${esc(S.status||'')}</div>
+    <div class="btnRow">
+      <button class="btn" onclick="runMakePdf()"${(!n||S.busy)?' disabled':''}>${S.busy?'Making PDF…':'Make PDF'}</button>
+      <button class="btn secondary" onclick="closeMakePdf()"${S.busy?' disabled':''}>Cancel</button>
+    </div>
+  </div></div>`;
+}
+function toggleMakePdf(docId){
+  const S=MKPDF; if(!S || S.busy) return;
+  const k=S.order.indexOf(docId);
+  if(k>=0) S.order.splice(k,1); else S.order.push(docId);
+  S.status='';
+  renderMakePdf();
+}
+function closeMakePdf(){
+  if(MKPDF && MKPDF.busy) return;
+  MKPDF=null;
+  const r=document.getElementById('confirmRoot'); if(r) r.innerHTML='';
+}
+function setMakePdfStatus(t){ if(MKPDF) MKPDF.status=t; const el=document.getElementById('mpStatus'); if(el) el.textContent=t; }
+/* Reads a stored photo and returns it as a JPEG page for the PDF. */
+async function photoToPdfPage(d){
+  const src=d.url||d.dataUrl;
+  let blob;
+  try{
+    const resp=await fetch(src, {cache:'no-store'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    blob=await resp.blob();
+  }catch(e){ const err=new Error('fetch'); err.cause=e; throw err; }
+  const objUrl=URL.createObjectURL(blob);
+  try{
+    const img=new Image();
+    await new Promise((res,rej)=>{ img.onload=res; img.onerror=()=>rej(new Error('decode')); img.src=objUrl; });
+    const w0=img.naturalWidth, h0=img.naturalHeight;
+    if(!w0 || !h0) throw new Error('decode');
+    const s=Math.min(1, 2000/Math.max(w0,h0));
+    const cv=document.createElement('canvas');
+    cv.width=Math.max(1,Math.round(w0*s)); cv.height=Math.max(1,Math.round(h0*s));
+    const g=cv.getContext('2d');
+    g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
+    g.drawImage(img,0,0,cv.width,cv.height);
+    const jb=await scanCanvasBlob(cv);
+    const page={jpeg:new Uint8Array(await jb.arrayBuffer()), w:cv.width, h:cv.height};
+    cv.width=cv.height=0;
+    return page;
+  } finally { URL.revokeObjectURL(objUrl); }
+}
+async function runMakePdf(){
+  const S=MKPDF;
+  if(!S || S.busy || !S.order.length) return;
+  let wo=getWO(S.woId);
+  const picks=S.order.map(id=>getDoc(wo,id)).filter(Boolean);
+  if(!picks.length) return;
+  S.busy=true; S.status=''; renderMakePdf();
+  const fail=t=>{ if(MKPDF!==S) return; S.busy=false; S.status=t; renderMakePdf(); };
+  const pages=[];
+  for(let i=0;i<picks.length;i++){
+    setMakePdfStatus(picks.length>1 ? `Reading photo ${i+1} of ${picks.length}` : 'Reading photo');
+    try{ pages.push(await photoToPdfPage(picks[i])); }
+    catch(e){
+      const nm=picks[i].name||'a photo';
+      if(e && e.message==='decode') return fail(`"${nm}" is in a format this device can't open. Nothing was changed.`);
+      recordError('Make PDF could not download a photo: '+((e&&e.cause&&e.cause.message)||'blocked'), 'runMakePdf');
+      return fail(`Couldn't download "${nm}". Nothing was changed.`);
+    }
+  }
+  const first=picks[0];
+  const base=(first.name||'Photos').replace(/\.(jpe?g|png|gif|webp|heic|heif|bmp)$/i,'').trim() || 'Photos';
+  const file=new File([scanBuildPdf(pages)], base+'.pdf', {type:'application/pdf'});
+  if(file.size>DOC_MAX_BYTES) return fail('That PDF would be over the 25MB limit. Pick fewer photos.');
+  setMakePdfStatus('Uploading');
+  let res;
+  try{
+    res=await handleDocUpload(S.woId, {files:[file], disabled:false, value:''}, {
+      tag:first.tag||'', skipCompress:true, quiet:true,
+      onStatus:t=>{ if(t) setMakePdfStatus(t.replace(/^Uploading ".*?"…\s*/,'Uploading ').trim()); }
+    });
+  }catch(e){ console.error(e); res=null; }
+  if(!res || !res.ids || !res.ids.length) return fail("Couldn't upload the PDF. Nothing was changed.");
+  wo=getWO(S.woId)||wo;
+  const pdf=getDoc(wo, res.ids[0]);
+  const live=picks.map(p=>getDoc(wo,p.id)).filter(Boolean);
+  if(pdf){
+    pdf.name=base;
+    if(first.date) pdf.date=first.date;
+    if(first.uploadedAt) pdf.uploadedAt=first.uploadedAt;
+    if(first.uploadedBy) pdf.uploadedBy=first.uploadedBy;
+    // Amounts carry over. When several labelled photos are combined their
+    // amounts add up, so nothing entered is lost.
+    const nums=k=>live.filter(x=>typeof x[k]==='number');
+    if(nums('amount').length) pdf.amount=Math.round(nums('amount').reduce((t,x)=>t+x.amount,0)*100)/100;
+    const t2=live.find(x=>x.tag2);
+    if(t2){
+      pdf.tag2=t2.tag2;
+      const a2=live.filter(x=>x.tag2===t2.tag2 && typeof x.amount2==='number');
+      if(a2.length) pdf.amount2=Math.round(a2.reduce((t,x)=>t+x.amount2,0)*100)/100;
+    }
+    if(first.tag==='Reimbursement'){
+      const rb=live.filter(x=>x.tag==='Reimbursement');
+      if(rb.length && rb.every(x=>x.reimbursedAt)){ pdf.reimbursedAt=first.reimbursedAt||rb[0].reimbursedAt; pdf.reimbursedBy=first.reimbursedBy||rb[0].reimbursedBy; }
+    }
+  }
+  setMakePdfStatus('Finishing');
+  for(const d of live){
+    if(d.url && d.storagePath && syncStorage){
+      try{ await syncStorage.ref(d.storagePath).delete(); }catch(e){ /* already gone, still remove locally */ }
+      DB.storageUsedBytes=Math.max(0,(DB.storageUsedBytes||0)-(d.size||0));
+    }
+  }
+  wo=getWO(S.woId)||wo;
+  const gone=new Set(live.map(d=>d.id));
+  wo.docs=(wo.docs||[]).filter(x=>!gone.has(x.id));
+  if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+  gone.forEach(id=>wo.tombstones.push('f:'+id));
+  addAdminLog(wo, live.length>1
+    ? `Made PDF "${base}" from ${live.length} photos: ${live.map(d=>'"'+(d.name||'Untitled')+'"').join(', ')}.`
+    : `Made PDF "${base}" from photo "${first.name||'Untitled'}".`);
+  saveDB(DB);
+  S.busy=false;
+  if(MKPDF===S) closeMakePdf();
+  renderWorkOrderModal(S.woId);
+  toast('PDF made.');
 }
 function adminTabHTML(wo){
   const logHTML = wo.adminLog.length
