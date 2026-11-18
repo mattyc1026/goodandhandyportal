@@ -3678,6 +3678,15 @@ html.dark.hc select:not([multiple]):not([size]){
 .confirmCard.amtCard{max-width:360px;text-align:left;padding:24px 22px 20px;}
 .amtCard h3{margin:0 0 4px;font-size:1.2em;}
 .amtName{color:var(--muted);font-size:.85em;margin-bottom:14px;overflow-wrap:anywhere;}
+.secTagSeg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+.secTagSeg button{min-height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-weight:700;font-size:.86em;cursor:pointer;}
+.secTagSeg button.on{border-color:var(--navy);background:var(--navy);color:#fff;}
+.secRemove{display:block;margin:12px auto 0;background:none;border:0;color:var(--redb);font-family:inherit;font-weight:700;font-size:.84em;cursor:pointer;}
+.docAmt.second{font-family:inherit;}
+.docAmt.second.dt-receipt{background:#efe9dc;color:#5c4a20;border-color:#ddd1b6;}
+.docAmt.second.dt-covered-receipt{background:#e6eef0;color:#36555e;border-color:#c5d6db;}
+html.dark .docAmt.second.dt-receipt{background:#3a3222;color:#ead9b0;border-color:#5a4c30;}
+html.dark .docAmt.second.dt-covered-receipt{background:#22343a;color:#bcd8e0;border-color:#36525a;}
 .amtField,.calcMoney{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;background:var(--paper);}
 .amtField:focus-within,.calcMoney:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,38,71,.12);}
 .amtField span,.calcMoney span{font-weight:800;color:var(--muted);}
@@ -5215,7 +5224,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111801;
+var APP_BUILD=2026111802;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12538,12 +12547,13 @@ function renderReimbursements(){
   const card=(x,isDone)=>{
     const c=x.wo.customer||{}, d=x.d;
     const amt=typeof d.amount==='number' ? `<span class="rbAmt">${fmtMoney(d.amount)}</span>` : `<span class="rbAmt none">No amount</span>`;
+    const second=d.tag2 ? `<span class="rbMeta">Not reimbursed: ${esc(d.tag2)} ${typeof d.amount2==='number'?fmtMoney(d.amount2):''}</span>` : '';
     const meta=isDone
       ? `Reimbursed ${day(d.reimbursedAt)}${d.reimbursedBy?' by '+esc(firstOf(d.reimbursedBy)):''}`
       : `Added ${d.uploadedAt?day(d.uploadedAt):esc(d.date||'')}${d.uploadedBy?' by '+esc(firstOf(d.uploadedBy)):''}`;
     return `<div class="rbCard${isDone?' done':''}">
       <button type="button" class="rbMain" onclick="viewDoc(${x.wo.id},'${d.id}')" aria-label="View ${esc(d.name||'file')}">
-        <b>${esc(c.name||'Customer')}</b><span class="rbFile">${esc(d.name||'File')}</span><span class="rbMeta">${meta}</span></button>
+        <b>${esc(c.name||'Customer')}</b><span class="rbFile">${esc(d.name||'File')}</span><span class="rbMeta">${meta}</span>${second}</button>
       ${amt}
       ${isDone
         ? `<button type="button" class="rbUndo" onclick="setReimbursed(${x.wo.id},'${d.id}',false)" aria-label="Move back to pending" title="Move back to pending">${icon('undo')}</button>`
@@ -12637,9 +12647,10 @@ function summaryData(year){
       if(b){ b.hours+=h||0; b.miles+=mi; }
     });
     (wo.docs||[]).forEach(d=>{
-      if(d.tag!=='Receipt' || typeof d.amount!=='number' || !d.uploadedAt) return;
+      const amt=d.tag==='Receipt' ? d.amount : (d.tag==='Reimbursement' && d.tag2==='Receipt') ? d.amount2 : null;
+      if(typeof amt!=='number' || !d.uploadedAt) return;
       const dt=new Date(d.uploadedAt), b=at(dt.getFullYear(), dt.getMonth());
-      if(b) b.receipts+=d.amount;
+      if(b) b.receipts+=amt;
     });
   });
   const total=months.reduce((t,m)=>({done:t.done+m.done, notdone:t.notdone+m.notdone, hours:t.hours+m.hours, miles:t.miles+m.miles, receipts:t.receipts+m.receipts}), {done:0,notdone:0,hours:0,miles:0,receipts:0});
@@ -12784,6 +12795,10 @@ function renderErrorLog(){
 function receiptTotal(wo){
   let sum=0, count=0, missing=0;
   (wo.docs||[]).forEach(d=>{
+    if(d.tag==='Reimbursement' && d.tag2==='Receipt'){
+      if(typeof d.amount2==='number'){ sum+=d.amount2; count++; } else missing++;
+      return;
+    }
     if(d.tag!=='Receipt') return;
     if(typeof d.amount==='number'){ sum+=d.amount; count++; } else missing++;
   });
@@ -13038,8 +13053,64 @@ function docTagPickHTML(wo, d){
   </span>`;
 }
 function docAmtHTML(wo, d){
+  return docAmtOneHTML(wo, d)+docSecondHTML(wo, d);
+}
+function docAmtOneHTML(wo, d){
   if(d.tag!=='Receipt' && d.tag!=='Covered Receipt' && d.tag!=='Reimbursement') return '';
   return `<button type="button" class="docAmt${typeof d.amount==='number'?'':' empty'}" onclick="askReceiptAmount(${wo.id},'${d.id}')" aria-label="Receipt amount">${typeof d.amount==='number'?fmtMoney(d.amount):'Add Amount'}</button>`;
+}
+/* A Reimbursement can also carry a second total, for anything on the same
+   document that is not being reimbursed, labeled Receipt or Covered Receipt. */
+function docSecondHTML(wo, d){
+  if(d.tag!=='Reimbursement') return '';
+  if(!d.tag2) return `<button type="button" class="docAmt empty" onclick="askSecondTotal(${wo.id},'${d.id}')" aria-label="Add second total">Second Total</button>`;
+  const amt=typeof d.amount2==='number' ? fmtMoney(d.amount2) : 'Add Amount';
+  return `<button type="button" class="docAmt second ${docTagClass(d.tag2)}" onclick="askSecondTotal(${wo.id},'${d.id}')" aria-label="Second total">${esc(d.tag2)} ${amt}</button>`;
+}
+let SECOND_TAG='Receipt';
+function askSecondTotal(woId, docId){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  const root=document.getElementById('confirmRoot');
+  if(!d || !root) return;
+  SECOND_TAG=d.tag2==='Covered Receipt' ? 'Covered Receipt' : 'Receipt';
+  const cur=typeof d.amount2==='number' ? d.amount2.toFixed(2) : '';
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard amtCard" role="dialog" aria-modal="true" aria-label="Second total">
+    <h3>Second Total</h3>
+    <div class="amtName">${esc(d.name||'')}</div>
+    <div class="secTagSeg" role="radiogroup" aria-label="Label for the second total">
+      ${['Receipt','Covered Receipt'].map(t=>`<button type="button" role="radio" aria-checked="${SECOND_TAG===t}" class="${SECOND_TAG===t?'on':''}" onclick="pickSecondTag(this,'${t}')">${t}</button>`).join('')}
+    </div>
+    <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Second total amount"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();saveSecondTotal(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}"></label>
+    <div class="errMsg" id="amtErr"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveSecondTotal(${woId},'${docId}')">Save</button>
+      <button class="btn secondary" onclick="closeReceiptAmount()">Cancel</button>
+    </div>
+    ${d.tag2?`<button type="button" class="secRemove" onclick="saveSecondTotal(${woId},'${docId}',true)">Remove Second Total</button>`:''}
+  </div></div>`;
+  setTimeout(()=>{ const i=document.getElementById('amtInput'); if(i){ i.focus(); i.select(); } }, 60);
+}
+function pickSecondTag(btn, t){
+  SECOND_TAG=t;
+  btn.parentElement.querySelectorAll('button').forEach(b=>{ const on=b===btn; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+}
+function saveSecondTotal(woId, docId, remove){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  if(!d){ closeReceiptAmount(); return; }
+  if(remove){
+    delete d.tag2; delete d.amount2;
+    addAdminLog(wo, `Reimbursement "${d.name}" second total removed.`);
+  } else {
+    const v=parseMoney(document.getElementById('amtInput').value);
+    if(v===null || isNaN(v) || v<0){ document.getElementById('amtErr').textContent='Enter a dollar amount.'; return; }
+    const was=d.tag2 ? `${d.tag2} ${typeof d.amount2==='number'?fmtMoney(d.amount2):''}`.trim() : '';
+    d.tag2=SECOND_TAG; d.amount2=v;
+    addAdminLog(wo, `Reimbursement "${d.name}" second total set to ${d.tag2} ${fmtMoney(v)}${was?' (was '+was+')':''}.`);
+  }
+  closeReceiptAmount();
+  saveDB(DB);
+  renderWorkOrderModal(woId);
 }
 /* Download, rename and delete live behind one button so each file shows
    one clear action (view) instead of four. */
