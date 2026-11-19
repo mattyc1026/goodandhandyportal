@@ -516,11 +516,76 @@ html.training:has(#modalRoot .overlay){overflow:hidden;}
 .rbUndo svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 @media (max-width:600px){
   .rbCard{flex-wrap:wrap;row-gap:8px;}
-  .rbMain{flex:1 1 100%;}
+  .rbMain{flex:1 1 calc(100% - 40px);}
+  .rbPick{align-self:flex-start;margin-top:1px;}
   .rbAmt{margin-right:auto;}
 }
 .rbCard.done .rbMain b,.rbCard.done .rbAmt{color:var(--muted);}
 .rbEmpty{color:var(--muted);font-weight:600;padding:10px 2px 4px;}
+.rbTools{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.rbTools .rbJob{width:100%;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);min-height:44px;font-size:16px;font-weight:700;font-family:inherit;background:var(--paper);color:var(--navy);}
+.rbSelRow{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.rbAllLbl{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--navy);cursor:pointer;}
+.rbAllLbl input,.rbPick input{width:22px;height:22px;margin:0;accent-color:var(--navy);cursor:pointer;flex:0 0 auto;}
+.rbTools .rbPrint{width:auto;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;min-height:40px;}
+.rbTools .rbPrint .ic,.dkPrint .ic{width:18px;height:18px;}
+.rbTools .rbPrint:disabled{opacity:.5;cursor:default;}
+.rbPick{flex:0 0 auto;display:flex;align-items:center;margin-right:-2px;cursor:pointer;}
+.rbCard.sel{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy);}
+.dkPrintRow{display:flex;justify-content:flex-end;margin:-4px 0 2px;}
+.dkPrint{width:auto;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;min-height:40px;}
+.mpHeadRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.mpHeadRow h3{margin:0 !important;}
+.mpAll{border:0;background:none;color:var(--navy);font:inherit;font-weight:800;font-size:.9em;cursor:pointer;padding:6px 4px;}
+.mpFile{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;color:var(--navy);text-align:center;}
+.mpFile .ic{width:26px;height:26px;}
+.mpFile span{font-size:11px;font-weight:700;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow-wrap:anywhere;}
+/* report preview and print */
+#printRoot{position:fixed;inset:0;z-index:100000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#5b6473;}
+.prBar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:12px 16px;padding-top:max(12px, env(safe-area-inset-top));background:#2a3140;}
+.prBar .btn{width:auto;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;min-height:42px;}
+.prBar .btn .ic{width:18px;height:18px;}
+.prBar .btn:disabled{opacity:.55;}
+.prBar .btn.secondary{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5);}
+.prStatus{color:#dfe4ec;font-weight:700;font-size:.9em;}
+.prPages{padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.prPage{width:100%;max-width:760px;box-sizing:border-box;background:#fff;color:#111;padding:36px 40px;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,.25);font-family:var(--f-body, system-ui, sans-serif);}
+.prPage h1{font-family:var(--f-display);font-weight:400;font-size:28px;margin:0 0 4px;color:#0f2647;}
+.prSub{color:#555;font-size:13px;margin-bottom:22px;}
+.prJob{font-weight:800;font-size:17px;color:#0f2647;}
+.prAddr{color:#555;font-size:13px;margin-top:2px;}
+.prDoc{font-weight:700;font-size:15px;margin-top:8px;overflow-wrap:anywhere;}
+.prHead.small .prDoc{margin-top:0;}
+.prMeta{color:#555;font-size:12.5px;margin-top:2px;}
+.prAmts{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:12px;}
+.prAmt{display:flex;flex-direction:column;}
+.prAmt span{font-size:12px;color:#555;font-weight:600;}
+.prAmt b{font-size:20px;font-variant-numeric:tabular-nums;}
+.prAmt small{font-size:11.5px;color:#666;}
+.prHead{padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #ddd;}
+.prPic{display:block;max-width:100%;max-height:78vh;margin:0 auto;object-fit:contain;}
+.prTable{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:14px;}
+.prTable th{text-align:left;font-size:11px;color:#555;font-weight:700;border-bottom:1.5px solid #333;padding:6px 6px;}
+.prTable td{border-bottom:1px solid #e3e3e3;padding:7px 6px;vertical-align:top;overflow-wrap:break-word;}
+.prTable .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.prTable tfoot td{font-weight:800;border-top:1.5px solid #333;border-bottom:0;}
+.prTotals{width:auto;min-width:260px;margin-left:auto;margin-top:18px;}
+.prTotals td{font-weight:700;}
+@media (max-width:600px){ .prPage{padding:22px 18px;} .prTable{font-size:11.5px;} .prTable th,.prTable td{padding:6px 4px;} }
+@media print{
+  html.prOpen body > *:not(#printRoot){display:none !important;}
+  html.prOpen,html.prOpen body{overflow:visible !important;height:auto !important;}
+  html.prOpen #printRoot{position:static;inset:auto;overflow:visible;background:#fff;z-index:auto;}
+  html.prOpen .prBar{display:none !important;}
+  html.prOpen .prPages{padding:0;display:block;}
+  html.prOpen .prPage{max-width:none;box-shadow:none;border-radius:0;padding:0;margin:0;break-after:page;page-break-after:always;}
+  html.prOpen .prPage:last-child{break-after:auto;page-break-after:auto;}
+  /* a picture page is exactly one sheet tall and the picture fills what the heading leaves */
+  html.prOpen .prPage.hasPic{display:flex;flex-direction:column;height:245mm;overflow:hidden;}
+  html.prOpen .prPage.hasPic .prHead{flex:0 0 auto;}
+  html.prOpen .prPic{flex:1 1 0;min-height:0;width:100%;height:0;max-height:none;object-fit:contain;}
+  html.prOpen .prTable tr{break-inside:avoid;}
+}
 button.adminBtn[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.35);}
 .admDot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--orange);}
 .admCount{display:inline-block;margin-left:6px;min-width:1.6em;padding:0 6px;border-radius:999px;background:var(--orange);color:#fff;font-size:.82em;text-align:center;font-weight:700;}
@@ -4246,6 +4311,7 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-4.6A8 8 0 0 1 13 4a8 8 0 0 1 8 8z"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 16l-5-5L6 20"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-printer" viewBox="0 0 24 24"><path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 20h14"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.8"/></symbol>
   <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L20 8l-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
@@ -5298,7 +5364,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111901;
+var APP_BUILD=2026111902;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12831,10 +12897,69 @@ function openReimbursements(){
   closeSettingsMenus();
   renderReimbursements();
 }
-function renderReimbursements(){
-  const all=reimbItems();
+let RB_JOB='all', RB_SEL=new Set();
+const rbKey=x=>x.wo.id+':'+x.d.id;
+const rbJob=x=>String(((x.wo.customer||{}).name)||'Customer').trim()||'Customer';
+function rbShown(){
+  const all=reimbItems().filter(x=>RB_JOB==='all' || rbJob(x)===RB_JOB);
   const pend=all.filter(x=>!x.d.reimbursedAt).sort((a,b)=>(a.d.uploadedAt||0)-(b.d.uploadedAt||0));
   const done=all.filter(x=>x.d.reimbursedAt).sort((a,b)=>(b.d.reimbursedAt||0)-(a.d.reimbursedAt||0));
+  return {pend, done, list:pend.concat(done)};
+}
+function setRbJob(v){
+  RB_JOB=v;
+  const keep=new Set(rbShown().list.map(rbKey));
+  RB_SEL=new Set([...RB_SEL].filter(k=>keep.has(k)));
+  renderReimbursements();
+}
+function toggleRbSel(k, on){ if(on) RB_SEL.add(k); else RB_SEL.delete(k); rbSelUpdate(); }
+function toggleRbAll(on){
+  const list=rbShown().list.map(rbKey);
+  RB_SEL=on ? new Set(list) : new Set();
+  document.querySelectorAll('#reimbModal .rbPick input').forEach(i=>{ i.checked=on; });
+  rbSelUpdate();
+}
+function rbSelUpdate(){
+  const n=RB_SEL.size, total=rbShown().list.length;
+  const b=document.getElementById('rbPrintBtn'); if(b){ b.disabled=!n; b.innerHTML=`${icon('printer')}Print${n?' ('+n+')':''}`; }
+  const a=document.getElementById('rbAll'); if(a){ a.checked=n>0 && n===total; a.indeterminate=n>0 && n<total; }
+  document.querySelectorAll('#reimbModal .rbCard').forEach(c=>c.classList.toggle('sel', RB_SEL.has(c.dataset.k)));
+}
+function printReimbursements(){
+  const list=rbShown().list.filter(x=>RB_SEL.has(rbKey(x)));
+  if(!list.length) return;
+  const day=ms=>new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const status=d=>d.reimbursedAt ? `Reimbursed ${day(d.reimbursedAt)}` : 'Pending';
+  const amt=d=>typeof d.amount==='number' ? fmtMoney(d.amount) : '';
+  const rem=d=>(d.tag2 && typeof d.amount2==='number') ? fmtMoney(d.amount2) : '';
+  const tot=k=>list.reduce((t,x)=>t+(typeof x.d[k]==='number' && (k!=='amount2'||x.d.tag2)?x.d[k]:0),0);
+  const added=d=>d.uploadedAt?day(d.uploadedAt):(d.date||'');
+  const oneJob=new Set(list.map(rbJob)).size===1;
+  const summary=`${oneJob?`<div class="prJob">${esc(rbJob(list[0]))}</div>`:''}<table class="prTable"><thead><tr>${oneJob?'':'<th>Job</th>'}<th>Document</th><th>Added</th><th>Status</th><th class="n">Reimbursement</th><th class="n">Remaining</th></tr></thead><tbody>
+    ${list.map(x=>`<tr>${oneJob?'':`<td>${esc(rbJob(x))}</td>`}<td>${esc(x.d.name||'File')}</td><td>${esc(added(x.d))}</td><td>${esc(status(x.d))}</td><td class="n">${amt(x.d)}</td><td class="n">${rem(x.d)}</td></tr>`).join('')}
+    </tbody><tfoot><tr><td colspan="${oneJob?3:4}">Total</td><td class="n">${fmtMoney(tot('amount'))}</td><td class="n">${fmtMoney(tot('amount2'))}</td></tr></tfoot></table>`;
+  openReport({
+    title:'Reimbursement Report',
+    sub: `${list.length} receipt${list.length>1?'s':''}`,
+    summary,
+    items:list.map(x=>({d:x.d, head:`<div class="prJob">${esc(rbJob(x))}</div>
+      ${(x.wo.customer||{}).address?`<div class="prAddr">${esc(x.wo.customer.address)}</div>`:''}
+      <div class="prDoc">${esc(x.d.name||'File')}</div>
+      <div class="prMeta">Added ${esc(added(x.d))}, ${esc(status(x.d))}</div>
+      <div class="prAmts">${prAmtHTML('Reimbursement', x.d.amount, x.d.taxRate, x.d.amountPre)}${x.d.tag2?prAmtHTML('Remaining ('+x.d.tag2+')', x.d.amount2, x.d.taxRate, x.d.amount2Pre):''}</div>`}))
+  });
+}
+function prAmtHTML(label, v, rate, pre){
+  if(typeof v!=='number') return `<div class="prAmt"><span>${esc(label)}</span><b>None entered</b></div>`;
+  const taxNote=(typeof pre==='number' && pre!==v) ? `<small>${fmtMoney(pre)} + ${fmtRate(typeof rate==='number'?rate:SALES_TAX)} tax</small>` : '';
+  return `<div class="prAmt"><span>${esc(label)}</span><b>${fmtMoney(v)}</b>${taxNote}</div>`;
+}
+function renderReimbursements(){
+  const {pend, done, list}=rbShown();
+  const jobs=[...new Set(reimbItems().map(rbJob))].sort((a,b)=>a.localeCompare(b));
+  if(RB_JOB!=='all' && !jobs.includes(RB_JOB)) RB_JOB='all';
+  RB_SEL=new Set([...RB_SEL].filter(k=>list.some(x=>rbKey(x)===k)));
+  const all=reimbItems();
   const sum=list=>list.reduce((t,x)=>t+(typeof x.d.amount==='number'?x.d.amount:0),0);
   const day=ms=>new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   const card=(x,isDone)=>{
@@ -12844,7 +12969,9 @@ function renderReimbursements(){
     const meta=isDone
       ? `Reimbursed ${day(d.reimbursedAt)}${d.reimbursedBy?' by '+esc(firstOf(d.reimbursedBy)):''}`
       : `Added ${d.uploadedAt?day(d.uploadedAt):esc(d.date||'')}${d.uploadedBy?' by '+esc(firstOf(d.uploadedBy)):''}`;
-    return `<div class="rbCard${isDone?' done':''}">
+    const k=rbKey(x);
+    return `<div class="rbCard${isDone?' done':''}${RB_SEL.has(k)?' sel':''}" data-k="${k}">
+      <label class="rbPick"><input type="checkbox" aria-label="Select ${esc(d.name||'file')}"${RB_SEL.has(k)?' checked':''} onchange="toggleRbSel('${k}',this.checked)"></label>
       <button type="button" class="rbMain" onclick="viewDoc(${x.wo.id},'${d.id}')" aria-label="View ${esc(d.name||'file')}">
         <b>${esc(c.name||'Customer')}</b><span class="rbFile">${esc(d.name||'File')}</span><span class="rbMeta">${meta}</span>${second}</button>
       ${amt}
@@ -12858,12 +12985,23 @@ function renderReimbursements(){
     <div class="modal" style="max-width:560px;">
       <div class="modalHead"><h2>Reimbursements</h2><button class="closeX" onclick="closeModal()" aria-label="Close">&times;</button></div>
       <div class="modalBody">
+        ${all.length?`<div class="rbTools">
+          <select class="rbJob" aria-label="Job" onchange="setRbJob(this.value)">
+            <option value="all"${RB_JOB==='all'?' selected':''}>All Jobs</option>
+            ${jobs.map(j=>`<option value="${esc(j)}"${RB_JOB===j?' selected':''}>${esc(j)}</option>`).join('')}
+          </select>
+          <div class="rbSelRow">
+            <label class="rbAllLbl"><input type="checkbox" id="rbAll" onchange="toggleRbAll(this.checked)"${list.length?'':' disabled'}>Select All</label>
+            <button type="button" class="btn secondary rbPrint" id="rbPrintBtn" onclick="printReimbursements()" disabled>${icon('printer')}Print</button>
+          </div>
+        </div>`:''}
         <div class="rbHead">Pending Reimbursement <span>${fmtMoney(sum(pend))}</span></div>
         ${pend.length ? pend.map(x=>card(x,false)).join('') : `<div class="rbEmpty">Nothing pending.</div>`}
         ${done.length ? `<div class="rbHead">Reimbursed <span>${fmtMoney(sum(done))}</span></div>${done.map(x=>card(x,true)).join('')}` : ''}
       </div>
     </div>
   </div>`;
+  rbSelUpdate();
 }
 const firstOf=n=>capName(String(n||'').trim().split(/\s+/)[0]);
 function setReimbursed(woId, docId, on){
@@ -13556,6 +13694,7 @@ function docsTabHTML(wo){
   }
   return `<div class="docsTab dk">
     ${uploaderHTML}
+    ${docs.length?`<div class="dkPrintRow"><button type="button" class="btn secondary dkPrint" onclick="openDocPrint(${wo.id})">${icon('printer')}Print</button></div>`:''}
     <section class="dkSec">
       <div class="dkSecHead"><h4>Photos</h4>${images.length?`<span class="dkCount">${images.length}</span>`:''}</div>
       ${filterBar}
@@ -14743,6 +14882,154 @@ async function runMakePdf(){
   if(MKPDF===S) closeMakePdf();
   renderWorkOrderModal(S.woId);
   toast('Converted to PDF.');
+}
+/* ----- printed reports -----
+   A report opens as a preview over the app: a summary page, then one page
+   per document with its picture and totals. Print prints only the report.
+   PDFs are drawn page by page with pdf.js, loaded the first time it is needed. */
+const PDFJS_SRC='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
+const PDFJS_WORKER='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+let PDFJS=null;
+async function loadPdfJs(){
+  if(PDFJS) return PDFJS;
+  if(typeof Promise.withResolvers!=='function') Promise.withResolvers=function(){ let a,b; const p=new Promise((r,j)=>{a=r;b=j;}); return {promise:p, resolve:a, reject:b}; };
+  const m=await import(PDFJS_SRC);
+  m.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;
+  PDFJS=m; return m;
+}
+async function pdfToImages(d, maxPages){
+  const resp=await fetch(d.url||d.dataUrl, {cache:'no-store'});
+  if(!resp.ok) throw new Error('HTTP '+resp.status);
+  const data=new Uint8Array(await resp.arrayBuffer());
+  const lib=await loadPdfJs();
+  const pdf=await lib.getDocument({data}).promise;
+  const out=[], n=Math.min(pdf.numPages, maxPages||40);
+  for(let i=1;i<=n;i++){
+    const page=await pdf.getPage(i);
+    const v0=page.getViewport({scale:1});
+    const vp=page.getViewport({scale:Math.min(3, 1600/Math.max(v0.width,v0.height))});
+    const cv=document.createElement('canvas'); cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+    const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
+    await page.render({canvasContext:g, canvas:cv, viewport:vp}).promise;
+    out.push(cv.toDataURL('image/jpeg', .86));
+    cv.width=cv.height=0;
+  }
+  try{ pdf.destroy(); }catch(_){}
+  return {pages:out, total:pdf.numPages};
+}
+let REPORT_RUN=0;
+async function openReport(o){
+  const run=++REPORT_RUN;
+  let root=document.getElementById('printRoot');
+  if(!root){ root=document.createElement('div'); root.id='printRoot'; document.body.appendChild(root); }
+  document.documentElement.classList.add('prOpen');
+  const printed=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  root.innerHTML=`<div class="prBar"><button type="button" class="btn" id="prPrint" onclick="window.print()" disabled>${icon('printer')}Print</button><button type="button" class="btn secondary" onclick="closeReport()">Close</button><span class="prStatus" id="prStatus" role="status">Preparing</span></div>
+    <div class="prPages" id="prPages"><section class="prPage prSummary"><h1>${esc(o.title)}</h1><div class="prSub">${esc(o.sub||'')}${o.sub?', ':''}printed ${esc(printed)}</div>${o.summary||''}</section></div>`;
+  const pages=document.getElementById('prPages');
+  for(let i=0;i<o.items.length;i++){
+    if(run!==REPORT_RUN) return;
+    const it=o.items[i], d=it.d;
+    const st=document.getElementById('prStatus'); if(st) st.textContent=o.items.length>1 ? `Preparing ${i+1} of ${o.items.length}` : 'Preparing';
+    let pics=[], more=0;
+    if(isImageDoc(d) && (d.url||d.dataUrl)) pics=[d.url||d.dataUrl];
+    else if(docKind(d).c==='pdf' && (d.url||d.dataUrl)){
+      try{ const r=await pdfToImages(d, 40); pics=r.pages; more=r.total-r.pages.length; }
+      catch(e){ console.warn('PDF pages could not be read', e); recordError('Report could not read PDF "'+(d.name||'')+'": '+(e&&e.message||e), 'openReport'); }
+    }
+    const sec=document.createElement('section'); sec.className='prPage'+(pics.length?' hasPic':'');
+    sec.innerHTML=`<div class="prHead">${it.head}</div>${pics.length?`<img class="prPic" src="${esc(pics[0])}" alt="">`:''}`;
+    pages.appendChild(sec);
+    pics.slice(1).forEach((src,k)=>{
+      const p2=document.createElement('section'); p2.className='prPage hasPic';
+      p2.innerHTML=`<div class="prHead small"><div class="prDoc">${esc(d.name||'File')}</div><div class="prMeta">Page ${k+2} of ${pics.length+more}</div></div><img class="prPic" src="${esc(src)}" alt="">`;
+      pages.appendChild(p2);
+    });
+  }
+  if(run!==REPORT_RUN) return;
+  const imgs=[...pages.querySelectorAll('img')];
+  await Promise.race([
+    Promise.all(imgs.map(im=>im.complete ? Promise.resolve() : new Promise(r=>{ im.onload=im.onerror=r; }))),
+    new Promise(r=>setTimeout(r, 20000))
+  ]);
+  if(run!==REPORT_RUN) return;
+  const st=document.getElementById('prStatus'); if(st) st.textContent='';
+  const pb=document.getElementById('prPrint'); if(pb){ pb.disabled=false; pb.focus({preventScroll:true}); }
+}
+function closeReport(){
+  REPORT_RUN++;
+  const r=document.getElementById('printRoot'); if(r) r.remove();
+  document.documentElement.classList.remove('prOpen');
+}
+
+/* ----- Docs tab: pick documents to print ----- */
+let DPR=null;
+function openDocPrint(woId){
+  const wo=getWO(woId); if(!wo) return;
+  DPR={woId, order:[]};
+  renderDocPrint();
+}
+function dprDocs(wo){ return (wo.docs||[]).filter(isImageDoc).concat((wo.docs||[]).filter(d=>!isImageDoc(d))); }
+function renderDocPrint(){
+  const S=DPR, wo=S && getWO(S.woId), root=document.getElementById('confirmRoot');
+  if(!S || !wo || !root) return;
+  const docs=dprDocs(wo);
+  S.order=S.order.filter(id=>docs.some(d=>d.id===id));
+  const n=S.order.length;
+  const tiles=docs.map(d=>{
+    const k=S.order.indexOf(d.id);
+    const face=isImageDoc(d) && (d.url||d.dataUrl)
+      ? `<img src="${esc(d.url||d.dataUrl)}" alt="" loading="lazy" decoding="async">`
+      : `<span class="mpFile">${icon(docKind(d).c==='pdf'?'file-text':'file')}<span>${esc(d.name||'File')}</span></span>`;
+    return `<button type="button" class="mpTile${k>=0?' on':''}" onclick="toggleDocPrint('${d.id}')" aria-pressed="${k>=0}" aria-label="${esc(d.name||'Document')}">${face}${k>=0?`<span class="mpNum">${k+1}</span>`:''}</button>`;
+  }).join('');
+  root.innerHTML=`<div class="confirmBox noAnim" onclick="if(event.target===this)closeDocPrint()"><div class="confirmCard mpCard" role="dialog" aria-modal="true" aria-label="Print documents">
+    <div class="mpHeadRow"><h3>Print Documents</h3><button type="button" class="mpAll" onclick="docPrintAll()">${n===docs.length&&n?'Clear':'Select All'}</button></div>
+    <div class="mpGrid">${tiles}</div>
+    <div class="btnRow">
+      <button class="btn" onclick="runDocPrint()"${n?'':' disabled'}>Print${n?' ('+n+')':''}</button>
+      <button class="btn secondary" onclick="closeDocPrint()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function toggleDocPrint(id){ const S=DPR; if(!S) return; const k=S.order.indexOf(id); if(k>=0) S.order.splice(k,1); else S.order.push(id); renderDocPrint(); }
+function docPrintAll(){
+  const S=DPR, wo=S && getWO(S.woId); if(!wo) return;
+  const docs=dprDocs(wo);
+  if(S.order.length===docs.length) S.order=[];
+  else docs.forEach(d=>{ if(!S.order.includes(d.id)) S.order.push(d.id); });
+  renderDocPrint();
+}
+function closeDocPrint(){ DPR=null; const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
+function runDocPrint(){
+  const S=DPR, wo=S && getWO(S.woId); if(!wo || !S.order.length) return;
+  const list=S.order.map(id=>getDoc(wo,id)).filter(Boolean);
+  closeDocPrint();
+  const c=wo.customer||{};
+  const day=ms=>new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const added=d=>d.uploadedAt?day(d.uploadedAt):(d.date||'');
+  const money=v=>typeof v==='number' ? fmtMoney(v) : '';
+  const anyAmt=list.some(d=>typeof d.amount==='number' || typeof d.amount2==='number');
+  // totals added up by label, so receipts and reimbursements are never mixed
+  const byTag={};
+  list.forEach(d=>{
+    if(typeof d.amount==='number'){ const t=d.tag||'No label'; byTag[t]=(byTag[t]||0)+d.amount; }
+    if(d.tag2 && typeof d.amount2==='number'){ const t=d.tag2+' (second totals)'; byTag[t]=(byTag[t]||0)+d.amount2; }
+  });
+  const summary=`<div class="prJob">${esc(c.name||'Customer')}</div>${c.address?`<div class="prAddr">${esc(c.address)}</div>`:''}
+    <table class="prTable"><thead><tr><th>Document</th><th>Label</th><th>Added</th>${anyAmt?'<th class="n">Total</th><th class="n">Second Total</th>':''}</tr></thead><tbody>
+    ${list.map(d=>`<tr><td>${esc(d.name||'File')}</td><td>${esc(d.tag||'')}</td><td>${esc(added(d))}</td>${anyAmt?`<td class="n">${money(d.amount)}</td><td class="n">${d.tag2?esc(d.tag2)+' '+money(d.amount2):''}</td>`:''}</tr>`).join('')}
+    </tbody></table>
+    ${Object.keys(byTag).length?`<table class="prTable prTotals"><tbody>${Object.keys(byTag).map(t=>`<tr><td>${esc(t)}</td><td class="n">${fmtMoney(Math.round(byTag[t]*100)/100)}</td></tr>`).join('')}</tbody></table>`:''}`;
+  openReport({
+    title:'Document Report',
+    sub:`${list.length} document${list.length>1?'s':''}`,
+    summary,
+    items:list.map(d=>({d, head:`<div class="prJob">${esc(c.name||'Customer')}</div>
+      <div class="prDoc">${esc(d.name||'File')}</div>
+      <div class="prMeta">${d.tag?esc(d.tag)+', ':''}added ${esc(added(d))}</div>
+      ${(typeof d.amount==='number'||d.tag2)?`<div class="prAmts">${typeof d.amount==='number'?prAmtHTML(d.tag||'Total', d.amount, d.taxRate, d.amountPre):''}${d.tag2?prAmtHTML(d.tag==='Reimbursement'?'Remaining ('+d.tag2+')':d.tag2, d.amount2, d.taxRate, d.amount2Pre):''}</div>`:''}`}))
+  });
 }
 function adminTabHTML(wo){
   const logHTML = wo.adminLog.length
