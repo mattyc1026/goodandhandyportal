@@ -2851,6 +2851,37 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .hoFace .hoPhone{color:var(--pink-ink);}
 .fieldSec--homeowner .fieldSecHead > span:first-child{overflow:visible;}
 .fieldSec--homeowner .hoRow + .hoRow{border-top:1px solid color-mix(in srgb,var(--pink-ink) 18%,transparent);}
+/* Two numbers in the phone card: one row each, both tappable, split by a hairline. */
+.fgPhones{display:flex;flex-direction:column;}
+.fgPhones .fgHit{height:auto;flex:1 1 auto;}
+.fgPhones .fgHit + .fgHit{border-top:1px solid color-mix(in srgb,var(--phone-green-ink) 20%,transparent);}
+.fieldGrid .fgCell .fgAlt .fgLabel{color:var(--phone-green-ink);opacity:.85;}
+.fgPhones .fgAlt .fgValue{font-size:.95em;}
+@media (max-width:600px){ .fgPhones .fgAlt .fgValue{font-size:.92em;} }
+/* Edit form: the customer, then the other people on the job in pink sections */
+.ceMain{display:flex;flex-direction:column;gap:6px;}
+.ceSec{
+  border:1px solid color-mix(in srgb,var(--pink-ink) 22%,var(--line));border-top:4px solid var(--pink-ink);
+  border-radius:var(--radius);background:linear-gradient(90deg,var(--pink) 0%,var(--paper) 70%);
+  margin-top:10px;overflow:hidden;
+}
+.ceSecHead{
+  display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;min-height:50px;box-sizing:border-box;
+  background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;
+}
+.ceSecTitle{font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:.74em;color:var(--pink-ink);overflow-wrap:anywhere;}
+.ceSecText{display:flex;flex-direction:column;gap:1px;min-width:0;margin-right:auto;}
+.ceSecOpt{font-size:.7em;font-weight:600;color:var(--muted);white-space:nowrap;}
+.ceSecIcon{display:flex;color:var(--pink-ink);transition:transform var(--t-press,.15s) var(--e-out,ease);}
+.ceSecIcon{width:28px;height:28px;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--pink-ink) 12%,transparent);flex:0 0 auto;}
+.ceSecIcon svg{width:16px;height:16px;}
+.ceSec.open .ceSecIcon{transform:rotate(45deg);}
+.ceSecHead:focus-visible{outline:3px solid var(--navy2);outline-offset:-3px;}
+.ceSecBody{display:flex;flex-direction:column;gap:6px;padding:0 16px 16px;}
+.ceSecBody[hidden]{display:none;}
+.ceSecBody .kv b{color:var(--pink-ink);}
+.ceNote{width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;resize:vertical;box-sizing:border-box;font-size:inherit;background:var(--paper);color:var(--ink);}
+.modalHeadCust.editing .accessFields{margin-top:10px;}
 .hoNote{
   margin-top:-8px;padding:0 24px 14px;text-align:center;
   font-size:.88em;font-style:italic;color:var(--muted);line-height:1.4;
@@ -5387,7 +5418,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111908;
+var APP_BUILD=2026111910;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -5804,7 +5835,7 @@ function lostItemsPanelHTML(woId){
   const dRows=L.dates.map(d=>`<li>${d.type==='presite'?'Pre-Site':'Whole Job'}: ${esc(formatDateDisplay(d.startDate))}${d.endDate&&d.endDate!==d.startDate?' to '+esc(formatDateDisplay(d.endDate)):''}, ${esc(formatTime12(d.startTime))}-${esc(formatTime12(d.endTime))}</li>`).join('');
   const fRows=L.docs.map(d=>`<li>${esc(d.name||'Untitled')}${d.tag?' ('+esc(d.tag)+')':''}</li>`).join('');
   const lRows=L.logs.length ? `<li>${L.logs.length} admin log line${L.logs.length>1?'s':''}</li>` : '';
-  const cust=L.customer ? lostDiffRows(L.customer.before, wo.customer, [['name','Name'],['phone','Phone'],['address','Address'],['email','Email'],['altPhoneName','Alternate Name'],['altPhone','Alternate Phone'],['altPhoneNote','Alternate Note'],['homeownerName','Homeowner'],['homeownerPhone','Homeowner Phone']]) : '';
+  const cust=L.customer ? lostDiffRows(L.customer.before, wo.customer, [['name','Name'],['phone','Phone'],['phone2','Alternate Phone'],['address','Address'],['email','Email'],['altPhoneName','Alternate Contact'],['altPhone','Alternate Contact Phone'],['altPhoneNote','Alternate Contact Notes'],['homeownerName','Homeowner'],['homeownerPhone','Homeowner Phone'],['homeownerNote','Homeowner Notes']]) : '';
   const jd=L.details ? lostDiffRows(L.details.before, wo.jobDetails, [['description','Description'],['labor','Labor'],['materials','Materials'],['tools','Tools'],['issues','Issues'],['exclusions','Exclusions'],['disclaimers','Disclaimers']]) : '';
   const custBlock = L.customer ? `<div class="lostPart"><div class="lostHead">Customer Info Before</div><ul>${cust||'<li>Other customer details</li>'}</ul>
       <div class="adminPillRow"><button type="button" class="stageBtn pillNeutral" onclick="restoreLostPart(${woId},'customer')">Put Back</button></div></div>` : '';
@@ -5981,9 +6012,17 @@ function normalizeWO(wo){
      job the customer on the account is not the person who answers the door.
      Older work orders simply have no key, so they get an empty one rather
      than an undefined that would print as "undefined" in the header. */
-  ['name','phone','altPhone','altPhoneName','altPhoneNote','email','address','homeownerName','homeownerPhone'].forEach(k=>{
+  ['name','phone','phone2','altPhone','altPhoneName','altPhoneNote','email','address','homeownerName','homeownerPhone','homeownerNote'].forEach(k=>{
     if(typeof wo.customer[k]!=='string') wo.customer[k]='';
   });
+  /* Once per job: an old "alternate number" saved with no contact name or
+     note was the customer's own second number, so it moves to the customer's
+     alternate phone. After this the alternate contact is always someone else. */
+  if(!wo.customer.contactsV2){
+    const c=wo.customer;
+    if(c.altPhone.trim() && !c.altPhoneName.trim() && !c.altPhoneNote.trim() && !c.phone2.trim()){ c.phone2=c.altPhone; c.altPhone=''; }
+    c.contactsV2=true;
+  }
   if(!wo.jobDetails || typeof wo.jobDetails!=='object') wo.jobDetails={description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]};
   ['labor','materials','tools','issues','exclusions','disclaimers'].forEach(k=>{ if(!Array.isArray(wo.jobDetails[k])) wo.jobDetails[k]=[]; });
   if(typeof wo.jobDetails.description!=='string') wo.jobDetails.description='';
@@ -8791,7 +8830,7 @@ function openNewWorkOrder(){
   const id=newWorkOrderId();
   const wo={
     id, createdAt:Date.now(),
-    customer:{name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''},
+    customer:{name:'',phone:'',phone2:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:'',homeownerNote:'',contactsV2:true},
     jobDetails:{description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
     notes:[], adminLog:[], docs:[], scheduleDates:[],
     presiteDone:false, estimateDone:false, estimateSent:false, invoiceDone:false, invoiceSent:false,
@@ -8840,6 +8879,8 @@ function runGlobalSearch(){
       || (wo.customer.homeownerPhone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
       || (address && address.includes(q))
       || (wo.customer.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
+      || (wo.customer.phone2||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
+      || (wo.customer.altPhone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')) && /\d/.test(q)
       || idStr.includes(q)  // idStr===q was redundant, includes() already covers it
       || code.includes(q);  // also match the short code shown on the row
   }).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -10122,7 +10163,7 @@ function normPhoneKey(raw){
   return d.length===10 ? d : '';
 }
 function customerPhoneKeys(c){
-  return [c.phone, c.altPhone, c.homeownerPhone].map(normPhoneKey).filter(Boolean);
+  return [c.phone, c.phone2, c.altPhone, c.homeownerPhone].map(normPhoneKey).filter(Boolean);
 }
 /* "1234 N. Oak Street, Apt 2" and "1234 North Oak St #2" are the same door.
    Only the street line and unit are compared: city, state and zip add nothing
@@ -10409,9 +10450,11 @@ function fieldGridHTML(wo){
     <div class="fgCell fgName" role="button" tabindex="0" onclick="openNameAction(${wo.id})">
       <div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'None')}</div>
     </div>
-    ${cell('fgTap', c.phone
+    ${cell('fgTap'+(String(c.phone2||'').trim()?' fgPhones':''), (c.phone
       ? `<button type="button" class="fgHit" data-v="${esc(c.phone)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
-      : `<div class="fgHit fgStatic"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}None</div></div>`)}
+      : `<div class="fgHit fgStatic"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}None</div></div>`)
+      + (String(c.phone2||'').trim()
+      ? `<button type="button" class="fgHit fgAlt" data-v="${esc(c.phone2)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">Alternate</div><div class="fgValue">${icon('phone')}${esc(c.phone2)}</div></button>` : ''))}
     ${cell('fgTap', addrText
       ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}<span class="fgAddrFull">${esc(addrText)}</span><span class="fgAddrShort">${esc(shortAddress(addr, addrText))}</span></div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
@@ -10435,10 +10478,9 @@ function fieldHomeownerHTML(wo){
       <span></span>
     </div>${note ? `<div class="hoNote">${esc(note)}</div>` : ''}`;
   const rows=[];
-  const aPh=String(c.altPhone||'').trim();
-  if(aPh) rows.push(row('Alternate', String(c.altPhoneName||'').trim(), aPh, String(c.altPhoneNote||'').trim()));
-  const hNm=String(c.homeownerName||'').trim(), hPh=String(c.homeownerPhone||'').trim();
-  if(hNm || hPh) rows.push(row('Homeowner', hNm, hPh, ''));
+  const t=k=>String(c[k]||'').trim();
+  if(t('altPhoneName') || t('altPhone') || t('altPhoneNote')) rows.push(row('Alternate Contact', t('altPhoneName'), t('altPhone'), t('altPhoneNote')));
+  if(t('homeownerName') || t('homeownerPhone') || t('homeownerNote')) rows.push(row('Homeowner', t('homeownerName'), t('homeownerPhone'), t('homeownerNote')));
   if(!rows.length) return '';
   return `<div class="fieldSec fieldSec--homeowner">${rows.map(r=>`<div class="hoRow">${r}</div>`).join('')}</div>`;
 }
@@ -10644,15 +10686,7 @@ function fieldCustEditHTML(wo){
   const id=wo.id;
   const c=wo.customer||{};
   return `<div class="modalHeadCust editing" id="modalHeadCust">
-    ${custField('name','Full Name', c.name)}
-    ${phoneField('phone','Primary Phone Number', c.phone)}
-    ${custField('email','Email (optional)', c.email)}
-    ${addressField('address','Address', c.address)}
-    ${phoneField('altPhone','Alternate Phone Number (optional)', c.altPhone)}
-    ${altContactFieldsHTML(c)}
-    ${custField('homeownerName','Homeowner Name (optional)', c.homeownerName)}
-    ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', c.homeownerPhone)}
-    ${accessFieldsHTML(c)}
+    ${custEditFieldsHTML(c)}
     ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
     <div class="fieldNoteBtns">
       <button class="btn" onclick="saveFieldCustomer(${id})">Save</button>
@@ -10877,6 +10911,7 @@ function openWorkOrder(id){
   if(WO_CUST_EDIT){ attachHeaderCustOutsideClickHandler(id); }
 }
 function startHeaderCustEdit(id){
+  CE_OPEN={};
   WO_CUST_EDIT=true;
   renderWorkOrderModal(id);
   attachHeaderCustOutsideClickHandler(id);
@@ -11043,7 +11078,7 @@ function splitAddress(rawAddr){
 let CUST_DRAFT=null;
 function captureCustDraft(id){
   if(!WO_CUST_EDIT) return;
-  const ids=['name','phone','altPhone','altPhoneName','altPhoneNote','email','homeownerName','homeownerPhone','address','addressUnit',
+  const ids=['name','phone','phone2','altPhone','altPhoneName','altPhoneNote','email','homeownerName','homeownerPhone','homeownerNote','address','addressUnit',
     'acc_gated','acc_gateCodeOn','acc_gateCode','acc_attendantOn','acc_attendant','acc_parkingOn','acc_parking','acc_petsOn','acc_pets'];
   const found={};
   let any=false;
@@ -11057,6 +11092,10 @@ function restoreCustDraft(id){
     const v=CUST_DRAFT.values[k];
     if(!f) return;
     if(f.type==='checkbox') f.checked=!!(v&&v.checked); else f.value=v;
+  });
+  [['alt',['altPhoneName','altPhone','altPhoneNote']],['ho',['homeownerName','homeownerPhone','homeownerNote']]].forEach(([key,ks])=>{
+    const sec=document.getElementById('ceSec_'+key);
+    if(sec && !sec.classList.contains('open') && ks.some(k=>String(CUST_DRAFT.values[k]||'').trim())) toggleCeSec(key);
   });
   syncAccessFields();
 }
@@ -11228,15 +11267,7 @@ function renderWorkOrderModal(id){
   const addr=splitAddress(wo.customer.address);
   headerCustHTML = WO_CUST_EDIT ? `
         <div class="modalHeadCust editing" id="modalHeadCust">
-          ${custField('name','Full Name', wo.customer.name)}
-          ${phoneField('phone','Primary Phone Number', wo.customer.phone)}
-          ${custField('email','Email (optional)', wo.customer.email)}
-          ${addressField('address','Address', wo.customer.address)}
-          ${phoneField('altPhone','Alternate Phone Number (optional)', wo.customer.altPhone)}
-          ${altContactFieldsHTML(wo.customer)}
-          ${custField('homeownerName','Homeowner Name (optional)', wo.customer.homeownerName)}
-          ${phoneField('homeownerPhone','Homeowner Phone Number (optional)', wo.customer.homeownerPhone)}
-          ${accessFieldsHTML(wo.customer)}
+          ${custEditFieldsHTML(wo.customer)}
           ${!hasRequiredInfo(wo) ? '<div class="small" style="color:var(--redb);">Name, phone, and address are required to save.</div>' : ''}
           <div class="fieldNoteBtns">
             <button class="btn" onclick="saveFieldCustomer(${id})">Save</button>
@@ -11248,6 +11279,7 @@ function renderWorkOrderModal(id){
             <div class="mhColA">
               <div class="mhName"><button type="button" class="mhNameBtn" onclick="openNameAction(${id})">${esc(wo.customer.name) || 'None'}</button>${headerSuffix}</div>
               <div class="mhPrimary">${phoneLink(wo.customer.phone) || `<span class="telLink">${icon('phone')}None</span>`}</div>
+              ${String(wo.customer.phone2||'').trim() ? `<div class="mhPrimary">${phoneLink(wo.customer.phone2)}</div>` : ''}
               ${altPhoneDisplayHTML(wo.customer, 'mhAlt')}
             </div>
             <div class="mhColB">
@@ -11337,11 +11369,12 @@ window.addEventListener('resize', ()=>{ clearTimeout(window.__fitT); window.__fi
 function homeownerLine(wo){
   const nm=(wo.customer.homeownerName||'').trim();
   const ph=(wo.customer.homeownerPhone||'').trim();
-  if(!nm && !ph) return '';
+  if(!nm && !ph && !(wo.customer.homeownerNote||'').trim()) return '';
   const bits=[];
   if(nm) bits.push(esc(nm));
   if(ph) bits.push(phoneLink(ph));
-  return `<div class="mhHomeowner"><span class="mhHomeownerTag">Homeowner</span>${bits.join('<span class="mhHomeownerSep">&middot;</span>')}</div>`;
+  const note=(wo.customer.homeownerNote||'').trim();
+  return `<div class="mhHomeowner"><span class="mhHomeownerTag">Homeowner</span>${bits.join('<span class="mhHomeownerSep">&middot;</span>')}${note?`<div class="altPhoneNote">${esc(note)}</div>`:''}</div>`;
 }
 /* Site access: gated community (gate code / attendant), parking, and pets.
    Unchecked items hide their boxes and are cleared on save. */
@@ -11413,6 +11446,48 @@ function accessInfoHTML(wo){
 }
 /* Alternate contact: an optional name and an optional note ride along with
    the alternate number. With no name the number shows on its own, as before. */
+/* The customer's own details come first. The alternate contact and the
+   homeowner are other people, so each gets its own pink section, matching
+   the pink card they show up in. Both are optional: an empty one stays
+   folded to its title until it is tapped. */
+let CE_OPEN={};
+function custEditFieldsHTML(c){
+  c=c||{};
+  return `<div class="ceMain">
+      ${custField('name','Full Name', c.name)}
+      ${phoneField('phone','Primary Phone Number', c.phone)}
+      ${phoneField('phone2','Alternate Phone Number (optional)', c.phone2)}
+      ${custField('email','Email (optional)', c.email)}
+      ${addressField('address','Address', c.address)}
+    </div>
+    ${contactSecHTML('alt', 'Alternate Contact', 'altPhoneName', 'altPhone', 'altPhoneNote', c)}
+    ${contactSecHTML('ho', 'Homeowner', 'homeownerName', 'homeownerPhone', 'homeownerNote', c)}
+    ${accessFieldsHTML(c)}`;
+}
+function contactSecHTML(key, title, kName, kPhone, kNote, c){
+  const has=[kName,kPhone,kNote].some(k=>String(c[k]||'').trim());
+  const open=has || !!CE_OPEN[key];
+  return `<div class="ceSec${open?' open':''}" id="ceSec_${key}">
+    <button type="button" class="ceSecHead" aria-expanded="${open}" aria-controls="ceBody_${key}" onclick="toggleCeSec('${key}')">
+      <span class="ceSecText"><span class="ceSecTitle">${title}</span><span class="ceSecOpt">Optional</span></span><span class="ceSecIcon">${icon('plus')}</span>
+    </button>
+    <div class="ceSecBody" id="ceBody_${key}"${open?'':' hidden'}>
+      ${custField(kName,'Name', c[kName])}
+      ${phoneField(kPhone,'Phone Number', c[kPhone])}
+      <div class="kv"><b>Notes</b><textarea id="cf_${kNote}" rows="2" class="ceNote">${esc(c[kNote]||'')}</textarea></div>
+    </div>
+  </div>`;
+}
+function toggleCeSec(key){
+  const sec=document.getElementById('ceSec_'+key), body=document.getElementById('ceBody_'+key);
+  if(!sec || !body) return;
+  const open=!sec.classList.contains('open');
+  CE_OPEN[key]=open;
+  sec.classList.toggle('open', open);
+  body.hidden=!open;
+  const b=sec.querySelector('.ceSecHead'); if(b) b.setAttribute('aria-expanded', open);
+  if(open){ const f=body.querySelector('input'); if(f) setTimeout(()=>f.focus({preventScroll:true}), 30); }
+}
 function altContactFieldsHTML(c){
   c=c||{};
   return `${custField('altPhoneName','Alternate Contact Name (optional)', c.altPhoneName)}
@@ -11425,7 +11500,7 @@ function altPhoneInlineHTML(c){
   return nm ? `<span class="altPhoneName">${esc(nm)}</span> ${link}` : link;
 }
 function altPhoneDisplayHTML(c, cls){
-  if(!c || !String(c.altPhone||'').trim()) return `<div class="${cls}"></div>`;
+  if(!c || !(String(c.altPhone||'').trim() || String(c.altPhoneName||'').trim())) return `<div class="${cls}"></div>`;
   const note=String(c.altPhoneNote||'').trim();
   return `<div class="${cls}">${altPhoneInlineHTML(c)}${note?`<div class="altPhoneNote">${esc(note)}</div>`:''}</div>`;
 }
@@ -11749,14 +11824,16 @@ function saveCustomer(id){
   const wasEligible=inPresiteList(wo);
   const custBefore=JSON.parse(JSON.stringify(wo.customer||{}));
   const isNew=String(NEW_WO_PENDING)===String(id);
-  ['name','phone','altPhone','altPhoneName','altPhoneNote','email','address','homeownerName','homeownerPhone'].forEach(k=>{
+  ['name','phone','phone2','altPhone','altPhoneName','altPhoneNote','email','address','homeownerName','homeownerPhone','homeownerNote'].forEach(k=>{
     const field=document.getElementById('cf_'+k);
     wo.customer[k]= field ? field.value.trim() : (wo.customer[k]||'');
   });
+  wo.customer.contactsV2=true;
   const unitField=document.getElementById('cf_addressUnit');
   if(unitField){ wo.customer.address=combineAddressUnit(wo.customer.address, unitField.value); }
   wo.customer.access=readAccessFields(wo.customer.access);
   wo.customer.phone = formatPhoneNumber(wo.customer.phone);
+  wo.customer.phone2 = wo.customer.phone2 ? formatPhoneNumber(wo.customer.phone2) : '';
   wo.customer.altPhone = wo.customer.altPhone ? formatPhoneNumber(wo.customer.altPhone) : '';
   wo.customer.homeownerPhone = wo.customer.homeownerPhone ? formatPhoneNumber(wo.customer.homeownerPhone) : '';
   if(String(NEW_WO_PENDING)===String(id)) NEW_WO_PENDING=null;
@@ -11770,8 +11847,9 @@ function saveCustomer(id){
   renderMain();
   warnIfDuplicateCustomer(id);
 }
-const CUST_FIELD_LABELS={name:'Name',phone:'Primary phone',email:'Email',address:'Address',altPhone:'Alternate phone',
-  altPhoneName:'Alternate contact name',altPhoneNote:'Alternate contact note',homeownerName:'Homeowner name',homeownerPhone:'Homeowner phone'};
+const CUST_FIELD_LABELS={name:'Name',phone:'Primary phone',phone2:'Alternate phone',email:'Email',address:'Address',
+  altPhoneName:'Alternate contact name',altPhone:'Alternate contact phone',altPhoneNote:'Alternate contact notes',
+  homeownerName:'Homeowner name',homeownerPhone:'Homeowner phone',homeownerNote:'Homeowner notes'};
 function logCustomerChanges(wo, before, isNew){
   if(isNew){ addAdminLog(wo, 'Work order created for '+(wo.customer.name||'None')+'.'); return; }
   const show=v=>{ v=String(v||'').trim(); return v ? '"'+(v.length>60?v.slice(0,57)+'...':v)+'"' : 'blank'; };
@@ -15384,7 +15462,7 @@ function adminDuplicateWorkOrder(id, clone){
   const newId=newWorkOrderId();
   const wo={
     id:newId, createdAt:Date.now(),
-    customer:JSON.parse(JSON.stringify(Object.assign({name:'',phone:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer))),
+    customer:JSON.parse(JSON.stringify(Object.assign({name:'',phone:'',phone2:'',homeownerNote:'',altPhone:'',altPhoneName:'',altPhoneNote:'',email:'',address:'',homeownerName:'',homeownerPhone:''}, src.customer))),
     jobDetails:Object.assign({description:'', labor:[], materials:[], tools:[], issues:[], exclusions:[], disclaimers:[]},
       clone ? JSON.parse(JSON.stringify(src.jobDetails||{})) : {}),
     notes:[], adminLog:[], docs:[], scheduleDates:[],
