@@ -5387,7 +5387,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111907;
+var APP_BUILD=2026111908;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -15167,8 +15167,7 @@ function reportPrint(){
 }
 /* ----- emailing a report -----
    The PDF is saved to the portal's storage and the email carries a link to
-   it. The draft opens in Gmail signed in as the business account. */
-const BIZ_GMAIL='good.and.handy.co@gmail.com';
+   it. The draft opens in the phone's mail app, like a customer email. */
 let RPE=null;
 function openReportEmail(){
   if(!REPORT_EMAIL) return;
@@ -15233,11 +15232,10 @@ function sendReportEmail(){
   const to=[...S.sel].concat(typed.filter(x=>![...S.sel].some(y=>y.toLowerCase()===x.toLowerCase())));
   if(!to.length){ S.err='Pick or enter at least one email.'; renderReportEmail(); return; }
   const body=['Hi,',''].concat(REPORT_EMAIL.body, ['', 'View or download the report here:', REPORT_URL, '', 'Thank you,', 'Good & Handy', '(858) 381-0146']).join('\n');
-  const url='https://mail.google.com/mail/?authuser='+encodeURIComponent(BIZ_GMAIL)+'&view=cm&fs=1'
-    +'&to='+encodeURIComponent(to.join(','))+'&su='+encodeURIComponent(REPORT_NAME)+'&body='+encodeURIComponent(body);
-  const w=window.open(url, '_blank');
-  if(!w) location.href=url;
+  // the same kind of email link as emailing a customer from a work order
+  const href='mailto:'+to.map(x=>encodeURIComponent(x).replace(/%40/g,'@')).join(',')+'?subject='+encodeURIComponent(REPORT_NAME)+'&body='+encodeURIComponent(body);
   closeReportEmail();
+  openMessageLink(href);
 }
 function openReportPdf(){
   const name=REPORT_NAME.replace(/[\\/:*?"<>|]+/g,'-')+'.pdf';
