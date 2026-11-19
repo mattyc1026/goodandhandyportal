@@ -2556,6 +2556,17 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .fieldSecHead--withFace .fieldSecChev{justify-self:end;}
+/* On a phone there is no room for a title and a message side by side, and a
+   card title must always be readable, so the message drops to its own line
+   under the title. */
+@media (max-width:600px){
+  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace{
+    grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title chev" "face face";row-gap:8px;
+  }
+  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > span:first-child{grid-area:title;white-space:normal;overflow:visible;text-overflow:clip;}
+  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > .fieldSecFace{grid-area:face;text-align:left;white-space:normal;overflow:visible;}
+  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > .fieldSecChev{grid-area:chev;}
+}
 .fieldSecFace{
   min-width:0;text-align:center;
   font-size:1.02em;font-weight:700;letter-spacing:0;
@@ -2890,6 +2901,9 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 @media (max-width:560px){
   .fieldSec--homeowner .fieldSecHead--withFace{grid-template-columns:1fr;row-gap:6px;}
   .fieldSec--homeowner .fieldSecHead--withFace > span:last-child{display:none;}
+  .fieldSec--homeowner .fieldSecHead--withFace > span:first-child{white-space:normal;overflow-wrap:anywhere;}
+  .hoFace{flex-wrap:wrap;row-gap:2px;}
+  .hoFace button:first-child{white-space:normal;overflow:visible;text-overflow:clip;}
   .hoFace{gap:8px;font-size:.95em;}
 }
 .phoneActionRow .btn{display:inline-flex;align-items:center;gap:7px;}
@@ -5418,7 +5432,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111910;
+var APP_BUILD=2026111911;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
