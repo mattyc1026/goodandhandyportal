@@ -548,6 +548,24 @@ html.training:has(#modalRoot .overlay){overflow:hidden;}
 .prBar .btn:disabled{opacity:.55;}
 .prBar .btn.secondary{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5);}
 .prStatus{color:#dfe4ec;font-weight:700;font-size:.9em;}
+.prBar{flex-wrap:wrap;}
+#prDialog .confirmBox{z-index:3;}
+.confirmCard.rpeCard{max-width:440px;text-align:left;padding:24px 20px 20px;}
+.rpeCard h3{margin:0 0 14px;}
+.rpeList{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.rpeRow{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;background:var(--paper);}
+.rpeRow input{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--navy);}
+.rpeRow span{display:flex;flex-direction:column;min-width:0;}
+.rpeRow b{color:var(--navy);overflow-wrap:anywhere;font-size:.95em;}
+.rpeRow small{color:var(--muted);font-size:.8em;font-weight:600;}
+.rpeRow.rpeAll{border-style:dashed;}
+.rpeRow.rpeAll span{font-weight:800;color:var(--navy);}
+.rpeOther{display:flex;flex-direction:column;gap:6px;font-weight:700;color:var(--navy);font-size:.9em;}
+.rpeOther input{font-size:16px;}
+.rpeCard .btnRow{justify-content:flex-start;flex-wrap:wrap;}
+.rpeCard .btnRow .btn{flex:1 1 auto;width:auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+.rpeCard .btnRow .btn .ic{width:18px;height:18px;}
+.rpeCard .btnRow .btn:disabled{opacity:.55;}
 .prPages{padding:16px;display:flex;flex-direction:column;align-items:center;gap:16px;}
 .prPage{width:100%;max-width:760px;box-sizing:border-box;background:#fff;color:#111;padding:36px 40px;border-radius:4px;box-shadow:0 4px 18px rgba(0,0,0,.25);font-family:var(--f-body, system-ui, sans-serif);}
 .prPage h1{font-family:var(--f-display);font-weight:400;font-size:28px;margin:0 0 4px;color:#0f2647;}
@@ -571,7 +589,7 @@ html.training:has(#modalRoot .overlay){overflow:hidden;}
 .prTable tfoot td{font-weight:800;border-top:1.5px solid #333;border-bottom:0;}
 .prTotals{width:auto;min-width:260px;margin-left:auto;margin-top:18px;}
 .prTotals td{font-weight:700;}
-@media (max-width:600px){ .prPage{padding:22px 18px;} .prTable{font-size:11.5px;} .prTable th,.prTable td{padding:6px 4px;} }
+@media (max-width:600px){ .prPage{padding:22px 14px;overflow-x:auto;} .prTable{font-size:10.5px;} .prTable th,.prTable td{padding:5px 3px;} .prTable th{font-size:9.5px;} .prBar{gap:8px;padding-left:10px;padding-right:10px;} .prBar .btn{padding:8px 12px;min-height:40px;font-size:15px;} }
 @media print{
   html.prOpen body > *:not(#printRoot){display:none !important;}
   html.prOpen,html.prOpen body{overflow:visible !important;height:auto !important;}
@@ -5369,7 +5387,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111905;
+var APP_BUILD=2026111906;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12941,9 +12959,16 @@ function printReimbursements(){
   const added=d=>d.uploadedAt?day(d.uploadedAt):(d.date||'');
   const oneJob=new Set(list.map(rbJob)).size===1;
   const cols=(oneJob?[]:[{h:'Job',w:2}]).concat([{h:'Document',w:2},{h:'Added',w:1.4},{h:'Status',w:1.6},{h:'Reimbursement',w:1.5,right:true},{h:'Remaining',w:1.3,right:true}]);
+  const people=[];
+  list.forEach(x=>{ const e=String((x.wo.customer||{}).email||'').trim(); if(e && !people.some(p=>p.email.toLowerCase()===e.toLowerCase())) people.push({email:e, name:rbJob(x)}); });
   openReport({
     title:'Reimbursement Report',
     sub:`${list.length} receipt${list.length>1?'s':''}`,
+    email:{
+      recipients:people,
+      body:[`Here is the reimbursement report from Good & Handy (${list.length} receipt${list.length>1?'s':''}).`, '',
+        `Reimbursement total: ${fmtMoney(tot('amount'))}`, `Remaining total: ${fmtMoney(tot('amount2'))}`]
+    },
     summary:{
       job: oneJob ? rbJob(list[0]) : '',
       cols,
@@ -14746,6 +14771,7 @@ function renderMakePdf(){
   const S=MKPDF, root=document.getElementById('confirmRoot');
   const wo=S && getWO(S.woId);
   if(!S || !wo || !root) return;
+  const restore=keepPickerScroll(root);
   const photos=pdfPhotos(wo);
   S.order=S.order.filter(id=>photos.some(d=>d.id===id));
   const n=S.order.length;
@@ -14765,6 +14791,7 @@ function renderMakePdf(){
       <button class="btn secondary" onclick="closeMakePdf()"${S.busy?' disabled':''}>Cancel</button>
     </div>
   </div></div>`;
+  restore();
 }
 function toggleMakePdf(docId){
   const S=MKPDF; if(!S || S.busy) return;
@@ -14957,7 +14984,7 @@ async function pdfToImages(d, maxPages){
   try{ pdf.destroy(); }catch(_){}
   return {pages:out, total:pdf.numPages};
 }
-let REPORT_RUN=0, REPORT_PDF=null, REPORT_NAME='Report';
+let REPORT_RUN=0, REPORT_PDF=null, REPORT_NAME='Report', REPORT_EMAIL=null, REPORT_URL=null;
 function prSummaryHTML(S){
   const cell=(v,c)=>`<td${c&&c.right?' class="n"':''}>${esc(v||'')}</td>`;
   return `${S.job?`<div class="prJob">${esc(S.job)}</div>`:''}${S.addr?`<div class="prAddr">${esc(S.addr)}</div>`:''}
@@ -14973,14 +15000,14 @@ function prHeadHTML(h){
 }
 async function openReport(o){
   const run=++REPORT_RUN;
-  REPORT_PDF=null;
+  REPORT_PDF=null; REPORT_URL=null; REPORT_EMAIL=o.email||null;
   let root=document.getElementById('printRoot');
   if(!root){ root=document.createElement('div'); root.id='printRoot'; document.body.appendChild(root); }
   document.documentElement.classList.add('prOpen');
   const printed=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   REPORT_NAME=`${o.title} ${printed.replace(',','')}`;
   const sub=`${o.sub||''}${o.sub?', ':''}printed ${printed}`;
-  root.innerHTML=`<div class="prBar"><button type="button" class="btn" id="prPrint" onclick="reportPrint()">${icon('printer')}Print</button><button type="button" class="btn secondary" onclick="closeReport()">Close</button><span class="prStatus" id="prStatus" role="status">Preparing</span></div>
+  root.innerHTML=`<div class="prBar"><button type="button" class="btn" id="prPrint" onclick="reportPrint()">${icon('printer')}Print</button>${o.email?`<button type="button" class="btn secondary" id="prEmail" onclick="openReportEmail()">${icon('mail')}Email</button>`:''}<button type="button" class="btn secondary" onclick="closeReport()">Close</button><span class="prStatus" id="prStatus" role="status">Preparing</span></div>
     <div class="prPages" id="prPages"><section class="prPage prSummary"><h1>${esc(o.title)}</h1><div class="prSub">${esc(sub)}</div>${prSummaryHTML(o.summary)}</section></div>`;
   const pages=document.getElementById('prPages');
   const setSt=t=>{ const st=document.getElementById('prStatus'); if(st) st.textContent=t; };
@@ -15147,6 +15174,80 @@ function reportPrint(){
   if(st && st.textContent){ toast('The report is still being prepared.'); return; }
   reportBrowserPrint();
 }
+/* ----- emailing a report -----
+   The PDF is saved to the portal's storage and the email carries a link to
+   it. The draft opens in Gmail signed in as the business account. */
+const BIZ_GMAIL='good.and.handy.co@gmail.com';
+let RPE=null;
+function openReportEmail(){
+  if(!REPORT_EMAIL) return;
+  const st=document.getElementById('prStatus');
+  if(!REPORT_PDF){ toast(st && st.textContent ? 'The report is still being prepared.' : "The report couldn't be made into a PDF, so it can't be emailed."); return; }
+  RPE={sel:new Set(REPORT_EMAIL.recipients.length===1?[REPORT_EMAIL.recipients[0].email]:[]), other:'', err:'', status:''};
+  renderReportEmail();
+  uploadReportPdf();
+}
+async function uploadReportPdf(){
+  if(REPORT_URL || !REPORT_PDF) return;
+  if(!syncStorage){ if(RPE){ RPE.err='Uploads are unavailable.'; renderReportEmail(); } return; }
+  const run=REPORT_RUN;
+  if(RPE){ RPE.status='Preparing'; renderReportEmail(); }
+  try{
+    const path=`docs/reports/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${REPORT_NAME.replace(/[^a-zA-Z0-9._-]/g,'_')}.pdf`;
+    const task=syncStorage.ref(path).put(REPORT_PDF, {contentType:'application/pdf'});
+    const snap=await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error('No response from Firebase after 45 seconds.')), 45000);
+      task.on('state_changed', null, e=>{ clearTimeout(timer); reject(e); }, ()=>{ clearTimeout(timer); resolve(task.snapshot); });
+    });
+    const url=await snap.ref.getDownloadURL();
+    if(run!==REPORT_RUN) return;
+    REPORT_URL=url;
+    DB.storageUsedBytes=(DB.storageUsedBytes||0)+(REPORT_PDF.size||0);
+    if(RPE){ RPE.status=''; renderReportEmail(); }
+  }catch(e){
+    console.error(e); recordError('Report upload for email failed: '+(e&&e.message||e), 'uploadReportPdf');
+    if(RPE){ RPE.status=''; RPE.err="The report couldn't be uploaded. Check your connection and try again."; renderReportEmail(); }
+  }
+}
+function renderReportEmail(){
+  const S=RPE, root=document.getElementById('printRoot'); if(!S || !root || !REPORT_EMAIL) return;
+  let box=document.getElementById('prDialog');
+  if(!box){ box=document.createElement('div'); box.id='prDialog'; root.appendChild(box); }
+  const list=REPORT_EMAIL.recipients, many=list.length>1;
+  const allOn=many && list.every(p=>S.sel.has(p.email));
+  const ready=!!REPORT_URL;
+  box.innerHTML=`<div class="confirmBox noAnim" onclick="if(event.target===this)closeReportEmail()"><div class="confirmCard rpeCard" role="dialog" aria-modal="true" aria-label="Email report">
+    <h3>Email Report</h3>
+    ${list.length?`<div class="rpeList">
+      ${many?`<label class="rpeRow rpeAll"><input type="checkbox"${allOn?' checked':''} onchange="rpeAll(this.checked)"><span>Select All</span></label>`:''}
+      ${list.map((p,i)=>`<label class="rpeRow"><input type="checkbox" data-i="${i}"${S.sel.has(p.email)?' checked':''} onchange="rpePick(${i},this.checked)"><span><b>${esc(p.email)}</b><small>${esc(p.name)}</small></span></label>`).join('')}
+    </div>`:''}
+    <label class="rpeOther"><span>${list.length?'Other email':'Email'}</span><input type="email" id="rpeOther" autocomplete="email" inputmode="email" value="${esc(S.other)}" oninput="RPE.other=this.value;RPE.err='';document.getElementById('rpeErr').textContent=''" onkeydown="if(event.key==='Enter'){event.preventDefault();sendReportEmail();}"></label>
+    <div class="errMsg" id="rpeErr">${esc(S.err||'')}</div>
+    <div class="mpStatus">${esc(S.status||'')}</div>
+    <div class="btnRow">
+      <button class="btn" onclick="sendReportEmail()"${ready?'':' disabled'}>${icon('mail')}Open Email</button>
+      <button class="btn secondary" onclick="closeReportEmail()">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function rpePick(i, on){ const p=REPORT_EMAIL.recipients[i]; if(!p||!RPE) return; if(on) RPE.sel.add(p.email); else RPE.sel.delete(p.email); renderReportEmail(); }
+function rpeAll(on){ if(!RPE) return; RPE.sel=new Set(on?REPORT_EMAIL.recipients.map(p=>p.email):[]); renderReportEmail(); }
+function closeReportEmail(){ RPE=null; const b=document.getElementById('prDialog'); if(b) b.remove(); }
+function sendReportEmail(){
+  const S=RPE; if(!S || !REPORT_URL) return;
+  const typed=String(S.other||'').split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);
+  const bad=typed.filter(x=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+  if(bad.length){ S.err='Enter a valid email.'; renderReportEmail(); return; }
+  const to=[...S.sel].concat(typed.filter(x=>![...S.sel].some(y=>y.toLowerCase()===x.toLowerCase())));
+  if(!to.length){ S.err='Pick or enter at least one email.'; renderReportEmail(); return; }
+  const body=['Hi,',''].concat(REPORT_EMAIL.body, ['', 'View or download the report here:', REPORT_URL, '', 'Thank you,', 'Good & Handy', '(858) 381-0146']).join('\n');
+  const url='https://mail.google.com/mail/?authuser='+encodeURIComponent(BIZ_GMAIL)+'&view=cm&fs=1'
+    +'&to='+encodeURIComponent(to.join(','))+'&su='+encodeURIComponent(REPORT_NAME)+'&body='+encodeURIComponent(body);
+  const w=window.open(url, '_blank');
+  if(!w) location.href=url;
+  closeReportEmail();
+}
 function openReportPdf(){
   const name=REPORT_NAME.replace(/[\\/:*?"<>|]+/g,'-')+'.pdf';
   const file=new File([REPORT_PDF], name, {type:'application/pdf'});
@@ -15178,6 +15279,7 @@ function reportBrowserPrint(){
 }
 function closeReport(){
   REPORT_RUN++;
+  RPE=null;
   reportNetBack();
   const r=document.getElementById('printRoot'); if(r) r.remove();
   document.documentElement.classList.remove('prOpen');
@@ -15191,9 +15293,15 @@ function openDocPrint(woId){
   renderDocPrint();
 }
 function dprDocs(wo){ return (wo.docs||[]).filter(isImageDoc).concat((wo.docs||[]).filter(d=>!isImageDoc(d))); }
+function keepPickerScroll(root){
+  const g=root.querySelector('.mpGrid'), b=root.querySelector('.confirmBox');
+  const gt=g?g.scrollTop:0, bt=b?b.scrollTop:0;
+  return ()=>{ const g2=root.querySelector('.mpGrid'), b2=root.querySelector('.confirmBox'); if(g2) g2.scrollTop=gt; if(b2) b2.scrollTop=bt; };
+}
 function renderDocPrint(){
   const S=DPR, wo=S && getWO(S.woId), root=document.getElementById('confirmRoot');
   if(!S || !wo || !root) return;
+  const restore=keepPickerScroll(root);
   const docs=dprDocs(wo);
   S.order=S.order.filter(id=>docs.some(d=>d.id===id));
   const n=S.order.length;
@@ -15212,6 +15320,7 @@ function renderDocPrint(){
       <button class="btn secondary" onclick="closeDocPrint()">Cancel</button>
     </div>
   </div></div>`;
+  restore();
 }
 function toggleDocPrint(id){ const S=DPR; if(!S) return; const k=S.order.indexOf(id); if(k>=0) S.order.splice(k,1); else S.order.push(id); renderDocPrint(); }
 function docPrintAll(){
