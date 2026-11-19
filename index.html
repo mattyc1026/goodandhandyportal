@@ -5369,7 +5369,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111904;
+var APP_BUILD=2026111905;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12940,24 +12940,26 @@ function printReimbursements(){
   const tot=k=>list.reduce((t,x)=>t+(typeof x.d[k]==='number' && (k!=='amount2'||x.d.tag2)?x.d[k]:0),0);
   const added=d=>d.uploadedAt?day(d.uploadedAt):(d.date||'');
   const oneJob=new Set(list.map(rbJob)).size===1;
-  const summary=`${oneJob?`<div class="prJob">${esc(rbJob(list[0]))}</div>`:''}<table class="prTable"><thead><tr>${oneJob?'':'<th>Job</th>'}<th>Document</th><th>Added</th><th>Status</th><th class="n">Reimbursement</th><th class="n">Remaining</th></tr></thead><tbody>
-    ${list.map(x=>`<tr>${oneJob?'':`<td>${esc(rbJob(x))}</td>`}<td>${esc(x.d.name||'File')}</td><td>${esc(added(x.d))}</td><td>${esc(status(x.d))}</td><td class="n">${amt(x.d)}</td><td class="n">${rem(x.d)}</td></tr>`).join('')}
-    </tbody><tfoot><tr><td colspan="${oneJob?3:4}">Total</td><td class="n">${fmtMoney(tot('amount'))}</td><td class="n">${fmtMoney(tot('amount2'))}</td></tr></tfoot></table>`;
+  const cols=(oneJob?[]:[{h:'Job',w:2}]).concat([{h:'Document',w:2},{h:'Added',w:1.4},{h:'Status',w:1.6},{h:'Reimbursement',w:1.5,right:true},{h:'Remaining',w:1.3,right:true}]);
   openReport({
     title:'Reimbursement Report',
-    sub: `${list.length} receipt${list.length>1?'s':''}`,
-    summary,
-    items:list.map(x=>({d:x.d, head:`<div class="prJob">${esc(rbJob(x))}</div>
-      ${(x.wo.customer||{}).address?`<div class="prAddr">${esc(x.wo.customer.address)}</div>`:''}
-      <div class="prDoc">${esc(x.d.name||'File')}</div>
-      <div class="prMeta">Added ${esc(added(x.d))}, ${esc(status(x.d))}</div>
-      <div class="prAmts">${prAmtHTML('Reimbursement', x.d.amount, x.d.taxRate, x.d.amountPre)}${x.d.tag2?prAmtHTML('Remaining ('+x.d.tag2+')', x.d.amount2, x.d.taxRate, x.d.amount2Pre):''}</div>`}))
+    sub:`${list.length} receipt${list.length>1?'s':''}`,
+    summary:{
+      job: oneJob ? rbJob(list[0]) : '',
+      cols,
+      rows:list.map(x=>(oneJob?[]:[rbJob(x)]).concat([x.d.name||'File', added(x.d), status(x.d), amt(x.d), rem(x.d)])),
+      foot:(oneJob?[]:['']).concat(['Total','','',fmtMoney(tot('amount')),fmtMoney(tot('amount2'))])
+    },
+    items:list.map(x=>({d:x.d, head:{
+      job:rbJob(x), addr:(x.wo.customer||{}).address||'', doc:x.d.name||'File',
+      meta:`Added ${added(x.d)}, ${status(x.d)}`,
+      amts:[prAmt('Reimbursement', x.d.amount, x.d.taxRate, x.d.amountPre)].concat(x.d.tag2?[prAmt('Remaining ('+x.d.tag2+')', x.d.amount2, x.d.taxRate, x.d.amount2Pre)]:[])
+    }}))
   });
 }
-function prAmtHTML(label, v, rate, pre){
-  if(typeof v!=='number') return `<div class="prAmt"><span>${esc(label)}</span><b>None entered</b></div>`;
-  const taxNote=(typeof pre==='number' && pre!==v) ? `<small>${fmtMoney(pre)} + ${fmtRate(typeof rate==='number'?rate:SALES_TAX)} tax</small>` : '';
-  return `<div class="prAmt"><span>${esc(label)}</span><b>${fmtMoney(v)}</b>${taxNote}</div>`;
+function prAmt(label, v, rate, pre){
+  return {label, value: typeof v==='number' ? fmtMoney(v) : 'None entered',
+    note: (typeof v==='number' && typeof pre==='number' && pre!==v) ? `${fmtMoney(pre)} + ${fmtRate(typeof rate==='number'?rate:SALES_TAX)} tax` : ''};
 }
 function renderReimbursements(){
   const {pend, done, list}=rbShown();
@@ -14955,20 +14957,38 @@ async function pdfToImages(d, maxPages){
   try{ pdf.destroy(); }catch(_){}
   return {pages:out, total:pdf.numPages};
 }
-let REPORT_RUN=0;
+let REPORT_RUN=0, REPORT_PDF=null, REPORT_NAME='Report';
+function prSummaryHTML(S){
+  const cell=(v,c)=>`<td${c&&c.right?' class="n"':''}>${esc(v||'')}</td>`;
+  return `${S.job?`<div class="prJob">${esc(S.job)}</div>`:''}${S.addr?`<div class="prAddr">${esc(S.addr)}</div>`:''}
+    <table class="prTable"><thead><tr>${S.cols.map(c=>`<th${c.right?' class="n"':''}>${esc(c.h)}</th>`).join('')}</tr></thead>
+    <tbody>${S.rows.map(r=>`<tr>${r.map((v,i)=>cell(v,S.cols[i])).join('')}</tr>`).join('')}</tbody>
+    ${S.foot?`<tfoot><tr>${S.foot.map((v,i)=>cell(v,S.cols[i])).join('')}</tr></tfoot>`:''}</table>
+    ${S.totals&&S.totals.length?`<table class="prTable prTotals"><tbody>${S.totals.map(t=>`<tr><td>${esc(t[0])}</td><td class="n">${esc(t[1])}</td></tr>`).join('')}</tbody></table>`:''}`;
+}
+function prHeadHTML(h){
+  return `<div class="prJob">${esc(h.job||'')}</div>${h.addr?`<div class="prAddr">${esc(h.addr)}</div>`:''}
+    <div class="prDoc">${esc(h.doc||'')}</div><div class="prMeta">${esc(h.meta||'')}</div>
+    ${h.amts&&h.amts.length?`<div class="prAmts">${h.amts.map(a=>`<div class="prAmt"><span>${esc(a.label)}</span><b>${esc(a.value)}</b>${a.note?`<small>${esc(a.note)}</small>`:''}</div>`).join('')}</div>`:''}`;
+}
 async function openReport(o){
   const run=++REPORT_RUN;
+  REPORT_PDF=null;
   let root=document.getElementById('printRoot');
   if(!root){ root=document.createElement('div'); root.id='printRoot'; document.body.appendChild(root); }
   document.documentElement.classList.add('prOpen');
   const printed=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  REPORT_NAME=`${o.title} ${printed.replace(',','')}`;
+  const sub=`${o.sub||''}${o.sub?', ':''}printed ${printed}`;
   root.innerHTML=`<div class="prBar"><button type="button" class="btn" id="prPrint" onclick="reportPrint()">${icon('printer')}Print</button><button type="button" class="btn secondary" onclick="closeReport()">Close</button><span class="prStatus" id="prStatus" role="status">Preparing</span></div>
-    <div class="prPages" id="prPages"><section class="prPage prSummary"><h1>${esc(o.title)}</h1><div class="prSub">${esc(o.sub||'')}${o.sub?', ':''}printed ${esc(printed)}</div>${o.summary||''}</section></div>`;
+    <div class="prPages" id="prPages"><section class="prPage prSummary"><h1>${esc(o.title)}</h1><div class="prSub">${esc(sub)}</div>${prSummaryHTML(o.summary)}</section></div>`;
   const pages=document.getElementById('prPages');
+  const setSt=t=>{ const st=document.getElementById('prStatus'); if(st) st.textContent=t; };
+  const plan=[];   // what each printed sheet holds
   for(let i=0;i<o.items.length;i++){
     if(run!==REPORT_RUN) return;
     const it=o.items[i], d=it.d;
-    const st=document.getElementById('prStatus'); if(st) st.textContent=o.items.length>1 ? `Preparing ${i+1} of ${o.items.length}` : 'Preparing';
+    setSt(o.items.length>1 ? `Preparing ${i+1} of ${o.items.length}` : 'Preparing');
     let pics=[], more=0;
     if(isImageDoc(d) && (d.url||d.dataUrl)) pics=[d.url||d.dataUrl];
     else if(docKind(d).c==='pdf' && (d.url||d.dataUrl)){
@@ -14979,23 +14999,137 @@ async function openReport(o){
       catch(e){ console.warn('PDF pages could not be read', e); recordError('Report could not read PDF "'+(d.name||'')+'": '+(e&&e.message||e), 'openReport'); }
     }
     const sec=document.createElement('section'); sec.className='prPage'+(pics.length?' hasPic':'');
-    sec.innerHTML=`<div class="prHead">${it.head}</div>${pics.length?`<img class="prPic" src="${esc(pics[0])}" alt="">`:''}`;
+    sec.innerHTML=`<div class="prHead">${prHeadHTML(it.head)}</div>${pics.length?`<img class="prPic" src="${esc(pics[0])}" alt="">`:''}`;
     pages.appendChild(sec);
+    plan.push({head:it.head, pic:pics[0]||null});
     pics.slice(1).forEach((src,k)=>{
+      const small={doc:d.name||'File', meta:`Page ${k+2} of ${pics.length+more}`};
       const p2=document.createElement('section'); p2.className='prPage hasPic';
-      p2.innerHTML=`<div class="prHead small"><div class="prDoc">${esc(d.name||'File')}</div><div class="prMeta">Page ${k+2} of ${pics.length+more}</div></div><img class="prPic" src="${esc(src)}" alt="">`;
+      p2.innerHTML=`<div class="prHead small"><div class="prDoc">${esc(small.doc)}</div><div class="prMeta">${esc(small.meta)}</div></div><img class="prPic" src="${esc(src)}" alt="">`;
       pages.appendChild(p2);
+      plan.push({small, pic:src});
     });
   }
   if(run!==REPORT_RUN) return;
-  const imgs=[...pages.querySelectorAll('img')];
-  await Promise.race([
-    Promise.all(imgs.map(im=>im.complete ? Promise.resolve() : new Promise(r=>{ im.onload=im.onerror=r; }))),
-    new Promise(r=>setTimeout(r, 20000))
-  ]);
-  if(run!==REPORT_RUN) return;
-  const st=document.getElementById('prStatus'); if(st) st.textContent='';
+  // the printable file: drawn page by page, so every picture sits whole on its own sheet
+  setSt('Preparing');
+  try{
+    const blob=await Promise.race([buildReportPdf(o.title, sub, o.summary, plan, ()=>run!==REPORT_RUN), new Promise((_,j)=>setTimeout(()=>j(new Error('timed out')), 90000))]);
+    if(run!==REPORT_RUN) return;
+    REPORT_PDF=blob;
+  }catch(e){
+    if(run!==REPORT_RUN) return;
+    console.warn('Report PDF could not be made', e);
+    recordError('Report PDF could not be made: '+(e&&e.message||e), 'openReport');
+  }
+  setSt('');
   const pb=document.getElementById('prPrint'); if(pb) pb.focus({preventScroll:true});
+}
+/* ----- the report as a PDF file (Letter, 150 dpi) ----- */
+const RP_W=1275, RP_H=1650, RP_M=75;
+async function rpBitmap(src){
+  const r=await fetch(src, {cache:'force-cache'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const b=await r.blob();
+  return await new Promise((res,rej)=>{ const u=URL.createObjectURL(b); const im=new Image(); im.onload=()=>{ res(im); setTimeout(()=>URL.revokeObjectURL(u), 1000); }; im.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error('picture could not be read')); }; im.src=u; });
+}
+function rpWrap(g, text, maxW){
+  const words=String(text||'').split(/\s+/).filter(Boolean), lines=[];
+  let line='';
+  words.forEach(w=>{
+    const t=line ? line+' '+w : w;
+    if(g.measureText(t).width<=maxW || !line){
+      if(!line && g.measureText(w).width>maxW){ // one long word: break it
+        let part=''; for(const ch of w){ if(g.measureText(part+ch).width>maxW){ lines.push(part); part=ch; } else part+=ch; } line=part;
+      } else line=t;
+    } else { lines.push(line); line=w; }
+  });
+  if(line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+async function buildReportPdf(title, sub, S, plan, stopped){
+  try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch(_){}
+  const SANS="'DM Sans', 'Helvetica Neue', Arial, sans-serif", SERIF="'DM Serif Display', Georgia, serif";
+  const out=[];
+  const W=RP_W-2*RP_M;
+  let cv, g, y;
+  const newPage=()=>{ cv=document.createElement('canvas'); cv.width=RP_W; cv.height=RP_H; g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,RP_W,RP_H); g.textBaseline='top'; y=RP_M; };
+  const endPage=async()=>{ const b=await scanCanvasBlob(cv); out.push({jpeg:new Uint8Array(await b.arrayBuffer()), w:RP_W, h:RP_H}); cv.width=cv.height=0; };
+  const text=(t,x,yy,font,color,align)=>{ g.font=font; g.fillStyle=color; g.textAlign=align||'left'; g.fillText(t,x,yy); };
+  const rule=(yy,wid,color)=>{ g.fillStyle=color||'#ddd'; g.fillRect(RP_M,yy,W,wid||2); };
+  // summary sheet(s)
+  newPage();
+  text(title, RP_M, y, `400 46px ${SERIF}`, '#0f2647'); y+=60;
+  text(sub, RP_M, y, `400 20px ${SANS}`, '#555'); y+=48;
+  if(S.job){ text(S.job, RP_M, y, `800 26px ${SANS}`, '#0f2647'); y+=36; }
+  if(S.addr){ text(S.addr, RP_M, y, `400 20px ${SANS}`, '#555'); y+=32; }
+  y+=12;
+  const tw=S.cols.reduce((t,c)=>t+c.w,0), pad=8;
+  const xs=[]; let cx=RP_M; S.cols.forEach(c=>{ xs.push(cx); cx+=W*c.w/tw; });
+  const colW=i=>W*S.cols[i].w/tw;
+  const drawRow=(cells, font, color, lh)=>{
+    g.font=font;
+    const wrapped=cells.map((v,i)=>rpWrap(g, v, colW(i)-2*pad));
+    const h=Math.max(...wrapped.map(l=>l.length))*lh+2*pad;
+    if(y+h>RP_H-RP_M) return false;
+    wrapped.forEach((ls,i)=>ls.forEach((l,k)=>{
+      const c=S.cols[i];
+      text(l, c.right ? xs[i]+colW(i)-pad : xs[i]+pad, y+pad+k*lh, font, color, c.right?'right':'left');
+    }));
+    y+=h; return true;
+  };
+  const head=()=>{ drawRow(S.cols.map(c=>c.h), `700 17px ${SANS}`, '#555', 22); rule(y, 3, '#333'); y+=4; };
+  head();
+  for(const r of S.rows){
+    if(!drawRow(r, `400 19px ${SANS}`, '#111', 25)){ await endPage(); newPage(); head(); drawRow(r, `400 19px ${SANS}`, '#111', 25); }
+    rule(y, 1, '#e3e3e3'); y+=2;
+  }
+  if(S.foot){ rule(y, 3, '#333'); y+=4; if(!drawRow(S.foot, `800 19px ${SANS}`, '#111', 25)){ await endPage(); newPage(); drawRow(S.foot, `800 19px ${SANS}`, '#111', 25); } }
+  if(S.totals && S.totals.length){
+    y+=24;
+    S.totals.forEach(t=>{
+      if(y+40>RP_H-RP_M){ /* keep it simple: new sheet */ }
+      text(t[0], RP_M+W*0.45, y, `700 19px ${SANS}`, '#111'); text(t[1], RP_M+W, y, `800 19px ${SANS}`, '#111', 'right'); y+=30;
+    });
+  }
+  await endPage();
+  // one sheet per picture
+  for(const p of plan){
+    if(stopped()) throw new Error('closed');
+    newPage();
+    if(p.small){
+      text(p.small.doc, RP_M, y, `700 22px ${SANS}`, '#111'); y+=30;
+      text(p.small.meta, RP_M, y, `400 18px ${SANS}`, '#555'); y+=34;
+    } else {
+      const h=p.head;
+      g.font=`800 26px ${SANS}`; rpWrap(g, h.job, W).forEach(l=>{ text(l, RP_M, y, g.font, '#0f2647'); y+=34; });
+      if(h.addr){ text(h.addr, RP_M, y, `400 19px ${SANS}`, '#555'); y+=30; }
+      y+=6;
+      g.font=`700 22px ${SANS}`; rpWrap(g, h.doc, W).forEach(l=>{ text(l, RP_M, y, g.font, '#111'); y+=30; });
+      text(h.meta||'', RP_M, y, `400 18px ${SANS}`, '#555'); y+=34;
+      if(h.amts && h.amts.length){
+        let ax=RP_M;
+        h.amts.forEach(a=>{
+          text(a.label, ax, y, `600 17px ${SANS}`, '#555');
+          text(a.value, ax, y+24, `800 32px ${SANS}`, '#111');
+          if(a.note) text(a.note, ax, y+64, `400 16px ${SANS}`, '#666');
+          g.font=`800 32px ${SANS}`; const w1=g.measureText(a.value).width; g.font=`400 16px ${SANS}`; const w2=a.note?g.measureText(a.note).width:0;
+          ax+=Math.max(w1,w2, 200)+60;
+        });
+        y+=96;
+      }
+    }
+    rule(y, 2, '#ddd'); y+=20;
+    if(p.pic){
+      const im=await rpBitmap(p.pic);
+      const bw=W, bh=RP_H-RP_M-y;
+      const s=Math.min(bw/im.naturalWidth, bh/im.naturalHeight);
+      const dw=im.naturalWidth*s, dh=im.naturalHeight*s;
+      g.drawImage(im, RP_M+(bw-dw)/2, y, dw, dh);
+    }
+    await endPage();
+  }
+  return scanBuildPdf(out);
 }
 /* Safari holds window.print() until the page has nothing loading, and live
    sync always keeps a request open, so sync pauses while the print screen is
@@ -15008,6 +15142,28 @@ function reportNetBack(){
   try{ if(syncDb && syncDb.enableNetwork) syncDb.enableNetwork().catch(()=>{}); }catch(_){}
 }
 function reportPrint(){
+  if(REPORT_PDF){ openReportPdf(); return; }
+  const st=document.getElementById('prStatus');
+  if(st && st.textContent){ toast('The report is still being prepared.'); return; }
+  reportBrowserPrint();
+}
+function openReportPdf(){
+  const name=REPORT_NAME.replace(/[\\/:*?"<>|]+/g,'-')+'.pdf';
+  const file=new File([REPORT_PDF], name, {type:'application/pdf'});
+  // phones and tablets: the share sheet has Print, Save to Files and Mail
+  if(window.matchMedia && matchMedia('(pointer:coarse)').matches && navigator.canShare && navigator.canShare({files:[file]})){
+    navigator.share({files:[file], title:REPORT_NAME}).catch(e=>{ if(!e || e.name!=='AbortError'){ console.warn(e); reportOpenTab(file); } });
+    return;
+  }
+  reportOpenTab(file);
+}
+function reportOpenTab(file){
+  const url=URL.createObjectURL(file);
+  const w=window.open(url, '_blank');
+  if(!w){ const a=document.createElement('a'); a.href=url; a.download=file.name; document.body.appendChild(a); a.click(); a.remove(); }
+  setTimeout(()=>URL.revokeObjectURL(url), 10*60*1000);
+}
+function reportBrowserPrint(){
   let opened=false;
   const mark=()=>{ opened=true; };
   window.addEventListener('beforeprint', mark, {once:true});
@@ -15081,19 +15237,19 @@ function runDocPrint(){
     if(typeof d.amount==='number'){ const t=d.tag||'No label'; byTag[t]=(byTag[t]||0)+d.amount; }
     if(d.tag2 && typeof d.amount2==='number'){ const t=d.tag2+' (second totals)'; byTag[t]=(byTag[t]||0)+d.amount2; }
   });
-  const summary=`<div class="prJob">${esc(c.name||'Customer')}</div>${c.address?`<div class="prAddr">${esc(c.address)}</div>`:''}
-    <table class="prTable"><thead><tr><th>Document</th><th>Label</th><th>Added</th>${anyAmt?'<th class="n">Total</th><th class="n">Second Total</th>':''}</tr></thead><tbody>
-    ${list.map(d=>`<tr><td>${esc(d.name||'File')}</td><td>${esc(d.tag||'')}</td><td>${esc(added(d))}</td>${anyAmt?`<td class="n">${money(d.amount)}</td><td class="n">${d.tag2?esc(d.tag2)+' '+money(d.amount2):''}</td>`:''}</tr>`).join('')}
-    </tbody></table>
-    ${Object.keys(byTag).length?`<table class="prTable prTotals"><tbody>${Object.keys(byTag).map(t=>`<tr><td>${esc(t)}</td><td class="n">${fmtMoney(Math.round(byTag[t]*100)/100)}</td></tr>`).join('')}</tbody></table>`:''}`;
   openReport({
     title:'Document Report',
     sub:`${list.length} document${list.length>1?'s':''}`,
-    summary,
-    items:list.map(d=>({d, head:`<div class="prJob">${esc(c.name||'Customer')}</div>
-      <div class="prDoc">${esc(d.name||'File')}</div>
-      <div class="prMeta">${d.tag?esc(d.tag)+', ':''}added ${esc(added(d))}</div>
-      ${(typeof d.amount==='number'||d.tag2)?`<div class="prAmts">${typeof d.amount==='number'?prAmtHTML(d.tag||'Total', d.amount, d.taxRate, d.amountPre):''}${d.tag2?prAmtHTML(d.tag==='Reimbursement'?'Remaining ('+d.tag2+')':d.tag2, d.amount2, d.taxRate, d.amount2Pre):''}</div>`:''}`}))
+    summary:{
+      job:c.name||'Customer', addr:c.address||'',
+      cols:[{h:'Document',w:2.4},{h:'Label',w:1.6},{h:'Added',w:1.4}].concat(anyAmt?[{h:'Total',w:1.2,right:true},{h:'Second Total',w:1.8,right:true}]:[]),
+      rows:list.map(d=>[d.name||'File', d.tag||'', added(d)].concat(anyAmt?[money(d.amount), d.tag2?d.tag2+' '+money(d.amount2):'']:[])),
+      totals:Object.keys(byTag).map(t=>[t, fmtMoney(Math.round(byTag[t]*100)/100)])
+    },
+    items:list.map(d=>({d, head:{
+      job:c.name||'Customer', doc:d.name||'File', meta:`${d.tag?d.tag+', ':''}added ${added(d)}`,
+      amts:(typeof d.amount==='number'?[prAmt(d.tag||'Total', d.amount, d.taxRate, d.amountPre)]:[]).concat(d.tag2?[prAmt(d.tag==='Reimbursement'?'Remaining ('+d.tag2+')':d.tag2, d.amount2, d.taxRate, d.amount2Pre)]:[])
+    }}))
   });
 }
 function adminTabHTML(wo){
