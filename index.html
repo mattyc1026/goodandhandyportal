@@ -1188,9 +1188,9 @@ html.dark .addrSuggestAttr{color:#c4c4c4;}
   font-size:.85em;font-family:var(--f-data);cursor:pointer;min-height:36px;
   transition:border-color .12s,background .12s,transform .12s;
 }
-.schedCalDay:not(.empty):not(.past):hover{border-color:var(--navy);transform:translateY(-1px);}
+.schedCalDay:not(.empty):hover{border-color:var(--navy);transform:translateY(-1px);}
 .schedCalDay.empty{visibility:hidden;cursor:default;}
-.schedCalDay.past{color:#aab3c2;cursor:not-allowed;background:var(--cream);}
+.schedCalDay.past:not(.picked){color:#9aa4b4;}
 .schedCalDay.hasJob{cursor:pointer;}
 /* Booked days shade deeper the more of the day is taken: under 4 hours,
    4 to 8, then a full day. The number is how many bookings. */
@@ -5387,7 +5387,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111906;
+var APP_BUILD=2026111907;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7589,7 +7589,7 @@ function calViewHTML(){
       const iso=isoOf(d), list=map[iso]||[];
       return `<div class="cvWDay${iso===today?' today':''}${iso<today?' past':''}">
         <div class="cvWHead"><span class="cvWDow">${dows[d.getDay()]}</span><b class="cvWNum">${d.getDate()}</b><span class="cvWTape">${hoursTapeHTML(list, true)}</span></div>
-        <div class="cvWList">${calvAgendaRows(list)}${iso>=today?`<button type="button" class="cvAddJob small" onclick="calvAddJob('${iso}')">${icon('plus')}Add Job</button>`:''}</div>
+        <div class="cvWList">${calvAgendaRows(list)}<button type="button" class="cvAddJob small" onclick="calvAddJob('${iso}')">${icon('plus')}Add Job</button></div>
       </div>`;
     }).join('')}</div>`;
   } else {
@@ -7620,7 +7620,7 @@ function calViewHTML(){
         <b class="cvADay">${dd.getDate()}</b>
         <span class="cvADate"><span>${dd.toLocaleDateString('en-US',{weekday:'long'})}</span><small>${dd.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</small></span>
         <span class="cvATape">${hoursTapeHTML(map[dayIso], true)}</span>
-      </div>${calvAgendaRows(map[dayIso])}${dayIso>=today?`<button type="button" class="cvAddJob" onclick="calvAddJob('${dayIso}')">${icon('plus')}Add Job</button>`:''}</div>`;
+      </div>${calvAgendaRows(map[dayIso])}<button type="button" class="cvAddJob" onclick="calvAddJob('${dayIso}')">${icon('plus')}Add Job</button></div>`;
     }
     body=`<div class="cvBoard"><div class="cvGrid">${dows.map(d=>`<div class="dow"><span class="dl">${d}</span><span class="ds">${d.charAt(0)}</span></div>`).join('')}${cells}</div></div>${agenda}`;
   }
@@ -9541,15 +9541,8 @@ function isoToday(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-/* Earliest date the widget will allow. Today for new dates; for an edit, the
-   earlier of today and the date's existing start, so a past booking can still
-   be corrected. */
-function minSchedDate(){
-  if(!SCHED_EDIT_ID) return isoToday();
-  const wo=getWO(SCHED_WO_ID);
-  const d=wo && (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID);
-  return (d && d.startDate < isoToday()) ? d.startDate : isoToday();
-}
+/* Any day can be scheduled, past days included, so work that already
+   happened can be put on the calendar. Past days are only shown lighter. */
 
 /* Scheduling starts on Pre-Site until a pre-site inspection has been put on
    the calendar (or the job is already past that point), then on Whole Job. */
@@ -9732,13 +9725,11 @@ function scheduleCalendarHTML(){
   const monthLabel=month.toLocaleDateString([], {month:'long', year:'numeric'});
   const todayIso=isoToday();
   const jobDays=buildJobDaysMap(SCHED_EDIT_ID);
-  const minIso=minSchedDate();
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="schedCalDay empty"></div>';
   for(let day=1; day<=daysInMonth; day++){
     const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-    // Past days can't be picked, except the days of a booking being edited.
-    const isPast = iso < minIso;
+    const isPast = iso < todayIso;
     const picked = SCHED_DAYS.indexOf(iso)!==-1;
     const booked = jobDays[iso];
     const lvl = busyLevel(booked);
@@ -9753,7 +9744,7 @@ function scheduleCalendarHTML(){
     }
     if(iso===SCHED_INFO_DAY) cls.push('infoDay');
     const count = booked ? calDotsHTML(booked) : '';
-    const clickAttr = isPast ? '' : `onclick="pickSchedDay('${iso}')"`;
+    const clickAttr = `onclick="pickSchedDay('${iso}')"`;
     cells += `<div class="${cls.join(' ')}" ${clickAttr} role="button" aria-pressed="${picked}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${booked?', '+booked.length+' booked':''}">${day}${count}</div>`;
   }
   return `
