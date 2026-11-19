@@ -578,12 +578,16 @@ html.training:has(#modalRoot .overlay){overflow:hidden;}
   html.prOpen #printRoot{position:static;inset:auto;overflow:visible;background:#fff;z-index:auto;}
   html.prOpen .prBar{display:none !important;}
   html.prOpen .prPages{padding:0;display:block;}
-  html.prOpen .prPage{max-width:none;box-shadow:none;border-radius:0;padding:0;margin:0;break-after:page;page-break-after:always;}
-  html.prOpen .prPage:last-child{break-after:auto;page-break-after:auto;}
-  /* a picture page is exactly one sheet tall and the picture fills what the heading leaves */
-  html.prOpen .prPage.hasPic{display:flex;flex-direction:column;height:245mm;overflow:hidden;}
-  html.prOpen .prPage.hasPic .prHead{flex:0 0 auto;}
-  html.prOpen .prPic{flex:1 1 0;min-height:0;width:100%;height:0;max-height:none;object-fit:contain;}
+  html.prOpen .prPage{max-width:none;box-shadow:none;border-radius:0;padding:0;margin:0;}
+  /* every document starts a new sheet, and its picture is sized to fit on that
+     sheet whole, with room for the heading and the margins phones add */
+  html.prOpen .prPage{break-after:auto;page-break-after:auto;}
+  html.prOpen .prPage + .prPage{break-before:page;page-break-before:always;}
+  html.prOpen .prPage.hasPic{break-inside:avoid;page-break-inside:avoid;}
+  html.prOpen .prHead{padding-bottom:8px;margin-bottom:10px;}
+  html.prOpen .prHead.small{padding-bottom:4px;margin-bottom:8px;}
+  html.prOpen .prPic{width:auto;height:auto;max-width:100%;max-height:165mm;object-fit:contain;break-inside:avoid;page-break-inside:avoid;}
+  html.prOpen .prHead.small + .prPic{max-height:185mm;}
   html.prOpen .prTable tr{break-inside:avoid;}
 }
 button.adminBtn[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.35);}
@@ -5364,7 +5368,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111902;
+var APP_BUILD=2026111903;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -14924,7 +14928,7 @@ async function openReport(o){
   if(!root){ root=document.createElement('div'); root.id='printRoot'; document.body.appendChild(root); }
   document.documentElement.classList.add('prOpen');
   const printed=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  root.innerHTML=`<div class="prBar"><button type="button" class="btn" id="prPrint" onclick="window.print()" disabled>${icon('printer')}Print</button><button type="button" class="btn secondary" onclick="closeReport()">Close</button><span class="prStatus" id="prStatus" role="status">Preparing</span></div>
+  root.innerHTML=`<div class="prBar"><button type="button" class="btn" id="prPrint" onclick="reportPrint()">${icon('printer')}Print</button><button type="button" class="btn secondary" onclick="closeReport()">Close</button><span class="prStatus" id="prStatus" role="status">Preparing</span></div>
     <div class="prPages" id="prPages"><section class="prPage prSummary"><h1>${esc(o.title)}</h1><div class="prSub">${esc(o.sub||'')}${o.sub?', ':''}printed ${esc(printed)}</div>${o.summary||''}</section></div>`;
   const pages=document.getElementById('prPages');
   for(let i=0;i<o.items.length;i++){
@@ -14934,7 +14938,10 @@ async function openReport(o){
     let pics=[], more=0;
     if(isImageDoc(d) && (d.url||d.dataUrl)) pics=[d.url||d.dataUrl];
     else if(docKind(d).c==='pdf' && (d.url||d.dataUrl)){
-      try{ const r=await pdfToImages(d, 40); pics=r.pages; more=r.total-r.pages.length; }
+      try{
+        const r=await Promise.race([pdfToImages(d, 40), new Promise((_,j)=>setTimeout(()=>j(new Error('timed out')), 25000))]);
+        pics=r.pages; more=r.total-r.pages.length;
+      }
       catch(e){ console.warn('PDF pages could not be read', e); recordError('Report could not read PDF "'+(d.name||'')+'": '+(e&&e.message||e), 'openReport'); }
     }
     const sec=document.createElement('section'); sec.className='prPage'+(pics.length?' hasPic':'');
@@ -14954,7 +14961,17 @@ async function openReport(o){
   ]);
   if(run!==REPORT_RUN) return;
   const st=document.getElementById('prStatus'); if(st) st.textContent='';
-  const pb=document.getElementById('prPrint'); if(pb){ pb.disabled=false; pb.focus({preventScroll:true}); }
+  const pb=document.getElementById('prPrint'); if(pb) pb.focus({preventScroll:true});
+}
+function reportPrint(){
+  let opened=false;
+  const mark=()=>{ opened=true; };
+  window.addEventListener('beforeprint', mark, {once:true});
+  try{ window.print(); }catch(e){ console.warn(e); }
+  setTimeout(()=>{
+    window.removeEventListener('beforeprint', mark);
+    if(!opened){ recordError('Report print did not open ('+navigator.userAgent+')', 'reportPrint'); toast("Printing didn't open. Use Share, then Print."); }
+  }, 1500);
 }
 function closeReport(){
   REPORT_RUN++;
