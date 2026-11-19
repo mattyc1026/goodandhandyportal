@@ -1083,6 +1083,7 @@ html.hc .docTagPick{background:var(--hc-bg);color:var(--hc-fg);border-color:var(
 .scAdjPt{touch-action:none;}
 body.scanning .confirmBox{z-index:3100;}
 body.scanning #toastStack{z-index:3200;}
+html.prOpen #toastStack{z-index:100001;}
 
 /* ---- prior jobs ---- */
 .priorRow{
@@ -5368,7 +5369,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111903;
+var APP_BUILD=2026111904;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -14901,10 +14902,43 @@ async function loadPdfJs(){
   m.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;
   PDFJS=m; return m;
 }
+/* PDFs the portal makes (Convert to PDF, scans) are one JPEG per page, so
+   their pictures are taken straight out of the file, which is quick and
+   needs no PDF reader. Other PDFs are drawn with pdf.js. */
+function pdfJpegPages(data){
+  let str='';
+  for(let i=0;i<data.length;i+=65536) str+=String.fromCharCode.apply(null, data.subarray(i, Math.min(data.length, i+65536)));
+  const pageCount=(str.match(/\/Type\s*\/Page(?![s\w])/g)||[]).length;
+  if(!pageCount) return null;
+  const out=[], re=/<<([^]*?)>>\s*stream\r?\n/g;
+  let m;
+  while((m=re.exec(str))){
+    const dict=m[1];
+    if(!/\/Subtype\s*\/Image/.test(dict) || !/\/DCTDecode/.test(dict)) continue;
+    const w=+(dict.match(/\/Width\s+(\d+)/)||[])[1]||0, h=+(dict.match(/\/Height\s+(\d+)/)||[])[1]||0;
+    if(Math.min(w,h)<300) continue;
+    const start=m.index+m[0].length;
+    const lm=dict.match(/\/Length\s+(\d+)(?!\s+\d+\s+R)/);
+    let end=lm ? start+(+lm[1]) : str.indexOf('endstream', start);
+    if(end<=start) continue;
+    if(data[start]!==0xFF || data[start+1]!==0xD8) continue;
+    out.push(data.slice(start, end));
+    re.lastIndex=end;
+  }
+  return out.length===pageCount ? out : null;
+}
 async function pdfToImages(d, maxPages){
   const resp=await fetch(d.url||d.dataUrl, {cache:'no-store'});
   if(!resp.ok) throw new Error('HTTP '+resp.status);
   const data=new Uint8Array(await resp.arrayBuffer());
+  const jp=pdfJpegPages(data);
+  if(jp){
+    const urls=[];
+    for(const b of jp.slice(0, maxPages||40)){
+      urls.push(await new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(new Blob([b],{type:'image/jpeg'})); }));
+    }
+    return {pages:urls, total:jp.length};
+  }
   const lib=await loadPdfJs();
   const pdf=await lib.getDocument({data}).promise;
   const out=[], n=Math.min(pdf.numPages, maxPages||40);
@@ -14963,18 +14997,32 @@ async function openReport(o){
   const st=document.getElementById('prStatus'); if(st) st.textContent='';
   const pb=document.getElementById('prPrint'); if(pb) pb.focus({preventScroll:true});
 }
+/* Safari holds window.print() until the page has nothing loading, and live
+   sync always keeps a request open, so sync pauses while the print screen is
+   up and picks up again right after (anything saved meanwhile goes then). */
+let PR_NET_OFF=false, PR_NET_TIMER=null;
+function reportNetBack(){
+  clearTimeout(PR_NET_TIMER);
+  if(!PR_NET_OFF) return;
+  PR_NET_OFF=false;
+  try{ if(syncDb && syncDb.enableNetwork) syncDb.enableNetwork().catch(()=>{}); }catch(_){}
+}
 function reportPrint(){
   let opened=false;
   const mark=()=>{ opened=true; };
   window.addEventListener('beforeprint', mark, {once:true});
+  window.addEventListener('afterprint', reportNetBack, {once:true});
+  try{ if(syncDb && syncDb.disableNetwork){ PR_NET_OFF=true; syncDb.disableNetwork().catch(()=>{}); } }catch(_){}
+  clearTimeout(PR_NET_TIMER); PR_NET_TIMER=setTimeout(reportNetBack, 120000);
   try{ window.print(); }catch(e){ console.warn(e); }
   setTimeout(()=>{
     window.removeEventListener('beforeprint', mark);
-    if(!opened){ recordError('Report print did not open ('+navigator.userAgent+')', 'reportPrint'); toast("Printing didn't open. Use Share, then Print."); }
-  }, 1500);
+    if(!opened){ reportNetBack(); recordError('Report print did not open ('+navigator.userAgent+')', 'reportPrint'); toast("Printing didn't open. Use Share, then Print."); }
+  }, 6000);
 }
 function closeReport(){
   REPORT_RUN++;
+  reportNetBack();
   const r=document.getElementById('printRoot'); if(r) r.remove();
   document.documentElement.classList.remove('prOpen');
 }
