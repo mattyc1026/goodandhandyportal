@@ -3724,10 +3724,11 @@ html.dark.hc select:not([multiple]):not([size]){
   .acPad .acUse{margin-top:6px;min-height:42px;padding-top:8px;padding-bottom:8px;}
   .amtDocCard.calcOn .adForm h3,.amtDocCard.calcOn .adForm .amtName,.amtDocCard.calcOn .errMsg:empty,.amtDocCard.calcOn .rateSeg,.amtDocCard.calcOn .rateOther{display:none;}
   .amtDocCard.calcOn .amtTax{min-height:0;margin:6px 2px;}
+  .amtDocCard.calcOn .amtTax .rateCities{display:none;}
   .amtDocCard.calcOn .btnRow{margin-top:6px;}
 }
-.rateSeg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;}
-.rateSeg button{min-height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;}
+.rateSeg{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:10px;}
+.rateSeg button{min-height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-weight:700;font-size:15px;padding:0 2px;cursor:pointer;white-space:nowrap;}
 .rateSeg button.on{border-color:var(--navy);background:var(--navy);color:var(--paper);}
 .rateSeg button:focus-visible{outline:3px solid var(--navy2);outline-offset:1px;}
 .rateOther{display:flex;align-items:center;gap:6px;margin-top:8px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;background:var(--paper);}
@@ -3736,6 +3737,7 @@ html.dark.hc select:not([multiple]):not([size]){
 .rateOther input{flex:1;min-width:0;border:0 !important;box-shadow:none !important;background:transparent;padding:10px 0;font-size:16px;font-weight:700;outline:none;}
 .rateOther span{font-weight:800;color:var(--muted);}
 .amtTax{min-height:1.3em;margin:8px 2px 10px;font-size:.88em;font-weight:700;color:var(--muted);}
+.amtTax .rateCities{font-weight:500;font-size:.94em;line-height:1.35;margin-bottom:3px;}
 .secTagSeg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
 .secTagSeg button{min-height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-family:inherit;font-weight:700;font-size:.86em;cursor:pointer;}
 .secTagSeg button.on{border-color:var(--navy);background:var(--navy);color:#fff;}
@@ -5296,7 +5298,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111808;
+var APP_BUILD=2026111901;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12426,7 +12428,14 @@ function parseMoney(str){
    was typed and tax is never added twice. Totals entered before this have
    no amountPre and are left exactly as they were unless retyped. */
 const SALES_TAX=0.0775;
-const TAX_PRESETS=[0.0775, 0.0875];
+// San Diego County rates by city, from the state tax office (effective Oct 1, 2026)
+const TAX_PRESETS=[0.0775, 0.0825, 0.085, 0.0875];
+const TAX_CITIES={
+  '0.0775':'San Diego, Carlsbad, Coronado, Encinitas, Poway, Santee, unincorporated areas',
+  '0.0825':'El Cajon, Oceanside, Vista',
+  '0.085':'La Mesa',
+  '0.0875':'Chula Vista, Del Mar, Escondido, Imperial Beach, Lemon Grove, National City, San Marcos, Solana Beach'
+};
 function withTax(v, rate){ return Math.round(v*(1+(typeof rate==='number'?rate:SALES_TAX))*100)/100; }
 function fmtRate(r){ return (+(r*100).toFixed(3))+'%'; }
 function docTaxRate(d){ return d && typeof d.taxRate==='number' ? d.taxRate : SALES_TAX; }
@@ -12474,7 +12483,10 @@ function updateTaxLine(d, key){
   const v=parseMoney(inp.value);
   const old=typeof d[key+'Pre']!=='number' && typeof d[key]==='number' && v===d[key];
   const rate=curTaxRate();
-  el.textContent=(v===null || isNaN(v) || v<0 || old || rate===null) ? '' : `With ${fmtRate(rate)} tax: ${fmtMoney(withTax(v, rate))}`;
+  const C=AMTCALC, cities=(C && !C.rateOther && rate!==null) ? TAX_CITIES[String(rate)] : '';
+  const total=(v===null || isNaN(v) || v<0 || old || rate===null) ? '' : `With ${fmtRate(rate)} tax: ${fmtMoney(withTax(v, rate))}`;
+  el.innerHTML=(cities?`<div class="rateCities">${fmtRate(rate)}: ${esc(cities)}</div>`:'')+(total?`<div>${esc(total)}</div>`:'');
+  el.classList.toggle('none', !cities && !total);
 }
 function applyTaxed(d, key, v, rate){
   if(typeof d[key+'Pre']!=='number' && typeof d[key]==='number' && v===d[key]) return; // older total, unchanged
