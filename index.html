@@ -2556,16 +2556,12 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .fieldSecHead--withFace .fieldSecChev{justify-self:end;}
-/* On a phone there is no room for a title and a message side by side, and a
-   card title must always be readable, so the message drops to its own line
-   under the title. */
+/* On a phone the title is a symbol, so the symbol, the message and the button
+   share one row: symbol on the left, message centred, button on the right. */
 @media (max-width:600px){
-  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace{
-    grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title chev" "face face";row-gap:8px;
-  }
-  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > span:first-child{grid-area:title;white-space:normal;overflow:visible;text-overflow:clip;}
-  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > .fieldSecFace{grid-area:face;text-align:center;white-space:normal;overflow:visible;}
-  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > .fieldSecChev{grid-area:chev;}
+  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace{grid-template-columns:44px minmax(0,1fr) 44px;column-gap:6px;}
+  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > span:first-child{overflow:visible;text-overflow:clip;}
+  .fieldSec:not(.fieldSec--homeowner) > .fieldSecHead--withFace > .fieldSecFace{text-align:center;white-space:normal;overflow:visible;line-height:1.2;}
 }
 .fieldSecFace{
   min-width:0;text-align:center;
@@ -2863,6 +2859,31 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .fieldSec--homeowner .fieldSecHead > span:first-child{overflow:visible;}
 .fieldSec--homeowner .hoRow + .hoRow{border-top:1px solid color-mix(in srgb,var(--pink-ink) 18%,transparent);}
 /* Alternate contact and homeowner cards: same shape as the customer cards */
+/* Card symbols (phones only) */
+.ttlSym{display:none;}
+@media (max-width:600px){
+  .ttlText{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  .ttlSym{display:inline-flex;position:relative;align-items:center;justify-content:center;vertical-align:middle;line-height:1;}
+  .ttlSym > .ic{width:28px;height:28px;stroke-width:1.9;}
+  .symBadge{position:absolute;top:-7px;right:-9px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;
+    background:currentColor;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--paper);}
+  .symBadge > b{color:#fff;font-size:10.5px;font-weight:800;letter-spacing:0;font-family:inherit;line-height:1;}
+  html.dark .symBadge > b{color:var(--paper);}
+  .symBadge.plus > b{font-size:14px;font-weight:700;margin-top:-1px;}
+  .symBadge.in,.symBadge.out{top:auto;bottom:-9px;right:-22px;height:15px;border-radius:5px;}
+  .symBadge.in{background:#2e7d32;}
+  .symBadge.out{background:#c0392b;}
+  .symBadge.in > b,.symBadge.out > b{color:#fff;font-size:8.5px;letter-spacing:.04em;}
+  .fieldGrid .fgCell.fgName .ttlSym .symBadge{box-shadow:0 0 0 2px var(--navy);}
+  .fieldSec--sched .fieldSecHead .ttlSym{color:var(--purple-ink);}
+  .fieldSec--job .fieldSecHead .ttlSym{color:var(--blueb);}
+  .fieldSec--note .fieldSecHead .ttlSym{color:var(--orange);}
+  .fsTitle .ttlSym{color:var(--chartreuse-ink);}
+  .fieldStatus.withToday{grid-template-columns:44px minmax(0,1fr) 44px;column-gap:6px;}
+  .fieldStatus.withToday .fsTitle{overflow:visible;}
+  .fieldPeople .fgHit{column-gap:16px;}
+  html.hc .ttlSym{color:var(--hc-fg) !important;}
+}
 .fieldPeople{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
 .fieldPeople > .fgCell:only-child{grid-column:1/-1;}
 .fgPerson{display:flex;flex-direction:column;}
@@ -2890,10 +2911,6 @@ html.hc .fgPerson .fgLabel,html.hc .fgPerson .fgPPhone{color:var(--hc-fg);}
   .fgLblFull{display:none;}
   .fgLblShort{display:inline;}
   .fgPNote{margin:-2px 28px 12px;}
-  /* label on its own line so the name and number keep the same size as the other cards */
-  .fieldPeople .fgHit{display:block;}
-  .fieldPeople .fgHit .fgLabel{margin:0 0 4px;}
-  .fieldPeople .fgHit .fgValue{justify-content:center;text-align:center;}
 }
 /* Two numbers in the phone card: one row each, both tappable, split by a hairline. */
 .fgPhones{display:flex;flex-direction:column;}
@@ -4412,6 +4429,8 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-4.6A8 8 0 0 1 13 4a8 8 0 0 1 8 8z"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 16l-5-5L6 20"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-clipboard-lines" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M8 11.5h8M8 14.75h8M8 18h8"/></symbol>
+  <symbol id="i-home-person" viewBox="0 0 24 24"><path d="M2.5 11.5L12 3.5l9.5 8"/><path d="M5 9.5V20.5h14V9.5"/><circle cx="12" cy="11.6" r="2.2"/><path d="M8.3 20.3c.5-2.4 1.9-3.8 3.7-3.8s3.2 1.4 3.7 3.8"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></symbol>
   <symbol id="i-printer" viewBox="0 0 24 24"><path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 12l4 4 4-4"/><path d="M5 20h14"/></symbol>
@@ -5466,7 +5485,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111914;
+var APP_BUILD=2026111916;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10489,6 +10508,12 @@ function shortAddress(addr, full){
   if(!addr.line1 || !zip) return full;
   return addr.line1.replace(/,\s*$/,'')+', '+zip[0];
 }
+/* Phones show a symbol where the card title would be; the words stay for
+   screen readers and for larger screens. A badge (2, +, IN, OUT) can sit on
+   the symbol's corner. */
+function symTitle(text, iconName, badge, badgeCls){
+  return `<span class="ttlText">${text}</span><span class="ttlSym" aria-hidden="true">${icon(iconName)}${badge?`<span class="symBadge${badgeCls?' '+badgeCls:''}"><b>${badge}</b></span>`:''}</span>`;
+}
 function fieldGridHTML(wo){
   const c=wo.customer||{};
   const addr=splitAddress(c.address);
@@ -10496,19 +10521,19 @@ function fieldGridHTML(wo){
   const cell=(cls, inner)=>`<div class="fgCell ${cls}">${inner}</div>`;
   return `<div class="fieldGrid">
     <div class="fgCell fgName" role="button" tabindex="0" onclick="openNameAction(${wo.id})">
-      <div class="fgLabel">Customer</div><div class="fgName">${esc(c.name||'None')}</div>
+      <div class="fgLabel">${symTitle('Customer','user')}</div><div class="fgName">${esc(c.name||'None')}</div>
     </div>
     ${cell('fgTap'+(String(c.phone2||'').trim()?' fgPhones':''), (c.phone
-      ? `<button type="button" class="fgHit" data-v="${esc(c.phone)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
-      : `<div class="fgHit fgStatic"><div class="fgLabel">Phone</div><div class="fgValue">${icon('phone')}None</div></div>`)
+      ? `<button type="button" class="fgHit" data-v="${esc(c.phone)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">${symTitle('Phone','phone')}</div><div class="fgValue">${icon('phone')}${esc(c.phone)}</div></button>`
+      : `<div class="fgHit fgStatic"><div class="fgLabel">${symTitle('Phone','phone')}</div><div class="fgValue">${icon('phone')}None</div></div>`)
       + (String(c.phone2||'').trim()
-      ? `<button type="button" class="fgHit fgAlt" data-v="${esc(c.phone2)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">Alternate</div><div class="fgValue">${icon('phone')}${esc(c.phone2)}</div></button>` : ''))}
+      ? `<button type="button" class="fgHit fgAlt" data-v="${esc(c.phone2)}" onclick="openPhoneAction(this.dataset.v)"><div class="fgLabel">${symTitle('Alternate','phone','2')}</div><div class="fgValue">${icon('phone')}${esc(c.phone2)}</div></button>` : ''))}
     ${cell('fgTap', addrText
-      ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}<span class="fgAddrFull">${esc(addrText)}</span><span class="fgAddrShort">${esc(shortAddress(addr, addrText))}</span></div></button>`
-      : `<div class="fgHit fgStatic"><div class="fgLabel">Address</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
+      ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">${symTitle('Address','map-pin')}</div><div class="fgValue">${icon('map-pin')}<span class="fgAddrFull">${esc(addrText)}</span><span class="fgAddrShort">${esc(shortAddress(addr, addrText))}</span></div></button>`
+      : `<div class="fgHit fgStatic"><div class="fgLabel">${symTitle('Address','map-pin')}</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
     ${cell('fgTap', c.email
-      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}<span>${esc(c.email)}</span></div></button>`
-      : `<div class="fgHit fgStatic"><div class="fgLabel">Email</div><div class="fgValue">${icon('mail')}None</div></div>`)}
+      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">${symTitle('Email','mail')}</div><div class="fgValue">${icon('mail')}<span>${esc(c.email)}</span></div></button>`
+      : `<div class="fgHit fgStatic"><div class="fgLabel">${symTitle('Email','mail')}</div><div class="fgValue">${icon('mail')}None</div></div>`)}
   </div>
   ${fieldPeopleHTML(wo)}`;
 }
@@ -10519,8 +10544,8 @@ function fieldGridHTML(wo){
 function fieldPeopleHTML(wo){
   const c=wo.customer||{};
   const t=k=>String(c[k]||'').trim();
-  const card=(cls, full, short, nm, ph, note)=>{
-    const label=`<div class="fgLabel"><span class="fgLblFull">${full}</span><span class="fgLblShort">${short}</span></div>`;
+  const card=(cls, full, short, nm, ph, note, sym, badge)=>{
+    const label=`<div class="fgLabel">${symTitle(full, sym, badge, badge==='+'?'plus':'')}</div>`;
     const val=`<div class="fgValue">${ph?icon('phone'):icon('user')}<span>${nm?`<span class="fgPName">${esc(nm)}</span>`:''}${nm&&ph?' ':''}${ph?`<span class="fgPPhone">${esc(ph)}</span>`:''}${!nm&&!ph?'None':''}</span></div>`;
     const hit = ph ? `<button type="button" class="fgHit" data-v="${esc(ph)}" onclick="openPhoneAction(this.dataset.v)">${label}${val}</button>`
       : nm ? `<button type="button" class="fgHit" data-v="${esc(nm)}" onclick="openCopyOnly(this.dataset.v)">${label}${val}</button>`
@@ -10528,8 +10553,8 @@ function fieldPeopleHTML(wo){
     return `<div class="fgCell fgPerson ${cls}">${hit}${note?`<div class="fgPNote">${esc(note)}</div>`:''}</div>`;
   };
   const cards=[];
-  if(t('altPhoneName') || t('altPhone') || t('altPhoneNote')) cards.push(card('fgPerson--alt','Alternate Contact','Alt Contact', t('altPhoneName'), t('altPhone'), t('altPhoneNote')));
-  if(t('homeownerName') || t('homeownerPhone') || t('homeownerNote')) cards.push(card('fgPerson--ho','Homeowner','Homeowner', t('homeownerName'), t('homeownerPhone'), t('homeownerNote')));
+  if(t('altPhoneName') || t('altPhone') || t('altPhoneNote')) cards.push(card('fgPerson--alt','Alternate Contact','Alt Contact', t('altPhoneName'), t('altPhone'), t('altPhoneNote'), 'user', '+'));
+  if(t('homeownerName') || t('homeownerPhone') || t('homeownerNote')) cards.push(card('fgPerson--ho','Homeowner','Homeowner', t('homeownerName'), t('homeownerPhone'), t('homeownerNote'), 'home-person'));
   return cards.length ? `<div class="fieldPeople">${cards.join('')}</div>` : '';
 }
 /* The pink card holds every extra person on the job: the alternate contact
@@ -10597,7 +10622,7 @@ function fieldCheckHTML(wo){
 
   return `<div class="fieldCheckCard">
     <div${headAttrs}>
-      <span class="fsTitle">Check In/Out</span>
+      <span class="fsTitle">${symTitle('Check In/Out','clock', todayHTML ? (openSession(entry.log)?'OUT':'IN') : '', todayHTML ? (openSession(entry.log)?'out':'in') : '')}</span>
       ${todayHTML}
       ${chev}
     </div>
@@ -10704,12 +10729,13 @@ function markPreviewOverflow(){
 }
 /* fixed: the section is always open and its title is just a title, with no
    + / - to fold it away (used by Notes). */
+const FIELD_SEC_SYM={note:'message', job:'clipboard-lines'};
 function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview, fixed){
   const open=fixed || !!FIELD_SEC[key];
   const moreCls = moreAlign==='end' ? ' alignEnd' : '';
   return `<div class="fieldSec fieldSec--${key}${open?' open':''}${fixed?' fixed':''}">
-    ${fixed ? `<div class="fieldSecHead"><span>${esc(title)}</span></div>` : `<button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
-      <span>${esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+    ${fixed ? `<div class="fieldSecHead"><span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span></div>` : `<button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
+      <span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>`}
     ${(!open && preview) ? preview : ''}
     ${open?`<div class="fieldSecBody">
@@ -10827,7 +10853,7 @@ function fieldSchedCardHTML(wo, body){
   const open=!!FIELD_SEC.sched;
   return `<div class="fieldSec fieldSec--sched${open?' open':''}">
     <button class="fieldSecHead${open?'':' fieldSecHead--withFace'}" onclick="toggleFieldSec(${id},'sched')" aria-expanded="${open}">
-      <span>Schedule Date(s)</span>
+      <span>${symTitle('Schedule Date(s)','nav-calendar')}</span>
       ${open ? '' : `<span class="fieldSecFace">${esc(nextVisitLine(wo))}</span>`}
       <span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
@@ -10866,7 +10892,7 @@ function fieldJobSecHTML(wo){
   if(WO_JOB_EDIT){
     return `<div class="fieldSec fieldSec--job open">
       <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="true">
-        <span>Job Details</span><span class="fieldSecChev">&minus;</span>
+        <span>${symTitle('Job Details','clipboard-lines')}</span><span class="fieldSecChev">&minus;</span>
       </button>
       <div class="fieldSecBody">${jobDetailsEditHTML(id)}</div>
     </div>`;
@@ -10910,7 +10936,7 @@ function fieldJobSecHTML(wo){
   }
   return `<div class="fieldSec fieldSec--job${open?' open':''}">
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="${open}">
-      <span>Job Details</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+      <span>${symTitle('Job Details','clipboard-lines')}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
     ${open ? '' : fieldJobPreviewHTML(wo)}
     ${open?`<div class="fieldSecBody">
