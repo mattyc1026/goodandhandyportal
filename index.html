@@ -2627,7 +2627,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fsTitle{font-size:.92em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);}
 
 .fieldBtn.wide{grid-column:1 / -1;width:100%;}
-.fieldActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.fieldActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
 .fieldActions:has(> :only-child){grid-template-columns:1fr;}
 .fieldNav{flex-wrap:wrap;}
 .fieldBtn{
@@ -2728,16 +2728,21 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 
 /* ---- The two big actions ---- */
 .fieldActions .fieldBtn{box-shadow:var(--sh-1);}
-.fieldActions .fieldBtn:nth-child(1){
+.fieldActions .fieldBtn.fbPhoto{
   border-color:var(--greyb);
   background:linear-gradient(155deg,var(--grey) 0%,var(--paper) 72%);
 }
-.fieldActions .fieldBtn:nth-child(1) .ic{color:var(--greyb);}
-.fieldActions .fieldBtn:nth-child(2){
+.fieldActions .fieldBtn.fbPhoto .ic{color:var(--greyb);}
+.fieldActions .fieldBtn.fbReceipt{
+  border-color:var(--greenb);
+  background:linear-gradient(155deg,var(--green) 0%,var(--paper) 72%);
+}
+.fieldActions .fieldBtn.fbReceipt .ic{color:var(--greenb);}
+.fieldActions .fieldBtn.fbNote{
   border-color:var(--yellowb);
   background:linear-gradient(155deg,var(--yellow) 0%,var(--paper) 72%);
 }
-.fieldActions .fieldBtn:nth-child(2) .ic{color:var(--yellowb);}
+.fieldActions .fieldBtn.fbNote .ic{color:var(--yellowb);}
 
 /* ---- Folding sections: a colour per section, kept on its own parts ---- */
 .fieldSec{overflow:hidden;box-shadow:var(--sh-1);}
@@ -5493,7 +5498,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112018;
+var APP_BUILD=2026112119;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10966,8 +10971,9 @@ function fieldModeHTML(wo){
     ${fieldScheduleSecHTML(wo)}
     ${fieldCheckHTML(wo)}
     <div class="fieldActions">
-      <button class="fieldBtn" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
-      <button class="fieldBtn" onclick="openFieldNote(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
+      <button class="fieldBtn fbPhoto" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
+      <button class="fieldBtn fbReceipt" onclick="openScanner(${id},'receipt')">${icon('receipt','lg')}<span>Scan Receipt</span></button>
+      <button class="fieldBtn fbNote" onclick="openFieldNote(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
     </div>
     ${fieldNoteComposerHTML(id)}
     ${fieldNotesSecHTML(wo)}
