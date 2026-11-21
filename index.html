@@ -2857,13 +2857,12 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .fieldSec--homeowner .fieldSecHead{cursor:default;padding-top:15px;padding-bottom:15px;}
 .fieldSec.fixed > .fieldSecHead{cursor:default;}
 .gnSwitch{display:inline-flex;align-items:center;gap:8px;margin-left:auto;padding:6px 0 6px 10px;min-height:36px;
-  background:none;border:none;cursor:pointer;font:inherit;color:var(--muted);-webkit-tap-highlight-color:transparent;}
+  background:none;border:none;cursor:pointer;font:inherit;color:var(--orange);-webkit-tap-highlight-color:transparent;}
 .gnLbl{font-size:1em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;}
-.gnTrack{position:relative;width:40px;height:24px;border-radius:12px;background:var(--line);transition:background .15s;flex:0 0 auto;}
-.gnKnob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(10,24,45,.3);transition:transform .15s;}
-.gnSwitch.on{color:var(--orange);}
-.gnSwitch.on .gnTrack{background:var(--orange);}
-.gnSwitch.on .gnKnob{transform:translateX(16px);}
+.gnTrack{position:relative;width:40px;height:24px;border-radius:12px;background:color-mix(in srgb,var(--orange) 14%,var(--paper));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--orange) 30%,transparent);transition:background .15s;flex:0 0 auto;}
+.gnKnob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:color-mix(in srgb,var(--orange) 40%,var(--paper));box-shadow:0 1px 3px rgba(10,24,45,.2);transition:transform .15s,background .15s;}
+.gnSwitch.on .gnTrack{background:color-mix(in srgb,var(--orange) 24%,var(--paper));}
+.gnSwitch.on .gnKnob{transform:translateX(16px);background:var(--orange);}
 .fsNote.gnOther{text-align:right;opacity:.6;}
 .gnOther .fsNoteTop{justify-content:flex-end;}
 .gnOther .fsNoteActions{margin-left:0;margin-right:auto;}
@@ -5513,7 +5512,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112122;
+var APP_BUILD=2026112123;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
