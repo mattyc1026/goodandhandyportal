@@ -2864,6 +2864,9 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .gnSwitch.on{color:var(--orange);}
 .gnSwitch.on .gnTrack{background:var(--orange);}
 .gnSwitch.on .gnKnob{transform:translateX(16px);}
+.fsNote.gnOther{text-align:right;opacity:.6;}
+.gnOther .fsNoteTop{justify-content:flex-end;}
+.gnOther .fsNoteActions{margin-left:0;margin-right:auto;}
 .gnFrom{display:inline-block;margin:0 0 6px;padding:3px 10px;border:1px solid color-mix(in srgb,var(--orange) 45%,transparent);border-radius:999px;
   background:var(--paper);color:var(--navy);font:inherit;font-size:.72em;font-weight:700;cursor:pointer;max-width:100%;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
@@ -5510,7 +5513,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112121;
+var APP_BUILD=2026112122;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10803,12 +10806,14 @@ function fieldNotesSecHTML(wo){
     items.sort((a,b)=>(noteTimeKey(b.n)-noteTimeKey(a.n)) || (a.w===b.w ? a.ord-b.ord : 0));
   }
   if(!items.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>', '', '', undefined, '', '', true, sw);
+  /* Work orders in a group are numbered 1, 2, 3 in the order they joined it
+     (oldest first), separate from the work order number. */
+  const members=[wo, ...group].sort((x,y)=>((x.createdAt||x.id||0)-(y.createdAt||y.id||0)));
   const fromTag=(w)=>{
-    const desc=(w.jobDetails && w.jobDetails.description) ? w.jobDetails.description.trim().split('\n')[0] : '';
-    const label='#'+woCode(w)+(desc?' \u00b7 '+(desc.length>34?desc.slice(0,34)+'\u2026':desc):'');
+    const label=(members.indexOf(w)+1)+' \u2022 '+((w.customer && w.customer.name) || 'None');
     return `<button type="button" class="gnFrom" onclick="openWorkOrder(${w.id})">${esc(label)}</button>`;
   };
-  const one=({n, idx, w})=>`<div class="fsNote">
+  const one=({n, idx, w})=>`<div class="fsNote${(showGroup && w!==wo)?' gnOther':''}">
       ${(showGroup && w!==wo) ? fromTag(w) : ''}
       <div class="fsNoteTop">
         <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.time?' '+esc(n.time):''}${n.by?' &middot; '+esc(n.by):''}</span>
