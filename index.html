@@ -2509,6 +2509,11 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   gap:6px 10px;min-width:0;cursor:auto;
 }
 .fsTodayDate{font-weight:800;white-space:nowrap;}
+.fsFace{min-width:0;text-align:center;font-size:.96em;font-weight:700;letter-spacing:0;text-transform:none;color:var(--navy);line-height:1.2;}
+.fsMissed{display:inline-block;padding:5px 11px;border-radius:12px;background:var(--red);color:var(--redb);
+  font-weight:800;font-size:.96em;line-height:1.25;letter-spacing:0;text-transform:none;text-align:center;}
+.fsToday .fsMissed{flex:0 0 100%;box-sizing:border-box;}
+html.hc .fsMissed{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(--hc-fg);}
 .dayLogGroup{margin-bottom:16px;}
 .dayLogGroup:last-child{margin-bottom:0;}
 .dayLogGroup .fsKey{margin-bottom:6px;}
@@ -5514,7 +5519,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112124;
+var APP_BUILD=2026112125;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10633,7 +10638,14 @@ function fieldCheckHTML(wo){
      available action, because this has to share a line with the title and the
      chevron. It stops its own clicks from reaching the strip so logging a time
      never also folds the card. */
-  const todayHTML=(entry && checkAllowed(wo, entry.log)) ? fieldTodayInlineHTML(id, entry.log, isAdmin) : '';
+  /* A day before today that was checked in and never checked out. */
+  const missed=rows.filter(r=>r.log.date<today && openSession(r.log)).map(r=>r.log.date);
+  const missedHTML=missed.length
+    ? `<span class="fsMissed">Not checked out ${missed.length>2 ? 'on '+missed.length+' days' : missed.map(formatDateDisplay).join(', ')}</span>`
+    : '';
+  let todayHTML=(entry && checkAllowed(wo, entry.log)) ? fieldTodayInlineHTML(id, entry.log, isAdmin, missedHTML) : '';
+  /* No action today: the face says what is wrong, or when the next visit is. */
+  const faceHTML=todayHTML ? '' : `<span class="fsFace">${missedHTML || esc(nextVisitLine(wo))}</span>`;
 
   const legacy = (wo.checkIn || wo.checkOut) ? `<div class="fsList" style="margin-top:14px;">
       <div class="fsKey">Legacy job-level stamp</div>
@@ -10644,7 +10656,7 @@ function fieldCheckHTML(wo){
     ? `<div class="fieldCheckSub fieldDayPanel">${dayLogsSectionHTML(wo)}${legacy}</div>`
     : '';
 
-  const cls=`fieldStatus${todayHTML?' withToday':''}${panel?' hasBelow':''}`;
+  const cls=`fieldStatus withToday${panel?' hasBelow':''}`;
   const headAttrs=expandable
     ? ` class="${cls} expandable" role="button" tabindex="0" aria-expanded="${open}" onclick="toggleFieldSec(${id},'days')" title="${open?'Hide':'Show'} every scheduled day"`
     : ` class="${cls}"`;
@@ -10652,14 +10664,15 @@ function fieldCheckHTML(wo){
   return `<div class="fieldCheckCard">
     <div${headAttrs}>
       <span class="fsTitle">${symTitle('Check In/Out','clock', todayHTML ? (openSession(entry.log)?'OUT':'IN') : '', todayHTML ? (openSession(entry.log)?'out':'in') : '')}</span>
-      ${todayHTML}
+      ${todayHTML || faceHTML}
       ${chev}
     </div>
     ${panel}
   </div>`;
 }
-function fieldTodayInlineHTML(woId, log, isAdmin){
+function fieldTodayInlineHTML(woId, log, isAdmin, missedHTML){
   return `<span class="fsToday" onclick="event.stopPropagation()">
+      ${missedHTML||''}
       <span class="fsTodayDate">${formatDateDisplay(log.date)}</span>
       ${checkBtnHTML(woId, log)}
     </span>`;
