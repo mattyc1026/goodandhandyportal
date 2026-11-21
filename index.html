@@ -5518,7 +5518,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112126;
+var APP_BUILD=2026112127;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9472,9 +9472,13 @@ function commitSchedule(wo, editing, days, startTime, endTime, allTimes, crew, o
     addAdminLog(wo, `Added ${entries.map(schedEntryLabel).join(' and ')}.${overridden?' Double-booked over an existing appointment (override).':''}`);
   }
   const fromCal=SCHED_FROM_CAL && !editing;
-  const moved = fromCal ? applyCalendarSchedNote(wo, entries) : '';
+  /* Booked from inside the work order: a first date moves the job on the same
+     way a calendar booking does, with the same SCHD / SCHD PRESITE note. */
+  const advances=!fromCal && ((SCHED_TYPE==='presite' && inPresiteIncompleteList(wo)) || (SCHED_TYPE!=='presite' && inScheduleJobList(wo)));
+  let moved = (fromCal || advances) ? applyCalendarSchedNote(wo, entries) : '';
+  if(editing && !moved) moved=unscheduleIfEmpty(wo);
   saveDB(DB);
-  if(fromCal){ renderTabCounts(); if(moved) toast(moved); }
+  if(fromCal || moved){ renderTabCounts(); if(moved) toast(moved); }
   const woId=wo.id;
   closeScheduleForm(true);
   renderMain();
@@ -9520,9 +9524,31 @@ function removeWholeScheduleEntry(woId, dateId){
   wo.tombstones.push('d:'+dateId);
   wo.scheduleDates=(wo.scheduleDates||[]).filter(d=>d.id!==dateId);
   if(SCHED_EDIT_ID===dateId){ SCHED_EDIT_ID=null; SCHED_INLINE=false; }
+  const moved=unscheduleIfEmpty(wo);
   saveDB(DB);
   renderWorkOrderModal(woId);
+  renderTabCounts();
   renderMain();
+  if(moved) toast(moved);
+}
+/* With its last date of that kind gone, a job waiting on that date goes back
+   to the step before: Scheduled to Schedule Job, Pre-Site Scheduled to
+   Pre-Site Incomplete. Returns the message to show, or ''. */
+function unscheduleIfEmpty(wo){
+  if(!wo) return '';
+  const list=wo.scheduleDates||[];
+  const before=stageNameOf(wo);
+  if(inJobScheduledList(wo) && !list.some(d=>d.type!=='presite')){
+    wo.jobScheduled=false; wo.jobStarted=false; wo.jobStartHold=null;
+    logStageChange(wo, before, 'last job date removed');
+    return 'No job dates left. Moved back to Schedule Job.';
+  }
+  if(inPresiteScheduledList(wo) && !list.some(d=>d.type==='presite')){
+    wo.presiteScheduled=false;
+    logStageChange(wo, before, 'last pre-site date removed');
+    return 'No pre-site dates left. Moved back to Pre-Site Incomplete.';
+  }
+  return '';
 }
 
 /* ---- Removing single days from a multi-day booking ---- */
