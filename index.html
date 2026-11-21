@@ -2892,6 +2892,8 @@ html.hc .gnSwitch.on .gnTrack{background:var(--hc-fg);}
   .symBadge.plus > b{font-size:10px;font-weight:700;margin-top:-1px;}
   .fgAlt .symBadge{left:-3px;bottom:-1px;}
   .fieldSecChev,.fieldStatus .fsChev{width:26px;height:26px;}
+  .fieldSecHead .ttlSym,.fsTitle .ttlSym{margin-left:-4px;}
+  .fieldGrid .fgCell.fgName .ttlSym{margin-left:4px;}
   .symBadge.in,.symBadge.out{left:auto;width:auto;min-width:17px;padding:0 4px;bottom:-9px;right:-22px;height:15px;border-radius:5px;}
   .symBadge.in{background:#2e7d32;}
   .symBadge.out{background:#c0392b;}
@@ -5512,7 +5514,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112123;
+var APP_BUILD=2026112124;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
