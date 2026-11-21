@@ -2875,6 +2875,7 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .fsNote.gnOther{text-align:right;opacity:.6;}
 .gnOther .fsNoteTop{text-align:left;}
 .gnOther .gnFrom{display:block;width:fit-content;margin:0 auto 6px 0;}
+.gnDot{font-size:.6em;margin:0 5px;vertical-align:.18em;}
 .gnFrom{display:inline-block;margin:0 0 6px;padding:3px 10px;border:1px solid color-mix(in srgb,var(--orange) 45%,transparent);border-radius:999px;
   background:var(--paper);color:var(--navy);font:inherit;font-size:.72em;font-weight:700;cursor:pointer;max-width:100%;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
@@ -5522,7 +5523,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112130;
+var APP_BUILD=2026112131;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10875,8 +10876,8 @@ function fieldNotesSecHTML(wo){
      (oldest first), separate from the work order number. */
   const members=groupMembersOrdered(wo);
   const fromTag=(w)=>{
-    const label=(members.indexOf(w)+1)+' \u2022 '+((w.customer && w.customer.name) || 'None');
-    return `<button type="button" class="gnFrom" onclick="openWorkOrder(${w.id})">${esc(label)}</button>`;
+    const name=(w.customer && w.customer.name) || 'None';
+    return `<button type="button" class="gnFrom" onclick="openWorkOrder(${w.id})" aria-label="${members.indexOf(w)+1}, ${esc(name)}">${members.indexOf(w)+1}<span class="gnDot" aria-hidden="true">&bull;</span>${esc(name)}</button>`;
   };
   const one=({n, idx, w})=>`<div class="fsNote${(showGroup && w!==wo)?' gnOther':''}">
       ${(showGroup && w!==wo) ? fromTag(w) : ''}
