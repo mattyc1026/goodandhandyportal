@@ -2518,6 +2518,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
 .fsToday .ciBtn.in{background:#2e7d32;border-color:#2e7d32;color:#fff;}
 .fsToday .ciBtn.out{background:#c0392b;border-color:#c0392b;color:#fff;}
 .fsToday .ciBtn .ic{opacity:1;}
+.fsToday .ciBtn{min-height:38px;padding:7px 15px;font-size:.8em;}
 .fsFace{min-width:0;text-align:center;font-size:.96em;font-weight:700;letter-spacing:0;text-transform:none;color:var(--navy);line-height:1.2;}
 .fsMissed{display:inline-block;padding:5px 11px;border-radius:12px;background:var(--red);color:var(--redb);
   font-weight:800;font-size:.96em;line-height:1.25;letter-spacing:0;text-transform:none;text-align:center;}
@@ -5528,7 +5529,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112132;
+var APP_BUILD=2026112133;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
