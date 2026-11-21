@@ -2856,6 +2856,18 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 }
 .fieldSec--homeowner .fieldSecHead{cursor:default;padding-top:15px;padding-bottom:15px;}
 .fieldSec.fixed > .fieldSecHead{cursor:default;}
+.gnSwitch{display:inline-flex;align-items:center;gap:8px;margin-left:auto;padding:6px 0 6px 10px;min-height:36px;
+  background:none;border:none;cursor:pointer;font:inherit;color:var(--muted);-webkit-tap-highlight-color:transparent;}
+.gnLbl{font-size:1em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;}
+.gnTrack{position:relative;width:40px;height:24px;border-radius:12px;background:var(--line);transition:background .15s;flex:0 0 auto;}
+.gnKnob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(10,24,45,.3);transition:transform .15s;}
+.gnSwitch.on{color:var(--orange);}
+.gnSwitch.on .gnTrack{background:var(--orange);}
+.gnSwitch.on .gnKnob{transform:translateX(16px);}
+.gnFrom{display:inline-block;margin:0 0 6px;padding:3px 10px;border:1px solid color-mix(in srgb,var(--orange) 45%,transparent);border-radius:999px;
+  background:var(--paper);color:var(--navy);font:inherit;font-size:.72em;font-weight:700;cursor:pointer;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
+html.hc .gnSwitch.on .gnTrack{background:var(--hc-fg);}
 .fieldSec--homeowner .fieldSecHead > span:first-child{color:var(--pink-ink);}
 .hoFace{display:inline-flex;align-items:center;justify-content:center;gap:12px;max-width:100%;}
 .hoFace button{background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap;}
@@ -5498,7 +5510,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112119;
+var APP_BUILD=2026112120;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10743,11 +10755,11 @@ function markPreviewOverflow(){
 /* fixed: the section is always open and its title is just a title, with no
    + / - to fold it away (used by Notes). */
 const FIELD_SEC_SYM={note:'message', job:'clipboard-lines'};
-function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview, fixed){
+function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview, fixed, headExtra){
   const open=fixed || !!FIELD_SEC[key];
   const moreCls = moreAlign==='end' ? ' alignEnd' : '';
   return `<div class="fieldSec fieldSec--${key}${open?' open':''}${fixed?' fixed':''}">
-    ${fixed ? `<div class="fieldSecHead"><span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span></div>` : `<button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
+    ${fixed ? `<div class="fieldSecHead"><span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span>${headExtra||''}</div>` : `<button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
       <span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>`}
     ${(!open && preview) ? preview : ''}
@@ -10758,32 +10770,64 @@ function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreA
     </div>`:''}
   </div>`;
 }
+/* Group notes: when on, the Notes card lists the notes from every work order
+   in this one's group, newest first, so they can be read without switching
+   work orders. It stays on as you move between work orders. */
+let FIELD_GROUP_NOTES=false;
+try{ FIELD_GROUP_NOTES=localStorage.getItem('gh_group_notes')==='1'; }catch(e){}
+function toggleGroupNotes(id){
+  FIELD_GROUP_NOTES=!FIELD_GROUP_NOTES;
+  try{ localStorage.setItem('gh_group_notes', FIELD_GROUP_NOTES?'1':'0'); }catch(e){}
+  renderWorkOrderModal(id);
+}
+function noteTimeKey(n){
+  if(n && n.at) return n.at;
+  const d=String((n&&n.date)||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(!d) return 0;
+  let y=+d[3]; if(y<100) y+=2000;
+  let h=0, m=0;
+  const t=String((n&&n.time)||'').match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i);
+  if(t){ h=+t[1]; m=+t[2]; if(t[3]){ const pm=/p/i.test(t[3]); if(pm && h<12) h+=12; if(!pm && h===12) h=0; } }
+  return new Date(y, +d[1]-1, +d[2], h, m).getTime();
+}
 function fieldNotesSecHTML(wo){
-  const notes=wo.notes||[];
   const isAdmin=!!(CURRENT_USER && CURRENT_USER.isAdmin);
-  if(!notes.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>', '', '', undefined, '', '', true);
-  /* idx is the note's real position in wo.notes, because the admin edit and
-     delete calls address notes by index and the section shows the first note
-     separately from the rest. */
-  const one=(n, idx)=>`<div class="fsNote">
+  const group=priorJobsFor(wo).map(x=>x.wo);
+  const showGroup=FIELD_GROUP_NOTES && group.length>0;
+  const sw = group.length ? `<button type="button" class="gnSwitch${showGroup?' on':''}" role="switch" aria-checked="${showGroup}" onclick="toggleGroupNotes(${wo.id})"><span class="gnLbl">Group</span><span class="gnTrack"><span class="gnKnob"></span></span></button>` : '';
+  /* Each entry keeps its own work order and its index there, because the admin
+     edit and delete calls address a note by work order and position. */
+  let items=(wo.notes||[]).map((n,idx)=>({n, idx, w:wo, ord:idx}));
+  if(showGroup){
+    group.forEach(w=>(w.notes||[]).forEach((n,idx)=>items.push({n, idx, w, ord:idx})));
+    items.sort((a,b)=>(noteTimeKey(b.n)-noteTimeKey(a.n)) || (a.w===b.w ? a.ord-b.ord : 0));
+  }
+  if(!items.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>', '', '', undefined, '', '', true, sw);
+  const fromTag=(w)=>{
+    const desc=(w.jobDetails && w.jobDetails.description) ? w.jobDetails.description.trim().split('\n')[0] : '';
+    const label='#'+woCode(w)+(desc?' \u00b7 '+(desc.length>34?desc.slice(0,34)+'\u2026':desc):'');
+    return `<button type="button" class="gnFrom" onclick="openWorkOrder(${w.id})">${esc(label)}</button>`;
+  };
+  const one=({n, idx, w})=>`<div class="fsNote">
+      ${(showGroup && w!==wo) ? fromTag(w) : ''}
       <div class="fsNoteTop">
         <span class="fsNoteHead">${esc(n.type)} &middot; ${esc(n.date)}${n.time?' '+esc(n.time):''}${n.by?' &middot; '+esc(n.by):''}</span>
-        ${(n.followUpDate && n===currentFollowUp(wo)) ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
+        ${(n.followUpDate && n===currentFollowUp(w)) ? `<span class="noteFollowTag ${isFollowUpDue(n.followUpDate)?'due':''}">Follow-up: ${formatFollowUp(n.followUpDate)}</span>` : ''}
         ${isAdmin ? `<span class="fsNoteActions">
-          <button onclick="adminEditNote(${wo.id},${idx})">Edit</button>
-          <button onclick="adminDeleteNote(${wo.id},${idx})">Delete</button>
+          <button onclick="${w===wo?'':`openWorkOrder(${w.id});`}adminEditNote(${w.id},${idx})">Edit</button>
+          <button onclick="adminDeleteNote(${w.id},${idx}${w===wo?'':','+wo.id})">Delete</button>
         </span>` : ''}
       </div>
       <div>${esc(n.text)}</div>
     </div>`;
-  const rest=notes.slice(1);
+  const rest=items.slice(1);
   /* The section opens on the most recent note. It is not labelled as such:
      the note carries its own date, and "Last Note" as a heading read like the
      name of the section rather than what was in it. */
-  return fieldSecHTML(wo.id, 'note', 'Notes', one(notes[0], 0),
-    'notesMore', `All notes (${notes.length})`,
-    rest.length ? rest.map((n,i)=>one(n, i+1)).join('') : '', 'end',
-    '', true);
+  return fieldSecHTML(wo.id, 'note', 'Notes', one(items[0]),
+    'notesMore', `All notes (${items.length})`,
+    rest.length ? rest.map(one).join('') : '', 'end',
+    '', true, sw);
 }
 /* ---- Customer editing, inline ----
    The same fields and the same saveCustomer() the office view uses. It keeps
@@ -15876,7 +15920,7 @@ function clearPresiteData(wo){
   jd.labor=[]; jd.materials=[]; jd.tools=[];
   jd.issues=[]; jd.exclusions=[]; jd.disclaimers=[];
 }
-function adminDeleteNote(woId, idx){
+function adminDeleteNote(woId, idx, backId){
   const wo=getWO(woId);
   if(!wo || !wo.notes[idx]) return;
   const note=wo.notes[idx];
@@ -15904,7 +15948,7 @@ function adminDeleteNote(woId, idx){
     }
     if(WO_EDIT_NOTE_IDX===idx) WO_EDIT_NOTE_IDX=null;
     else if(WO_EDIT_NOTE_IDX!==null && WO_EDIT_NOTE_IDX>idx) WO_EDIT_NOTE_IDX--;
-    saveDB(DB); renderWorkOrderModal(woId); renderTabCounts(); renderMain();
+    saveDB(DB); renderWorkOrderModal(backId||woId); renderTabCounts(); renderMain();
     toast(isPresite ? 'Pre-site note and walkthrough data deleted.' : 'Note deleted.');
   }, isPresite ? {yes:'Delete pre-site data', no:'Cancel'} : undefined);
 }
