@@ -5518,7 +5518,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112127;
+var APP_BUILD=2026112128;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9472,10 +9472,9 @@ function commitSchedule(wo, editing, days, startTime, endTime, allTimes, crew, o
     addAdminLog(wo, `Added ${entries.map(schedEntryLabel).join(' and ')}.${overridden?' Double-booked over an existing appointment (override).':''}`);
   }
   const fromCal=SCHED_FROM_CAL && !editing;
-  /* Booked from inside the work order: a first date moves the job on the same
-     way a calendar booking does, with the same SCHD / SCHD PRESITE note. */
-  const advances=!fromCal && ((SCHED_TYPE==='presite' && inPresiteIncompleteList(wo)) || (SCHED_TYPE!=='presite' && inScheduleJobList(wo)));
-  let moved = (fromCal || advances) ? applyCalendarSchedNote(wo, entries) : '';
+  /* Booked from inside the work order: a first date moves the job on, with no
+     note written for it. */
+  let moved = fromCal ? applyCalendarSchedNote(wo, entries) : advanceOnSchedule(wo, SCHED_TYPE);
   if(editing && !moved) moved=unscheduleIfEmpty(wo);
   saveDB(DB);
   if(fromCal || moved){ renderTabCounts(); if(moved) toast(moved); }
@@ -9530,6 +9529,22 @@ function removeWholeScheduleEntry(woId, dateId){
   renderTabCounts();
   renderMain();
   if(moved) toast(moved);
+}
+function advanceOnSchedule(wo, type){
+  const before=stageNameOf(wo);
+  if(type==='presite' && inPresiteIncompleteList(wo)){
+    wo.presiteScheduled=true;
+    logStageChange(wo, before, 'pre-site date added');
+    return 'Moved to Pre-Site Scheduled.';
+  }
+  if(type!=='presite' && inScheduleJobList(wo)){
+    wo.jobScheduled=true; wo.jobStarted=false; wo.jobStartHold=null;
+    let msg='Moved to Scheduled.';
+    if(wholeJobDayArrived(wo)){ wo.jobStarted=true; msg='Moved to In Progress.'; }
+    logStageChange(wo, before, 'job date added');
+    return msg;
+  }
+  return '';
 }
 /* With its last date of that kind gone, a job waiting on that date goes back
    to the step before: Scheduled to Schedule Job, Pre-Site Scheduled to
