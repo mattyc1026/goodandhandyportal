@@ -2455,6 +2455,7 @@ html.hc .schedHoursTotal{border-top:1px solid var(--hc-fg);}
   display:flex;flex-direction:column;
   padding:0 24px 24px;line-height:1.55;overflow-wrap:anywhere;
 }
+.fsLead{padding:0 24px;line-height:1.55;overflow-wrap:anywhere;}
 
 /* ---- The check in/out card ----
    One card: the button when today is a scheduled day, the status strip, and
@@ -2865,12 +2866,13 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
   .ttlText{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
   .ttlSym{display:inline-flex;position:relative;align-items:center;justify-content:center;vertical-align:middle;line-height:1;}
   .ttlSym > .ic{width:28px;height:28px;stroke-width:1.9;}
-  .symBadge{position:absolute;top:-7px;right:-9px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;
-    background:currentColor;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--paper);}
-  .symBadge > b{color:#fff;font-size:10.5px;font-weight:800;letter-spacing:0;font-family:inherit;line-height:1;}
+  .symBadge{position:absolute;left:-5px;bottom:-3px;width:12px;height:12px;box-sizing:border-box;border-radius:50%;
+    background:currentColor;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px var(--paper);}
+  .symBadge > b{color:#fff;font-size:8px;font-weight:800;letter-spacing:0;font-family:inherit;line-height:1;}
   html.dark .symBadge > b{color:var(--paper);}
-  .symBadge.plus > b{font-size:14px;font-weight:700;margin-top:-1px;}
-  .symBadge.in,.symBadge.out{top:auto;bottom:-9px;right:-22px;height:15px;border-radius:5px;}
+  .symBadge.plus > b{font-size:10px;font-weight:700;margin-top:-1px;}
+  .fgAlt .symBadge{left:-3px;bottom:-1px;}
+  .symBadge.in,.symBadge.out{left:auto;width:auto;min-width:17px;padding:0 4px;bottom:-9px;right:-22px;height:15px;border-radius:5px;}
   .symBadge.in{background:#2e7d32;}
   .symBadge.out{background:#c0392b;}
   .symBadge.in > b,.symBadge.out > b{color:#fff;font-size:8.5px;letter-spacing:.04em;}
@@ -2880,6 +2882,11 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
   .fieldSec--note .fieldSecHead .ttlSym{color:var(--orange);}
   .fsTitle .ttlSym{color:var(--chartreuse-ink);}
   .fieldStatus.withToday{grid-template-columns:44px minmax(0,1fr) 44px;column-gap:6px;}
+  .fieldSec--job{display:grid;grid-template-columns:60px minmax(0,1fr) 60px;}
+  .fieldSec--job > *{grid-column:1/-1;}
+  .fieldSec--job > .fieldSecHead{grid-row:1;align-self:start;}
+  .fieldSec--job > .fieldSecPreview,.fieldSec--job > .fsLead{grid-column:2;grid-row:1;margin:0;padding:21px 0 18px;text-align:center;position:relative;z-index:1;}
+  .fieldSec--job > .fsLead{padding-bottom:0;}
   .fieldStatus.withToday .fsTitle{overflow:visible;}
   .fieldPeople .fgHit{column-gap:16px;}
   html.hc .ttlSym{color:var(--hc-fg) !important;}
@@ -4426,10 +4433,10 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3h3l1.5 4-2 1.4a12 12 0 0 0 5.5 5.5l1.4-2 4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 4.6 5.2 2 2 0 0 1 6.6 3z"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.4 6.5L12 13l8.6-6.5"/></symbol>
-  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-4.6A8 8 0 0 1 13 4a8 8 0 0 1 8 8z"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 16l-5-5L6 20"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
-  <symbol id="i-clipboard-lines" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M8 11.5h8M8 14.75h8M8 18h8"/></symbol>
+  <symbol id="i-clipboard-lines" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M8.5 11.5h7M8.5 14.5h7M8.5 17.5h7" stroke-width="1"/></symbol>
   <symbol id="i-home-person" viewBox="0 0 24 24"><path d="M2.5 11.5L12 3.5l9.5 8"/><path d="M5 9.5V20.5h14V9.5"/><circle cx="12" cy="11.6" r="2.2"/><path d="M8.3 20.3c.5-2.4 1.9-3.8 3.7-3.8s3.2 1.4 3.7 3.8"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></symbol>
   <symbol id="i-printer" viewBox="0 0 24 24"><path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/></symbol>
@@ -5485,7 +5492,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026111916;
+var APP_BUILD=2026112017;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10939,9 +10946,8 @@ function fieldJobSecHTML(wo){
       <span>${symTitle('Job Details','clipboard-lines')}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
     </button>
     ${open ? '' : fieldJobPreviewHTML(wo)}
+    ${(open && (body+presitePrompt).trim()) ? `<div class="fsLead">${body}${presitePrompt}</div>` : ''}
     ${open?`<div class="fieldSecBody">
-      ${body}
-      ${presitePrompt}
       ${pills}
       ${card}
       <button class="fieldMoreBtn alignEnd" onclick="openJobDetailsEdit(${id})">Edit Job Details</button>
