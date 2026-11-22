@@ -2928,7 +2928,11 @@ html.hc .gnSwitch.on .gnTrack{background:var(--hc-fg);}
   .fieldSec--job{display:grid;grid-template-columns:60px minmax(0,1fr) 60px;}
   .fieldSec--job > *{grid-column:1/-1;}
   .fieldSec--job > .fieldSecHead{grid-row:1;align-self:start;}
-  .fieldSec--job > .fieldSecPreview{grid-column:2;grid-row:1;margin:0;padding:21px 0 18px;text-align:center;position:relative;z-index:1;}
+  .fieldSec--job > .fieldSecPreview{grid-column:1/-1;grid-row:1;margin:0;padding:21px 24px 18px;position:relative;z-index:1;}
+  .jlFloat{width:36px;}
+  .jlFloat.l{float:left;} .jlFloat.r{float:right;}
+  .jlTop,.jlTop *{text-align:center !important;}
+  .fieldSec--job .fspClip .accessInfo{display:flow-root;}
   .fieldStatus.withToday .fsTitle{overflow:visible;}
   .fieldPeople .fgHit{column-gap:16px;}
   html.hc .ttlSym{color:var(--hc-fg) !important;}
@@ -5534,7 +5538,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112134;
+var APP_BUILD=2026112135;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10841,6 +10845,64 @@ function fieldJobPreviewHTML(wo){
 }
 /* Folded Notes shows the latest note the way it looks open: type, date, time
    and who wrote it, any follow-up, then as much of the text as fits. */
+/* Folded Job Details on a phone: the text starts on the symbol's row. Lines
+   that share that row are centred between the symbol and the + button; once
+   the text has cleared them it runs full width in the alignment it was typed
+   with. Two invisible spacers hold the symbol and button's room, and the text
+   is split at the first line that starts below them. */
+function layoutJobLead(){
+  const clip=document.querySelector('#modalRoot .fieldSec--job:not(.open) > .fieldSecPreview .fspClip');
+  if(!clip) return;
+  if(clip.dataset.orig==null) clip.dataset.orig=clip.innerHTML; else clip.innerHTML=clip.dataset.orig;
+  if(!window.matchMedia('(max-width:600px)').matches) return;
+  const sec=clip.closest('.fieldSec');
+  const sym=sec.querySelector('.fieldSecHead .ttlSym'), chev=sec.querySelector('.fieldSecChev');
+  if(!sym || !sym.getBoundingClientRect().width) return;
+  const zone=Math.max(sym.getBoundingClientRect().bottom, chev ? chev.getBoundingClientRect().bottom : 0);
+  const h=Math.round(zone-clip.getBoundingClientRect().top);
+  if(h<=0) return;
+  const fl=document.createElement('span'); fl.className='jlFloat l'; fl.style.height=h+'px';
+  const fr=document.createElement('span'); fr.className='jlFloat r'; fr.style.height=h+'px';
+  clip.insertBefore(fr, clip.firstChild); clip.insertBefore(fl, fr);
+  /* First character on a line that starts below the spacers. */
+  const walker=document.createTreeWalker(clip, NodeFilter.SHOW_TEXT);
+  const rg=document.createRange();
+  let cutNode=null, cutAt=0, node;
+  while(!cutNode && (node=walker.nextNode())){
+    if(!node.nodeValue.trim()) continue;
+    rg.selectNodeContents(node);
+    if(rg.getBoundingClientRect().bottom<=zone) continue;
+    for(let i=0;i<node.nodeValue.length;i++){
+      if(!node.nodeValue[i].trim()) continue;
+      rg.setStart(node,i); rg.setEnd(node,i+1);
+      const r=rg.getClientRects()[0] || rg.getBoundingClientRect();
+      if(r.top>=zone-1){ cutNode=node; cutAt=i; break; }
+    }
+  }
+  const cut=document.createRange();
+  cut.setStartAfter(fr);
+  if(!cutNode){ cut.setEnd(clip, clip.childNodes.length); }
+  else {
+    /* Never split a boxed block (the gate / parking box): it goes up whole. */
+    const box=cutNode.parentElement.closest('.accessInfo');
+    if(box && clip.contains(box)) cut.setEndAfter(box); else cut.setEnd(cutNode, cutAt);
+  }
+  const top=document.createElement('div'); top.className='jlTop';
+  top.appendChild(cut.extractContents());
+  fr.after(top);
+  /* A paragraph cut in two keeps reading as one: no gap at the cut. */
+  if(cutNode && cutAt>0){
+    let a=top.lastElementChild; while(a && a.lastElementChild) a=a.lastElementChild;
+    if(a) a.style.marginBottom='0';
+    let b=top.nextElementSibling; while(b && b.firstElementChild) b=b.firstElementChild;
+    if(b) b.style.marginTop='0';
+  }
+  /* Drop shells left empty by the cut. */
+  [top, top.nextElementSibling].forEach(el=>{
+    if(!el) return;
+    el.querySelectorAll('p,div,li,ul,ol,span,b,strong,i,em,u').forEach(x=>{ if(!x.textContent.trim() && !x.querySelector('img,br')) x.remove(); });
+  });
+}
 /* Marks a clipped preview that has more below it, so only those fade out. */
 function markPreviewOverflow(){
   document.querySelectorAll('#modalRoot .fspClip').forEach(el=>{
@@ -11581,9 +11643,10 @@ function renderWorkOrderModal(id){
     if(nextOverlay) nextOverlay.scrollTop=prevOverlayScroll;
   }
   restoreCustDraft(id);
+  layoutJobLead();
   markPreviewOverflow();
   fitFieldValues();
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ markPreviewOverflow(); fitFieldValues(); });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ layoutJobLead(); markPreviewOverflow(); fitFieldValues(); });
 }
 /* On phones each customer value stays on one line: a value too long for its
    row is shrunk until it fits instead of wrapping. */
@@ -11610,7 +11673,7 @@ function fitFieldValues(){
     }
   });
 }
-window.addEventListener('resize', ()=>{ clearTimeout(window.__fitT); window.__fitT=setTimeout(fitFieldValues, 120); });
+window.addEventListener('resize', ()=>{ clearTimeout(window.__fitT); window.__fitT=setTimeout(()=>{ layoutJobLead(); markPreviewOverflow(); fitFieldValues(); }, 120); });
 /* The homeowner row spans the full width beneath the two columns and is
    omitted entirely when both fields are blank, so a job where the customer is
    the homeowner does not carry an empty label. */
