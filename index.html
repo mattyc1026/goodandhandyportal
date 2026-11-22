@@ -1402,6 +1402,11 @@ html.dark .cvAddJob{color:#ffb36b;}
 .cvAddGroupHead{display:flex;align-items:center;gap:8px;font-weight:800;color:var(--navy);margin-bottom:8px;}
 .cvAddJobRow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:12px;background:var(--paper);font:inherit;color:var(--ink);cursor:pointer;box-shadow:var(--sh-1);}
 .cvAddJobRow.presite{border-left-color:var(--purple-ink);}
+.cvAddJobRow.more{border-left-color:var(--greenb);}
+.cvAddJobRow.more .cvType{background:var(--green);color:var(--greenb);}
+.cvAddFold{width:100%;margin-bottom:0;padding:12px 14px;border:1px dashed var(--line);border-radius:12px;background:var(--well);font:inherit;font-weight:800;color:var(--navy);cursor:pointer;text-align:left;}
+.cvAddFold[aria-expanded="true"]{margin-bottom:8px;}
+.cvAddFold .cvFoldChev{margin-left:auto;font-size:1.2em;line-height:1;color:var(--muted);}
 .cvAddJobRow:hover{background:var(--well);}
 .cvAddJobRow:focus-visible{outline:2px solid var(--orange);outline-offset:1px;}
 .cvAddJobMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
@@ -5529,7 +5534,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112133;
+var APP_BUILD=2026112134;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7806,7 +7811,7 @@ function calViewHTML(){
    what moves the job along, so it never needs opening. */
 let CALV_ADD=null;   // {iso, q}
 function calvAddJob(iso){
-  CALV_ADD={iso, q:''};
+  CALV_ADD={iso, q:'', more:false};
   renderCalvAdd();
   setTimeout(()=>{ const el=document.getElementById('cvAddSearch'); if(el && !isNarrowScreen()) el.focus(); }, 60);
 }
@@ -7820,26 +7825,39 @@ function calvAddGroups(){
   const byName=(a,b)=>String((a.customer||{}).name||'').localeCompare(String((b.customer||{}).name||''));
   return [
     {title:'Schedule Job', kind:'full', list:DB.workOrders.filter(w=>inScheduleJobList(w) && match(w)).sort(byName)},
-    {title:'Pre-Site Incomplete', kind:'presite', list:DB.workOrders.filter(w=>inPresiteIncompleteList(w) && match(w)).sort(byName)}
+    {title:'Pre-Site Incomplete', kind:'presite', list:DB.workOrders.filter(w=>inPresiteIncompleteList(w) && match(w)).sort(byName)},
+    /* Folded under its own heading: more days for a job already under way. */
+    {title:'Add Days to a Job in Progress', kind:'more', fold:true, list:DB.workOrders.filter(w=>inInvoiceInProgressList(w) && match(w)).sort(byName)}
   ];
+}
+function calvToggleMore(){
+  if(!CALV_ADD) return;
+  CALV_ADD.more=!CALV_ADD.more;
+  document.getElementById('cvAddList').innerHTML=calvAddListHTML();
 }
 function calvAddListHTML(){
   const groups=calvAddGroups();
   const any=groups.some(g=>g.list.length);
   if(!any) return emptyStateHTML(CALV_ADD.q ? 'No jobs match that search.' : 'No jobs are waiting to be scheduled.', {icon:'nav-calendar', style:'padding:28px 16px;'});
-  return groups.filter(g=>g.list.length).map(g=>`<div class="cvAddGroup">
-      <div class="cvAddGroupHead"><span>${esc(g.title)}</span><span class="dkCount">${g.list.length}</span></div>
-      ${g.list.map(w=>{
+  return groups.filter(g=>g.list.length).map(g=>{
+    const shut=g.fold && !CALV_ADD.more && !CALV_ADD.q.trim();
+    const head = g.fold
+      ? `<button type="button" class="cvAddGroupHead cvAddFold" aria-expanded="${!shut}" onclick="calvToggleMore()"><span>${esc(g.title)}</span><span class="dkCount">${g.list.length}</span><span class="cvFoldChev">${shut?'+':'&minus;'}</span></button>`
+      : `<div class="cvAddGroupHead"><span>${esc(g.title)}</span><span class="dkCount">${g.list.length}</span></div>`;
+    return `<div class="cvAddGroup">
+      ${head}
+      ${shut ? '' : g.list.map(w=>{
         const c=w.customer||{};
         const addr=splitAddress(c.address||'');
-        const scheduled=(w.scheduleDates||[]).some(d=>(d.type||'full')===g.kind);
+        const scheduled=(w.scheduleDates||[]).some(d=>(d.type||'full')===(g.kind==='more'?'full':g.kind));
         return `<button type="button" class="cvAddJobRow ${g.kind}" onclick="calvPickJob(${w.id},'${g.kind}')">
           <span class="cvAddJobMain"><b>${esc(c.name||'No name')}</b><span>${esc(addr.line1||c.address||'')}</span></span>
-          <span class="cvType">${g.kind==='presite'?'Pre-Site':'Whole Job'}</span>
-          ${scheduled?'<span class="cvAddHas" title="Already has dates">'+icon('nav-calendar')+'</span>':''}
+          <span class="cvType">${g.kind==='presite'?'Pre-Site':g.kind==='more'?'Add Days':'Whole Job'}</span>
+          ${(scheduled && g.kind!=='more')?'<span class="cvAddHas" title="Already has dates">'+icon('nav-calendar')+'</span>':''}
         </button>`;
       }).join('')}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 function renderCalvAdd(){
   if(!CALV_ADD) return;
@@ -7863,13 +7881,15 @@ function closeCalvAdd(){
   const root=document.getElementById('modalRoot');
   if(root) root.innerHTML='';
 }
-let SCHED_FROM_CAL=false, SCHED_NOTE='';
+let SCHED_FROM_CAL=false, SCHED_NOTE='', SCHED_ADD_MORE=false;
 function calvPickJob(woId, kind){
   const iso=CALV_ADD ? CALV_ADD.iso : isoToday();
   CALV_ADD=null;
   openScheduleWidget(woId);
   SCHED_FROM_CAL=true;
   SCHED_NOTE='';
+  /* More days for a job in progress: no note and no stage change. */
+  SCHED_ADD_MORE = kind==='more';
   SCHED_TYPE=kind==='presite' ? 'presite' : 'full';
   SCHED_DAYS=[iso];
   SCHED_INFO_DAY=iso;
@@ -9384,7 +9404,7 @@ function schedRowHTML(woId, d, inline){
 /* ---- Editing an existing scheduled date ----
    Reuses the same calendar/form as adding, with SCHED_EDIT_ID set. */
 function openScheduleEdit(woId, dateId, inline){
-  SCHED_FROM_CAL=false; SCHED_NOTE='';
+  SCHED_FROM_CAL=false; SCHED_NOTE=''; SCHED_ADD_MORE=false;
   SCHED_INLINE=!!inline;
   if(SCHED_INLINE) FIELD_SEC.sched=true;
   const wo=getWO(woId);
@@ -9485,7 +9505,7 @@ function commitSchedule(wo, editing, days, startTime, endTime, allTimes, crew, o
   const fromCal=SCHED_FROM_CAL && !editing;
   /* Booked from inside the work order: a first date moves the job on, with no
      note written for it. */
-  let moved = fromCal ? applyCalendarSchedNote(wo, entries) : advanceOnSchedule(wo, SCHED_TYPE);
+  let moved = fromCal ? (SCHED_ADD_MORE ? '' : applyCalendarSchedNote(wo, entries)) : advanceOnSchedule(wo, SCHED_TYPE);
   if(editing && !moved) moved=unscheduleIfEmpty(wo);
   saveDB(DB);
   if(fromCal || moved){ renderTabCounts(); if(moved) toast(moved); }
@@ -9502,7 +9522,7 @@ function closeScheduleForm(){
   SCHED_INFO_DAY=null; SCHED_DAYTIMES={}; SCHED_DAYTIMES_OPEN=false;
   SCHED_INLINE=false; SCHED_WO_ID=null;
   // Booked from the calendar: go back to the calendar, not into the job.
-  if(SCHED_FROM_CAL){ SCHED_FROM_CAL=false; SCHED_NOTE=''; closeModal(); renderMain(); return; }
+  if(SCHED_FROM_CAL){ SCHED_FROM_CAL=false; SCHED_NOTE=''; SCHED_ADD_MORE=false; closeModal(); renderMain(); return; }
   if(id!=null) renderWorkOrderModal(id);
 }
 function schedEntryLabel(d){
@@ -9745,7 +9765,7 @@ function hasPresiteScheduled(wo){
   return (wo.scheduleDates||[]).some(d=>d.type==='presite');
 }
 function openScheduleWidget(id, inline){
-  SCHED_FROM_CAL=false; SCHED_NOTE='';
+  SCHED_FROM_CAL=false; SCHED_NOTE=''; SCHED_ADD_MORE=false;
   SCHED_INLINE=!!inline;
   if(SCHED_INLINE) FIELD_SEC.sched=true;
   SCHED_WO_ID=id;
@@ -9775,7 +9795,7 @@ function schedFormFieldsHTML(short){
     </div>
     ${schedDayTimesHTML()}
     ${crewPickerHTML()}
-    ${SCHED_FROM_CAL && !SCHED_EDIT_ID ? `<div class="field"><label for="schedNote">${SCHED_TYPE==='presite'?'SCHD PRESITE':'SCHD'} Note</label><textarea id="schedNote" rows="2" data-nodraft="1" oninput="SCHED_NOTE=this.value">${esc(SCHED_NOTE)}</textarea></div>` : ''}`;
+    ${SCHED_FROM_CAL && !SCHED_ADD_MORE && !SCHED_EDIT_ID ? `<div class="field"><label for="schedNote">${SCHED_TYPE==='presite'?'SCHD PRESITE':'SCHD'} Note</label><textarea id="schedNote" rows="2" data-nodraft="1" oninput="SCHED_NOTE=this.value">${esc(SCHED_NOTE)}</textarea></div>` : ''}`;
 }
 function renderScheduleWidget(){
   /* In field view the form lives in the work order itself, so everything that
