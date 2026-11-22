@@ -5538,7 +5538,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112135;
+var APP_BUILD=2026112236;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -6936,11 +6936,7 @@ function historyOutcomeAdminHTML(wo){
   return `<div class="hoAdmin"><h4>Job Outcome</h4><div class="segSwitch hoSeg">${b('auto','Auto ('+autoLbl+')')}${b('done','Completed')}${b('notdone','Not Completed')}</div></div>`;
 }
 function statusTag(wo){
-  /* A finished job that is only still on the board because of an upcoming
-     visit says so. Labelling it "Job History" while it sits in the work order
-     list would read like a bug. */
   if(wo.movedToHistoryAt){
-    if(hasUpcomingSchedule(wo)) return '<span class="tag visit">Visit Scheduled</span>';
     const o=historyOutcome(wo);
     return `<span class="tag ho-${o.key}">${o.key==='done'?icon('check'):''}${o.label}</span>`;
   }
@@ -6973,16 +6969,12 @@ function lastScheduledDay(wo){
    a follow-up visit. Those stay on the board until that visit is behind them,
    rather than vanishing into Job History the moment the paperwork is done.
    ISO dates compare correctly as plain strings, so no Date objects are built. */
-function hasUpcomingSchedule(wo){
-  const last=lastScheduledDay(wo);
-  return !!last && last>=isoToday();
-}
 function inPresiteList(wo){ return hasRequiredInfo(wo) && !wo.presiteDone && !wo.movedToHistoryAt; }
 function inEstimatesList(wo){ return wo.presiteDone && !wo.jobScheduled && !wo.movedToHistoryAt; }
 function inInvoicesList(wo){ return !!wo.jobScheduled && !wo.invoiceDone && !wo.movedToHistoryAt; }
-/* The one list that ignores the stage flags: anything not filed away, plus
-   anything filed away that is still on the calendar. */
-function inWorkOrdersList(wo){ return !wo.movedToHistoryAt || hasUpcomingSchedule(wo); }
+/* The one list that ignores the stage flags: anything not filed away. A job
+   filed away leaves it even if it still has dates on the calendar. */
+function inWorkOrdersList(wo){ return !wo.movedToHistoryAt; }
 
 /* Pre-Site sub-lists */
 function inPresiteIncompleteList(wo){ return inPresiteList(wo) && !wo.presiteScheduled && !wo.presiteComplete; }
@@ -7041,7 +7033,7 @@ function inSurveysList(wo){ return !!wo.invoiceDone && !!wo.invoiceSent && !wo.m
 /* Job History is the final resting place, so a job only lands here once there
    is nothing left on the calendar. Until then it is still on the board and
    showing in both places would be the duplication this is meant to avoid. */
-function inJobHistoryList(wo){ return !!wo.movedToHistoryAt && !hasUpcomingSchedule(wo); }
+function inJobHistoryList(wo){ return !!wo.movedToHistoryAt; }
 
 function addAdminLog(wo, text){
   const ts=nowStamp();
@@ -8118,7 +8110,7 @@ function rowHTML(wo, opts){
   const checkInOutRow = (opts.showCheckInOut && todayLog)
     ? ''
     : '';
-  const hoCls = (wo.movedToHistoryAt && !hasUpcomingSchedule(wo)) ? ' ho-'+historyOutcome(wo).key : '';
+  const hoCls = wo.movedToHistoryAt ? ' ho-'+historyOutcome(wo).key : '';
   return `<div class="woRow ${cls}${hoCls}${glowCls}${picking?' fuPickable':''}${picked?' fuPicked':''}" data-wo-id="${wo.id}"${openFn?` onclick="${openFn}"`:''}${picking?` role="checkbox" aria-checked="${picked?'true':'false'}"`:''}>
     ${picking?`<span class="fuCheck" aria-hidden="true">${icon('check')}</span>`:''}
     <div class="woMain">
@@ -10525,11 +10517,7 @@ function submitFieldNote(id){
     }
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
-    /* Filing it away does not always take it off the board, so the toast
-       should not claim it did. */
-    movedMsg = hasUpcomingSchedule(wo)
-      ? 'Job closed out. Staying in Work Orders until its last scheduled date passes.'
-      : 'Moved to Job History.';
+    movedMsg = 'Moved to Job History.';
   }
   logStageChange(wo, stageBefore, type+' note added');
   saveDB(DB);
@@ -15992,11 +15980,7 @@ function submitNote(id){
     }
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
-    /* Filing it away does not always take it off the board, so the toast
-       should not claim it did. */
-    movedMsg = hasUpcomingSchedule(wo)
-      ? 'Job closed out. Staying in Work Orders until its last scheduled date passes.'
-      : 'Moved to Job History.';
+    movedMsg = 'Moved to Job History.';
   }
   logStageChange(wo, stageBefore, type+' note added');
   saveDB(DB);
