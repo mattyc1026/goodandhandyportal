@@ -108,6 +108,7 @@
   /* Pre-Site Complete: a paler red than Pre-Site Scheduled. */
   --red-lite:#fff0ef; --red-liteb:#e8968d;
   --yellow:#fff1c4; --yellowb:#a5710a; --yellow-bold:#ffe08a;
+  --trip:#e6e8fb; --trip-ink:#4a4fb5;
   --green:#d2f2df; --greenb:#1f8a55; --green-bold:#a8ecc4;
   /* In Progress: a paler green than Scheduled, the same step Pre-Site Complete takes off Pre-Site Scheduled. */
   --green-lite:#ecfaf2; --green-liteb:#7cc9a0;
@@ -224,6 +225,7 @@ html.dark{
   --red:#38202a; --redb:#ff8f7d; --red-bold:#4b2733;
   --red-lite:#2a1d24; --red-liteb:#d99a92;
   --yellow:#372f19; --yellowb:#f3c65c; --yellow-bold:#4a3f1e;
+  --trip:#23264a; --trip-ink:#aab0f5;
   --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
   --green-lite:#16261e; --green-liteb:#92cfae;
   --s-pi:#60232b; --s-pi-b:#e96b6b;
@@ -272,6 +274,7 @@ html.hc{
   --red:#ffbfbf; --redb:#a30000; --red-bold:#ff8f8f;
   --red-lite:#ffe3e3; --red-liteb:#c43c3c;
   --yellow:#ffe89a; --yellowb:#6b5400; --yellow-bold:#ffcf3d;
+  --trip:#dfe2ff; --trip-ink:#2c3190;
   --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
   --green-lite:#dcf6e6; --green-liteb:#2f8a5a;
   --s-pi:#ff8f8f; --s-pi-b:#a30000;
@@ -316,6 +319,7 @@ html.dark.hc{
   --red:#4a0d0d; --redb:#ff9a90; --red-bold:#6b1212;
   --red-lite:#2e0a0a; --red-liteb:#ffbab3;
   --yellow:#3d3000; --yellowb:#ffd54a; --yellow-bold:#584600;
+  --trip:#20245a; --trip-ink:#c3c8ff;
   --green:#00331d; --greenb:#63f0a6; --green-bold:#004d2c;
   --green-lite:#00200f; --green-liteb:#a6f5c9;
   --s-pi:#6b1212; --s-pi-b:#ff9a90;
@@ -1899,6 +1903,15 @@ html.hc .ciBtn{background:var(--hc-bg);color:var(--hc-fg);border:2px solid var(-
   .dlAct{grid-area:times;grid-column:2 / -1;}
 }
 .dlFoot{margin-top:8px;font-size:.74em;color:var(--muted);}
+.dlTrip .dlTimes{padding-left:14px;position:relative;color:var(--muted);}
+.dlTrip .dlTimes::before{content:"";position:absolute;left:3px;top:.15em;width:7px;height:.55em;border-left:1.5px solid var(--line);border-bottom:1.5px solid var(--line);border-bottom-left-radius:3px;}
+.dlTripLbl{font-style:italic;}
+.dlTripGas{font-size:.88em;}
+.dlTrip .dlMi{color:var(--navy);}
+.tripMiles input{text-align:left;}
+.tripMiles > span{font-weight:700;color:var(--muted);}
+.tripCost{min-height:1.3em;margin:8px 2px 0;font-size:.85em;font-weight:700;color:var(--navy);text-align:left;}
+.tripSet{margin-top:10px;text-align:left;}
 html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
 /* Day editor */
 .confirmCard.dayEdCard{text-align:left;padding:22px 18px;}
@@ -2647,7 +2660,7 @@ html.hc .fsMissed{background:var(--hc-bg);color:var(--hc-fg);border:2px solid va
 .fsTitle{font-size:.92em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);}
 
 .fieldBtn.wide{grid-column:1 / -1;width:100%;}
-.fieldActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.fieldActions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
 .fieldActions:has(> :only-child){grid-template-columns:1fr;}
 .fieldNav{flex-wrap:wrap;}
 .fieldBtn{
@@ -2658,6 +2671,10 @@ html.hc .fsMissed{background:var(--hc-bg);color:var(--hc-fg);border:2px solid va
   text-decoration:none;cursor:pointer;
 }
 .fieldBtn .ic{width:28px;height:28px;}
+@media (max-width:600px){
+  .fieldActions{gap:8px;}
+  .fieldActions .fieldBtn{padding:12px 4px;font-size:.84em;gap:6px;line-height:1.2;}
+}
 
 .fieldBtn.done{background:var(--well);color:var(--muted);}
 .fieldBtn:disabled{opacity:.75;cursor:default;}
@@ -2758,6 +2775,11 @@ html.hc .fsMissed{background:var(--hc-bg);color:var(--hc-fg);border:2px solid va
   background:linear-gradient(155deg,var(--brown) 0%,var(--paper) 72%);
 }
 .fieldActions .fieldBtn.fbReceipt .ic{color:var(--brown-ink);}
+.fieldActions .fieldBtn.fbTrip{
+  border-color:var(--trip-ink);
+  background:linear-gradient(155deg,var(--trip) 0%,var(--paper) 72%);
+}
+.fieldActions .fieldBtn.fbTrip .ic{color:var(--trip-ink);}
 .fieldActions .fieldBtn.fbNote{
   border-color:var(--yellowb);
   background:linear-gradient(155deg,var(--yellow) 0%,var(--paper) 72%);
@@ -4554,6 +4576,7 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></symbol>
   <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
   <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 6.5h7"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></symbol>
+  <symbol id="i-trip" viewBox="0 0 24 24"><path d="M2.5 21v-2.4c0-.5.2-.9.6-1.2l1.2-1 .9-2.2c.2-.5.7-.8 1.2-.8h3.4c.5 0 1 .3 1.2.8l.9 2.2 1.2 1c.4.3.6.7.6 1.2V21"/><path d="M2.5 19.2h10.2"/><circle cx="5.3" cy="21" r="1"/><circle cx="9.9" cy="21" r="1"/><path d="M8 10.8c0-3.4 3.2-2.1 5.6-3.4" stroke-dasharray="0.1 2.3"/><path d="M18 12s-3.4-3-3.4-5.4a3.4 3.4 0 0 1 6.8 0C21.4 9 18 12 18 12z"/><circle cx="18" cy="6.6" r="1.1"/></symbol>
   <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.9-5.3-2.8-5.3 2.8 1-5.9L5.5 9.7l5.9-.9z"/></symbol>
   <!-- Nav tab icons -->
@@ -5624,7 +5647,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112337;
+var APP_BUILD=2026112338;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -8753,6 +8776,113 @@ function visitMilesHTML(woId, s){
   if(typeof s.miles==='number') return `<span class="dlMi">${s.miles.toFixed(1)} mi</span>`;
   return `<span class="dlMi"><span class="mileTag" data-wo="${woId}"></span></span>`;
 }
+/* ---- additional trips ----
+   A trip someone makes for a job outside a visit (a supply run, a second
+   drive out). It is kept on the job's day it belongs to and its miles count
+   with that day's. MPG and gas price start from the expenses calculator's
+   and can be changed here; each trip keeps the ones it was entered with. */
+function logTrips(log){ return (log && Array.isArray(log.trips)) ? log.trips : []; }
+function logMiles(log){
+  let m=0;
+  logSessions(log).forEach(s=>{ if(typeof s.miles==='number') m+=s.miles; });
+  logTrips(log).forEach(t=>{ if(typeof t.miles==='number') m+=t.miles; });
+  return m;
+}
+function tripSettings(){
+  const c=DB.calc||{}, base=calcSettings();
+  return {mpg: Number(c.tripMpg)>0 ? Number(c.tripMpg) : base.mpg, gas: Number(c.tripGas)>=0 && c.tripGas!=null && c.tripGas!=='' ? Number(c.tripGas) : base.gas};
+}
+function tripCost(miles, mpg, gas){ return mpg>0 ? Math.round(miles/mpg*gas*100)/100 : 0; }
+/* The job's days a trip can go on: every scheduled day up to today. */
+function tripDays(wo){
+  const today=isoToday();
+  return allDayLogsSorted(wo).filter(r=>r.log.date<=today).map(r=>r).reverse();
+}
+let TRIP=null;
+function openAddTrip(woId){
+  const wo=getWO(woId);
+  if(!wo) return;
+  const days=tripDays(wo);
+  const root=document.getElementById('confirmRoot');
+  const ts=tripSettings();
+  TRIP={woId};
+  const opts=days.map(({entry, log})=>{
+    const [y,m,d]=log.date.split('-').map(Number);
+    const lbl=(log.date===isoToday()?'Today':new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'short'}))+` ${m}/${d}`+(y!==new Date().getFullYear()?'/'+String(y).slice(2):'')+' \u00b7 '+((entry.type||'full')==='presite'?'Pre-Site':'Whole Job');
+    return `<option value="${log.date}">${esc(lbl)}</option>`;
+  }).join('');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard moneyCard tripCard" role="dialog" aria-modal="true" aria-label="Add trip">
+    <h3>Add Trip</h3>
+    <div class="amtName">${esc((wo.customer||{}).name||'')} &middot; #${esc(woCode(wo))}</div>
+    ${days.length ? `
+    <label class="amtField tripMiles"><input id="tripMi" type="text" inputmode="decimal" autocomplete="off" aria-label="Miles" oninput="tripPreview()"><span>mi</span></label>
+    <label class="moneyFld wide"><span>Day</span><select id="tripDay">${opts}</select></label>
+    <div class="tripCost" id="tripCost"></div>
+    <details class="calcGas tripSet">
+      <summary>Settings <span id="tripSetSum">${ts.mpg} mpg &middot; ${fmtMoney(ts.gas)}/gal</span></summary>
+      <div class="moneyGrid">
+        <label class="moneyFld"><span>Miles per Gallon</span><input id="tripMpg" type="text" inputmode="decimal" value="${ts.mpg}" onchange="tripSetting('mpg',this)"></label>
+        <label class="moneyFld"><span>Gas Price per Gallon</span><input id="tripGas" type="text" inputmode="decimal" value="${ts.gas.toFixed(2)}" onchange="tripSetting('gas',this)"></label>
+      </div>
+    </details>
+    <div class="errMsg" id="tripErr"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveTrip()">Save</button>
+      <button class="btn secondary" onclick="closeTrip()">Cancel</button>
+    </div>` : `<div class="small" style="margin:6px 0 14px;">This job has no scheduled days yet.</div>
+    <div class="btnRow"><button class="btn secondary" onclick="closeTrip()">Close</button></div>`}
+  </div></div>`;
+  if(days.length){ tripPreview(); setTimeout(()=>{ const i=document.getElementById('tripMi'); if(i && !(window.matchMedia && matchMedia('(pointer:coarse)').matches)) i.focus(); }, 60); }
+}
+function closeTrip(){ TRIP=null; const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
+function tripPreview(){
+  const el=document.getElementById('tripCost'); if(!el) return;
+  const v=parseMoney(document.getElementById('tripMi').value);
+  const ts=tripSettings();
+  el.textContent = (v && v>0) ? `${(Math.round(v/ts.mpg*100)/100).toLocaleString('en-US')} gal \u00b7 ${fmtMoney(tripCost(v, ts.mpg, ts.gas))} gas` : '';
+}
+function tripSetting(key, el){
+  const v=parseMoney(el.value);
+  if(v===null || isNaN(v) || v<0 || (key==='mpg' && v===0)){ const ts=tripSettings(); el.value = key==='mpg' ? ts.mpg : ts.gas.toFixed(2); return; }
+  if(!DB.calc) DB.calc={};
+  DB.calc[key==='mpg'?'tripMpg':'tripGas']=v;
+  saveDB(DB);
+  const ts=tripSettings();
+  const sum=document.getElementById('tripSetSum'); if(sum) sum.textContent=`${ts.mpg} mpg \u00b7 ${fmtMoney(ts.gas)}/gal`;
+  tripPreview();
+}
+function saveTrip(){
+  if(!TRIP) return;
+  const wo=getWO(TRIP.woId); if(!wo){ closeTrip(); return; }
+  const v=parseMoney(document.getElementById('tripMi').value);
+  if(v===null || isNaN(v) || !(v>0)){ document.getElementById('tripErr').textContent='Enter the miles.'; return; }
+  const date=document.getElementById('tripDay').value;
+  const found=findDayLog(wo, date);
+  if(!found){ document.getElementById('tripErr').textContent='Pick a day.'; return; }
+  const ts=tripSettings();
+  if(!Array.isArray(found.log.trips)) found.log.trips=[];
+  found.log.trips.push({id:'trip'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), miles:v, mpg:ts.mpg, gas:ts.gas, cost:tripCost(v, ts.mpg, ts.gas),
+    by:CURRENT_USER ? CURRENT_USER.username : '', at:Date.now()});
+  addAdminLog(wo, `Additional trip added for ${formatDateDisplay(date)}: ${v.toFixed(1)} mi.`);
+  closeTrip();
+  saveDB(DB);
+  renderWorkOrderModal(wo.id);
+  toast('Trip added.');
+}
+function deleteTrip(woId, date, tripId){
+  const wo=getWO(woId), found=wo && findDayLog(wo, date);
+  const t=found && logTrips(found.log).find(x=>x.id===tripId);
+  if(!t) return;
+  askYesNo(`Delete the ${t.miles.toFixed(1)} mi trip?`, yes=>{
+    if(yes){
+      found.log.trips=logTrips(found.log).filter(x=>x.id!==tripId);
+      addAdminLog(wo, `Additional trip on ${formatDateDisplay(date)} deleted (${t.miles.toFixed(1)} mi).`);
+      saveDB(DB);
+      renderWorkOrderModal(woId);
+    }
+    if(DAY_ED) openDayEditor(woId, date);
+  });
+}
 function dayLogRowHTML(woId, log, isAdmin, showNames){
   const ss=logSessions(log);
   const today=isoToday();
@@ -8771,7 +8901,16 @@ function dayLogRowHTML(woId, log, isAdmin, showNames){
       ${visitMilesHTML(woId, s)}
     </div>`;
   });
-  if(!ss.length && !showBtn){
+  const trips=logTrips(log);
+  trips.forEach((t,i)=>{
+    lines.push(`<div class="dlLine dlTrip">
+      <span class="dlDate">${(!ss.length && i===0)?label:''}</span>
+      <span class="dlTimes"><span class="dlTripLbl">Additional trip</span></span>
+      <span class="dlHrs"></span>
+      <span class="dlMi">${Number(t.miles).toFixed(1)} mi</span>
+    </div>`);
+  });
+  if(!ss.length && !trips.length && !showBtn){
     lines.push(`<div class="dlLine"><span class="dlDate">${label}</span><span class="dlTimes dlMuted">${log.date>today?'Scheduled':'Not logged'}</span></div>`);
   }
   if(showBtn){
@@ -8801,7 +8940,10 @@ function dayLogsSectionHTML(wo, skipDate){
     if(!inGroup.length) return '';
     const {total, count}=sumDayLogHours(inGroup.map(r=>r.log));
     let miles=0, anyMiles=false;
-    inGroup.forEach(r=>logSessions(r.log).forEach(s=>{ if(typeof s.miles==='number'){ miles+=s.miles; anyMiles=true; } }));
+    inGroup.forEach(r=>{
+      logSessions(r.log).forEach(s=>{ if(typeof s.miles==='number'){ miles+=s.miles; anyMiles=true; } });
+      logTrips(r.log).forEach(t=>{ if(typeof t.miles==='number'){ miles+=t.miles; anyMiles=true; } });
+    });
     const sum = count
       ? `${count} day${count>1?'s':''} &middot; ${formatHoursMinutes(total)}${anyMiles?` &middot; ${miles.toFixed(1)} mi`:''}`
       : '';
@@ -8845,9 +8987,15 @@ function openDayEditor(woId, date){
       <div class="dayEdBtns">${inBtn}${outBtn}</div>
     </div>`;
   }).join('') : '<div class="small">No visits logged for this day.</div>';
+  const tripList=logTrips(found.log).map(t=>`<div class="dayEdVisit">
+      <div class="dayEdTop">
+        <div class="dayEdMeta"><b>Additional trip</b> &middot; ${Number(t.miles).toFixed(1)} mi${typeof t.cost==='number'?' &middot; '+fmtMoney(t.cost)+' gas':''}${t.by?' &middot; '+esc(t.by):''}</div>
+        <button type="button" class="dayEdDel" title="Delete this trip" aria-label="Delete this trip" onclick="deleteTrip(${woId}, '${date}', '${t.id}')">${icon('trash')}</button>
+      </div>
+    </div>`).join('');
   root.innerHTML=`<div class="confirmBox" onclick="if(event.target===this)closeDayEditor()"><div class="confirmCard dayEdCard">
     <h3>${wd}, ${formatDateDisplay(date)}</h3>
-    <div class="dayEdList">${list}</div>
+    <div class="dayEdList">${list}${tripList}</div>
     <div class="btnRow">
       <button class="btn" onclick="adminAddVisit(${woId}, '${date}')">Add Visit</button>
       <button class="btn secondary" onclick="closeDayEditor()">Done</button>
@@ -11250,6 +11398,7 @@ function fieldModeHTML(wo){
     <div class="fieldActions">
       <button class="fieldBtn fbPhoto" onclick="openFieldCamera(${id})">${icon('image','lg')}<span>Take Photo${photoCount?' ('+photoCount+')':''}</span></button>
       <button class="fieldBtn fbReceipt" onclick="openScanner(${id},'receipt')">${icon('receipt','lg')}<span>Scan Receipt</span></button>
+      <button class="fieldBtn fbTrip" onclick="openAddTrip(${id})">${icon('trip','lg')}<span>Add Trip</span></button>
       <button class="fieldBtn fbNote" onclick="openFieldNote(${id})">${icon('pencil','lg')}<span>Add Note</span></button>
     </div>
     ${fieldNoteComposerHTML(id)}
@@ -13712,13 +13861,15 @@ function sumModel(year){
       const h=dayLogHours(log);
       const m=months[mIdx(iso)];
       if(h!=null){ m.hours+=h; job(wo).hours+=h; }
-      logSessions(log).forEach(s=>{
-        if(typeof s.miles!=='number' || !(s.miles>0)) return;
-        const rate=mileRateOn(iso), ded=sR2(s.miles*rate);
-        mileage.push({date:iso, wo, customer:c.name||'', address:c.address||'', purpose:entry && entry.type==='presite' ? 'Pre-site inspection' : 'Job work', miles:s.miles, rate, ded, by:(s.in && s.in.by) || ''});
-        m.miles+=s.miles; m.mileDed+=ded;
-        job(wo).miles+=s.miles; job(wo).mileDed+=ded;
-      });
+      const drive=(miles, purpose, by)=>{
+        if(typeof miles!=='number' || !(miles>0)) return;
+        const rate=mileRateOn(iso), ded=sR2(miles*rate);
+        mileage.push({date:iso, wo, customer:c.name||'', address:c.address||'', purpose, miles, rate, ded, by:by||''});
+        m.miles+=miles; m.mileDed+=ded;
+        job(wo).miles+=miles; job(wo).mileDed+=ded;
+      };
+      logSessions(log).forEach(s=>drive(s.miles, entry && entry.type==='presite' ? 'Pre-site inspection' : 'Job work', s.in && s.in.by));
+      logTrips(log).forEach(t=>drive(t.miles, 'Additional trip', t.by));
     });
     if(inJobHistoryList(wo) && wo.movedToHistoryAt){
       const iso=isoOfMs(wo.movedToHistoryAt);
@@ -14484,7 +14635,7 @@ function receiptTotal(wo){
 }
 function milesLogged(wo){
   let m=0;
-  allDayLogsSorted(wo).forEach(({log})=>logSessions(log).forEach(x=>{ if(typeof x.miles==='number') m+=x.miles; }));
+  allDayLogsSorted(wo).forEach(({log})=>{ m+=logMiles(log); });
   return Math.round(m*10)/10;
 }
 
