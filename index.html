@@ -4144,7 +4144,93 @@ html.dark .dkView{color:var(--cream);}
 .calcOut .calcVal{color:var(--redb);}
 .calcLeft{background:var(--s2,var(--cream));}
 /* ---- summary, backup, error log ---- */
-.modal.sumModal{max-width:560px;}
+.modal.sumModal{max-width:980px;width:100%;}
+.sumModal .modalHead{gap:10px;}
+.sumModal .modalHead h2{flex:1;}
+.sumExportBtn{padding:8px 16px;min-height:38px;font-size:.85em;}
+.sumTabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -4px 16px;padding:2px 4px 4px;-webkit-overflow-scrolling:touch;}
+.sumTabs::-webkit-scrollbar{display:none;}
+.sumTabs button{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--navy);font:inherit;font-weight:800;font-size:.82em;letter-spacing:.03em;cursor:pointer;}
+.sumTabs button.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+html.dark .sumTabs button.on{color:var(--paper);}
+.sumH{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:20px 2px 8px;flex-wrap:wrap;}
+.sumH h3{margin:0;font-size:1em;color:var(--navy);}
+.sumTiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+.sumTile.inc{background:#e8f4ea;border-color:#bfdcc5;} .sumTile.inc b{color:#1f6b33;}
+.sumTile.net{background:#e8eef8;border-color:#c4d2ea;} .sumTile.net b{color:#1d4f91;}
+.sumTile.neg{background:#fbe9e7;border-color:#efc4bd;} .sumTile.neg b{color:#a3321f;}
+.sumAlerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.sumAlert{display:inline-block;padding:7px 12px;border-radius:10px;border:1px solid #efc4bd;background:#fbe9e7;color:#a3321f;font:inherit;font-size:.82em;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px;}
+.sumTable .l{text-align:left;}
+.sumTable tbody td.l{color:var(--navy);padding-left:12px;white-space:normal;min-width:110px;}
+.sumTable thead th.l{text-align:left;padding-left:12px;}
+.sumTable tfoot td{font-weight:800;color:var(--navy);border-top:2px solid var(--line);border-bottom:0;background:var(--s2,var(--cream));}
+.sumTable tfoot td.l{padding-left:12px;}
+.sumTable tr.empty td{color:var(--muted);font-weight:500;}
+.sumTable tr.cur td.l{color:var(--orange);}
+.sumTable tr.warn td{background:#fdf3f1;}
+.sumTable tr.income td,.sumTable tr.cogs td{font-weight:700;}
+.sumSub{font-size:.85em;color:var(--muted);font-weight:500;margin-top:1px;overflow-wrap:anywhere;}
+.sumLink{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--navy);text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;}
+.sumTag{display:inline-block;padding:1px 7px;border-radius:999px;background:var(--well);color:var(--muted);font-size:.8em;font-weight:800;margin-left:4px;}
+.sumTag.warn{background:#fbe9e7;color:#a3321f;}
+.sumWarn{color:#a3321f;font-weight:800;}
+.sumSeg{margin:0 0 14px;}
+.sumAddRow{display:flex;justify-content:flex-end;margin-bottom:12px;}
+.catSel{width:100%;min-height:42px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit;}
+.catSel.sm{min-height:34px;padding:4px 8px;font-size:.92em;min-width:150px;width:auto;}
+.catSel.none{border-color:#efc4bd;color:#a3321f;}
+.amtCat{display:flex;flex-direction:column;gap:4px;margin:10px 0 4px;}
+.amtCat > span,.moneyFld > span{font-size:.72em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+.moneyCard{max-width:440px;}
+.moneyCard .moneyFld,.moneyCard .amtCat,.sumExpCard .sumChk{text-align:left;}
+.sumExpCard .sumChk{justify-content:flex-start;}
+.moneyGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.moneyFld{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.moneyFld.wide{margin-top:10px;}
+.moneyFld input,.moneyFld select{width:100%;box-sizing:border-box;min-height:42px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:inherit;}
+.moneySeg{margin-top:12px;display:flex;}
+.moneySeg button{flex:1;}
+.paySec{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line);}
+.paySec .adminTopRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.paySec h4{margin:0;}
+.payRow{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-left:4px solid #2e7d32;border-radius:10px;background:var(--paper);margin-bottom:6px;}
+.payMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+.payMain span{font-size:.82em;color:var(--muted);overflow-wrap:anywhere;}
+.payTotal{text-align:right;font-size:.88em;color:var(--muted);margin-top:4px;}
+.payTotal b{color:var(--navy);}
+.mrAdd{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:10px;}
+.sumChk{display:flex;align-items:center;gap:10px;padding:8px 4px;font-weight:600;cursor:pointer;}
+.sumChk input{width:20px;height:20px;accent-color:var(--navy);}
+.sumChk.all{font-weight:800;border-bottom:1px solid var(--line);margin-bottom:4px;}
+.sumChkList{display:grid;grid-template-columns:1fr 1fr;column-gap:10px;max-height:46vh;overflow:auto;}
+@media (max-width:600px){
+  .sumChkList{grid-template-columns:1fr;}
+  .mrAdd{grid-template-columns:1fr 1fr;}
+  .mrAdd .btn{grid-column:1/-1;}
+  #sumModal .sumTiles{grid-template-columns:1fr 1fr;gap:8px;}
+  #sumModal .sumTile{padding:10px 11px;}
+  #sumModal .sumTile b{font-family:inherit;font-weight:800;font-size:1.02em;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  #sumModal .sumTile span{font-size:.66em;}
+  #sumModal .sumTableWrap{overflow:visible;}
+  #sumModal .sumTable,#sumModal .sumTable tbody,#sumModal .sumTable tfoot{display:block;}
+  #sumModal .sumTable thead{display:none;}
+  #sumModal .sumTable tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;padding:11px 12px;border-bottom:1px solid var(--line);}
+  #sumModal .sumTable tbody tr:last-child{border-bottom:0;}
+  #sumModal .sumTable tfoot tr{background:var(--s2,var(--cream));border-top:2px solid var(--line);border-bottom:0;}
+  #sumModal .sumTable td,#sumModal .sumTable tfoot td{border:0;padding:0;text-align:left;white-space:normal;background:none;min-width:0;}
+  #sumModal .sumTable td.l,#sumModal .sumTable tbody td.l,#sumModal .sumTable tfoot td.l{grid-column:1/-1;padding:0;font-weight:800;font-size:1.02em;}
+  #sumModal .sumTable td:empty{display:none;}
+  #sumModal .sumTable td[data-l]:not(.l)::before{content:attr(data-l);display:block;font-size:.68em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:1px;}
+  #sumModal .sumTable td[data-l=""]{grid-column:1/-1;text-align:right;}
+  #sumModal .sumTable td[data-l=""]::before{display:none;}
+  #sumModal .sumTable tr.empty{display:block;}
+  #sumModal .sumTable .catSel.sm{width:100%;min-width:0;}
+}
+html.dark .sumTile.inc{background:#1d3324;border-color:#2f5a3a;} html.dark .sumTile.inc b{color:#9ad3a8;}
+html.dark .sumTile.net{background:#1c2a40;border-color:#2e456b;} html.dark .sumTile.net b{color:#a9c4ee;}
+html.dark .sumTile.neg,html.dark .sumAlert,html.dark .sumTag.warn{background:#3a201b;border-color:#6b342a;color:#f0b3a7;}
+html.dark .sumTable tr.warn td{background:#2c1c19;}
 .sumYear{display:flex;align-items:center;justify-content:center;gap:18px;margin:0 0 14px;}
 .sumYear b{font-family:var(--f-display,inherit);font-size:1.5em;color:var(--navy);min-width:3.2em;text-align:center;}
 .sumYear button{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:var(--paper);color:var(--navy);font-size:1.4em;line-height:1;cursor:pointer;}
@@ -5538,7 +5624,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112236;
+var APP_BUILD=2026112337;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12967,6 +13053,7 @@ function askReceiptAmount(woId, docId){
     <div class="amtName">${esc(d.name||'')}</div>
     <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Receipt amount"${taxed?` oninput="updateTaxLine(getDoc(getWO(${woId}),'${docId}'),'amount')"`:''}
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveReceiptAmount(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}">${taxed?amtCalcBtnHTML():''}</label>
+    ${d.tag==='Receipt'?amtCatHTML(d.cat):''}
     ${taxed?rateSegHTML(docTaxRate(d))+taxLineHTML()+amtCalcPadHTML():''}
     <div class="errMsg" id="amtErr"></div>
     <div class="btnRow">
@@ -13125,6 +13212,11 @@ function saveReceiptAmount(woId, docId){
   if(v===null){ delete d.amount; delete d.amountPre; }
   else if(d.tag==='Reimbursement'){ applyTaxed(d,'amount',v,rate); setDocTaxRate(d, rate); }
   else { d.amount=v; delete d.amountPre; }
+  const catEl=document.getElementById('amtCat');
+  if(catEl && d.tag==='Receipt' && (catEl.value||'')!==(d.cat||'')){
+    if(catEl.value) d.cat=catEl.value; else delete d.cat;
+    addAdminLog(wo, `Receipt "${d.name}" category set to ${expCatName(d.cat)}.`);
+  }
   if(was!==(v===null?null:d.amount)) addAdminLog(wo, `${d.tag==='Reimbursement'?'Reimbursement':'Receipt'} "${d.name}" amount ${v===null?'removed':'set to '+fmtMoney(d.amount)+(d.tag==='Reimbursement'&&d.amountPre===v&&d.amount!==v?' ('+fmtMoney(v)+' + '+fmtRate(rate)+' tax)':'')}${was!==null?' (was '+fmtMoney(was)+')':''}.`);
   else if(rate!==null && v!==null && Math.abs(rate-wasRate)>1e-9) addAdminLog(wo, `Reimbursement "${d.name}" tax rate set to ${fmtRate(rate)}.`);
   closeReceiptAmount();
@@ -13458,84 +13550,839 @@ function downloadJobSheet(){
   toast('Spreadsheet downloaded.');
 }
 
-/* ---- monthly and yearly summary ---- */
-let SUM_YEAR=null;
-function summaryData(year){
-  const months=Array.from({length:12}, ()=>({done:0, notdone:0, hours:0, miles:0, receipts:0}));
-  const years={};
-  const at=(y,m)=>{ years[y]=true; return y===year ? months[m] : null; };
+/* =========================================================================
+   SUMMARY: the business's numbers for a year, laid out the way a tax
+   preparer reads them, and exportable to a spreadsheet.
+
+   Where each number comes from:
+   - Income: payments logged on each work order (Admin tab). A payment marked
+     Reimbursement is money paid back for purchases, not income.
+   - Expenses: the totals on Receipt documents, and the Receipt part of a
+     Reimbursement document, each with its tax category. A Reimbursement's
+     own total and a Covered Receipt were paid by someone else, so they are
+     listed apart and never counted as expenses.
+   - Vehicle: miles logged at check-out, priced at the IRS rate in force on
+     the day driven.
+   - Payouts: entered by hand. Each one says whether it is contract labor,
+     an owner's share, or money set aside.
+   Dates: a payment by its payment date, a receipt by the day it was added,
+   miles and hours by the day worked, a payout by its date.
+========================================================================= */
+const EXP_CATS=[
+  ['materials','Job Materials','Part III, line 38'],
+  ['supplies','Supplies','Line 22'],
+  ['tools','Tools & Equipment','Line 22 or 13'],
+  ['rental','Equipment & Truck Rental','Line 20a'],
+  ['fuel','Gas & Fuel','Line 9'],
+  ['vehicle','Vehicle Repairs & Upkeep','Line 9'],
+  ['parking','Parking & Tolls','Line 9'],
+  ['disposal','Dump & Disposal Fees','Line 27a'],
+  ['meals','Meals','Line 24b'],
+  ['advertising','Advertising','Line 8'],
+  ['office','Office & Software','Line 18'],
+  ['phone','Phone & Internet','Line 25'],
+  ['insurance','Insurance','Line 15'],
+  ['licenses','Licenses & Fees','Line 23'],
+  ['other','Other Expenses','Line 27a']
+];
+function expCatName(k){ const c=EXP_CATS.find(x=>x[0]===k); return c ? c[1] : 'Uncategorized'; }
+function expCatLine(k){ const c=EXP_CATS.find(x=>x[0]===k); return c ? c[2] : ''; }
+function expCatSelectHTML(id, cur, extra){
+  return `<select id="${id}" class="catSel"${extra||''}>
+    <option value="" ${!cur?'selected':''}>Uncategorized</option>
+    ${EXP_CATS.map(([k,l])=>`<option value="${k}" ${cur===k?'selected':''}>${esc(l)}</option>`).join('')}
+  </select>`;
+}
+function amtCatHTML(cur){
+  return `<label class="amtCat"><span>Category</span>${expCatSelectHTML('amtCat', cur)}</label>`;
+}
+const PAY_METHODS=['Zelle','Venmo','Check','Cash','Card','Other'];
+const PAYEES=['Matthew','Scott','Starla','Alyssa','Overhead Fund'];
+const PAYOUT_KINDS=[['contractor','Contract Labor'],['owner','Owner Share'],['setaside','Set Aside']];
+function payoutKindName(k){ const x=PAYOUT_KINDS.find(p=>p[0]===k); return x ? x[1] : ''; }
+function defaultPayoutKind(payee){
+  if(payee==='Alyssa') return 'contractor';
+  if(payee==='Overhead Fund') return 'setaside';
+  if(payee==='Matthew' || payee==='Scott' || payee==='Starla') return 'owner';
+  return 'contractor';
+}
+/* IRS business standard mileage rates. 2026 changed on July 1. More can be
+   added in the Summary's Vehicle tab; those are kept with the calculator
+   settings so every admin sees the same ones. */
+const MILE_RATES_DEFAULT=[['2024-01-01',0.67],['2025-01-01',0.70],['2026-01-01',0.725],['2026-07-01',0.76]];
+function mileRates(){
+  const extra=(DB.calc && Array.isArray(DB.calc.mileRates)) ? DB.calc.mileRates : [];
+  const map={};
+  MILE_RATES_DEFAULT.concat(extra).forEach(([d,r])=>{ if(/^\d{4}-\d{2}-\d{2}$/.test(d) && Number(r)>0) map[d]=Number(r); });
+  return Object.keys(map).sort().map(d=>[d, map[d]]);
+}
+function mileRateOn(iso){
+  let r=0;
+  mileRates().forEach(([d,v])=>{ if(d<=iso) r=v; });
+  return r;
+}
+/* 1099-NEC is due for a contractor paid this much or more in the year. */
+function necThreshold(y){ return y<=2025 ? 600 : 2000; }
+function vehMethod(){ return (DB.calc && DB.calc.vehMethod==='actual') ? 'actual' : 'standard'; }
+function payoutsList(){ return (DB.calc && Array.isArray(DB.calc.payouts)) ? DB.calc.payouts : []; }
+
+const sR2=v=>Math.round((Number(v)||0)*100)/100;
+function isoOfMs(ms){ const d=new Date(ms); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function docIso(d){
+  if(d.uploadedAt) return isoOfMs(d.uploadedAt);
+  const m=String(d.date||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0') : '';
+}
+function isoShow(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||''); return m ? `${+m[2]}/${+m[3]}/${m[1]}` : ''; }
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+/* IRS estimated tax periods and their due dates. */
+function estPeriods(y){
+  return [
+    {name:'Period 1', months:'Jan – Mar', from:0, to:2, due:`4/15/${y}`},
+    {name:'Period 2', months:'Apr – May', from:3, to:4, due:`6/15/${y}`},
+    {name:'Period 3', months:'Jun – Aug', from:5, to:7, due:`9/15/${y}`},
+    {name:'Period 4', months:'Sep – Dec', from:8, to:11, due:`1/15/${y+1}`}
+  ];
+}
+
+/* Everything for one year, computed once per render. */
+function sumModel(year){
+  const Y=String(year);
+  const inY=iso=>String(iso||'').slice(0,4)===Y;
+  const mIdx=iso=>Number(String(iso).slice(5,7))-1;
+  const month=()=>({income:0, reimbIn:0, expenses:0, deductible:0, cogs:0, contractor:0, owner:0, setaside:0, miles:0, mileDed:0, vehActual:0, hours:0, done:0, notdone:0});
+  const months=Array.from({length:12}, month);
+  const years={}; years[new Date().getFullYear()]=true;
+  const seeYear=iso=>{ const y=Number(String(iso||'').slice(0,4)); if(y>2000) years[y]=true; };
+  const payments=[], receipts=[], passthrough=[], mileage=[], payouts=[];
+  const jobs={};
+  const job=wo=>jobs[wo.id] || (jobs[wo.id]={wo, income:0, reimbIn:0, expenses:0, passthrough:0, contractor:0, miles:0, mileDed:0, hours:0, done:null});
+  let noAmount=0;
+  const veh=vehMethod();
+  /* The part of a receipt that counts as a deduction: none until it has a
+     category, half of meals, and gas or repairs only under actual expenses. */
+  const deductPart=(cat, amount)=>!cat ? 0 : cat==='meals' ? amount*0.5 : (cat==='fuel'||cat==='vehicle') ? (veh==='actual'?amount:0) : amount;
   (DB.workOrders||[]).forEach(wo=>{
-    if(inJobHistoryList(wo)){
-      const d=new Date(wo.movedToHistoryAt), b=at(d.getFullYear(), d.getMonth());
-      if(b){ if(historyOutcome(wo).key==='done') b.done++; else b.notdone++; }
-    }
-    allDayLogsSorted(wo).forEach(({log})=>{
-      const m=/^(\d{4})-(\d{2})/.exec(log.date||''); if(!m) return;
-      const h=dayLogHours(log);
-      let mi=0; logSessions(log).forEach(s=>{ if(typeof s.miles==='number') mi+=s.miles; });
-      if(h==null && !mi) return;
-      const b=at(Number(m[1]), Number(m[2])-1);
-      if(b){ b.hours+=h||0; b.miles+=mi; }
+    const c=wo.customer||{};
+    (wo.payments||[]).forEach(p=>{
+      seeYear(p.date);
+      if(!inY(p.date)) return;
+      const reimb=p.type==='reimb';
+      payments.push({date:p.date, wo, customer:c.name||'', method:p.method||'', reimb, amount:sR2(p.amount), note:p.note||'', id:p.id});
+      const m=months[mIdx(p.date)];
+      if(reimb){ m.reimbIn+=p.amount||0; job(wo).reimbIn+=p.amount||0; }
+      else { m.income+=p.amount||0; job(wo).income+=p.amount||0; }
     });
     (wo.docs||[]).forEach(d=>{
-      const amt=d.tag==='Receipt' ? d.amount : (d.tag==='Reimbursement' && d.tag2==='Receipt') ? d.amount2 : null;
-      if(typeof amt!=='number' || !d.uploadedAt) return;
-      const dt=new Date(d.uploadedAt), b=at(dt.getFullYear(), dt.getMonth());
-      if(b) b.receipts+=amt;
+      const iso=docIso(d);
+      const isR=d.tag==='Receipt', isRb=d.tag==='Reimbursement', isCov=d.tag==='Covered Receipt';
+      if(!isR && !isRb && !isCov) return;
+      seeYear(iso);
+      if(!inY(iso)) return;
+      const add=(amount, pre, cat, part)=>{
+        receipts.push({date:iso, wo, customer:c.name||'', name:d.name||'', amount:sR2(amount), pre:(typeof pre==='number'?sR2(pre):null), cat:cat||'', docId:d.id, part});
+        const m=months[mIdx(iso)];
+        m.expenses+=amount;
+        m.deductible+=deductPart(cat, amount);
+        if(cat==='materials') m.cogs+=amount;
+        if(cat==='fuel' || cat==='vehicle') m.vehActual+=amount;
+        job(wo).expenses+=amount;
+      };
+      if(isR){
+        if(typeof d.amount==='number') add(d.amount, null, d.cat, 'amount'); else noAmount++;
+      } else if(isRb){
+        if(typeof d.amount==='number'){
+          passthrough.push({date:iso, wo, customer:c.name||'', name:d.name||'', kind:'Reimbursable Purchase', amount:sR2(d.amount)});
+          job(wo).passthrough+=d.amount;
+        } else noAmount++;
+        if(d.tag2==='Receipt'){
+          if(typeof d.amount2==='number') add(d.amount2, d.amount2Pre, d.cat2, 'amount2'); else noAmount++;
+        }
+      } else if(isCov){
+        if(typeof d.amount==='number'){
+          passthrough.push({date:iso, wo, customer:c.name||'', name:d.name||'', kind:'Covered Receipt', amount:sR2(d.amount)});
+          job(wo).passthrough+=d.amount;
+        }
+      }
     });
+    allDayLogsSorted(wo).forEach(({entry, log})=>{
+      const iso=log.date||'';
+      seeYear(iso);
+      if(!inY(iso)) return;
+      const h=dayLogHours(log);
+      const m=months[mIdx(iso)];
+      if(h!=null){ m.hours+=h; job(wo).hours+=h; }
+      logSessions(log).forEach(s=>{
+        if(typeof s.miles!=='number' || !(s.miles>0)) return;
+        const rate=mileRateOn(iso), ded=sR2(s.miles*rate);
+        mileage.push({date:iso, wo, customer:c.name||'', address:c.address||'', purpose:entry && entry.type==='presite' ? 'Pre-site inspection' : 'Job work', miles:s.miles, rate, ded, by:(s.in && s.in.by) || ''});
+        m.miles+=s.miles; m.mileDed+=ded;
+        job(wo).miles+=s.miles; job(wo).mileDed+=ded;
+      });
+    });
+    if(inJobHistoryList(wo) && wo.movedToHistoryAt){
+      const iso=isoOfMs(wo.movedToHistoryAt);
+      seeYear(iso);
+      if(inY(iso)){
+        const done=historyOutcome(wo).key==='done';
+        if(done) months[mIdx(iso)].done++; else months[mIdx(iso)].notdone++;
+        job(wo).done=done;
+      }
+    }
   });
-  const total=months.reduce((t,m)=>({done:t.done+m.done, notdone:t.notdone+m.notdone, hours:t.hours+m.hours, miles:t.miles+m.miles, receipts:t.receipts+m.receipts}), {done:0,notdone:0,hours:0,miles:0,receipts:0});
-  years[new Date().getFullYear()]=true;
-  return {months, total, years:Object.keys(years).map(Number).sort((a,b)=>a-b)};
+  payoutsList().forEach(p=>{
+    seeYear(p.date);
+    if(!inY(p.date)) return;
+    const wo=p.woId ? getWO(p.woId) : null;
+    const kind=p.kind || defaultPayoutKind(p.payee);
+    payouts.push(Object.assign({}, p, {kind, wo, amount:sR2(p.amount)}));
+    const m=months[mIdx(p.date)];
+    m[kind]+=p.amount||0;
+    if(wo && kind==='contractor') job(wo).contractor+=p.amount||0;
+  });
+  months.forEach(m=>{
+    Object.keys(m).forEach(k=>{ if(k!=='done' && k!=='notdone') m[k]=k==='miles'||k==='hours' ? Math.round(m[k]*100)/100 : sR2(m[k]); });
+  });
+  const sum=k=>sR2(months.reduce((t,m)=>t+m[k],0));
+  const T={};
+  Object.keys(month()).forEach(k=>{ T[k]= (k==='done'||k==='notdone') ? months.reduce((t,m)=>t+m[k],0) : (k==='miles'||k==='hours') ? Math.round(months.reduce((t,m)=>t+m[k],0)*100)/100 : sum(k); });
+
+  /* Expenses by category, and the deductible amount of each. */
+  const byCat={};
+  receipts.forEach(r=>{
+    const k=r.cat||'';
+    const b=byCat[k] || (byCat[k]={key:k, count:0, amount:0, tax:0});
+    b.count++; b.amount+=r.amount;
+    if(r.pre!=null) b.tax+=r.amount-r.pre;
+  });
+  Object.values(byCat).forEach(b=>{ b.amount=sR2(b.amount); b.tax=sR2(b.tax); });
+  const cat=k=>(byCat[k] ? byCat[k].amount : 0);
+  const parking=cat('parking');
+  const vehStd=sR2(T.mileDed+parking), vehAct=sR2(cat('fuel')+cat('vehicle')+parking);
+  const vehicle = veh==='standard' ? vehStd : vehAct;
+  /* Schedule C style lines. */
+  const lines=[
+    ['1','Gross receipts', T.income, 'income'],
+    ['38','Materials (Part III)', cat('materials'), 'cogs'],
+    ['4','Cost of goods sold', cat('materials'), 'cogs'],
+    ['8','Advertising', cat('advertising')],
+    ['9','Car & truck ('+(veh==='standard'?'standard mileage':'actual expenses')+')', vehicle],
+    ['11','Contract labor', T.contractor],
+    ['13 / 22','Tools & equipment', cat('tools')],
+    ['15','Insurance', cat('insurance')],
+    ['18','Office & software', cat('office')],
+    ['20a','Equipment & truck rental', cat('rental')],
+    ['22','Supplies', cat('supplies')],
+    ['23','Licenses & fees', cat('licenses')],
+    ['24b','Meals (50% deductible)', sR2(cat('meals')*0.5)],
+    ['25','Phone & internet', cat('phone')],
+    ['27a','Other (dump fees & other)', sR2(cat('disposal')+cat('other'))]
+  ];
+  const uncategorized=cat('');
+  const totalExp=sR2(lines.filter(l=>l[0]!=='1' && l[0]!=='38' && l[0]!=='4').reduce((t,l)=>t+l[2],0));
+  const cogs=cat('materials');
+  const net=sR2(T.income-cogs-totalExp);
+  /* Per period: income less every deduction that has a date. */
+  const monthDeduct=m=>sR2(m.deductible + (veh==='standard' ? m.mileDed : 0) + m.contractor);
+  const periods=estPeriods(year).map(p=>{
+    let inc=0, ded=0;
+    for(let i=p.from;i<=p.to;i++){ inc+=months[i].income; ded+=monthDeduct(months[i]); }
+    return Object.assign({}, p, {income:sR2(inc), deductions:sR2(ded), net:sR2(inc-ded)});
+  });
+  /* Payees. */
+  const byPayee={};
+  payouts.forEach(p=>{
+    const name=p.payee==='Other' ? (p.other||'Other') : p.payee;
+    const key=name+'|'+p.kind;
+    const b=byPayee[key] || (byPayee[key]={name, kind:p.kind, count:0, amount:0});
+    b.count++; b.amount+=p.amount;
+  });
+  Object.values(byPayee).forEach(b=>{ b.amount=sR2(b.amount); b.needs1099 = b.kind==='contractor' && b.amount>=necThreshold(year); });
+  const uncatCount=receipts.filter(r=>!r.cat).length;
+  /* Finished jobs with no payment logged, any year. */
+  const unlogged=(DB.workOrders||[]).filter(w=>{
+    const finished = w.invoiceSent || (inJobHistoryList(w) && historyOutcome(w).key==='done');
+    return finished && !(w.payments||[]).some(p=>p.type!=='reimb' && p.amount>0);
+  });
+  return {year, months, T, payments:payments.sort((a,b)=>a.date.localeCompare(b.date)),
+    receipts:receipts.sort((a,b)=>a.date.localeCompare(b.date)), passthrough:passthrough.sort((a,b)=>a.date.localeCompare(b.date)),
+    mileage, payouts:payouts.sort((a,b)=>String(a.date).localeCompare(String(b.date))), jobs:Object.values(jobs), byCat, byPayee:Object.values(byPayee).sort((a,b)=>b.amount-a.amount),
+    lines, uncategorized, totalExp, cogs, net, vehStd, vehAct, vehicle, veh, periods, noAmount, uncatCount, unlogged,
+    years:Object.keys(years).map(Number).sort((a,b)=>a-b), monthDeduct};
 }
+
+/* ---- payments on a work order (Admin tab) ---- */
+function paymentsAdminHTML(wo){
+  const list=(wo.payments||[]).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const inc=sR2(list.filter(p=>p.type!=='reimb').reduce((t,p)=>t+(p.amount||0),0));
+  const rb=sR2(list.filter(p=>p.type==='reimb').reduce((t,p)=>t+(p.amount||0),0));
+  const rows=list.map(p=>`<div class="payRow">
+      <div class="payMain"><b>${fmtMoney(p.amount)}</b><span>${esc(isoShow(p.date))} &middot; ${esc(p.method||'')}${p.type==='reimb'?' &middot; Reimbursement':''}${p.note?' &middot; '+esc(p.note):''}</span></div>
+      <button type="button" class="editLink" onclick="editPayment(${wo.id},'${p.id}')">Edit</button>
+    </div>`).join('');
+  return `<div class="paySec">
+    <div class="adminTopRow"><h4>Payments Received</h4><button type="button" class="stageBtn pillNeutral" onclick="editPayment(${wo.id})">+ Add Payment</button></div>
+    ${rows || '<div class="small">None yet.</div>'}
+    ${list.length ? `<div class="payTotal">Received <b>${fmtMoney(inc)}</b>${rb?` &middot; Reimbursed <b>${fmtMoney(rb)}</b>`:''}</div>` : ''}
+  </div>`;
+}
+let PAY_EDIT=null;   // {woId, id, back}
+function editPayment(woId, id, back){
+  const wo=getWO(woId);
+  if(!wo || !CURRENT_USER || !CURRENT_USER.isAdmin) return;
+  const p=id ? (wo.payments||[]).find(x=>x.id===id) : null;
+  PAY_EDIT={woId, id:p?p.id:null, back:back||null, type:p && p.type==='reimb' ? 'reimb' : 'pay'};
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard moneyCard" role="dialog" aria-modal="true" aria-label="Payment">
+    <h3>${p?'Edit Payment':'Add Payment'}</h3>
+    <div class="amtName">${esc((wo.customer||{}).name||'')} &middot; #${esc(woCode(wo))}</div>
+    <label class="amtField"><span>$</span><input id="payAmt" type="text" inputmode="decimal" autocomplete="off" value="${p?esc(Number(p.amount).toFixed(2)):''}" aria-label="Amount"></label>
+    <div class="moneyGrid">
+      <label class="moneyFld"><span>Date</span><input id="payDate" type="date" value="${esc(p?p.date:isoToday())}"></label>
+      <label class="moneyFld"><span>Method</span><select id="payMethod">${PAY_METHODS.map(m=>`<option ${p&&p.method===m?'selected':(!p&&m==='Zelle'?'selected':'')}>${m}</option>`).join('')}</select></label>
+    </div>
+    <div class="segSwitch moneySeg" role="group" aria-label="Type">
+      <button type="button" id="payTypePay" class="${PAY_EDIT.type==='pay'?'on':''}" aria-pressed="${PAY_EDIT.type==='pay'}" onclick="setPayType('pay')">Payment</button>
+      <button type="button" id="payTypeReimb" class="${PAY_EDIT.type==='reimb'?'on':''}" aria-pressed="${PAY_EDIT.type==='reimb'}" onclick="setPayType('reimb')">Reimbursement</button>
+    </div>
+    <label class="moneyFld wide"><span>Note</span><input id="payNote" type="text" autocomplete="off" value="${p?esc(p.note||''):''}"></label>
+    <div class="errMsg" id="payErr"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="savePayment()">Save</button>
+      <button class="btn secondary" onclick="closePayment()">Cancel</button>
+    </div>
+    ${p?`<button type="button" class="secRemove" onclick="deletePayment()">Delete Payment</button>`:''}
+  </div></div>`;
+  setTimeout(()=>{ const i=document.getElementById('payAmt'); if(i && !(window.matchMedia && matchMedia('(pointer:coarse)').matches)) i.focus(); }, 60);
+}
+function setPayType(t){
+  if(!PAY_EDIT) return;
+  PAY_EDIT.type=t;
+  ['pay','reimb'].forEach(k=>{ const b=document.getElementById(k==='pay'?'payTypePay':'payTypeReimb'); if(b){ b.classList.toggle('on', k===t); b.setAttribute('aria-pressed', String(k===t)); } });
+}
+function closePayment(){ PAY_EDIT=null; const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
+function afterPayment(woId, back){
+  saveDB(DB);
+  if(back==='sum' && document.getElementById('sumModal')) renderSummary();
+  else renderWorkOrderModal(woId);
+}
+function savePayment(){
+  const P=PAY_EDIT; if(!P) return;
+  const wo=getWO(P.woId); if(!wo){ closePayment(); return; }
+  const v=parseMoney(document.getElementById('payAmt').value);
+  const date=document.getElementById('payDate').value;
+  const err=t=>{ document.getElementById('payErr').textContent=t; };
+  if(v===null || isNaN(v) || !(v>0)) return err('Enter a dollar amount.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return err('Pick a date.');
+  const rec={amount:v, date, method:document.getElementById('payMethod').value, type:P.type==='reimb'?'reimb':'pay',
+    note:document.getElementById('payNote').value.trim()};
+  if(!wo.payments) wo.payments=[];
+  const label=`${rec.type==='reimb'?'Reimbursement':'Payment'} ${fmtMoney(v)} ${rec.method} ${isoShow(date)}`;
+  if(P.id){
+    const p=wo.payments.find(x=>x.id===P.id);
+    if(p){ Object.assign(p, rec, {editedBy:CURRENT_USER.username, editedAt:Date.now()}); addAdminLog(wo, 'Payment changed: '+label+'.'); }
+  } else {
+    wo.payments.push(Object.assign({id:'pay'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), by:CURRENT_USER.username, at:Date.now()}, rec));
+    addAdminLog(wo, 'Payment logged: '+label+'.');
+  }
+  const back=P.back;
+  closePayment();
+  afterPayment(wo.id, back);
+}
+function deletePayment(){
+  const P=PAY_EDIT; if(!P) return;
+  const wo=getWO(P.woId); const p=wo && (wo.payments||[]).find(x=>x.id===P.id);
+  if(!p){ closePayment(); return; }
+  askYesNo(`Delete the ${fmtMoney(p.amount)} payment from ${isoShow(p.date)}?`, yes=>{
+    if(!yes){ editPayment(P.woId, P.id, P.back); return; }
+    wo.payments=wo.payments.filter(x=>x.id!==p.id);
+    addAdminLog(wo, `Payment deleted: ${fmtMoney(p.amount)} ${p.method||''} ${isoShow(p.date)}.`);
+    PAY_EDIT=null;
+    afterPayment(wo.id, P.back);
+  });
+}
+
+/* ---- payouts, entered by hand in the Summary ---- */
+let PO_EDIT=null;
+function editPayout(id){
+  if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
+  const p=id ? payoutsList().find(x=>x.id===id) : null;
+  const payee=p ? p.payee : 'Alyssa';
+  PO_EDIT={id:p?p.id:null};
+  const jobs=(DB.workOrders||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const root=document.getElementById('confirmRoot');
+  root.innerHTML=`<div class="confirmBox"><div class="confirmCard moneyCard" role="dialog" aria-modal="true" aria-label="Payout">
+    <h3>${p?'Edit Payout':'Add Payout'}</h3>
+    <label class="amtField"><span>$</span><input id="poAmt" type="text" inputmode="decimal" autocomplete="off" value="${p?esc(Number(p.amount).toFixed(2)):''}" aria-label="Amount"></label>
+    <div class="moneyGrid">
+      <label class="moneyFld"><span>Date</span><input id="poDate" type="date" value="${esc(p?p.date:isoToday())}"></label>
+      <label class="moneyFld"><span>Paid To</span><select id="poPayee" onchange="payoutPayeeChanged()">${PAYEES.concat(['Other']).map(n=>`<option ${payee===n?'selected':''}>${n}</option>`).join('')}</select></label>
+    </div>
+    <label class="moneyFld wide" id="poOtherWrap" ${payee==='Other'?'':'hidden'}><span>Name</span><input id="poOther" type="text" autocomplete="off" value="${p?esc(p.other||''):''}"></label>
+    <div class="moneyGrid">
+      <label class="moneyFld"><span>Type</span><select id="poKind">${PAYOUT_KINDS.map(([k,l])=>`<option value="${k}" ${(p?(p.kind||defaultPayoutKind(p.payee)):defaultPayoutKind(payee))===k?'selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="moneyFld"><span>Method</span><select id="poMethod">${PAY_METHODS.map(m=>`<option ${p&&p.method===m?'selected':(!p&&m==='Zelle'?'selected':'')}>${m}</option>`).join('')}</select></label>
+    </div>
+    <label class="moneyFld wide"><span>Job</span><select id="poJob"><option value="">None</option>${jobs.map(w=>`<option value="${w.id}" ${p&&p.woId===w.id?'selected':''}>${esc((w.customer||{}).name||'Untitled')} &middot; #${esc(woCode(w))}</option>`).join('')}</select></label>
+    <label class="moneyFld wide"><span>Note</span><input id="poNote" type="text" autocomplete="off" value="${p?esc(p.note||''):''}"></label>
+    <div class="errMsg" id="poErr"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="savePayout()">Save</button>
+      <button class="btn secondary" onclick="closePayout()">Cancel</button>
+    </div>
+    ${p?`<button type="button" class="secRemove" onclick="deletePayout()">Delete Payout</button>`:''}
+  </div></div>`;
+}
+function payoutPayeeChanged(){
+  const v=document.getElementById('poPayee').value;
+  document.getElementById('poOtherWrap').hidden = v!=='Other';
+  document.getElementById('poKind').value=defaultPayoutKind(v);
+}
+function closePayout(){ PO_EDIT=null; const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
+function savePayout(){
+  if(!PO_EDIT) return;
+  const v=parseMoney(document.getElementById('poAmt').value);
+  const date=document.getElementById('poDate').value;
+  const payee=document.getElementById('poPayee').value;
+  const other=document.getElementById('poOther').value.trim();
+  const err=t=>{ document.getElementById('poErr').textContent=t; };
+  if(v===null || isNaN(v) || !(v>0)) return err('Enter a dollar amount.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return err('Pick a date.');
+  if(payee==='Other' && !other) return err('Enter who was paid.');
+  const job=document.getElementById('poJob').value;
+  const rec={amount:v, date, payee, other:payee==='Other'?other:'', kind:document.getElementById('poKind').value,
+    method:document.getElementById('poMethod').value, woId:job?Number(job):null, note:document.getElementById('poNote').value.trim()};
+  if(!DB.calc) DB.calc={};
+  const list=Array.isArray(DB.calc.payouts) ? DB.calc.payouts.slice() : [];
+  if(PO_EDIT.id){
+    const i=list.findIndex(x=>x.id===PO_EDIT.id);
+    if(i>=0) list[i]=Object.assign({}, list[i], rec, {editedBy:CURRENT_USER.username, editedAt:Date.now()});
+  } else list.push(Object.assign({id:'po'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), by:CURRENT_USER.username, at:Date.now()}, rec));
+  DB.calc.payouts=list;
+  closePayout();
+  saveDB(DB);
+  renderSummary();
+}
+function deletePayout(){
+  if(!PO_EDIT) return;
+  const id=PO_EDIT.id, p=payoutsList().find(x=>x.id===id);
+  if(!p){ closePayout(); return; }
+  askYesNo(`Delete the ${fmtMoney(p.amount)} payout to ${p.payee==='Other'?(p.other||'Other'):p.payee}?`, yes=>{
+    if(!yes){ editPayout(id); return; }
+    DB.calc.payouts=payoutsList().filter(x=>x.id!==id);
+    PO_EDIT=null;
+    saveDB(DB);
+    renderSummary();
+  });
+}
+
+/* ---- the Summary page ---- */
+const SUM_TABS=[['overview','Overview'],['income','Income'],['expenses','Expenses'],['vehicle','Vehicle'],['payouts','Payouts'],['jobs','Jobs'],['taxes','Taxes']];
+let SUM={year:null, tab:'overview', expFilter:''};
 function openSummary(){
   if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
   closeSettingsMenus();
-  SUM_YEAR=new Date().getFullYear();
+  SUM={year:new Date().getFullYear(), tab:'overview', expFilter:''};
   renderSummary();
 }
 function summaryYear(step){
-  const ys=summaryData(SUM_YEAR).years, i=ys.indexOf(SUM_YEAR)+step;
+  const ys=sumModel(SUM.year).years, i=ys.indexOf(SUM.year)+step;
   if(i<0 || i>=ys.length) return;
-  SUM_YEAR=ys[i]; renderSummary();
+  SUM.year=ys[i]; renderSummary();
+}
+function sumTab(t){ SUM.tab=t; renderSummary(); const b=document.querySelector('#sumModal .modalBody'); if(b) b.scrollTop=0; }
+function setVehMethod(m){ if(!DB.calc) DB.calc={}; DB.calc.vehMethod=m; saveDB(DB); renderSummary(); }
+function setReceiptCat(woId, docId, part, val){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  if(!d) return;
+  const key = part==='amount2' ? 'cat2' : 'cat';
+  if(val) d[key]=val; else delete d[key];
+  addAdminLog(wo, `"${d.name}" category set to ${expCatName(val)}.`);
+  saveDB(DB);
+  renderSummary();
+}
+function sumOpenJob(id, admin){
+  closeModal();
+  openWorkOrder(id);
+  if(admin && !WO_ADMIN_VIEW) toggleAdminView(id);
+}
+function addMileRate(){
+  const d=document.getElementById('mrDate').value, c=parseMoney(document.getElementById('mrRate').value);
+  const err=document.getElementById('mrErr');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ err.textContent='Pick the date it starts.'; return; }
+  if(c===null || isNaN(c) || !(c>0)){ err.textContent='Enter the rate in cents.'; return; }
+  if(!DB.calc) DB.calc={};
+  const list=(Array.isArray(DB.calc.mileRates) ? DB.calc.mileRates : []).filter(r=>r[0]!==d);
+  list.push([d, Math.round(c*10)/1000]);
+  DB.calc.mileRates=list;
+  saveDB(DB); renderSummary();
+}
+function removeMileRate(d){
+  if(!DB.calc || !Array.isArray(DB.calc.mileRates)) return;
+  DB.calc.mileRates=DB.calc.mileRates.filter(r=>r[0]!==d);
+  saveDB(DB); renderSummary();
+}
+
+const sMoney=v=>fmtMoney(v);
+const sMoneyOr=v=>v ? fmtMoney(v) : '';
+const sMiles=m=>m ? (Math.round(m*10)/10).toLocaleString('en-US') : '';
+const sHours=h=>h ? formatHoursMinutes(h) : '';
+/* Each cell carries its column name, so on a phone a row can stack into a
+   small card with the name over each value. */
+function sTable(head, rows, foot, cls){
+  const label=r=>r.split('<tr').map(part=>{ let i=0; return part.replace(/<td/g, ()=>`<td data-l="${esc(String(head[i++]||'').replace(/<[^>]*>/g,''))}"`); }).join('<tr');
+  return `<div class="sumTableWrap"><table class="sumTable ${cls||''}">
+    <thead><tr>${head.map((h,i)=>`<th${i===0?' class="l"':''}>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(label).join('') || `<tr class="empty"><td class="l" colspan="${head.length}">Nothing for ${SUM.year}.</td></tr>`}</tbody>
+    ${foot?`<tfoot>${label(foot)}</tfoot>`:''}
+  </table></div>`;
+}
+const sTr=(cells, cls)=>`<tr${cls?` class="${cls}"`:''}>${cells.map((c,i)=>`<td${i===0?' class="l"':''}>${c}</td>`).join('')}</tr>`;
+const sumH=(t, extra)=>`<div class="sumH"><h3>${t}</h3>${extra||''}</div>`;
+function sumTile(label, val, cls){ return `<div class="sumTile ${cls||''}"><b>${val}</b><span>${label}</span></div>`; }
+
+function sumOverviewHTML(M){
+  const T=M.T, cur=new Date();
+  const alerts=[];
+  if(M.uncatCount) alerts.push(`<button type="button" class="sumAlert" onclick="SUM.expFilter='uncat';sumTab('expenses')">${M.uncatCount} receipt${M.uncatCount===1?'':'s'} with no category</button>`);
+  if(M.noAmount) alerts.push(`<button type="button" class="sumAlert" onclick="sumTab('expenses')">${M.noAmount} receipt${M.noAmount===1?'':'s'} with no amount</button>`);
+  if(M.unlogged.length) alerts.push(`<button type="button" class="sumAlert" onclick="sumTab('income')">${M.unlogged.length} finished job${M.unlogged.length===1?'':'s'} with no payment logged</button>`);
+  const rows=M.months.map((m,k)=>{
+    const ded=M.monthDeduct(m);
+    const net=sR2(m.income-ded);
+    const empty=!m.income && !m.expenses && !m.contractor && !m.miles && !m.hours && !m.done && !m.notdone;
+    const isCur=M.year===cur.getFullYear() && k===cur.getMonth();
+    return sTr([MONTHS[k], sMoneyOr(m.income), sMoneyOr(m.expenses), sMoneyOr(m.contractor), (m.income||ded)?sMoney(net):'', m.done||'', sHours(m.hours), sMiles(m.miles)], (empty?'empty':'')+(isCur?' cur':''));
+  });
+  const foot=sTr(['Total', sMoney(T.income), sMoney(T.expenses), sMoney(T.contractor), sMoney(M.net), T.done||'0', sHours(T.hours)||'0h', sMiles(T.miles)||'0'], 'tot');
+  return `${alerts.length?`<div class="sumAlerts">${alerts.join('')}</div>`:''}
+    <div class="sumTiles">
+      ${sumTile('Income Received', sMoney(T.income), 'inc')}
+      ${sumTile('Net Profit (Est.)', sMoney(M.net), M.net<0?'neg':'net')}
+      ${sumTile('Expenses', sMoney(T.expenses))}
+      ${sumTile('Contract Labor', sMoney(T.contractor))}
+      ${sumTile('Vehicle', sMoney(M.vehicle))}
+      ${sumTile('Owner Shares', sMoney(T.owner))}
+      ${sumTile('Set Aside', sMoney(T.setaside))}
+      ${sumTile('Reimbursed To You', sMoney(T.reimbIn))}
+      ${sumTile('Completed Jobs', T.done, 'done')}
+      ${sumTile('Not Completed', T.notdone, 'notdone')}
+      ${sumTile('Hours On Site', T.hours?formatHoursMinutes(T.hours):'0h')}
+      ${sumTile('Miles', sMiles(T.miles)||'0')}
+    </div>
+    ${sumH('By Month')}
+    ${sTable(['Month','Income','Expenses','Labor','Net','Jobs','Hours','Miles'], rows, foot)}`;
+}
+function sumIncomeHTML(M){
+  const byMethod={}, byCust={};
+  M.payments.filter(p=>!p.reimb).forEach(p=>{
+    byMethod[p.method]=(byMethod[p.method]||0)+p.amount;
+    const k=p.customer||'(No name)';
+    const b=byCust[k] || (byCust[k]={amount:0, jobs:{}});
+    b.amount+=p.amount; b.jobs[p.wo.id]=true;
+  });
+  const methodRows=Object.keys(byMethod).sort((a,b)=>byMethod[b]-byMethod[a]).map(k=>sTr([esc(k), sMoney(byMethod[k])]));
+  const custRows=Object.keys(byCust).sort((a,b)=>byCust[b].amount-byCust[a].amount).map(k=>sTr([esc(k), Object.keys(byCust[k].jobs).length, sMoney(byCust[k].amount)]));
+  const payRows=M.payments.slice().reverse().map(p=>sTr([esc(isoShow(p.date)), `<button type="button" class="sumLink" onclick="sumOpenJob(${p.wo.id},true)">${esc(p.customer||'(No name)')}</button>`, esc(p.method)+(p.reimb?' <span class="sumTag">Reimb.</span>':''), sMoney(p.amount), `<button type="button" class="editLink" onclick="editPayment(${p.wo.id},'${p.id}','sum')">Edit</button>`]));
+  const unRows=M.unlogged.map(w=>sTr([`<button type="button" class="sumLink" onclick="sumOpenJob(${w.id},true)">${esc((w.customer||{}).name||'(No name)')}</button>`, '#'+esc(woCode(w)), esc(stageLabelFor(w)), `<button type="button" class="editLink" onclick="editPayment(${w.id},null,'sum')">+ Add</button>`]));
+  return `<div class="sumTiles">
+      ${sumTile('Income Received', sMoney(M.T.income), 'inc')}
+      ${sumTile('Payments', M.payments.filter(p=>!p.reimb).length)}
+      ${sumTile('Reimbursed To You', sMoney(M.T.reimbIn), 'wide')}
+    </div>
+    ${sumH('By Method')}${sTable(['Method','Amount'], methodRows, sTr(['Total', sMoney(M.T.income)],'tot'))}
+    ${sumH('By Customer')}${sTable(['Customer','Jobs','Amount'], custRows)}
+    ${sumH('Payments')}${sTable(['Date','Customer','Method','Amount',''], payRows)}
+    ${M.unlogged.length ? sumH('Finished Jobs With No Payment Logged')+sTable(['Customer','Job','Stage',''], unRows) : ''}`;
+}
+function sumExpensesHTML(M){
+  const cats=EXP_CATS.map(c=>c[0]).concat(['']).filter(k=>M.byCat[k]);
+  const catRows=cats.map(k=>{ const b=M.byCat[k]; return sTr([k?esc(expCatName(k)):'<span class="sumWarn">Uncategorized</span>', esc(expCatLine(k)), b.count, sMoneyOr(b.tax), sMoney(b.amount)], k?'':'warn'); });
+  const filt=SUM.expFilter==='uncat';
+  const list=M.receipts.filter(r=>!filt || !r.cat).slice().reverse();
+  const rRows=list.map(r=>sTr([esc(isoShow(r.date)), `<button type="button" class="sumLink" onclick="sumOpenJob(${r.wo.id})">${esc(r.customer||'(No name)')}</button><div class="sumSub">${esc(r.name)}</div>`,
+    `<select class="catSel sm${r.cat?'':' none'}" aria-label="Category" onchange="setReceiptCat(${r.wo.id},'${r.docId}','${r.part}',this.value)">
+      <option value="" ${!r.cat?'selected':''}>Uncategorized</option>${EXP_CATS.map(([k,l])=>`<option value="${k}" ${r.cat===k?'selected':''}>${esc(l)}</option>`).join('')}</select>`,
+    sMoney(r.amount)]));
+  const ptRows=M.passthrough.slice().reverse().map(p=>sTr([esc(isoShow(p.date)), `<button type="button" class="sumLink" onclick="sumOpenJob(${p.wo.id})">${esc(p.customer||'(No name)')}</button><div class="sumSub">${esc(p.name)}</div>`, esc(p.kind), sMoney(p.amount)]));
+  const ptTotal=sR2(M.passthrough.reduce((t,p)=>t+p.amount,0));
+  return `<div class="sumTiles">
+      ${sumTile('Expenses', sMoney(M.T.expenses))}
+      ${sumTile('Receipts', M.receipts.length)}
+      ${sumTile('Job Materials', sMoney(M.cogs))}
+      ${sumTile('Paid By Others', sMoney(ptTotal))}
+    </div>
+    ${sumH('By Category')}${sTable(['Category','Schedule C','Count','Sales Tax','Amount'], catRows, sTr(['Total','', M.receipts.length, '', sMoney(M.T.expenses)],'tot'))}
+    ${sumH('Receipts', `<div class="segSwitch small"><button type="button" class="${!filt?'on':''}" onclick="SUM.expFilter='';renderSummary()">All</button><button type="button" class="${filt?'on':''}" onclick="SUM.expFilter='uncat';renderSummary()">Uncategorized</button></div>`)}
+    ${sTable(['Date','Job','Category','Amount'], rRows, null, 'rcpt')}
+    ${sumH('Paid By Others')}
+    ${sTable(['Date','Job','Type','Amount'], ptRows, M.passthrough.length?sTr(['Total','','',sMoney(ptTotal)],'tot'):null)}`;
+}
+function sumVehicleHTML(M){
+  const T=M.T;
+  const monthRows=M.months.map((m,k)=>sTr([MONTHS[k], sMiles(m.miles), sMoneyOr(m.mileDed)], m.miles?'':'empty'));
+  const logRows=M.mileage.slice().reverse().map(x=>sTr([esc(isoShow(x.date)), `<button type="button" class="sumLink" onclick="sumOpenJob(${x.wo.id})">${esc(x.customer||'(No name)')}</button><div class="sumSub">${esc(x.address)}</div>`, esc(x.purpose), sMiles(x.miles), sMoney(x.ded)]));
+  const rates=mileRates();
+  const custom=(DB.calc && Array.isArray(DB.calc.mileRates)) ? DB.calc.mileRates.map(r=>r[0]) : [];
+  const rateRows=rates.map(([d,r])=>sTr([esc(isoShow(d)), (r*100).toFixed(1)+'¢', custom.includes(d) ? `<button type="button" class="editLink" onclick="removeMileRate('${d}')">Remove</button>` : '']));
+  return `<div class="segSwitch sumSeg" role="group" aria-label="Vehicle deduction">
+      <button type="button" class="${M.veh==='standard'?'on':''}" aria-pressed="${M.veh==='standard'}" onclick="setVehMethod('standard')">Standard Mileage</button>
+      <button type="button" class="${M.veh==='actual'?'on':''}" aria-pressed="${M.veh==='actual'}" onclick="setVehMethod('actual')">Actual Expenses</button>
+    </div>
+    <div class="sumTiles">
+      ${sumTile('Miles', sMiles(T.miles)||'0')}
+      ${sumTile('Mileage Deduction', sMoney(T.mileDed), M.veh==='standard'?'net':'')}
+      ${sumTile('Gas & Repairs', sMoney(sR2((M.byCat.fuel?M.byCat.fuel.amount:0)+(M.byCat.vehicle?M.byCat.vehicle.amount:0))), M.veh==='actual'?'net':'')}
+      ${sumTile('Parking & Tolls', sMoney(M.byCat.parking?M.byCat.parking.amount:0))}
+      ${sumTile('Line 9 Car & Truck', sMoney(M.vehicle), 'wide inc')}
+    </div>
+    ${sumH('By Month')}${sTable(['Month','Miles','Deduction'], monthRows, sTr(['Total', sMiles(T.miles)||'0', sMoney(T.mileDed)],'tot'))}
+    ${sumH('Mileage Log')}${sTable(['Date','Job','Purpose','Miles','Deduction'], logRows)}
+    ${sumH('IRS Mileage Rates')}${sTable(['Starts','Per Mile',''], rateRows)}
+    <div class="mrAdd">
+      <label class="moneyFld"><span>Starts</span><input id="mrDate" type="date"></label>
+      <label class="moneyFld"><span>Cents per Mile</span><input id="mrRate" type="text" inputmode="decimal" autocomplete="off"></label>
+      <button type="button" class="btn secondary" onclick="addMileRate()">Add Rate</button>
+    </div>
+    <div class="errMsg" id="mrErr"></div>`;
+}
+function sumPayoutsHTML(M){
+  const T=M.T;
+  const payeeRows=M.byPayee.map(b=>sTr([esc(b.name)+(b.needs1099?' <span class="sumTag warn">1099-NEC</span>':''), esc(payoutKindName(b.kind)), b.count, sMoney(b.amount)]));
+  const rows=M.payouts.slice().reverse().map(p=>sTr([esc(isoShow(p.date)), esc(p.payee==='Other'?(p.other||'Other'):p.payee)+`<div class="sumSub">${esc(payoutKindName(p.kind))}${p.wo?' &middot; '+esc((p.wo.customer||{}).name||'')+' #'+esc(woCode(p.wo)):''}${p.note?' &middot; '+esc(p.note):''}</div>`, esc(p.method||''), sMoney(p.amount), `<button type="button" class="editLink" onclick="editPayout('${p.id}')">Edit</button>`]));
+  return `<div class="sumAddRow"><button type="button" class="btn" onclick="editPayout()">+ Add Payout</button></div>
+    <div class="sumTiles">
+      ${sumTile('Contract Labor', sMoney(T.contractor))}
+      ${sumTile('Owner Shares', sMoney(T.owner))}
+      ${sumTile('Set Aside', sMoney(T.setaside))}
+      ${sumTile('Payouts', M.payouts.length)}
+    </div>
+    ${sumH('By Person')}${sTable(['Paid To','Type','Count','Total'], payeeRows)}
+    ${sumH('Payouts')}${sTable(['Date','Paid To','Method','Amount',''], rows)}`;
+}
+function sumJobsHTML(M){
+  const list=M.jobs.slice().sort((a,b)=>(b.income-a.income) || ((b.wo.id||0)-(a.wo.id||0)));
+  const rows=list.map(j=>{
+    const ded=sR2(j.expenses+j.contractor+(M.veh==='standard'?j.mileDed:0));
+    return sTr([`<button type="button" class="sumLink" onclick="sumOpenJob(${j.wo.id})">${esc((j.wo.customer||{}).name||'(No name)')}</button><div class="sumSub">#${esc(woCode(j.wo))}${j.done===true?' &middot; Completed':j.done===false?' &middot; Not Completed':''}</div>`,
+      sMoneyOr(j.income), sMoneyOr(j.expenses), sMoneyOr(j.contractor), sMiles(j.miles), sHours(j.hours), (j.income||ded)?sMoney(sR2(j.income-ded)):'']);
+  });
+  return `<div class="sumTiles">
+      ${sumTile('Completed', M.T.done, 'done')}
+      ${sumTile('Not Completed', M.T.notdone, 'notdone')}
+      ${sumTile('Jobs With Activity', M.jobs.length)}
+      ${sumTile('Avg Income Per Paid Job', sMoney(M.jobs.filter(j=>j.income>0).length ? M.T.income/M.jobs.filter(j=>j.income>0).length : 0))}
+    </div>
+    ${sumH('By Job')}${sTable(['Job','Income','Expenses','Labor','Miles','Hours','Net'], rows)}`;
+}
+function sumTaxesHTML(M){
+  const lineRows=M.lines.map(([n,l,v,cls])=>sTr([esc(n), esc(l), sMoney(v)], cls||''));
+  const perRows=M.periods.map(p=>sTr([esc(p.name)+`<div class="sumSub">${esc(p.months)}</div>`, sMoney(p.income), sMoney(p.deductions), sMoney(p.net), esc(p.due)]));
+  const nec=M.byPayee.filter(b=>b.kind==='contractor');
+  const necRows=nec.map(b=>sTr([esc(b.name), sMoney(b.amount), b.needs1099?'<span class="sumTag warn">File 1099-NEC</span>':'Under '+fmtMoney(necThreshold(M.year))]));
+  const ptTotal=sR2(M.passthrough.reduce((t,p)=>t+p.amount,0));
+  const notRows=[
+    sTr(['Owner shares', sMoney(M.T.owner)]),
+    sTr(['Set aside', sMoney(M.T.setaside)]),
+    sTr(['Purchases paid by others', sMoney(ptTotal)]),
+    sTr(['Reimbursements received', sMoney(M.T.reimbIn)])
+  ];
+  return `<div class="sumTiles">
+      ${sumTile('Gross Receipts', sMoney(M.T.income), 'inc')}
+      ${sumTile('Net Profit (Est.)', sMoney(M.net), M.net<0?'neg':'net')}
+    </div>
+    ${M.uncategorized ? `<button type="button" class="sumAlert" onclick="SUM.expFilter='uncat';sumTab('expenses')">${fmtMoney(M.uncategorized)} in receipts has no category and is left out below</button>` : ''}
+    ${sumH('Schedule C')}${sTable(['Line','Item','Amount'], lineRows, sTr(['','Total expenses (lines 8–27)', sMoney(M.totalExp)],'tot')+sTr(['31','Net profit (est.)', sMoney(M.net)],'tot'))}
+    ${sumH('Estimated Tax Periods')}${sTable(['Period','Income','Deductions','Net','Due'], perRows)}
+    ${sumH('1099-NEC')}${sTable(['Contractor','Paid','Form'], necRows)}
+    ${sumH('Not Deductible')}${sTable(['Item','Amount'], notRows)}`;
 }
 function renderSummary(){
-  const d=summaryData(SUM_YEAR), ys=d.years, i=ys.indexOf(SUM_YEAR);
-  const hrs=h=>h ? formatHoursMinutes(h) : '';
-  const mi=m=>m ? (Math.round(m*10)/10).toLocaleString('en-US') : '';
-  const names=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const now=new Date();
-  const rows=d.months.map((m,k)=>{
-    const empty=!m.done && !m.notdone && !m.hours && !m.miles && !m.receipts;
-    const cur=SUM_YEAR===now.getFullYear() && k===now.getMonth();
-    return `<tr class="${empty?'empty':''}${cur?' cur':''}"><th>${names[k]}</th><td>${m.done||''}</td><td>${m.notdone||''}</td><td>${hrs(m.hours)}</td><td>${mi(m.miles)}</td><td>${m.receipts?fmtMoney(m.receipts):''}</td></tr>`;
-  }).join('');
-  const t=d.total;
-  const tile=(label, val, cls)=>`<div class="sumTile ${cls||''}"><b>${val}</b><span>${label}</span></div>`;
+  if(!SUM.year) SUM.year=new Date().getFullYear();
+  const M=sumModel(SUM.year), ys=M.years, i=ys.indexOf(SUM.year);
+  const body={overview:sumOverviewHTML, income:sumIncomeHTML, expenses:sumExpensesHTML, vehicle:sumVehicleHTML, payouts:sumPayoutsHTML, jobs:sumJobsHTML, taxes:sumTaxesHTML}[SUM.tab] || sumOverviewHTML;
+  const prevBody=document.querySelector('#sumModal .modalBody');
+  const keep=prevBody ? prevBody.scrollTop : 0;
   document.getElementById('modalRoot').innerHTML=`
   <div class="overlay" id="sumModal" onclick="if(event.target===this)closeModal()">
     <div class="modal sumModal">
-      <div class="modalHead"><h2>Summary</h2><button class="closeX" onclick="closeModal()" aria-label="Close">&times;</button></div>
+      <div class="modalHead"><h2>Summary</h2>
+        <button type="button" class="btn secondary sumExportBtn" onclick="openSumExport()">Export</button>
+        <button class="closeX" onclick="closeModal()" aria-label="Close">&times;</button></div>
       <div class="modalBody">
         <div class="sumYear">
           <button onclick="summaryYear(-1)" ${i<=0?'disabled':''} aria-label="Previous year">&lsaquo;</button>
-          <b>${SUM_YEAR}</b>
+          <b>${SUM.year}</b>
           <button onclick="summaryYear(1)" ${i>=ys.length-1?'disabled':''} aria-label="Next year">&rsaquo;</button>
         </div>
-        <div class="sumTiles">
-          ${tile('Completed', t.done, 'done')}
-          ${tile('Not Completed', t.notdone, 'notdone')}
-          ${tile('Hours On Site', t.hours?formatHoursMinutes(t.hours):'0h')}
-          ${tile('Miles', (Math.round(t.miles*10)/10).toLocaleString('en-US'))}
-          ${tile('Receipts', fmtMoney(t.receipts), 'wide')}
-        </div>
-        <div class="sumTableWrap"><table class="sumTable">
-          <thead><tr><th></th><th>Done</th><th>Not</th><th>Hours</th><th>Miles</th><th>Receipts</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table></div>
+        <div class="sumTabs" role="tablist">${SUM_TABS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${SUM.tab===k}" class="${SUM.tab===k?'on':''}" onclick="sumTab('${k}')">${l}</button>`).join('')}</div>
+        <div class="sumBody">${body(M)}</div>
       </div>
     </div>
   </div>`;
+  const nb=document.querySelector('#sumModal .modalBody');
+  if(nb && prevBody) nb.scrollTop=keep;
+  const on=document.querySelector('#sumModal .sumTabs .on');
+  if(on && on.scrollIntoView) on.scrollIntoView({block:'nearest', inline:'center'});
+}
+
+/* ---- spreadsheet export ---- */
+const SUM_SHEETS=[
+  ['overview','Overview'],['monthly','Monthly'],['taxes','Schedule C'],['periods','Estimated Tax Periods'],
+  ['payments','Payments'],['customers','Income by Customer'],['methods','Income by Method'],['unlogged','No Payment Logged'],
+  ['expenses','Expenses'],['categories','Expenses by Category'],['passthrough','Paid By Others'],
+  ['mileage','Mileage Log'],['payouts','Payouts'],['payees','Payouts by Person'],['jobs','Jobs']
+];
+let SUM_EXPORT=null;
+function openSumExport(){
+  if(!SUM_EXPORT) SUM_EXPORT={sel:{}};
+  SUM_SHEETS.forEach(([k])=>{ if(!(k in SUM_EXPORT.sel)) SUM_EXPORT.sel[k]=true; });
+  renderSumExport();
+}
+function renderSumExport(){
+  const all=SUM_SHEETS.every(([k])=>SUM_EXPORT.sel[k]);
+  document.getElementById('confirmRoot').innerHTML=`<div class="confirmBox"><div class="confirmCard moneyCard sumExpCard" role="dialog" aria-modal="true" aria-label="Export">
+    <h3>Export ${SUM.year}</h3>
+    <label class="sumChk all"><input type="checkbox" ${all?'checked':''} onchange="sumExportAll(this.checked)"><span>Everything</span></label>
+    <div class="sumChkList">${SUM_SHEETS.map(([k,l])=>`<label class="sumChk"><input type="checkbox" ${SUM_EXPORT.sel[k]?'checked':''} onchange="SUM_EXPORT.sel['${k}']=this.checked;renderSumExport()"><span>${esc(l)}</span></label>`).join('')}</div>
+    <div class="errMsg" id="expErr"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="runSumExport()">Download Spreadsheet</button>
+      <button class="btn secondary" onclick="document.getElementById('confirmRoot').innerHTML=''">Cancel</button>
+    </div>
+  </div></div>`;
+}
+function sumExportAll(on){ SUM_SHEETS.forEach(([k])=>{ SUM_EXPORT.sel[k]=on; }); renderSumExport(); }
+/* Each sheet: name, columns [heading, width, type], rows (arrays), and an
+   optional bold total row. Types: text, money, num, int, date (yyyy-mm-dd), rate. */
+function sumSheets(M, keys){
+  const Y=M.year, T=M.T;
+  const name=w=>(w.customer||{}).name||'';
+  const S={};
+  S.overview=()=>({name:'Overview', cols:[['Item',34,'text'],['Value',18,'money']], rows:[
+    ['Year '+Y, null], ['Income received', T.income], ['Job materials (cost of goods sold)', M.cogs], ['Expenses (all receipts)', T.expenses],
+    ['Contract labor', T.contractor], ['Car & truck ('+(M.veh==='standard'?'standard mileage':'actual expenses')+')', M.vehicle],
+    ['Total deductions (Schedule C lines 8-27)', M.totalExp], ['Net profit (estimate)', M.net], ['Owner shares', T.owner], ['Set aside', T.setaside],
+    ['Reimbursements received', T.reimbIn], ['Purchases paid by others', sR2(M.passthrough.reduce((t,p)=>t+p.amount,0))],
+    ['Receipts with no category', M.uncategorized], ['Completed jobs', {v:T.done, t:'int'}], ['Not completed jobs', {v:T.notdone, t:'int'}],
+    ['Hours on site', {v:Math.round(T.hours*100)/100, t:'num'}], ['Miles', {v:T.miles, t:'num'}], ['Mileage deduction', T.mileDed]
+  ]});
+  S.monthly=()=>({name:'Monthly', cols:[['Month',10,'text'],['Income',14,'money'],['Reimbursed',13,'money'],['Expenses',14,'money'],['Job Materials',14,'money'],['Contract Labor',15,'money'],['Owner Shares',14,'money'],['Set Aside',12,'money'],['Mileage Deduction',17,'money'],['Net',14,'money'],['Completed',11,'int'],['Not Completed',14,'int'],['Hours',9,'num'],['Miles',10,'num']],
+    rows:M.months.map((m,k)=>[MONTHS[k]+' '+Y, m.income, m.reimbIn, m.expenses, m.cogs, m.contractor, m.owner, m.setaside, m.mileDed, sR2(m.income-M.monthDeduct(m)), m.done, m.notdone, Math.round(m.hours*100)/100, m.miles]),
+    total:['Total', T.income, T.reimbIn, T.expenses, T.cogs, T.contractor, T.owner, T.setaside, T.mileDed, M.net, T.done, T.notdone, Math.round(T.hours*100)/100, T.miles]});
+  S.taxes=()=>({name:'Schedule C', cols:[['Line',9,'text'],['Item',40,'text'],['Amount',16,'money']],
+    rows:M.lines.map(([n,l,v])=>[n,l,v]).concat([['','Receipts with no category (not included)', M.uncategorized]]),
+    total:['','Net profit (estimate)', M.net]});
+  S.periods=()=>({name:'Estimated Tax Periods', cols:[['Period',12,'text'],['Months',14,'text'],['Income',14,'money'],['Deductions',14,'money'],['Net',14,'money'],['Due',12,'text']],
+    rows:M.periods.map(p=>[p.name, p.months, p.income, p.deductions, p.net, p.due])});
+  S.payments=()=>({name:'Payments', cols:[['Date',12,'date'],['Customer',24,'text'],['Job #',10,'text'],['Method',10,'text'],['Type',15,'text'],['Amount',14,'money'],['Note',30,'text']],
+    rows:M.payments.map(p=>[p.date, p.customer, woCode(p.wo), p.method, p.reimb?'Reimbursement':'Payment', p.amount, p.note]),
+    total:['Total income','','','','', T.income, '']});
+  S.customers=()=>{ const m={}; M.payments.filter(p=>!p.reimb).forEach(p=>{ const k=p.customer||'(No name)'; const b=m[k]||(m[k]={a:0,j:{}}); b.a+=p.amount; b.j[p.wo.id]=1; });
+    return {name:'Income by Customer', cols:[['Customer',28,'text'],['Jobs',8,'int'],['Amount',14,'money']], rows:Object.keys(m).sort((a,b)=>m[b].a-m[a].a).map(k=>[k, Object.keys(m[k].j).length, sR2(m[k].a)]), total:['Total','',T.income]}; };
+  S.methods=()=>{ const m={}; M.payments.filter(p=>!p.reimb).forEach(p=>{ m[p.method]=(m[p.method]||0)+p.amount; });
+    return {name:'Income by Method', cols:[['Method',14,'text'],['Amount',14,'money']], rows:Object.keys(m).sort((a,b)=>m[b]-m[a]).map(k=>[k, sR2(m[k])]), total:['Total',T.income]}; };
+  S.unlogged=()=>({name:'No Payment Logged', cols:[['Customer',26,'text'],['Job #',10,'text'],['Stage',20,'text'],['Address',36,'text']],
+    rows:M.unlogged.map(w=>[name(w), woCode(w), stageLabelFor(w), (w.customer||{}).address||''])});
+  S.expenses=()=>({name:'Expenses', cols:[['Date',12,'date'],['Customer',24,'text'],['Job #',10,'text'],['Document',30,'text'],['Category',24,'text'],['Schedule C',16,'text'],['Before Tax',13,'money'],['Sales Tax',12,'money'],['Amount',14,'money']],
+    rows:M.receipts.map(r=>[r.date, r.customer, woCode(r.wo), r.name, expCatName(r.cat), expCatLine(r.cat), r.pre, r.pre!=null?sR2(r.amount-r.pre):null, r.amount]),
+    total:['Total','','','','','','','',T.expenses]});
+  S.categories=()=>({name:'Expenses by Category', cols:[['Category',26,'text'],['Schedule C',16,'text'],['Count',8,'int'],['Sales Tax',12,'money'],['Amount',14,'money']],
+    rows:EXP_CATS.map(c=>c[0]).concat(['']).filter(k=>M.byCat[k]).map(k=>[expCatName(k), expCatLine(k), M.byCat[k].count, M.byCat[k].tax, M.byCat[k].amount]),
+    total:['Total','', M.receipts.length, null, T.expenses]});
+  S.passthrough=()=>({name:'Paid By Others', cols:[['Date',12,'date'],['Customer',24,'text'],['Job #',10,'text'],['Document',30,'text'],['Type',22,'text'],['Amount',14,'money']],
+    rows:M.passthrough.map(p=>[p.date, p.customer, woCode(p.wo), p.name, p.kind, p.amount]), total:['Total','','','','', sR2(M.passthrough.reduce((t,p)=>t+p.amount,0))]});
+  S.mileage=()=>({name:'Mileage Log', cols:[['Date',12,'date'],['Customer',24,'text'],['Job #',10,'text'],['Destination',36,'text'],['Purpose',20,'text'],['Driver',12,'text'],['Miles',9,'num'],['Rate',9,'rate'],['Deduction',13,'money']],
+    rows:M.mileage.map(x=>[x.date, x.customer, woCode(x.wo), x.address, x.purpose, x.by?capName(x.by):'', x.miles, x.rate, x.ded]),
+    total:['Total','','','','','', T.miles, null, T.mileDed]});
+  S.payouts=()=>({name:'Payouts', cols:[['Date',12,'date'],['Paid To',18,'text'],['Type',16,'text'],['Method',10,'text'],['Customer',24,'text'],['Job #',10,'text'],['Amount',14,'money'],['Note',30,'text']],
+    rows:M.payouts.map(p=>[p.date, p.payee==='Other'?(p.other||'Other'):p.payee, payoutKindName(p.kind), p.method||'', p.wo?name(p.wo):'', p.wo?woCode(p.wo):'', p.amount, p.note||'']),
+    total:['Total','','','','','', sR2(M.payouts.reduce((t,p)=>t+p.amount,0)), '']});
+  S.payees=()=>({name:'Payouts by Person', cols:[['Paid To',20,'text'],['Type',16,'text'],['Count',8,'int'],['Total',14,'money'],['1099-NEC',14,'text']],
+    rows:M.byPayee.map(b=>[b.name, payoutKindName(b.kind), b.count, b.amount, b.kind==='contractor' ? (b.needs1099?'File':'Under '+fmtMoney(necThreshold(Y))) : ''])});
+  S.jobs=()=>({name:'Jobs', cols:[['Customer',24,'text'],['Job #',10,'text'],['Outcome',14,'text'],['Income',14,'money'],['Reimbursed',13,'money'],['Expenses',14,'money'],['Paid By Others',15,'money'],['Contract Labor',15,'money'],['Miles',9,'num'],['Mileage Deduction',17,'money'],['Hours',9,'num'],['Net',14,'money']],
+    rows:M.jobs.slice().sort((a,b)=>(a.wo.id||0)-(b.wo.id||0)).map(j=>[name(j.wo), woCode(j.wo), j.done===true?'Completed':j.done===false?'Not Completed':'', sR2(j.income), sR2(j.reimbIn), sR2(j.expenses), sR2(j.passthrough), sR2(j.contractor), Math.round(j.miles*10)/10, sR2(j.mileDed), Math.round(j.hours*100)/100,
+      sR2(j.income-j.expenses-j.contractor-(M.veh==='standard'?j.mileDed:0))])});
+  return keys.filter(k=>S[k]).map(k=>S[k]());
+}
+function runSumExport(){
+  const keys=SUM_SHEETS.map(s=>s[0]).filter(k=>SUM_EXPORT.sel[k]);
+  if(!keys.length){ document.getElementById('expErr').textContent='Pick at least one.'; return; }
+  try{
+    const bytes=xlsxBuild(sumSheets(sumModel(SUM.year), keys));
+    saveFile(`good-and-handy-summary-${SUM.year}.xlsx`, bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    document.getElementById('confirmRoot').innerHTML='';
+    toast('Spreadsheet downloaded.');
+  }catch(e){
+    console.error(e); recordError('Summary export failed: '+(e && e.message), 'runSumExport', e && e.stack);
+    document.getElementById('expErr').textContent="The spreadsheet couldn't be made.";
+  }
+}
+
+/* A small .xlsx writer: the workbook's XML files packed in an uncompressed
+   zip. Money, numbers and dates are written as real values so the sheet can
+   add and sort them. */
+function xlsxBuild(sheets){
+  const xe=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  const colName=i=>{ let s=''; i++; while(i>0){ const m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; };
+  const serial=iso=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||''); return m ? (Date.UTC(+m[1],+m[2]-1,+m[3])-Date.UTC(1899,11,30))/86400000 : null; };
+  // styles: 0 normal, 1 header, 2 money, 3 date, 4 number 0.0#, 5 integer, 6 bold text, 7 bold money, 8 bold number, 9 rate, 10 bold integer
+  const styleOf=(t,bold)=>({money:bold?7:2, date:3, num:bold?8:4, int:bold?10:5, rate:9, text:bold?6:0}[t] ?? 0);
+  const cell=(ref, v, t, bold)=>{
+    if(v && typeof v==='object' && 'v' in v){ t=v.t||t; v=v.v; }
+    if(v==null || v==='') return bold ? `<c r="${ref}" s="${styleOf('text',true)}"/>` : '';
+    if(t==='date'){ const n=serial(v); if(n!=null) return `<c r="${ref}" s="3"><v>${n}</v></c>`; t='text'; }
+    if((t==='money'||t==='num'||t==='int'||t==='rate') && typeof v==='number' && isFinite(v)) return `<c r="${ref}" s="${styleOf(t,bold)}"><v>${v}</v></c>`;
+    return `<c r="${ref}" t="inlineStr" s="${styleOf('text',bold)}"><is><t xml:space="preserve">${xe(v)}</t></is></c>`;
+  };
+  const sheetXml=sh=>{
+    const rows=[];
+    rows.push(`<row r="1">${sh.cols.map((c,i)=>`<c r="${colName(i)}1" t="inlineStr" s="1"><is><t>${xe(c[0])}</t></is></c>`).join('')}</row>`);
+    let r=2;
+    sh.rows.forEach(row=>{ rows.push(`<row r="${r}">${row.map((v,i)=>cell(colName(i)+r, v, sh.cols[i]?sh.cols[i][2]:'text', false)).join('')}</row>`); r++; });
+    if(sh.total){ rows.push(`<row r="${r}">${sh.total.map((v,i)=>cell(colName(i)+r, v, sh.cols[i]?sh.cols[i][2]:'text', true)).join('')}</row>`); }
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${sh.cols.map((c,i)=>`<col min="${i+1}" max="${i+1}" width="${c[1]}" customWidth="1"/>`).join('')}</cols><sheetData>${rows.join('')}</sheetData></worksheet>`;
+  };
+  const safeName=(n, used)=>{ let s=String(n).replace(/[\[\]:*?\/\\]/g,'-').slice(0,31)||'Sheet'; let b=s, k=2; while(used[s]){ s=(b.slice(0,28)+' '+k++); } used[s]=1; return s; };
+  const used={};
+  const names=sheets.map(s=>safeName(s.name, used));
+  const files=[
+    ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
+    ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${names.map((n,i)=>`<sheet name="${xe(n)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`],
+    ['xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/styles.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="3"><numFmt numFmtId="164" formatCode="&quot;$&quot;#,##0.00"/><numFmt numFmtId="165" formatCode="#,##0.0#"/><numFmt numFmtId="166" formatCode="&quot;$&quot;0.000"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE8EDF5"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="11"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="14" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/><xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/><xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="3" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`]
+  ];
+  sheets.forEach((s,i)=>files.push([`xl/worksheets/sheet${i+1}.xml`, sheetXml(s)]));
+  return zipStore(files);
+}
+/* Packs [name, text] pairs into a zip with no compression. */
+function zipStore(files){
+  const enc=new TextEncoder();
+  if(!zipStore.crcT){ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } zipStore.crcT=t; }
+  const crc=b=>{ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c=zipStore.crcT[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+  const parts=[], central=[];
+  let offset=0;
+  const u16=v=>[v&255,(v>>>8)&255], u32=v=>[v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255];
+  files.forEach(([name, text])=>{
+    const nb=enc.encode(name), data=enc.encode(text), c=crc(data);
+    const head=new Uint8Array([0x50,0x4b,0x03,0x04, ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0)]);
+    parts.push(head, nb, data);
+    central.push(new Uint8Array([0x50,0x4b,0x01,0x02, ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset)]), nb);
+    offset+=head.length+nb.length+data.length;
+  });
+  const cdSize=central.reduce((t,b)=>t+b.length,0);
+  const end=new Uint8Array([0x50,0x4b,0x05,0x06, ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cdSize), ...u32(offset), ...u16(0)]);
+  const all=parts.concat(central,[end]);
+  const out=new Uint8Array(all.reduce((t,b)=>t+b.length,0));
+  let p=0; all.forEach(b=>{ out.set(b,p); p+=b.length; });
+  return out;
 }
 
 /* ---- error log ----
@@ -13908,6 +14755,7 @@ function askSecondTotal(woId, docId){
     <div class="amtName">${esc(d.name||'')}</div>
     <label class="amtField"><span>$</span><input id="amtInput" type="text" inputmode="decimal" autocomplete="off" value="${esc(cur)}" aria-label="Second total amount" oninput="updateTaxLine(getDoc(getWO(${woId}),'${docId}'),'amount2')"
       onkeydown="if(event.key==='Enter'){event.preventDefault();saveSecondTotal(${woId},'${docId}');}else if(event.key==='Escape'){closeReceiptAmount();}">${amtCalcBtnHTML()}</label>
+    ${amtCatHTML(d.cat2)}
     ${rateSegHTML(docTaxRate(d))+taxLineHTML()+amtCalcPadHTML()}
     <div class="errMsg" id="amtErr"></div>
     <div class="btnRow">
@@ -13924,7 +14772,7 @@ function saveSecondTotal(woId, docId, remove){
   const wo=getWO(woId), d=wo && getDoc(wo, docId);
   if(!d){ closeReceiptAmount(); return; }
   if(remove){
-    delete d.tag2; delete d.amount2; delete d.amount2Pre;
+    delete d.tag2; delete d.amount2; delete d.amount2Pre; delete d.cat2;
     addAdminLog(wo, `Reimbursement "${d.name}" second total removed.`);
   } else {
     const v=parseMoney(document.getElementById('amtInput').value);
@@ -13933,6 +14781,8 @@ function saveSecondTotal(woId, docId, remove){
     if(rate===null){ document.getElementById('amtErr').textContent='Enter a tax rate.'; return; }
     const was=d.tag2 ? `${d.tag2} ${typeof d.amount2==='number'?fmtMoney(d.amount2):''}`.trim() : '';
     d.tag2='Receipt'; applyTaxed(d,'amount2',v,rate); setDocTaxRate(d, rate);
+    const catEl=document.getElementById('amtCat');
+    if(catEl){ if(catEl.value) d.cat2=catEl.value; else delete d.cat2; }
     addAdminLog(wo, `Reimbursement "${d.name}" second total set to ${d.tag2} ${fmtMoney(d.amount2)}${d.amount2Pre===v&&d.amount2!==v?' ('+fmtMoney(v)+' + '+fmtRate(rate)+' tax)':''}${was?' (was '+was+')':''}.`);
   }
   closeReceiptAmount();
@@ -15733,6 +16583,7 @@ function adminTabHTML(wo){
     : '<div class="small">No admin overrides on this work order.</div>';
   return `<div class="adminTab">
     ${lostItemsPanelHTML(wo.id)}
+    ${paymentsAdminHTML(wo)}
     <div class="adminTopRow">
       <h4>Admin Controls</h4>
       <div class="adminPillRow adminTopBtns">
