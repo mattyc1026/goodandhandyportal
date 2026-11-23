@@ -108,7 +108,7 @@
   /* Pre-Site Complete: a paler red than Pre-Site Scheduled. */
   --red-lite:#fff0ef; --red-liteb:#e8968d;
   --yellow:#fff1c4; --yellowb:#a5710a; --yellow-bold:#ffe08a;
-  --trip:#e6e8fb; --trip-ink:#4a4fb5;
+  --trip:#e2e8f3; --trip-ink:#1d3a6b;
   --green:#d2f2df; --greenb:#1f8a55; --green-bold:#a8ecc4;
   /* In Progress: a paler green than Scheduled, the same step Pre-Site Complete takes off Pre-Site Scheduled. */
   --green-lite:#ecfaf2; --green-liteb:#7cc9a0;
@@ -225,7 +225,7 @@ html.dark{
   --red:#38202a; --redb:#ff8f7d; --red-bold:#4b2733;
   --red-lite:#2a1d24; --red-liteb:#d99a92;
   --yellow:#372f19; --yellowb:#f3c65c; --yellow-bold:#4a3f1e;
-  --trip:#23264a; --trip-ink:#aab0f5;
+  --trip:#1c2740; --trip-ink:#a9bde6;
   --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
   --green-lite:#16261e; --green-liteb:#92cfae;
   --s-pi:#60232b; --s-pi-b:#e96b6b;
@@ -274,7 +274,7 @@ html.hc{
   --red:#ffbfbf; --redb:#a30000; --red-bold:#ff8f8f;
   --red-lite:#ffe3e3; --red-liteb:#c43c3c;
   --yellow:#ffe89a; --yellowb:#6b5400; --yellow-bold:#ffcf3d;
-  --trip:#dfe2ff; --trip-ink:#2c3190;
+  --trip:#d5def0; --trip-ink:#10284f;
   --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
   --green-lite:#dcf6e6; --green-liteb:#2f8a5a;
   --s-pi:#ff8f8f; --s-pi-b:#a30000;
@@ -319,7 +319,7 @@ html.dark.hc{
   --red:#4a0d0d; --redb:#ff9a90; --red-bold:#6b1212;
   --red-lite:#2e0a0a; --red-liteb:#ffbab3;
   --yellow:#3d3000; --yellowb:#ffd54a; --yellow-bold:#584600;
-  --trip:#20245a; --trip-ink:#c3c8ff;
+  --trip:#1a2950; --trip-ink:#c0d2f5;
   --green:#00331d; --greenb:#63f0a6; --green-bold:#004d2c;
   --green-lite:#00200f; --green-liteb:#a6f5c9;
   --s-pi:#6b1212; --s-pi-b:#ff9a90;
@@ -2766,23 +2766,23 @@ html.hc .fsMissed{background:var(--hc-bg);color:var(--hc-fg);border:2px solid va
 /* ---- The two big actions ---- */
 .fieldActions .fieldBtn{box-shadow:var(--sh-1);}
 .fieldActions .fieldBtn.fbPhoto{
-  border-color:var(--greyb);
-  background:linear-gradient(155deg,var(--grey) 0%,var(--paper) 72%);
+  border-color:transparent;
+  background:var(--grey);
 }
 .fieldActions .fieldBtn.fbPhoto .ic{color:var(--greyb);}
 .fieldActions .fieldBtn.fbReceipt{
-  border-color:var(--brown-ink);
-  background:linear-gradient(155deg,var(--brown) 0%,var(--paper) 72%);
+  border-color:transparent;
+  background:var(--brown);
 }
 .fieldActions .fieldBtn.fbReceipt .ic{color:var(--brown-ink);}
 .fieldActions .fieldBtn.fbTrip{
-  border-color:var(--trip-ink);
-  background:linear-gradient(155deg,var(--trip) 0%,var(--paper) 72%);
+  border-color:transparent;
+  background:var(--trip);
 }
 .fieldActions .fieldBtn.fbTrip .ic{color:var(--trip-ink);}
 .fieldActions .fieldBtn.fbNote{
-  border-color:var(--yellowb);
-  background:linear-gradient(155deg,var(--yellow) 0%,var(--paper) 72%);
+  border-color:transparent;
+  background:var(--yellow);
 }
 .fieldActions .fieldBtn.fbNote .ic{color:var(--yellowb);}
 
@@ -5647,7 +5647,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112338;
+var APP_BUILD=2026112339;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
