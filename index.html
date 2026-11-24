@@ -5647,7 +5647,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112339;
+var APP_BUILD=2026112340;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -13431,6 +13431,16 @@ LOCATION:${icsEscape(c.address||'')}
 DTSTART:${icsDateTime(iso, t.startTime)}
 DTEND:${icsDateTime(iso, t.endTime)}
 DESCRIPTION:${icsEscape(desc)}
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:${icsEscape(title)}
+TRIGGER:-P2D
+END:VALARM
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:${icsEscape(title)}
+TRIGGER:-PT1H
+END:VALARM
 END:VEVENT
 `;
       });
