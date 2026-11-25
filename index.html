@@ -5659,7 +5659,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112442;
+var APP_BUILD=2026112443;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -13383,14 +13383,10 @@ function saveReceiptAmount(woId, docId){
   closeReceiptAmount();
   saveDB(DB);
   renderWorkOrderModal(woId);
-  if(v!==null && d.amount!==was) checkSameTotal(woId, docId);
 }
 /* ---- duplicate receipts ----
-   Two checks. A photo that was already scanned or uploaded is caught by its
-   fingerprint before it is saved again. A new shot of a receipt that is
-   already in the system is caught when its total is typed in: another
-   receipt anywhere with the exact same total is shown next to it. Either
-   way it is a question, never a block: two real purchases can match. */
+   A photo that was already scanned is caught by its fingerprint before it
+   is saved again. It is a question, never a block. */
 async function fileHash(file){
   try{
     if(!(window.crypto && crypto.subtle)) return '';
@@ -13399,7 +13395,6 @@ async function fileHash(file){
     return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
   }catch(e){ return ''; }
 }
-const RECEIPT_TAGS=['Receipt','Reimbursement','Covered Receipt'];
 function findDocsByHash(hashes){
   if(!hashes || !hashes.length) return [];
   const out=[];
@@ -13407,31 +13402,6 @@ function findDocsByHash(hashes){
     if(Array.isArray(d.srcHashes) && d.srcHashes.some(h=>hashes.includes(h))) out.push({wo:w, d});
   }));
   return out;
-}
-function findSameTotal(woId, docId){
-  const wo=getWO(woId), d=wo && getDoc(wo, docId);
-  if(!d || typeof d.amount!=='number' || !RECEIPT_TAGS.includes(d.tag)) return [];
-  const cents=Math.round(d.amount*100);
-  const out=[];
-  (DB.workOrders||[]).forEach(w=>(w.docs||[]).forEach(x=>{
-    if(x===d || !RECEIPT_TAGS.includes(x.tag) || typeof x.amount!=='number') return;
-    if(Math.round(x.amount*100)!==cents) return;
-    if(Array.isArray(d.notDupOf) && d.notDupOf.includes(x.id)) return;
-    out.push({wo:w, d:x});
-  }));
-  return out;
-}
-function checkSameTotal(woId, docId){
-  const matches=findSameTotal(woId, docId);
-  if(!matches.length) return;
-  const wo=getWO(woId), d=getDoc(wo, docId);
-  showDupDialog({title:'Possible Duplicate', lead:`Another receipt has the same ${fmtMoney(d.amount)} total:`, matches, newDoc:{wo, d},
-    keepLabel:'Keep Both', dropLabel:'Delete New Receipt',
-    onKeep:()=>{
-      d.notDupOf=Array.from(new Set((d.notDupOf||[]).concat(matches.map(m=>m.d.id))));
-      saveDB(DB);
-    },
-    onDrop:()=>removeDocNow(woId, docId, 'duplicate receipt')});
 }
 function dupThumbHTML(w, d){
   const pic = isImageDoc(d) && (d.url||d.dataUrl)
@@ -13464,20 +13434,6 @@ function dupChoose(keep){
   document.getElementById('confirmRoot').innerHTML='';
   if(!o) return;
   if(keep) o.onKeep && o.onKeep(); else o.onDrop && o.onDrop();
-}
-async function removeDocNow(woId, docId, why){
-  const wo=getWO(woId), d=wo && getDoc(wo, docId);
-  if(!d) return;
-  if(d.url && d.storagePath && syncStorage){
-    try{ await syncStorage.ref(d.storagePath).delete(); }catch(e){}
-    DB.storageUsedBytes=Math.max(0, (DB.storageUsedBytes||0)-(d.size||0));
-  }
-  wo.docs=(wo.docs||[]).filter(x=>x.id!==docId);
-  if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
-  wo.tombstones.push('f:'+docId);
-  addAdminLog(wo, `Deleted file "${d.name||'Untitled'}"${why?' ('+why+')':''}.`);
-  saveDB(DB); renderWorkOrderModal(woId);
-  toast('Receipt deleted.');
 }
 /* =========================================================================
    ADMIN TOOLS: summary, backup, error log
