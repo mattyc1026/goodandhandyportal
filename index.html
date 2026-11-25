@@ -4205,6 +4205,18 @@ html.dark .sumTabs button.on{color:var(--paper);}
 .amtCat{display:flex;flex-direction:column;gap:4px;margin:10px 0 4px;}
 .amtCat > span,.moneyFld > span{font-size:.72em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
 .moneyCard{max-width:440px;}
+.dupCard{max-width:440px;text-align:left;}
+.dupLead{font-size:.9em;color:var(--muted);margin:6px 0 8px;}
+.dupList{display:flex;flex-direction:column;gap:8px;}
+.dupItem{display:flex;align-items:center;gap:12px;width:100%;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--paper);font:inherit;color:var(--ink);text-align:left;cursor:pointer;}
+.dupPic{flex:0 0 64px;width:64px;height:64px;border-radius:8px;overflow:hidden;background:var(--well);display:flex;align-items:center;justify-content:center;}
+.dupPic img{width:100%;height:100%;object-fit:cover;}
+.dupFile{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:.72em;}
+.dupMeta{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.dupMeta b{color:var(--navy);overflow-wrap:anywhere;}
+.dupMeta span{font-size:.82em;color:var(--muted);}
+.dupMore{font-size:.82em;color:var(--muted);margin-top:6px;}
+.dupCard .btnRow{margin-top:16px;}
 .moneyCard .moneyFld,.moneyCard .amtCat,.sumExpCard .sumChk{text-align:left;}
 .sumExpCard .sumChk{justify-content:flex-start;}
 .moneyGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
@@ -5647,7 +5659,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112341;
+var APP_BUILD=2026112442;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -13371,6 +13383,101 @@ function saveReceiptAmount(woId, docId){
   closeReceiptAmount();
   saveDB(DB);
   renderWorkOrderModal(woId);
+  if(v!==null && d.amount!==was) checkSameTotal(woId, docId);
+}
+/* ---- duplicate receipts ----
+   Two checks. A photo that was already scanned or uploaded is caught by its
+   fingerprint before it is saved again. A new shot of a receipt that is
+   already in the system is caught when its total is typed in: another
+   receipt anywhere with the exact same total is shown next to it. Either
+   way it is a question, never a block: two real purchases can match. */
+async function fileHash(file){
+  try{
+    if(!(window.crypto && crypto.subtle)) return '';
+    const buf=await file.arrayBuffer();
+    const h=await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){ return ''; }
+}
+const RECEIPT_TAGS=['Receipt','Reimbursement','Covered Receipt'];
+function findDocsByHash(hashes){
+  if(!hashes || !hashes.length) return [];
+  const out=[];
+  (DB.workOrders||[]).forEach(w=>(w.docs||[]).forEach(d=>{
+    if(Array.isArray(d.srcHashes) && d.srcHashes.some(h=>hashes.includes(h))) out.push({wo:w, d});
+  }));
+  return out;
+}
+function findSameTotal(woId, docId){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  if(!d || typeof d.amount!=='number' || !RECEIPT_TAGS.includes(d.tag)) return [];
+  const cents=Math.round(d.amount*100);
+  const out=[];
+  (DB.workOrders||[]).forEach(w=>(w.docs||[]).forEach(x=>{
+    if(x===d || !RECEIPT_TAGS.includes(x.tag) || typeof x.amount!=='number') return;
+    if(Math.round(x.amount*100)!==cents) return;
+    if(Array.isArray(d.notDupOf) && d.notDupOf.includes(x.id)) return;
+    out.push({wo:w, d:x});
+  }));
+  return out;
+}
+function checkSameTotal(woId, docId){
+  const matches=findSameTotal(woId, docId);
+  if(!matches.length) return;
+  const wo=getWO(woId), d=getDoc(wo, docId);
+  showDupDialog({title:'Possible Duplicate', lead:`Another receipt has the same ${fmtMoney(d.amount)} total:`, matches, newDoc:{wo, d},
+    keepLabel:'Keep Both', dropLabel:'Delete New Receipt',
+    onKeep:()=>{
+      d.notDupOf=Array.from(new Set((d.notDupOf||[]).concat(matches.map(m=>m.d.id))));
+      saveDB(DB);
+    },
+    onDrop:()=>removeDocNow(woId, docId, 'duplicate receipt')});
+}
+function dupThumbHTML(w, d){
+  const pic = isImageDoc(d) && (d.url||d.dataUrl)
+    ? `<img src="${esc(d.url||d.dataUrl)}" alt="">`
+    : `<span class="dupFile">${icon('file')}<b>${/pdf/i.test(d.type||d.name||'')?'PDF':'File'}</b></span>`;
+  const when=d.uploadedAt ? isoShow(isoOfMs(d.uploadedAt)) : (d.date||'');
+  return `<button type="button" class="dupItem" onclick="viewDoc(${w.id},'${d.id}')">
+    <span class="dupPic">${pic}</span>
+    <span class="dupMeta"><b>${esc((w.customer||{}).name||'(No name)')} &middot; #${esc(woCode(w))}</b>
+      <span>${esc(d.tag||'')}${typeof d.amount==='number'?' &middot; '+fmtMoney(d.amount):''}${when?' &middot; '+esc(when):''}</span></span>
+  </button>`;
+}
+let DUP_DLG=null;
+function showDupDialog(o){
+  DUP_DLG=o;
+  document.getElementById('confirmRoot').innerHTML=`<div class="confirmBox"><div class="confirmCard dupCard" role="dialog" aria-modal="true" aria-label="${esc(o.title)}">
+    <h3>${esc(o.title)}</h3>
+    <div class="dupLead">${esc(o.lead)}</div>
+    <div class="dupList">${o.matches.slice(0,4).map(m=>dupThumbHTML(m.wo, m.d)).join('')}</div>
+    ${o.matches.length>4?`<div class="dupMore">and ${o.matches.length-4} more</div>`:''}
+    ${o.newDoc?`<div class="dupLead">New:</div><div class="dupList">${dupThumbHTML(o.newDoc.wo, o.newDoc.d)}</div>`:''}
+    <div class="btnRow">
+      <button class="btn secondary" onclick="dupChoose(false)">${esc(o.dropLabel)}</button>
+      <button class="btn" onclick="dupChoose(true)">${esc(o.keepLabel)}</button>
+    </div>
+  </div></div>`;
+}
+function dupChoose(keep){
+  const o=DUP_DLG; DUP_DLG=null;
+  document.getElementById('confirmRoot').innerHTML='';
+  if(!o) return;
+  if(keep) o.onKeep && o.onKeep(); else o.onDrop && o.onDrop();
+}
+async function removeDocNow(woId, docId, why){
+  const wo=getWO(woId), d=wo && getDoc(wo, docId);
+  if(!d) return;
+  if(d.url && d.storagePath && syncStorage){
+    try{ await syncStorage.ref(d.storagePath).delete(); }catch(e){}
+    DB.storageUsedBytes=Math.max(0, (DB.storageUsedBytes||0)-(d.size||0));
+  }
+  wo.docs=(wo.docs||[]).filter(x=>x.id!==docId);
+  if(!Array.isArray(wo.tombstones)) wo.tombstones=[];
+  wo.tombstones.push('f:'+docId);
+  addAdminLog(wo, `Deleted file "${d.name||'Untitled'}"${why?' ('+why+')':''}.`);
+  saveDB(DB); renderWorkOrderModal(woId);
+  toast('Receipt deleted.');
 }
 /* =========================================================================
    ADMIN TOOLS: summary, backup, error log
@@ -15227,7 +15334,8 @@ async function handleDocUpload(id, inputEl, opts){
         wo.docs.push({
           id: docId, name: name, type: file.type||'', size: blob.size,
           url, storagePath, uploadedBy: CURRENT_USER.displayName, date: ts.date, uploadedAt: Date.now(),
-          tag: DOC_TAGS.includes(opts.tag) ? opts.tag : (looksLikeEstimate(file.name, file.type) ? 'Estimate' : looksLikeInvoice(file.name, file.type) ? 'Invoice' : '')
+          tag: DOC_TAGS.includes(opts.tag) ? opts.tag : (looksLikeEstimate(file.name, file.type) ? 'Estimate' : looksLikeInvoice(file.name, file.type) ? 'Invoice' : ''),
+          ...(opts.extraFor ? (opts.extraFor(file.name)||{}) : {})
         });
         addedIds.push(docId);
         DB.storageUsedBytes=(DB.storageUsedBytes||0)+blob.size;
@@ -15779,7 +15887,7 @@ async function scanOnFile(inp){
     try{
       const src=await scanLoadImage(files[i]);
       if(SCAN!==S){ scanFree(src); return; }
-      const page={src:src, quad:undefined, crop:'auto', out:null, key:''};
+      const page={src:src, quad:undefined, crop:'auto', out:null, key:'', srcHash:await fileHash(files[i])};
       let idx;
       if(replacing!==null){ idx=replacing; scanFreePage(S.pages[idx]); S.pages[idx]=page; }
       else { S.pages.push(page); idx=S.pages.length-1; }
@@ -16038,6 +16146,20 @@ async function scanSave(fmt){
     return;
   }
   if(SCAN!==S) return;
+  /* A photo that is already on a job (scanned or uploaded before) stops here
+     and asks first, before anything is uploaded. */
+  const hashes=S.pages.map(pg=>pg.srcHash).filter(Boolean);
+  if(S.kind==='receipt' && !S.dupOk){
+    const dups=findDocsByHash(hashes);
+    if(dups.length){
+      scanSetBusy(false,'');
+      showDupDialog({title:'Already Scanned', lead:'This photo is already saved:', matches:dups,
+        keepLabel:'Save Anyway', dropLabel:'Cancel Scan',
+        onKeep:()=>{ if(SCAN===S){ S.dupOk=true; scanSave(fmt); } },
+        onDrop:()=>{ if(SCAN===S) closeScanner(true); }});
+      return;
+    }
+  }
   // The scan stays open until the upload is through, so a dropped
   // connection doesn't throw away the pages.
   S.uploading=true;
@@ -16046,6 +16168,12 @@ async function scanSave(fmt){
   try{
     res=await handleDocUpload(S.woId, {files:files, disabled:false, value:''}, {
       tag:S.kind==='receipt'?'Receipt':'', skipCompress:true,
+      extraFor:name=>{
+        if(!hashes.length) return {};
+        if(fmt==='pdf') return {srcHashes:hashes};
+        const i=files.findIndex(f=>f.name===name);
+        return (i>=0 && S.pages[i] && S.pages[i].srcHash) ? {srcHashes:[S.pages[i].srcHash]} : {};
+      },
       onStatus:t=>{ if(SCAN===S && t){ S.status=t.replace(/^Uploading ".*?"…\s*/,'Uploading ').trim(); const el=document.querySelector('#scanBody .scStatus'); if(el) el.textContent=S.status; } }
     });
   }catch(e){ console.error(e); res={added:0, failed:files.map(f=>f.name)}; }
