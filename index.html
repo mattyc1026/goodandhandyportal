@@ -5734,7 +5734,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112613;
+var APP_BUILD=2026112614;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9601,7 +9601,7 @@ function commitTimeFields(){
 const CREW_ORDER=['matthew','scott','starla','alyssa'];
 /* Each person keeps one color across the calendar, the chips and the dots,
    so a glance at a day shows who is out. */
-const CREW_COLORS={matthew:'#931314', scott:'#76B041', starla:'#1E88E5', alyssa:'#C98B2B'};
+const CREW_COLORS={matthew:'#931314', scott:'#1E88E5', starla:'#76B041', alyssa:'#C98B2B'};
 const CREW_SPARE=['#7c5cd6','#c77d12','#5b6b82','#b5463c','#3f8f2f','#a0527a'];
 function capName(n){ return String(n||'').trim().split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
 function crewUsers(){
