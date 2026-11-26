@@ -5690,7 +5690,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112545;
+var APP_BUILD=2026112546;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9633,15 +9633,18 @@ function offOnDay(iso, who){
     .sort((a,b)=>(a.who==='business'?-1:0)-(b.who==='business'?-1:0) || String(a.startTime||'').localeCompare(String(b.startTime||'')));
 }
 /* Does this day off take away the hours st..et? A whole day always does. */
+/* A business part day is kept as the hours it is OPEN: anything booked
+   outside them runs into the closure. A person's part day is the hours off. */
 function offHits(o, st, et){
   if(!offIsPart(o)) return true;
   if(!st || !et) return true;
+  if(o.open) return toMin(st)<toMin(o.startTime) || toMin(et)>toMin(o.endTime);
   return toMin(st)<toMin(o.endTime) && toMin(o.startTime)<toMin(et);
 }
 function offWho(o){ return o.who==='business' ? 'Good & Handy Closed'+(o.note?' for '+o.note:'') : crewName(o.who)+' Off'; }
 /* A person's note goes after their name; the business's reason is already in its title. */
 function offNote(o){ return (o.note && o.who!=='business') ? o.note : ''; }
-function offHours(o){ return offIsPart(o) ? `${fmtClock(o.startTime)} – ${fmtClock(o.endTime)}` : 'All day'; }
+function offHours(o){ return offIsPart(o) ? `${o.open?'Open ':''}${fmtClock(o.startTime)} – ${fmtClock(o.endTime)}` : 'All day'; }
 function fmtClock(t){ const p=timeParts(t); return p.t+' '+p.ap; }
 function offDatesText(o){
   const f=iso=>new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
@@ -9736,8 +9739,8 @@ function renderDayOff(){
       ${D.len==='range'?`<label class="moneyFld"><span>Last Day</span><input id="doEnd" type="date" value="${esc(D.end)}"></label>`:''}
     </div>
     ${D.len==='part'?`<div class="moneyGrid">
-      <div class="moneyFld"><span>From</span>${timeFieldHTML('doST', D.startTime, "DOFF.startTime=this.value", 'Off from')}</div>
-      <div class="moneyFld"><span>To</span>${timeFieldHTML('doET', D.endTime, "DOFF.endTime=this.value", 'Off until')}</div>
+      <div class="moneyFld"><span>${D.who.indexOf('business')!==-1?'Open From':'Off From'}</span>${timeFieldHTML('doST', D.startTime, "DOFF.startTime=this.value", D.who.indexOf('business')!==-1?'Open from':'Off from')}</div>
+      <div class="moneyFld"><span>${D.who.indexOf('business')!==-1?'Open Until':'Off Until'}</span>${timeFieldHTML('doET', D.endTime, "DOFF.endTime=this.value", D.who.indexOf('business')!==-1?'Open until':'Off until')}</div>
     </div>`:''}
     <label class="moneyFld wide"><span>${D.who.indexOf('business')!==-1?'Reason':'Note'}</span><input id="doNote" type="text" autocomplete="off" value="${esc(D.note)}"></label>
     <div class="errMsg" id="doErr"></div>
@@ -9778,7 +9781,7 @@ function saveDayOff(){
   }
   if(!DB.calc) DB.calc={};
   let list=daysOffList().slice();
-  const rec=w=>({who:w, start:D.start, end, startTime:D.len==='part'?D.startTime:'', endTime:D.len==='part'?D.endTime:'', note:(D.note||'').trim()});
+  const rec=w=>({who:w, start:D.start, end, startTime:D.len==='part'?D.startTime:'', endTime:D.len==='part'?D.endTime:'', open:D.len==='part' && w==='business', note:(D.note||'').trim()});
   if(D.id){
     const i=list.findIndex(x=>x.id===D.id);
     if(i>=0) list[i]=Object.assign({}, list[i], rec(D.who[0]), {editedBy:CURRENT_USER.username, editedAt:Date.now()});
@@ -13775,8 +13778,8 @@ END:VEVENT
   });
   daysOffList().forEach(o=>{
     if((o.end||o.start)<cut) return;
-    const title=offWho(o)+(offNote(o)?' ・ '+offNote(o):'');
-    const dt=offIsPart(o)
+    const title=offWho(o)+(offNote(o)?' ・ '+offNote(o):'')+(o.open?' ・ '+offHours(o):'');
+    const dt=(offIsPart(o) && !o.open)
       ? `DTSTART:${icsDateTime(o.start, o.startTime)}\nDTEND:${icsDateTime(o.start, o.endTime)}`
       : `DTSTART;VALUE=DATE:${o.start.replace(/-/g,'')}\nDTEND;VALUE=DATE:${addDaysIso(o.end||o.start,1).replace(/-/g,'')}`;
     events+=`BEGIN:VEVENT
