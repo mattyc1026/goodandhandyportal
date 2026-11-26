@@ -4763,7 +4763,7 @@ window._bootSafety = setTimeout(function(){
             <button class="editLink" onclick="openBackup()">Download</button>
           </div>
           <div class="settingsRow adminOnly hidden" id="errorLogRow">
-            <span>Error Log</span>
+            <span>Error Log <b class="admCount hidden" id="errCount"></b></span>
             <button class="editLink" onclick="openErrorLog()">Open</button>
           </div>
         </div>
@@ -5690,7 +5690,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112548;
+var APP_BUILD=2026112601;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -6731,7 +6731,7 @@ function seedAccessList(){
 }
 function stopAccessAdmin(){
   if(ACCESS_UNSUB){ try{ ACCESS_UNSUB(); }catch(e){} ACCESS_UNSUB=null; }
-  ACCESS_REQS=[]; ACCESS_SEEDED=false; refreshReqNudge();
+  ACCESS_REQS=[]; ACCESS_SEEDED=false; try{ stopErrWatch(); }catch(e){} refreshReqNudge();
 }
 function refreshReqNudge(){
   try{ refreshAdminBadges(); }catch(e){}
@@ -13882,8 +13882,10 @@ function refreshAdminBadges(){
   const rp=admin ? reimbPending().length : 0;
   const lr=(admin && !window.GH_TRAINING && typeof ACCESS_REQS!=='undefined') ? ACCESS_REQS.length : 0;
   const set=(id,n)=>{ const el=document.getElementById(id); if(!el) return; el.textContent=n||''; el.classList.toggle('hidden', !n); };
-  set('reimbCount', rp); set('loginCount', lr);
-  const dot=document.getElementById('admDot'); if(dot) dot.classList.toggle('hidden', !(rp||lr));
+  try{ startErrWatch(); }catch(e){}
+  const en=(admin && !window.GH_TRAINING) ? ERR_NEW : 0;
+  set('reimbCount', rp); set('loginCount', lr); set('errCount', en);
+  const dot=document.getElementById('admDot'); if(dot) dot.classList.toggle('hidden', !(rp||lr||en));
 }
 function openReimbursements(){
   if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
@@ -14933,6 +14935,27 @@ window.addEventListener('unhandledrejection', e=>{
   recordError((r && (r.message||r.code)) || String(r||''), 'promise', r && r.stack);
 });
 let ERR_LIST=[];
+/* New errors since this admin last opened the log. The marker is kept per admin in the
+   shared settings so it follows them across devices. */
+var ERR_NEW=0, ERR_UNSUB=null, ERR_WATCH_FROM=-1;
+function errSeenAt(){ const m=(DB.calc||{}).errSeen||{}; return (CURRENT_USER && m[CURRENT_USER.username])||0; }
+function stopErrWatch(){ if(ERR_UNSUB){ try{ ERR_UNSUB(); }catch(e){} } ERR_UNSUB=null; ERR_WATCH_FROM=-1; ERR_NEW=0; }
+function startErrWatch(){
+  const ref=(CURRENT_USER && CURRENT_USER.isAdmin && !window.GH_TRAINING && typeof firebase!=='undefined' && firebase.auth && firebase.auth().currentUser) ? errorLogRef() : null;
+  if(!ref){ if(ERR_UNSUB) stopErrWatch(); return; }
+  const from=errSeenAt();
+  if(ERR_UNSUB && from===ERR_WATCH_FROM) return;
+  if(ERR_UNSUB){ try{ ERR_UNSUB(); }catch(e){} }
+  ERR_WATCH_FROM=from;
+  ERR_UNSUB=ref.where('at','>',from).limit(99).onSnapshot(s=>{ ERR_NEW=s.size; refreshAdminBadges(); }, ()=>{});
+}
+function markErrorsSeen(list){
+  if(!CURRENT_USER) return;
+  const t=Math.max(Date.now(), ...(list||[]).map(e=>e.at||0));
+  DB.calc=DB.calc||{};
+  DB.calc.errSeen=Object.assign({}, DB.calc.errSeen||{}, {[CURRENT_USER.username]:t});
+  ERR_NEW=0; saveDB(DB); refreshAdminBadges();
+}
 function openErrorLog(){
   if(!CURRENT_USER || !CURRENT_USER.isAdmin) return;
   closeSettingsMenus();
@@ -14942,7 +14965,7 @@ function openErrorLog(){
   ref.orderBy('at','desc').limit(60).get()
     .then(s=>{ ERR_LIST=s.docs.map(d=>Object.assign({id:d.id}, d.data())); })
     .catch(()=>{ ERR_LIST=[]; })
-    .then(()=>{ if(document.getElementById('errModal')) renderErrorLog(); });
+    .then(()=>{ markErrorsSeen(ERR_LIST); if(document.getElementById('errModal')) renderErrorLog(); });
 }
 function errorLogText(){
   return (ERR_LIST||[]).map(e=>`${new Date(e.at).toLocaleString('en-US')} | ${e.user||'?'} | build ${e.build||''} | ${e.tab||''}\n${e.msg}\n${e.where||''}\n${e.stack||''}\n${e.ua||''}`).join('\n\n');
