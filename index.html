@@ -1259,15 +1259,15 @@ html.dark{ --cv-unassigned:#6f7c92; --cv-tape-track:#26324a; --cv-wknd:#131c2c; 
 .cvSeg button.on{background:#fff;color:#0f2647;box-shadow:0 2px 6px rgba(0,0,0,.18);}
 
 /* People */
-.crewAv{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--pc,#0f2647);color:#fff;font-size:.72rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px var(--paper);}
+.crewAv{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--pc,#0f2647);color:var(--pc-on,#fff);font-size:.72rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px var(--paper);}
 .crewChip .crewAv{box-shadow:none;}
-.crewChip.on{background:var(--pc);border-color:var(--pc);color:#fff;}
-.crewChip.on .crewAv{background:#fff;color:var(--pc);}
+.crewChip.on{background:var(--pc);border-color:var(--pc);color:var(--pc-on,#fff);}
+.crewChip.on .crewAv{background:#fff;color:var(--pc-tx,var(--pc));}
 .crewChip.on .crewAv.all{box-shadow:0 0 0 2px #fff;}
 .cvWho{display:flex;flex-wrap:wrap;gap:7px;padding:2px;justify-content:center;}
 .cvWho .crewChip{flex-shrink:0;min-height:38px;padding:5px 14px 5px 6px;font-size:.88rem;gap:7px;color:var(--ink);background:var(--paper);box-shadow:var(--sh-1);}
-.cvWho .crewChip.on{color:#fff;background:var(--pc);}
-html.dark .cvWho .crewChip.on{background:var(--pc);color:#fff;border-color:var(--pc);}
+.cvWho .crewChip.on{color:var(--pc-on,#fff);background:var(--pc);}
+html.dark .cvWho .crewChip.on{background:var(--pc);color:var(--pc-on,#fff);border-color:var(--pc);}
 html.dark .cvWho .crewChip.isAll{--pc:#2f5a96 !important;}
 html.dark .crewChip.on .crewAv{background:#fff;}
 
@@ -1403,6 +1403,8 @@ html.dark .hoChip.on{color:#111827;}
 .cvAddRow .cvAddJob{flex:1 1 auto;}
 .cvAddJob.off{color:var(--off-biz);border-color:color-mix(in srgb,var(--off-biz) 55%,transparent);background:color-mix(in srgb,var(--off-biz) 7%,transparent);}
 .cvOffChip{display:block;font-size:.62em;font-weight:800;line-height:1.25;padding:1px 4px;border-radius:4px;color:var(--pc);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 16%,transparent) 0 4px,color-mix(in srgb,var(--pc) 7%,transparent) 4px 8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+.cvOffChip,.cvOffRow .cvOffIc{color:var(--pc-tx,var(--pc));}
+html.dark .cvOffChip,html.dark .cvOffRow .cvOffIc{color:var(--pc-txd,var(--pc));}
 .cvDay.closed,.cvWDay.closed{background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--off-biz) 10%,transparent) 0 6px,transparent 6px 12px);}
 .cvOffRow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;margin-bottom:8px;border:1px dashed color-mix(in srgb,var(--pc) 55%,transparent);border-left:4px solid var(--pc);border-radius:12px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 9%,var(--paper)) 0 8px,var(--paper) 8px 16px);font:inherit;color:var(--ink);text-align:left;box-sizing:border-box;}
 button.cvOffRow{cursor:pointer;}
@@ -1461,7 +1463,7 @@ html.dark .cvAddJob{color:#ffb36b;}
 .crewChips{display:flex;flex-wrap:wrap;gap:8px;}
 .crewChip{--pc:#0f2647;display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:6px 14px 6px 7px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font-weight:700;font-size:.88em;font-family:inherit;cursor:pointer;}
 .crewChip .ic{width:15px;height:15px;}
-.crewChip.on{background:var(--pc);border-color:var(--pc);color:#fff;}
+.crewChip.on{background:var(--pc);border-color:var(--pc);color:var(--pc-on,#fff);}
 .schedCrewLine{color:var(--navy);font-weight:600;}
 .schedHead{flex-wrap:nowrap !important;align-items:center;}
 .schedHead h2{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;}
@@ -5712,7 +5714,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112605;
+var APP_BUILD=2026112606;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7933,7 +7935,7 @@ function calViewHTML(){
       const offChips=offChipsHTML(iso, CALV.who);
       const names=list.slice(0,3).map(b=>{
         const c=(b.crew&&b.crew[0]) ? crewColor(b.crew[0]) : '#8a96a8';
-        return `<span class="cvChip" style="--pc:${c};background:${hexA(c,.13)}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`;
+        return `<span class="cvChip" style="${pcStyle(c)};background:${crewTint(c)}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`;
       }).join('')+(list.length>3?`<span class="cvMore">${list.length-3} more</span>`:'');
       cells+=`<button type="button" class="${cls.join(' ')}" onclick="calvSet('day','${iso}')" aria-pressed="${iso===CALV.day}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${list.length?', '+list.length+' booked':''}">
         <span class="cvNum">${day}</span>${crewDotsHTML(list)}${offMarksHTML(iso, CALV.who)}<span class="cvChips">${offChips}${names}</span>${hoursTapeHTML(list)}</button>`;
@@ -7957,7 +7959,7 @@ function calViewHTML(){
   const who=users.length ? `<div class="cvWho">${[{username:'all',name:'Everyone',first:''}].concat(users).map(u=>{
     const on=CALV.who===u.username;
     const av=u.username==='all' ? `<span class="crewAv all" style="background:${ring}"></span>` : `<span class="crewAv">${esc(u.first.charAt(0))}</span>`;
-    return `<button type="button" class="crewChip${on?' on':''}${u.username==='all'?' isAll':''}" style="--pc:${u.username==='all'?'#0f2647':crewColor(u.username)}" aria-pressed="${on}" onclick="calvSet('who','${esc(u.username)}')">${av}${esc(u.name)}</button>`;
+    return `<button type="button" class="crewChip${on?' on':''}${u.username==='all'?' isAll':''}" style="${pcStyle(u.username==='all'?'#0f2647':crewColor(u.username))}" aria-pressed="${on}" onclick="calvSet('who','${esc(u.username)}')">${av}${esc(u.name)}</button>`;
   }).join('')}</div>` : '';
   return `<div class="cvWrap">
     <div class="cvHero">
@@ -9572,7 +9574,7 @@ function commitTimeFields(){
 const CREW_ORDER=['matthew','scott','starla','alyssa'];
 /* Each person keeps one color across the calendar, the chips and the dots,
    so a glance at a day shows who is out. */
-const CREW_COLORS={matthew:'#2f6fed', scott:'#1f9d6b', starla:'#d6407f', alyssa:'#0e9aa7'};
+const CREW_COLORS={matthew:'#931314', scott:'#046307', starla:'#9172EC', alyssa:'#7FFFD4'};
 const CREW_SPARE=['#7c5cd6','#c77d12','#5b6b82','#b5463c','#3f8f2f','#a0527a'];
 function capName(n){ return String(n||'').trim().split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '); }
 function crewUsers(){
@@ -9603,8 +9605,25 @@ function hexA(hex, a){
   const n=parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h, 16);
   return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
 }
+/* Readable text for any crew color: on top of the color, on a light page, on a dark page. */
+function hexRGB(hex){ const h=String(hex).replace('#',''); const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function relLum(rgb){ const f=v=>{v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);}; return .2126*f(rgb[0])+.7152*f(rgb[1])+.0722*f(rgb[2]); }
+function contrastRGB(a,b){ const x=relLum(a), y=relLum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); }
+function mixRGB(a,b,t){ return a.map((v,i)=>Math.round(v+(b[i]-v)*t)); }
+function rgbHex(c){ return '#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''); }
+function readableOn(c, bg){
+  const rgb=hexRGB(c), back=hexRGB(bg), toward=relLum(back)>.5?[0,0,0]:[255,255,255];
+  for(let t=0;t<=1;t+=.05){ const m=mixRGB(rgb,toward,t); if(contrastRGB(m,back)>=4.5) return rgbHex(m); }
+  return rgbHex(toward);
+}
+function pcStyle(c){
+  if(!/^#[0-9a-f]{3,6}$/i.test(String(c))) return `--pc:${c}`;
+  const rgb=hexRGB(c), on=contrastRGB(rgb,[255,255,255])>=contrastRGB(rgb,[15,38,71]) ? '#fff' : '#0f2647';
+  return `--pc:${c};--pc-on:${on};--pc-tx:${readableOn(c,'#ffffff')};--pc-txd:${readableOn(c,'#161f30')}`;
+}
+function crewTint(c){ try{ return hexA(c, relLum(hexRGB(c))>.6 ? .45 : .13); }catch(e){ return hexA(c,.13); } }
 function crewAvatarHTML(username){
-  return `<span class="crewAv" style="--pc:${crewColor(username)}" title="${esc(crewName(username))}">${esc(crewInitial(username))}</span>`;
+  return `<span class="crewAv" style="${pcStyle(crewColor(username))}" title="${esc(crewName(username))}">${esc(crewInitial(username))}</span>`;
 }
 function crewName(username){
   const u=crewUsers().find(x=>x.username===username);
@@ -9617,7 +9636,7 @@ function crewPickerHTML(){
   return `<div class="field"><label>Who's Going</label><div class="crewChips">${users.map(u=>{
     const on=SCHED_CREW.indexOf(u.username)!==-1;
     const off=crewOffForBooking(u.username).length>0;
-    return `<button type="button" class="crewChip${on?' on':''}${off?' isOff':''}" style="--pc:${crewColor(u.username)}" aria-pressed="${on}"${off&&!on?' aria-disabled="true"':''} onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}${off?'<span class="offTag">Off</span>':''}</button>`;
+    return `<button type="button" class="crewChip${on?' on':''}${off?' isOff':''}" style="${pcStyle(crewColor(u.username))}" aria-pressed="${on}"${off&&!on?' aria-disabled="true"':''} onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}${off?'<span class="offTag">Off</span>':''}</button>`;
   }).join('')}</div></div>`;
 }
 function toggleSchedCrew(username, ok){
@@ -9711,7 +9730,7 @@ function businessClosedAllDay(iso){ return offOnDay(iso,'business').some(o=>!off
 function offChipsHTML(iso, who){
   return offOnDay(iso).filter(o=>who==='all' || !who || o.who==='business' || o.who===who).map(o=>{
     const c=o.who==='business' ? 'var(--off-biz)' : crewColor(o.who);
-    return `<span class="cvOffChip${o.who==='business'?' biz':''}" style="--pc:${c}">${esc(offWho(o))}</span>`;
+    return `<span class="cvOffChip${o.who==='business'?' biz':''}" style="${pcStyle(c)}">${esc(offWho(o))}</span>`;
   }).join('');
 }
 /* Small-screen month grid: chips are hidden there, so each person off gets
@@ -9728,8 +9747,8 @@ function offRowsHTML(iso, who){
     const inner=`<span class="cvOffIc">${icon(o.who==='business'?'lock':'moon')}</span>
       <span class="cvMain"><span class="cvName">${esc(offWho(o))}</span>${(()=>{ const sub=[o.open && offIsPart(o) ? '' : offHours(o), offNote(o)].filter(Boolean).join(' · '); return sub ? `<span class="cvType">${esc(sub)}</span>` : ''; })()}</span>`;
     return admin
-      ? `<button type="button" class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}" onclick="openDayOff(null,'${o.id}')">${inner}</button>`
-      : `<div class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}">${inner}</div>`;
+      ? `<button type="button" class="cvOffRow${o.who==='business'?' biz':''}" style="${pcStyle(c)}" onclick="openDayOff(null,'${o.id}')">${inner}</button>`
+      : `<div class="cvOffRow${o.who==='business'?' biz':''}" style="${pcStyle(c)}">${inner}</div>`;
   }).join('');
 }
 
@@ -9755,7 +9774,7 @@ function dayOffCapture(){
 function renderDayOff(){
   const D=DOFF; if(!D) return;
   const who=[{k:'business', n:'Business Closed', c:'var(--off-biz)'}].concat(crewUsers().map(u=>({k:u.username, n:u.name, c:crewColor(u.username)})));
-  const chip=w=>{ const on=D.who.indexOf(w.k)!==-1; return `<button type="button" class="crewChip${on?' on':''}${w.k==='business'?' isBiz':''}" style="--pc:${w.c}" aria-pressed="${on}" onclick="dayOffWho('${esc(w.k)}')"><span class="crewAv">${w.k==='business'?icon('lock'):esc(w.n.charAt(0))}</span>${esc(w.n)}</button>`; };
+  const chip=w=>{ const on=D.who.indexOf(w.k)!==-1; return `<button type="button" class="crewChip${on?' on':''}${w.k==='business'?' isBiz':''}" style="${pcStyle(w.c)}" aria-pressed="${on}" onclick="dayOffWho('${esc(w.k)}')"><span class="crewAv">${w.k==='business'?icon('lock'):esc(w.n.charAt(0))}</span>${esc(w.n)}</button>`; };
   const seg=(k,l)=>`<button type="button" class="${D.len===k?'on':''}" aria-pressed="${D.len===k}" onclick="dayOffLen('${k}')">${l}</button>`;
   document.getElementById('confirmRoot').innerHTML=`<div class="confirmBox"><div class="confirmCard moneyCard doCard" role="dialog" aria-modal="true" aria-label="Day off">
     <h3>${D.id?'Edit Day Off':'Day Off'}</h3>
