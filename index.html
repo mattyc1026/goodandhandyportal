@@ -5734,7 +5734,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112610;
+var APP_BUILD=2026112611;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7962,8 +7962,7 @@ function calViewHTML(){
       const cls=['cvDay']; if(list.length) cls.push('booked'); if(dow===0||dow===6) cls.push('wknd'); if(iso===today) cls.push('today'); if(iso===CALV.day) cls.push('sel'); if(iso<today) cls.push('past'); if(businessClosedAllDay(iso)) cls.push('closed');
       const offChips=offChipsHTML(iso, CALV.who);
       const names=list.slice(0,3).map(b=>{
-        const c=(b.crew&&b.crew[0]) ? crewColor(b.crew[0]) : '#8a96a8';
-        return `<span class="cvChip" style="${pcStyle(c)};background:${crewTint(c)}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`;
+        return `<span class="cvChip" style="${crewSplitStyle(b.crew)}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`;
       }).join('')+(list.length>3?`<span class="cvMore">${list.length-3} more</span>`:'');
       cells+=`<button type="button" class="${cls.join(' ')}" onclick="calvSet('day','${iso}')" aria-pressed="${iso===CALV.day}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${list.length?', '+list.length+' booked':''}">
         <span class="cvNum">${day}</span>${crewDotsHTML(list)}${offMarksHTML(iso, CALV.who)}<span class="cvChips">${offChips}${names}</span>${hoursTapeHTML(list)}</button>`;
@@ -9634,6 +9633,17 @@ function hexA(hex, a){
   return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
 }
 function pcStyle(c){ return `--pc:${c}`; }
+/* A job label split into equal parts, one per person on it: each part is
+   tinted in that person's color with a solid bar of it along the bottom. */
+function crewSplitStyle(crew){
+  const cs=(crew&&crew.length ? crew : [null]).map(u=>u ? crewColor(u) : '#8a96a8');
+  const n=cs.length, bar=[], tint=[];
+  cs.forEach((c,i)=>{
+    const a=(i*100/n).toFixed(3)+'%', z=((i+1)*100/n).toFixed(3)+'%', t=hexA(c,.24);
+    bar.push(`${c} ${a}`, `${c} ${z}`); tint.push(`${t} ${a}`, `${t} ${z}`);
+  });
+  return `border-left:0;padding:3px 6px 5px;background:linear-gradient(90deg,${bar.join(',')}) left bottom/100% 3px no-repeat,linear-gradient(90deg,${tint.join(',')})`;
+}
 function crewTint(c){ try{ return hexA(c,.16); }catch(e){ return c; } }
 function crewAvatarHTML(username){
   return `<span class="crewAv" style="${pcStyle(crewColor(username))}" title="${esc(crewName(username))}">${esc(crewInitial(username))}</span>`;
