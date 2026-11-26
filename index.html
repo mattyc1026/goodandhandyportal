@@ -1259,17 +1259,16 @@ html.dark{ --cv-unassigned:#6f7c92; --cv-tape-track:#26324a; --cv-wknd:#131c2c; 
 .cvSeg button.on{background:#fff;color:#0f2647;box-shadow:0 2px 6px rgba(0,0,0,.18);}
 
 /* People */
-.crewAv{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--pc,#0f2647);color:var(--pc-on,#fff);font-size:.72rem;font-weight:800;line-height:1;box-shadow:0 0 0 2px var(--paper);}
-.crewChip .crewAv{box-shadow:none;}
-.crewChip.on{background:var(--pc);border-color:var(--pc);color:var(--pc-on,#fff);}
-.crewChip.on .crewAv{background:#fff;color:var(--pc-tx,var(--pc));}
-.crewChip.on .crewAv.all{box-shadow:0 0 0 2px #fff;}
+/* Everyone is drawn the same way: names and initials stay in the normal text
+   color, and each person's color shows as the ring, tint and side stripe. */
+.crewAv{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:color-mix(in srgb,var(--pc,#0f2647) 30%,var(--paper));color:var(--ink);font-size:.72rem;font-weight:800;line-height:1;box-shadow:inset 0 0 0 2px var(--pc,#0f2647),0 0 0 2px var(--paper);}
+.crewChip .crewAv{box-shadow:inset 0 0 0 2px var(--pc);}
+.crewChip .crewAv.all{box-shadow:none;}
+.crewChip.on{background:color-mix(in srgb,var(--pc) 22%,var(--paper));border-color:var(--pc);color:var(--ink);box-shadow:inset 0 0 0 1px var(--pc);}
 .cvWho{display:flex;flex-wrap:wrap;gap:7px;padding:2px;justify-content:center;}
 .cvWho .crewChip{flex-shrink:0;min-height:38px;padding:5px 14px 5px 6px;font-size:.88rem;gap:7px;color:var(--ink);background:var(--paper);box-shadow:var(--sh-1);}
-.cvWho .crewChip.on{color:var(--pc-on,#fff);background:var(--pc);}
-html.dark .cvWho .crewChip.on{background:var(--pc);color:var(--pc-on,#fff);border-color:var(--pc);}
+.cvWho .crewChip.on,html.dark .cvWho .crewChip.on{color:var(--ink);background:color-mix(in srgb,var(--pc) 22%,var(--paper));border-color:var(--pc);box-shadow:inset 0 0 0 1px var(--pc),var(--sh-1);}
 html.dark .cvWho .crewChip.isAll{--pc:#2f5a96 !important;}
-html.dark .crewChip.on .crewAv{background:#fff;}
 
 /* Month grid */
 .cvBoard{background:var(--paper);border-radius:var(--radius-lg);padding:10px 8px 8px;box-shadow:var(--sh-2);}
@@ -1403,8 +1402,8 @@ html.dark .hoChip.on{color:#111827;}
 .cvAddRow .cvAddJob{flex:1 1 auto;}
 .cvAddJob.off{color:var(--off-biz);border-color:color-mix(in srgb,var(--off-biz) 55%,transparent);background:color-mix(in srgb,var(--off-biz) 7%,transparent);}
 .cvOffChip{display:block;font-size:.62em;font-weight:800;line-height:1.25;padding:1px 4px;border-radius:4px;color:var(--pc);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 16%,transparent) 0 4px,color-mix(in srgb,var(--pc) 7%,transparent) 4px 8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
-.cvOffChip,.cvOffRow .cvOffIc{color:var(--pc-tx,var(--pc));}
-html.dark .cvOffChip,html.dark .cvOffRow .cvOffIc{color:var(--pc-txd,var(--pc));}
+.cvOffChip{color:var(--ink);border-left:3px solid var(--pc);}
+.cvOffRow .cvOffIc{color:var(--ink);box-shadow:inset 0 0 0 2px var(--pc);}
 .cvDay.closed,.cvWDay.closed{background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--off-biz) 10%,transparent) 0 6px,transparent 6px 12px);}
 .cvOffRow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;margin-bottom:8px;border:1px dashed color-mix(in srgb,var(--pc) 55%,transparent);border-left:4px solid var(--pc);border-radius:12px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 9%,var(--paper)) 0 8px,var(--paper) 8px 16px);font:inherit;color:var(--ink);text-align:left;box-sizing:border-box;}
 button.cvOffRow{cursor:pointer;}
@@ -1463,7 +1462,6 @@ html.dark .cvAddJob{color:#ffb36b;}
 .crewChips{display:flex;flex-wrap:wrap;gap:8px;}
 .crewChip{--pc:#0f2647;display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:6px 14px 6px 7px;border-radius:999px;border:1.5px solid var(--line);background:var(--paper);color:var(--muted);font-weight:700;font-size:.88em;font-family:inherit;cursor:pointer;}
 .crewChip .ic{width:15px;height:15px;}
-.crewChip.on{background:var(--pc);border-color:var(--pc);color:var(--pc-on,#fff);}
 .schedCrewLine{color:var(--navy);font-weight:600;}
 .schedHead{flex-wrap:nowrap !important;align-items:center;}
 .schedHead h2{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;}
@@ -5714,7 +5712,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112606;
+var APP_BUILD=2026112607;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9605,23 +9603,8 @@ function hexA(hex, a){
   const n=parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h, 16);
   return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
 }
-/* Readable text for any crew color: on top of the color, on a light page, on a dark page. */
-function hexRGB(hex){ const h=String(hex).replace('#',''); const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
-function relLum(rgb){ const f=v=>{v/=255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);}; return .2126*f(rgb[0])+.7152*f(rgb[1])+.0722*f(rgb[2]); }
-function contrastRGB(a,b){ const x=relLum(a), y=relLum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); }
-function mixRGB(a,b,t){ return a.map((v,i)=>Math.round(v+(b[i]-v)*t)); }
-function rgbHex(c){ return '#'+c.map(v=>v.toString(16).padStart(2,'0')).join(''); }
-function readableOn(c, bg){
-  const rgb=hexRGB(c), back=hexRGB(bg), toward=relLum(back)>.5?[0,0,0]:[255,255,255];
-  for(let t=0;t<=1;t+=.05){ const m=mixRGB(rgb,toward,t); if(contrastRGB(m,back)>=4.5) return rgbHex(m); }
-  return rgbHex(toward);
-}
-function pcStyle(c){
-  if(!/^#[0-9a-f]{3,6}$/i.test(String(c))) return `--pc:${c}`;
-  const rgb=hexRGB(c), on=contrastRGB(rgb,[255,255,255])>=contrastRGB(rgb,[15,38,71]) ? '#fff' : '#0f2647';
-  return `--pc:${c};--pc-on:${on};--pc-tx:${readableOn(c,'#ffffff')};--pc-txd:${readableOn(c,'#161f30')}`;
-}
-function crewTint(c){ try{ return hexA(c, relLum(hexRGB(c))>.6 ? .45 : .13); }catch(e){ return hexA(c,.13); } }
+function pcStyle(c){ return `--pc:${c}`; }
+function crewTint(c){ try{ return hexA(c,.16); }catch(e){ return c; } }
 function crewAvatarHTML(username){
   return `<span class="crewAv" style="${pcStyle(crewColor(username))}" title="${esc(crewName(username))}">${esc(crewInitial(username))}</span>`;
 }
