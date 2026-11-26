@@ -3025,27 +3025,42 @@ html.hc .fgPerson .fgLabel,html.hc .fgPerson .fgPPhone{color:var(--hc-fg);}
 .fgPhones .fgAlt .fgValue{font-size:.95em;}
 @media (max-width:600px){ .fgPhones .fgAlt .fgValue{font-size:.92em;} }
 /* Edit form: the customer, then the other people on the job in pink sections */
-.ceMain{display:flex;flex-direction:column;gap:6px;}
-.ceSec{
-  border:1px solid color-mix(in srgb,var(--pink-ink) 22%,var(--line));border-top:4px solid var(--pink-ink);
-  border-radius:var(--radius);background:linear-gradient(90deg,var(--pink) 0%,var(--paper) 70%);
-  margin-top:10px;overflow:hidden;
+.ceMain{display:flex;flex-direction:column;gap:10px;}
+/* Each group is tinted to match the card it fills on the job screen. */
+.ceC--name{--ce-ink:var(--navy);--ce-tint:color-mix(in srgb,var(--navy) 10%,var(--paper));}
+.ceC--phone{--ce-ink:var(--phone-green-ink);--ce-tint:var(--phone-green);}
+.ceC--email{--ce-ink:var(--cyan-ink);--ce-tint:var(--cyan);}
+.ceC--addr{--ce-ink:var(--redb);--ce-tint:var(--red);}
+.ceC--alt{--ce-ink:var(--pink-ink);--ce-tint:var(--pink);}
+.ceC--ho{--ce-ink:var(--brown-ink);--ce-tint:var(--brown);}
+.ceC--access{--ce-ink:var(--blueb);--ce-tint:var(--blue);}
+.ceSec,.ceBox{
+  border:1px solid color-mix(in srgb,var(--ce-ink) 22%,var(--line));border-top:4px solid var(--ce-ink);
+  border-radius:var(--radius);background:linear-gradient(90deg,var(--ce-tint) 0%,var(--paper) 70%);
 }
+.ceSec{margin-top:10px;overflow:hidden;}
+.ceBox{display:flex;flex-direction:column;gap:6px;padding:12px 16px 14px;}
+.ceC--access{margin-top:10px;}
+.ceBox .kv b{color:var(--ce-ink);}
+.ceBox .accessFields{margin:0 !important;}
+.ceBox .accField span{color:var(--ce-ink);}
+.ceBox .accChk input{accent-color:var(--ce-ink);}
+html.hc .ceBox .kv b,html.hc .ceSecBody .kv b,html.hc .ceSecTitle,html.hc .ceBox .accField span{color:var(--hc-fg);}
 .ceSecHead{
   display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;min-height:50px;box-sizing:border-box;
   background:none;border:0;font:inherit;color:inherit;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;
 }
-.ceSecTitle{font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:.74em;color:var(--pink-ink);overflow-wrap:anywhere;}
+.ceSecTitle{font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:.74em;color:var(--ce-ink);overflow-wrap:anywhere;}
 .ceSecText{display:flex;flex-direction:column;gap:1px;min-width:0;margin-right:auto;}
 .ceSecOpt{font-size:.7em;font-weight:600;color:var(--muted);white-space:nowrap;}
-.ceSecIcon{display:flex;color:var(--pink-ink);transition:transform var(--t-press,.15s) var(--e-out,ease);}
-.ceSecIcon{width:28px;height:28px;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--pink-ink) 12%,transparent);flex:0 0 auto;}
+.ceSecIcon{display:flex;color:var(--ce-ink);transition:transform var(--t-press,.15s) var(--e-out,ease);}
+.ceSecIcon{width:28px;height:28px;align-items:center;justify-content:center;border-radius:50%;background:color-mix(in srgb,var(--ce-ink) 12%,transparent);flex:0 0 auto;}
 .ceSecIcon svg{width:16px;height:16px;}
 .ceSec.open .ceSecIcon{transform:rotate(45deg);}
 .ceSecHead:focus-visible{outline:3px solid var(--navy2);outline-offset:-3px;}
 .ceSecBody{display:flex;flex-direction:column;gap:6px;padding:0 16px 16px;}
 .ceSecBody[hidden]{display:none;}
-.ceSecBody .kv b{color:var(--pink-ink);}
+.ceSecBody .kv b{color:var(--ce-ink);}
 .ceNote{width:100%;padding:7px 9px;border-radius:8px;border:1.5px solid var(--line);margin-top:3px;font-family:inherit;resize:vertical;box-sizing:border-box;font-size:inherit;background:var(--paper);color:var(--ink);}
 .modalHeadCust.editing .accessFields{margin-top:10px;}
 .hoNote{
@@ -5690,7 +5705,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112601;
+var APP_BUILD=2026112602;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -12273,20 +12288,20 @@ let CE_OPEN={};
 function custEditFieldsHTML(c){
   c=c||{};
   return `<div class="ceMain">
-      ${custField('name','Full Name', c.name)}
-      ${phoneField('phone','Primary Phone Number', c.phone)}
-      ${phoneField('phone2','Alternate Phone Number (optional)', c.phone2)}
-      ${custField('email','Email (optional)', c.email)}
-      ${addressField('address','Address', c.address)}
+      <div class="ceBox ceC--name">${custField('name','Full Name', c.name)}</div>
+      <div class="ceBox ceC--phone">${phoneField('phone','Primary Phone Number', c.phone)}
+      ${phoneField('phone2','Alternate Phone Number (optional)', c.phone2)}</div>
+      <div class="ceBox ceC--email">${custField('email','Email (optional)', c.email)}</div>
+      <div class="ceBox ceC--addr">${addressField('address','Address', c.address)}</div>
     </div>
     ${contactSecHTML('alt', 'Alternate Contact', 'altPhoneName', 'altPhone', 'altPhoneNote', c)}
     ${contactSecHTML('ho', 'Homeowner', 'homeownerName', 'homeownerPhone', 'homeownerNote', c)}
-    ${accessFieldsHTML(c)}`;
+    <div class="ceBox ceC--access">${accessFieldsHTML(c)}</div>`;
 }
 function contactSecHTML(key, title, kName, kPhone, kNote, c){
   const has=[kName,kPhone,kNote].some(k=>String(c[k]||'').trim());
   const open=has || !!CE_OPEN[key];
-  return `<div class="ceSec${open?' open':''}" id="ceSec_${key}">
+  return `<div class="ceSec ceC--${key}${open?' open':''}" id="ceSec_${key}">
     <button type="button" class="ceSecHead" aria-expanded="${open}" aria-controls="ceBody_${key}" onclick="toggleCeSec('${key}')">
       <span class="ceSecText"><span class="ceSecTitle">${title}</span><span class="ceSecOpt">Optional</span></span><span class="ceSecIcon">${icon('plus')}</span>
     </button>
