@@ -477,7 +477,11 @@ html.hc header.top{background:#000;color:#fff;}
   outline:none;background:var(--paper);border-color:var(--orange);
   box-shadow:0 0 0 3px rgba(232,121,26,.14);
 }
-.globalSearchBar button{white-space:nowrap;flex:0 0 auto;}
+.globalSearchBar{justify-content:flex-end;}
+.gsField{position:relative;flex:1;max-width:480px;display:flex;align-items:center;}
+.gsField .ic{position:absolute;left:14px;width:16px;height:16px;opacity:.65;pointer-events:none;color:inherit;}
+.globalSearchBar .gsField input{flex:1;max-width:none;width:100%;border-radius:999px;padding:10px 16px 10px 38px;-webkit-appearance:none;appearance:none;}
+.globalSearchBar .gsField input::-webkit-search-cancel-button{display:none;}
 header.top .brand{font-family:var(--f-display);font-size:1.35em;}
 header.top .brand span{color:var(--orange);}
 .userBadge{display:flex;align-items:center;gap:12px;font-size:.85em;}
@@ -2000,7 +2004,7 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
   /* ---- header ---- */
   header.top{padding:12px 16px;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:60;}
   .globalSearchBar{padding:8px 12px;}
-  .globalSearchBar input{max-width:none;}
+  .globalSearchBar input,.gsField{max-width:none;}
   header.top .brand img{width:42px;height:42px;}
   .userBadge{font-size:.85em;gap:10px;flex-wrap:wrap;}
   .logoutBtn{padding:9px 14px;min-height:40px;font-size:.85em;}
@@ -3673,6 +3677,8 @@ html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
   background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.16);color:#fff;
 }
 .globalSearchBar input::placeholder{color:rgba(255,255,255,.5);}
+.globalSearchBar .gsField{color:#fff;}
+html.hc .globalSearchBar .gsField{color:var(--hc-fg);}
 .globalSearchBar input:focus{
   background:rgba(255,255,255,.15);border-color:var(--orange);
   box-shadow:0 0 0 3px rgba(232,121,26,.28);color:#fff;
@@ -4844,8 +4850,7 @@ window._bootSafety = setTimeout(function(){
     <button class="btn secondary" onclick="dismissPwNudge()">Later</button>
   </div>
   <div class="globalSearchBar" id="globalSearchBar">
-    <input type="text" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}">
-    <button class="btn secondary" onclick="runGlobalSearch()">Search</button>
+    <label class="gsField"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" enterkeyhint="search" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}"></label>
   </div>
   <div class="tabsBarWrap" id="tabsBarWrap">
     <nav class="tabs" id="tabsNav">
@@ -5712,7 +5717,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112607;
+var APP_BUILD=2026112608;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
