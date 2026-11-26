@@ -5690,7 +5690,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112547;
+var APP_BUILD=2026112548;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9604,8 +9604,8 @@ function toggleSchedCrew(username, ok){
   if(i===-1 && !ok){
     const off=crewOffForBooking(username);
     if(off.length){
-      if(!isAdminUser()){ toast(`${crewName(username)} is off ${offDatesText(off[0].o)}.`); return; }
-      askYesNo(off.map(({o})=>`${crewName(username)} is off ${offDatesText(o)}${o.note?' ('+o.note+')':''}`).join('\n')+'\n\nPut them on this anyway?', yes=>{ if(yes) toggleSchedCrew(username, true); }, {yes:'Add Anyway', no:'Go Back'});
+      if(!isAdminUser()){ toast(`${offWho(off[0].o)}: ${offDatesText(off[0].o)}.`); return; }
+      askYesNo(off.map(({o})=>`${offWho(o)}: ${offDatesText(o)}${offNote(o)?' ('+offNote(o)+')':''}`).join('\n')+'\n\nPut them on this anyway?', yes=>{ if(yes) toggleSchedCrew(username, true); }, {yes:'Add Anyway', no:'Go Back'});
       return;
     }
   }
@@ -9641,9 +9641,11 @@ function offHits(o, st, et){
   if(o.open) return toMin(st)<toMin(o.startTime) || toMin(et)>toMin(o.endTime);
   return toMin(st)<toMin(o.endTime) && toMin(o.startTime)<toMin(et);
 }
+/* Part days are kept as the hours open (the business) or working (a person). */
 function offWho(o){
-  if(o.who!=='business') return crewName(o.who)+' Off';
-  if(o.open && offIsPart(o)) return `Good & Handy Open ${fmtClock(o.startTime)} – ${fmtClock(o.endTime)}`;
+  const hrs=(o.open && offIsPart(o)) ? `${fmtClock(o.startTime)} – ${fmtClock(o.endTime)}` : '';
+  if(o.who!=='business') return crewName(o.who)+(hrs ? ' Working '+hrs : ' Off');
+  if(hrs) return `Good & Handy Open ${hrs}`+(o.note?' for '+o.note:'');
   return 'Good & Handy Closed'+(o.note?' for '+o.note:'');
 }
 /* A person's note goes after their name; the business's reason is already in its title. */
@@ -9671,7 +9673,7 @@ function bookingOffIssues(days, st, et, dayTimes, crew){
 function offIssueText(iss){
   const lines=[];
   iss.closed.forEach(({o})=>lines.push(`${offWho(o)}: ${offDatesText(o)}`));
-  iss.people.forEach(({o})=>lines.push(`${crewName(o.who)} is off ${offDatesText(o)}${o.note?' ('+o.note+')':''}`));
+  iss.people.forEach(({o})=>lines.push(`${offWho(o)}: ${offDatesText(o)}${offNote(o)?' ('+offNote(o)+')':''}`));
   return lines.join('\n');
 }
 /* People off for any part of the booking's picked days and hours. */
@@ -9702,7 +9704,7 @@ function offRowsHTML(iso, who){
   return offOnDay(iso).filter(o=>who==='all' || !who || o.who==='business' || o.who===who).map(o=>{
     const c=o.who==='business' ? 'var(--off-biz)' : crewColor(o.who);
     const inner=`<span class="cvOffIc">${icon(o.who==='business'?'lock':'moon')}</span>
-      <span class="cvMain"><span class="cvName">${esc(offWho(o))}</span>${(o.who==='business' && o.open) ? '' : `<span class="cvType">${esc(offHours(o))}${offNote(o)?' &middot; '+esc(offNote(o)):''}</span>`}</span>`;
+      <span class="cvMain"><span class="cvName">${esc(offWho(o))}</span>${(()=>{ const sub=[o.open && offIsPart(o) ? '' : offHours(o), offNote(o)].filter(Boolean).join(' · '); return sub ? `<span class="cvType">${esc(sub)}</span>` : ''; })()}</span>`;
     return admin
       ? `<button type="button" class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}" onclick="openDayOff(null,'${o.id}')">${inner}</button>`
       : `<div class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}">${inner}</div>`;
@@ -9743,10 +9745,10 @@ function renderDayOff(){
       ${D.len==='range'?`<label class="moneyFld"><span>Last Day</span><input id="doEnd" type="date" value="${esc(D.end)}"></label>`:''}
     </div>
     ${D.len==='part'?`<div class="moneyGrid">
-      <div class="moneyFld"><span>${D.who.indexOf('business')!==-1?'Open From':'Off From'}</span>${timeFieldHTML('doST', D.startTime, "DOFF.startTime=this.value", D.who.indexOf('business')!==-1?'Open from':'Off from')}</div>
-      <div class="moneyFld"><span>${D.who.indexOf('business')!==-1?'Open Until':'Off Until'}</span>${timeFieldHTML('doET', D.endTime, "DOFF.endTime=this.value", D.who.indexOf('business')!==-1?'Open until':'Off until')}</div>
+      <div class="moneyFld"><span>${D.who.indexOf('business')!==-1?'Open From':'Working From'}</span>${timeFieldHTML('doST', D.startTime, "DOFF.startTime=this.value", D.who.indexOf('business')!==-1?'Open from':'Working from')}</div>
+      <div class="moneyFld"><span>${D.who.indexOf('business')!==-1?'Open Until':'Working Until'}</span>${timeFieldHTML('doET', D.endTime, "DOFF.endTime=this.value", D.who.indexOf('business')!==-1?'Open until':'Working until')}</div>
     </div>`:''}
-    ${(D.who.indexOf('business')!==-1 && D.len==='part') ? '' : `<label class="moneyFld wide"><span>${D.who.indexOf('business')!==-1?'Reason':'Note'}</span><input id="doNote" type="text" autocomplete="off" value="${esc(D.note)}"></label>`}
+    <label class="moneyFld wide"><span>${D.who.indexOf('business')!==-1?'Reason':'Note'}</span><input id="doNote" type="text" autocomplete="off" value="${esc(D.note)}"></label>
     <div class="errMsg" id="doErr"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveDayOff()">Save</button>
@@ -9785,7 +9787,7 @@ function saveDayOff(){
   }
   if(!DB.calc) DB.calc={};
   let list=daysOffList().slice();
-  const rec=w=>({who:w, start:D.start, end, startTime:D.len==='part'?D.startTime:'', endTime:D.len==='part'?D.endTime:'', open:D.len==='part' && w==='business', note:(D.len==='part' && w==='business') ? '' : (D.note||'').trim()});
+  const rec=w=>({who:w, start:D.start, end, startTime:D.len==='part'?D.startTime:'', endTime:D.len==='part'?D.endTime:'', open:D.len==='part', note:(D.note||'').trim()});
   if(D.id){
     const i=list.findIndex(x=>x.id===D.id);
     if(i>=0) list[i]=Object.assign({}, list[i], rec(D.who[0]), {editedBy:CURRENT_USER.username, editedAt:Date.now()});
