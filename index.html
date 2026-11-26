@@ -127,6 +127,7 @@
   --s-sj:#c8e5a0; --s-sj-b:#7cc11c;
   --s-js:#d5ecda; --s-js-b:#2b9e45;
   --s-ip:#cfefed; --s-ip-b:#11ada3;
+  --s-on:#c6f8ea; --s-on-b:#1fdcb0;
   --s-bi:#9dd2f2; --s-bi-b:#1593e0;
   --s-si:#bfc1f0; --s-si-b:#4349d4;
   --s-sv:#e8dbf7; --s-sv-b:#8d4dd6;
@@ -239,6 +240,7 @@ html.dark{
   --s-sj:#3a5923; --s-sj-b:#a1d25c;
   --s-js:#17342e; --s-js-b:#66b979;
   --s-ip:#123741; --s-ip-b:#54c4bd;
+  --s-on:#0e3f36; --s-on-b:#2ff5c8;
   --s-bi:#13486e; --s-bi-b:#57b1e9;
   --s-si:#21285c; --s-si-b:#7f83e2;
   --s-sv:#2b244b; --s-sv-b:#ad7fe1;
@@ -289,6 +291,7 @@ html.hc{
   --s-sj:#79e0a2; --s-sj-b:#0b5c34;
   --s-js:#b3ecc8; --s-js-b:#13703f;
   --s-ip:#a6efdc; --s-ip-b:#0a6652;
+  --s-on:#9cf2dd; --s-on-b:#00604c;
   --s-bi:#87a8ec; --s-bi-b:#0a2a70;
   --s-si:#a9c1f2; --s-si-b:#1d3f8f;
   --s-sv:#c9ccf7; --s-sv-b:#353aa3;
@@ -335,6 +338,7 @@ html.dark.hc{
   --s-sj:#004d2c; --s-sj-b:#63f0a6;
   --s-js:#00331d; --s-js-b:#7af5b4;
   --s-ip:#003a30; --s-ip-b:#6ff5d8;
+  --s-on:#00453a; --s-on-b:#62ffdb;
   --s-bi:#00266b; --s-bi-b:#8fb3ff;
   --s-si:#0d2a5e; --s-si-b:#a9c4ff;
   --s-sv:#1c1f55; --s-sv-b:#c3c6ff;
@@ -751,6 +755,7 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 .woRow.st-yellow-send{border-color:var(--s-se-b);border-left-color:var(--s-se-b);border-left-width:8px;}
 .woRow.st-green{border-left-color:var(--s-js-b);}
 .woRow.st-green-lite{border-left-color:var(--s-ip-b);}
+.woRow.st-onsite{border-left-color:var(--s-on-b);}
 .woRow.st-green-bold{border-color:var(--s-sj-b);border-left-color:var(--s-sj-b);border-left-width:8px;}
 .woRow.st-blue{border-left-color:var(--s-sv-b);}
 .woRow.st-blue-bold{border-color:var(--s-bi-b);border-left-color:var(--s-bi-b);border-left-width:8px;}
@@ -799,6 +804,8 @@ main{padding:26px 30px;max-width:1300px;margin:0 auto;}
 .tag.awaiting-approval{background:var(--s-pa-b);color:#2a2200;}
 .tag.job-sched{background:var(--s-js-b);color:#fff;}
 .tag.in-prog{background:var(--s-ip-b);color:#fff;}
+.tag.on-site{background:var(--s-on-b);color:#0e1522;}
+html.hc .tag.on-site{color:var(--hc-bg);}
 .tag.survey{background:var(--s-sv-b);color:#fff;}
 /* closed */
 .tag.hist{background:var(--grey);color:var(--greyb);border-color:var(--line);}
@@ -1617,6 +1624,8 @@ html.dark .cvAddJob{color:#ffb36b;}
 .stageBtn.st-green::before{background:var(--s-js-b);}
 .stageBtn.st-green-lite{background-image:linear-gradient(90deg,var(--s-ip),var(--paper) 80%);}
 .stageBtn.st-green-lite::before{background:var(--s-ip-b);}
+.stageBtn.st-onsite{background-image:linear-gradient(90deg,var(--s-on),var(--paper) 80%);}
+.stageBtn.st-onsite::before{background:var(--s-on-b);}
 .stageBtn.st-green-bold{background-image:linear-gradient(90deg,var(--s-sj),var(--paper) 95%);border-color:var(--s-sj-b);}
 .stageBtn.st-green-bold::before{background:var(--s-sj-b);width:4px;}
 .stageBtn.st-blue{background-image:linear-gradient(90deg,var(--s-sv),var(--paper) 80%);}
@@ -3546,6 +3555,7 @@ html.hc body{background-image:none;}
 .woRow.st-yellow::before{background:var(--s-pa-b);}
 .woRow.st-green::before{background:var(--s-js-b);}
 .woRow.st-green-lite::before{background:var(--s-ip-b);}
+.woRow.st-onsite::before{background:var(--s-on-b);}
 .woRow.st-blue::before{background:var(--s-sv-b);}
 .woRow.st-grey::before{background:var(--greyb);}
 .woRow.st-red-bold::before{background:var(--s-pi-b);width:6px;}
@@ -3567,6 +3577,7 @@ html.hc body{background-image:none;}
 .woRow.st-yellow{background-image:linear-gradient(90deg,var(--s-pa),var(--paper) 42%);}
 .woRow.st-green{background-image:linear-gradient(90deg,var(--s-js),var(--paper) 42%);}
 .woRow.st-green-lite{background-image:linear-gradient(90deg,var(--s-ip),var(--paper) 42%);}
+.woRow.st-onsite{background-image:linear-gradient(90deg,var(--s-on),var(--paper) 42%);}
 .woRow.st-blue{background-image:linear-gradient(90deg,var(--s-sv),var(--paper) 42%);}
 .woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 42%);}
 .woRow.st-red-bold{background-image:linear-gradient(90deg,var(--s-pi),var(--paper) 58%);border-color:var(--s-pi-b);}
@@ -3621,12 +3632,13 @@ html.hc .woRow.checkedInGlow::before{width:11px;box-shadow:none;}
   .woRow{padding-left:26px;border-left-width:1px;}
   .woRow .woMeta{flex-direction:row;align-items:center;text-align:left;padding-left:0;flex-wrap:wrap;}
   .woRow .woName{font-size:1.35em;}
-  .woRow.st-red,.woRow.st-red-lite,.woRow.st-yellow,.woRow.st-green,.woRow.st-green-lite,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
+  .woRow.st-red,.woRow.st-red-lite,.woRow.st-yellow,.woRow.st-green,.woRow.st-green-lite,.woRow.st-onsite,.woRow.st-blue,.woRow.st-grey{background-size:100% 100%;}
   .woRow.st-red{background-image:linear-gradient(90deg,var(--s-ps),var(--paper) 72%);}
   .woRow.st-red-lite{background-image:linear-gradient(90deg,var(--s-pc),var(--paper) 72%);}
   .woRow.st-yellow{background-image:linear-gradient(90deg,var(--s-pa),var(--paper) 72%);}
   .woRow.st-green{background-image:linear-gradient(90deg,var(--s-js),var(--paper) 72%);}
   .woRow.st-green-lite{background-image:linear-gradient(90deg,var(--s-ip),var(--paper) 72%);}
+  .woRow.st-onsite{background-image:linear-gradient(90deg,var(--s-on),var(--paper) 72%);}
   .woRow.st-blue{background-image:linear-gradient(90deg,var(--s-sv),var(--paper) 72%);}
   .woRow.st-grey{background-image:linear-gradient(90deg,var(--grey),var(--paper) 72%);}
   .woRow.st-red-bold{background-image:linear-gradient(90deg,var(--s-pi),var(--paper) 88%);}
@@ -4655,6 +4667,7 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.9-5.3-2.8-5.3 2.8 1-5.9L5.5 9.7l5.9-.9z"/></symbol>
   <!-- Nav tab icons -->
   <symbol id="i-nav-estimate" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 10.2v8.6"/><path d="M14.1 12.2c-.35-.6-1.1-1-2-1-1.2 0-2.1.6-2.1 1.45 0 2.2 4.3 1.25 4.3 3.4 0 .9-.95 1.55-2.2 1.55-.95 0-1.8-.4-2.2-1.05"/></symbol>
+  <symbol id="i-nav-ongoing" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
   <symbol id="i-nav-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8 13.3h.01M12 13.3h.01M16 13.3h.01M8 16.8h.01M12 16.8h.01" stroke-width="2.4"/></symbol>
   <symbol id="i-nav-invoice" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.8 14.6l2.2 2.2 4.3-4.4"/></symbol>
   <symbol id="i-nav-surveys" viewBox="0 0 24 24"><path d="M12.00 0.80L12.97 3.37L15.71 3.49L13.57 5.21L14.29 7.86L12.00 6.35L9.71 7.86L10.43 5.21L8.29 3.49L11.03 3.37zM19.32 6.12L20.29 8.69L23.03 8.82L20.89 10.53L21.62 13.18L19.32 11.67L17.03 13.18L17.75 10.53L15.61 8.82L18.35 8.69zM16.53 14.73L17.50 17.29L20.24 17.42L18.10 19.14L18.82 21.78L16.53 20.28L14.23 21.78L14.96 19.14L12.82 17.42L15.56 17.29zM7.47 14.73L8.44 17.29L11.18 17.42L9.04 19.14L9.77 21.78L7.47 20.28L5.18 21.78L5.90 19.14L3.76 17.42L6.50 17.29zM4.68 6.12L5.65 8.69L8.39 8.82L6.25 10.53L6.97 13.18L4.68 11.67L2.38 13.18L3.11 10.53L0.97 8.82L3.71 8.69z" fill="currentColor" stroke="none"/></symbol>
@@ -4861,6 +4874,7 @@ window._bootSafety = setTimeout(function(){
       <button data-tab="presite" onclick="switchTab('presite')"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span class="tabLbl"><span class="tabFull">Pre-Site Inspections</span><span class="tabShort">Pre-Site</span></span> <span class="count" id="cnt-presite">0</span></button>
       <button data-tab="estimates" onclick="switchTab('estimates')"><svg class="ic" aria-hidden="true"><use href="#i-nav-estimate"/></svg><span class="tabLbl">Estimates</span> <span class="count" id="cnt-estimates">0</span></button>
       <button data-tab="inprogress" onclick="switchTab('inprogress')"><svg class="ic" aria-hidden="true"><use href="#i-nav-calendar"/></svg><span class="tabLbl">Scheduling</span> <span class="count" id="cnt-inprogress">0</span></button>
+      <button data-tab="ongoing" onclick="switchTab('ongoing')"><svg class="ic" aria-hidden="true"><use href="#i-nav-ongoing"/></svg><span class="tabLbl">Ongoing</span> <span class="count" id="cnt-ongoing">0</span></button>
       <button data-tab="invoices" onclick="switchTab('invoices')"><svg class="ic" aria-hidden="true"><use href="#i-nav-invoice"/></svg><span class="tabLbl">Invoices</span> <span class="count" id="cnt-invoices">0</span></button>
       <button data-tab="surveys" onclick="switchTab('surveys')"><svg class="ic" aria-hidden="true"><use href="#i-nav-surveys"/></svg><span class="tabLbl">Surveys</span> <span class="count" id="cnt-surveys">0</span></button>
       <button data-tab="jobhistory" onclick="switchTab('jobhistory')"><svg class="ic" aria-hidden="true"><use href="#i-nav-history"/></svg><span class="tabLbl">Job History</span></button>
@@ -5063,7 +5077,7 @@ function setWoSort(val){
 }
 /* Progression order matches stage: bold red -> red -> bold yellow -> yellow
    -> bold green -> green -> bold blue -> blue (earliest to latest stage) */
-const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','st-yellow-send','st-yellow','st-green-bold','st-green','st-green-lite','st-blue-bold','st-blue-send','st-blue','st-grey'];
+const PROGRESSION_ORDER=['st-red-bold','st-red','st-red-lite','st-yellow-bold','st-yellow-send','st-yellow','st-green-bold','st-green','st-green-lite','st-onsite','st-blue-bold','st-blue-send','st-blue','st-grey'];
 /* Applies a stage change, saves, then re-renders so the job moves into its new
    tab. Callers pass a function that mutates the work order. Kept as one helper
    so every stage transition saves, recounts and re-renders in the same order
@@ -5157,7 +5171,7 @@ function workOrderCurrentTab(wo){
   if(inSurveysList(wo)) return 'surveys';
   if(inSendInvoiceList(wo)) return 'invoices';
   if(inBuildInvoiceList(wo)) return 'invoices';
-  if(inInvoiceInProgressList(wo)) return 'inprogress';
+  if(inInvoiceInProgressList(wo)) return 'ongoing';
   if(inJobScheduledList(wo)) return 'inprogress';
   if(inScheduleJobList(wo)) return 'inprogress';
   if(inEstimatePendingApprovalList(wo)) return 'estimates';
@@ -5720,7 +5734,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112609;
+var APP_BUILD=2026112610;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7071,7 +7085,7 @@ function statusClass(wo){
   if(wo.invoiceDone && wo.invoiceSent) return 'st-blue'; // Surveys
   if(wo.invoiceDone) return 'st-blue-send';            // Invoices > Send Invoice
   if(wo.jobComplete) return 'st-blue-bold';            // Invoices > Build Invoice
-  if(wo.jobScheduled && wo.jobStarted) return 'st-green-lite'; // In Progress > In Progress
+  if(wo.jobScheduled && wo.jobStarted) return jobCheckedIn(wo) ? 'st-onsite' : 'st-green-lite'; // Ongoing > In Progress / Ongoing
   if(wo.jobScheduled) return 'st-green';                // In Progress > Scheduled
   if(wo.estimateApproved) return 'st-green-bold';       // In Progress > Schedule Job
   if(wo.estimateDone && wo.estimateSent) return 'st-yellow'; // Estimates > Pending Approval
@@ -7125,7 +7139,7 @@ function statusTag(wo){
   if(wo.invoiceDone && wo.invoiceSent) return '<span class="tag survey">Awaiting Survey</span>';
   if(wo.invoiceDone) return '<span class="tag send-inv">Send Invoice</span>';
   if(wo.jobComplete) return '<span class="tag build-inv">Build Invoice</span>';
-  if(wo.jobScheduled && wo.jobStarted) return '<span class="tag in-prog">In Progress</span>';
+  if(wo.jobScheduled && wo.jobStarted) return jobCheckedIn(wo) ? '<span class="tag on-site">In Progress</span>' : '<span class="tag in-prog">Ongoing</span>';
   if(wo.jobScheduled) return '<span class="tag job-sched">Scheduled</span>';
   if(wo.estimateApproved) return '<span class="tag go">Schedule Job</span>';
   if(wo.estimateDone && wo.estimateSent) return '<span class="tag awaiting-approval">Pending Approval</span>';
@@ -7175,7 +7189,12 @@ function inScheduleJobList(wo){ return inEstimatesList(wo) && !!wo.estimateAppro
 /* In Progress sub-lists past Schedule Job. A SCHD note puts the job in
    Scheduled; it moves to In Progress on its first Whole Job day. */
 function inJobScheduledList(wo){ return inInvoicesList(wo) && !wo.jobComplete && !wo.jobStarted; }
+/* Ongoing tab: a started job sits in Ongoing, and in In Progress while
+   someone is checked in on a job day. Checking out sends it back to Ongoing. */
 function inInvoiceInProgressList(wo){ return inInvoicesList(wo) && !wo.jobComplete && !!wo.jobStarted; }
+function jobCheckedIn(wo){ return (wo.scheduleDates||[]).some(e=>e.type!=='presite' && (e.dayLogs||[]).some(l=>openSession(l))); }
+function inOngoingList(wo){ return inInvoiceInProgressList(wo) && !jobCheckedIn(wo); }
+function inOnSiteList(wo){ return inInvoiceInProgressList(wo) && jobCheckedIn(wo); }
 function isoNextDay(iso){
   const [y,m,d]=iso.split('-').map(Number);
   const t=new Date(y, m-1, d+1);
@@ -7399,7 +7418,8 @@ function renderTabCounts(){
   setCount('cnt-workorders', DB.workOrders.filter(inWorkOrdersList).length);
   setCount('cnt-presite', DB.workOrders.filter(inPresiteList).length);
   setCount('cnt-estimates', DB.workOrders.filter(wo=>inEstimatesList(wo) && !inScheduleJobList(wo)).length);
-  setCount('cnt-inprogress', DB.workOrders.filter(wo=>inScheduleJobList(wo) || inJobScheduledList(wo) || inInvoiceInProgressList(wo)).length);
+  setCount('cnt-inprogress', DB.workOrders.filter(wo=>inScheduleJobList(wo) || inJobScheduledList(wo)).length);
+  setCount('cnt-ongoing', DB.workOrders.filter(inInvoiceInProgressList).length);
   setCount('cnt-invoices', DB.workOrders.filter(wo=>inBuildInvoiceList(wo) || inSendInvoiceList(wo)).length);
   setCount('cnt-surveys', DB.workOrders.filter(inSurveysList).length);
 }
@@ -7794,7 +7814,6 @@ function renderMain(){
   } else if(ACTIVE_TAB==='inprogress'){
     const schedule=DB.workOrders.filter(inScheduleJobList).sort((a,b)=>a.id-b.id);
     const scheduled=DB.workOrders.filter(inJobScheduledList).sort((a,b)=>a.id-b.id);
-    const inProgress=DB.workOrders.filter(inInvoiceInProgressList).sort((a,b)=>a.id-b.id);
     const cal=schedViewMode()==='calendar';
     html+=`<div class="listHeader schedTabHead"><div><h2>Scheduling</h2></div><div class="segSwitch" role="tablist" aria-label="Scheduling view">
       <button type="button" role="tab" aria-selected="${!cal}" class="${cal?'':'on'}" onclick="setSchedView('list')">List</button>
@@ -7802,7 +7821,10 @@ function renderMain(){
     if(cal){ html+=calViewHTML(); main.innerHTML=html; return; }
     html+=subGroupHTML('Schedule Job', schedule, {emptyText:'Nothing waiting to be scheduled right now.', emptyIcon:'activity'});
     html+=subGroupHTML('Scheduled', scheduled, {emptyText:'Nothing scheduled and waiting to start right now.', emptyIcon:'activity'});
-    html+=subGroupHTML('In Progress', inProgress, {emptyText:'Nothing in progress right now.', emptyIcon:'activity', action:'jobComplete', showCheckInOut:true});
+  } else if(ACTIVE_TAB==='ongoing'){
+    html+=`<div class="listHeader"><div><h2>Ongoing</h2></div></div>`;
+    html+=subGroupHTML('Ongoing', DB.workOrders.filter(inOngoingList).sort((a,b)=>a.id-b.id), {emptyText:'No ongoing jobs right now.', emptyIcon:'activity', action:'jobComplete', showCheckInOut:true});
+    html+=subGroupHTML('In Progress', DB.workOrders.filter(inOnSiteList).sort((a,b)=>a.id-b.id), {emptyText:'Nobody is checked in right now.', emptyIcon:'activity', action:'jobComplete', showCheckInOut:true});
   } else if(ACTIVE_TAB==='invoices'){
     const buildInvoice=DB.workOrders.filter(inBuildInvoiceList).sort((a,b)=>a.id-b.id);
     html+=`<div class="listHeader"><div><h2>Invoices</h2></div></div>`;
@@ -8107,7 +8129,7 @@ function applyCalendarSchedNote(wo, entries){
   } else if(n.type==='SCHD' && inScheduleJobList(wo)){
     wo.jobScheduled=true; wo.jobStarted=false; wo.jobStartHold=null;
     moved='Moved to Scheduled.';
-    if(wholeJobDayArrived(wo)){ wo.jobStarted=true; moved='Moved to In Progress.'; }
+    if(wholeJobDayArrived(wo)){ wo.jobStarted=true; moved='Moved to Ongoing.'; }
   }
   logStageChange(wo, stageBefore, n.type+' note added');
   return moved;
@@ -10100,7 +10122,7 @@ function advanceOnSchedule(wo, type){
   if(type!=='presite' && inScheduleJobList(wo)){
     wo.jobScheduled=true; wo.jobStarted=false; wo.jobStartHold=null;
     let msg='Moved to Scheduled.';
-    if(wholeJobDayArrived(wo)){ wo.jobStarted=true; msg='Moved to In Progress.'; }
+    if(wholeJobDayArrived(wo)){ wo.jobStarted=true; msg='Moved to Ongoing.'; }
     logStageChange(wo, before, 'job date added');
     return msg;
   }
@@ -10940,7 +10962,7 @@ function priorJobsFor(wo){
 }
 const STAGE_LABELS={
   workorders:'Work Orders', presite:'Pre-Site', estimates:'Estimates',
-  inprogress:'Scheduling', invoices:'Invoices', surveys:'Surveys',
+  inprogress:'Scheduling', ongoing:'Ongoing', invoices:'Invoices', surveys:'Surveys',
   jobhistory:'Job History'
 };
 function stageLabelFor(wo){
@@ -11064,7 +11086,7 @@ function submitFieldNote(id){
     movedMsg='Job scheduled. Moved to Scheduled.';
     if(wholeJobDayArrived(wo)){
       wo.jobStarted=true;
-      movedMsg='Job scheduled. Its first Whole Job day is here, so it moved to In Progress.';
+      movedMsg='Job scheduled. Its first Whole Job day is here, so it moved to Ongoing.';
     }
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
@@ -17221,7 +17243,8 @@ function adminDuplicateWorkOrder(id, clone){
 const ADMIN_STAGE_GROUPS=[
   ['Pre-Site Inspections',[['presite','Pre-Site Incomplete','st-red-bold',w=>inPresiteIncompleteList(w)],['presitescheduled','Pre-Site Scheduled','st-red',w=>inPresiteScheduledList(w)],['presitecomplete','Pre-Site Complete','st-red-lite',w=>inPresiteCompleteList(w)]]],
   ['Estimates',[['estimates','Build Estimate','st-yellow-bold',w=>inBuildEstimateList(w)],['sendestimate','Send Estimate','st-yellow-send',w=>inSendEstimateList(w)],['pendingapproval','Pending Approval','st-yellow',w=>inEstimatePendingApprovalList(w)]]],
-  ['Scheduling',[['schedulejob','Schedule Job','st-green-bold',w=>inScheduleJobList(w)],['jobscheduled','Scheduled','st-green',w=>inJobScheduledList(w)],['inprogress','In Progress','st-green-lite',w=>inInvoiceInProgressList(w)]]],
+  ['Scheduling',[['schedulejob','Schedule Job','st-green-bold',w=>inScheduleJobList(w)],['jobscheduled','Scheduled','st-green',w=>inJobScheduledList(w)],]],
+  ['Ongoing',[['inprogress','Ongoing','st-green-lite',w=>inOngoingList(w)],['onsite','In Progress','st-onsite',w=>inOnSiteList(w)]]],
   ['Invoices',[['invoices','Build Invoice','st-blue-bold',w=>inBuildInvoiceList(w)],['sendinvoice','Send Invoice','st-blue-send',w=>inSendInvoiceList(w)]]],
   ['Surveys',[['surveys','Surveys','st-blue',w=>inSurveysList(w)]]],
   ['Job History',[['jobhistory','Job History','st-grey',w=>inJobHistoryList(w)]]]
@@ -17235,7 +17258,8 @@ function adminStageButtonsHTML(id){
   return ADMIN_STAGE_GROUPS.map(([tab,list])=>`<div class="adminStageTab">${esc(tab)}</div>
     <div class="adminStageBtns">${list.map(([k,l,cls,test])=>{
       const cur=!!(wo && test(wo));
-      return `<button type="button" class="stageBtn ${cls}${cur?' current':''}" ${cur?'aria-current="true" disabled':''} onclick="adminSetStage(${id},'${k}')">${esc(l)}${cur?'<span class="stageCur">Current</span>':''}</button>`;
+      const fixed=k==='onsite' && !cur;
+      return `<button type="button" class="stageBtn ${cls}${cur?' current':''}" ${cur?'aria-current="true" disabled':''}${fixed?' disabled':''} onclick="adminSetStage(${id},'${k}')">${esc(l)}${cur?'<span class="stageCur">Current</span>':''}</button>`;
     }).join('')}</div>`).join('');
 }
 function adminSetStage(id, target){
@@ -17415,7 +17439,7 @@ function submitNote(id){
     movedMsg='Job scheduled. Moved to Scheduled.';
     if(wholeJobDayArrived(wo)){
       wo.jobStarted=true;
-      movedMsg='Job scheduled. Its first Whole Job day is here, so it moved to In Progress.';
+      movedMsg='Job scheduled. Its first Whole Job day is here, so it moved to Ongoing.';
     }
   } else if(type==='SURVEY' && inSurveysList(wo)){
     wo.movedToHistoryAt=Date.now();
