@@ -5690,7 +5690,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112544;
+var APP_BUILD=2026112545;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7963,8 +7963,8 @@ let CALV_ADD=null;   // {iso, q}
 function calvAddJob(iso, ok){
   if(!ok && businessClosedAllDay(iso)){
     const o=offOnDay(iso,'business').find(x=>!offIsPart(x));
-    if(!isAdminUser()){ toast(`The business is closed ${offDatesText(o)}.`); return; }
-    askYesNo(`The business is closed ${offDatesText(o)}${o.note?' ('+o.note+')':''}.\n\nBook a job anyway?`, yes=>{ if(yes) calvAddJob(iso, true); }, {yes:'Book Anyway', no:'Go Back'});
+    if(!isAdminUser()){ toast(`${offWho(o)}: ${offDatesText(o)}.`); return; }
+    askYesNo(`${offWho(o)}: ${offDatesText(o)}.\n\nBook a job anyway?`, yes=>{ if(yes) calvAddJob(iso, true); }, {yes:'Book Anyway', no:'Go Back'});
     return;
   }
   CALV_ADD={iso, q:'', more:false};
@@ -9638,7 +9638,9 @@ function offHits(o, st, et){
   if(!st || !et) return true;
   return toMin(st)<toMin(o.endTime) && toMin(o.startTime)<toMin(et);
 }
-function offWho(o){ return o.who==='business' ? 'Business Closed' : crewName(o.who)+' Off'; }
+function offWho(o){ return o.who==='business' ? 'Good & Handy Closed'+(o.note?' for '+o.note:'') : crewName(o.who)+' Off'; }
+/* A person's note goes after their name; the business's reason is already in its title. */
+function offNote(o){ return (o.note && o.who!=='business') ? o.note : ''; }
 function offHours(o){ return offIsPart(o) ? `${fmtClock(o.startTime)} – ${fmtClock(o.endTime)}` : 'All day'; }
 function fmtClock(t){ const p=timeParts(t); return p.t+' '+p.ap; }
 function offDatesText(o){
@@ -9661,7 +9663,7 @@ function bookingOffIssues(days, st, et, dayTimes, crew){
 }
 function offIssueText(iss){
   const lines=[];
-  iss.closed.forEach(({o})=>lines.push(`Business closed ${offDatesText(o)}${o.note?' ('+o.note+')':''}`));
+  iss.closed.forEach(({o})=>lines.push(`${offWho(o)}: ${offDatesText(o)}`));
   iss.people.forEach(({o})=>lines.push(`${crewName(o.who)} is off ${offDatesText(o)}${o.note?' ('+o.note+')':''}`));
   return lines.join('\n');
 }
@@ -9678,7 +9680,7 @@ function businessClosedAllDay(iso){ return offOnDay(iso,'business').some(o=>!off
 function offChipsHTML(iso, who){
   return offOnDay(iso).filter(o=>who==='all' || !who || o.who==='business' || o.who===who).map(o=>{
     const c=o.who==='business' ? 'var(--off-biz)' : crewColor(o.who);
-    return `<span class="cvOffChip${o.who==='business'?' biz':''}" style="--pc:${c}">${esc(o.who==='business'?'Closed':crewName(o.who)+' Off')}</span>`;
+    return `<span class="cvOffChip${o.who==='business'?' biz':''}" style="--pc:${c}">${esc(offWho(o))}</span>`;
   }).join('');
 }
 /* Small-screen month grid: chips are hidden there, so each person off gets
@@ -9693,7 +9695,7 @@ function offRowsHTML(iso, who){
   return offOnDay(iso).filter(o=>who==='all' || !who || o.who==='business' || o.who===who).map(o=>{
     const c=o.who==='business' ? 'var(--off-biz)' : crewColor(o.who);
     const inner=`<span class="cvOffIc">${icon(o.who==='business'?'lock':'moon')}</span>
-      <span class="cvMain"><span class="cvName">${esc(offWho(o))}</span><span class="cvType">${esc(offHours(o))}${o.note?' &middot; '+esc(o.note):''}</span></span>`;
+      <span class="cvMain"><span class="cvName">${esc(offWho(o))}</span><span class="cvType">${esc(offHours(o))}${offNote(o)?' &middot; '+esc(offNote(o)):''}</span></span>`;
     return admin
       ? `<button type="button" class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}" onclick="openDayOff(null,'${o.id}')">${inner}</button>`
       : `<div class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}">${inner}</div>`;
@@ -9721,12 +9723,12 @@ function dayOffCapture(){
 }
 function renderDayOff(){
   const D=DOFF; if(!D) return;
-  const who=[{k:'business', n:'Business', c:'var(--off-biz)'}].concat(crewUsers().map(u=>({k:u.username, n:u.name, c:crewColor(u.username)})));
+  const who=[{k:'business', n:'Business Closed', c:'var(--off-biz)'}].concat(crewUsers().map(u=>({k:u.username, n:u.name, c:crewColor(u.username)})));
   const chip=w=>{ const on=D.who.indexOf(w.k)!==-1; return `<button type="button" class="crewChip${on?' on':''}${w.k==='business'?' isBiz':''}" style="--pc:${w.c}" aria-pressed="${on}" onclick="dayOffWho('${esc(w.k)}')"><span class="crewAv">${w.k==='business'?icon('lock'):esc(w.n.charAt(0))}</span>${esc(w.n)}</button>`; };
   const seg=(k,l)=>`<button type="button" class="${D.len===k?'on':''}" aria-pressed="${D.len===k}" onclick="dayOffLen('${k}')">${l}</button>`;
   document.getElementById('confirmRoot').innerHTML=`<div class="confirmBox"><div class="confirmCard moneyCard doCard" role="dialog" aria-modal="true" aria-label="Day off">
     <h3>${D.id?'Edit Day Off':'Day Off'}</h3>
-    <div class="doLbl">Who</div>
+    <div class="doLbl">Select</div>
     <div class="crewChips doWho">${who.map(chip).join('')}</div>
     <div class="segSwitch moneySeg doLen" role="group" aria-label="Length">${seg('day','Whole Day')}${seg('range','Range of Days')}${seg('part','Part of Day')}</div>
     <div class="moneyGrid">
@@ -9737,7 +9739,7 @@ function renderDayOff(){
       <div class="moneyFld"><span>From</span>${timeFieldHTML('doST', D.startTime, "DOFF.startTime=this.value", 'Off from')}</div>
       <div class="moneyFld"><span>To</span>${timeFieldHTML('doET', D.endTime, "DOFF.endTime=this.value", 'Off until')}</div>
     </div>`:''}
-    <label class="moneyFld wide"><span>Note</span><input id="doNote" type="text" autocomplete="off" value="${esc(D.note)}"></label>
+    <label class="moneyFld wide"><span>${D.who.indexOf('business')!==-1?'Reason':'Note'}</span><input id="doNote" type="text" autocomplete="off" value="${esc(D.note)}"></label>
     <div class="errMsg" id="doErr"></div>
     <div class="btnRow">
       <button class="btn" onclick="saveDayOff()">Save</button>
@@ -10530,15 +10532,15 @@ function pickSchedDay(iso, ok){
     const add = had===1 ? datesInRange(SCHED_DAYS[0]<iso?SCHED_DAYS[0]:iso, SCHED_DAYS[0]<iso?iso:SCHED_DAYS[0]) : [iso];
     const shut=add.filter(d=>businessClosedAllDay(d) && SCHED_DAYS.indexOf(d)===-1);
     if(shut.length){
-      const txt=shut.map(d=>{ const o=offOnDay(d,'business').find(x=>!offIsPart(x)); return new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})+(o&&o.note?' ('+o.note+')':''); }).join(', ');
+      const txt=shut.map(d=>{ const o=offOnDay(d,'business').find(x=>!offIsPart(x)); return new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})+(o&&o.note?' for '+o.note:''); }).join(', ');
       if(!isAdminUser()){
-        if(add.every(d=>shut.indexOf(d)!==-1 || SCHED_DAYS.indexOf(d)!==-1)){ toast(`The business is closed ${txt}.`); return; }
+        if(add.every(d=>shut.indexOf(d)!==-1 || SCHED_DAYS.indexOf(d)!==-1)){ toast(`Good & Handy is closed ${txt}.`); return; }
         SCHED_DAYS=Array.from(new Set(SCHED_DAYS.concat(add.filter(d=>shut.indexOf(d)===-1)))).sort();
-        toast(`Skipped ${txt}: the business is closed.`);
+        toast(`Skipped ${txt}: Good & Handy is closed.`);
         schedSyncRange(); refreshSchedCalendar(); if(SCHED_TYPE==='full') refreshSchedDayTimes();
         return;
       }
-      askYesNo(`The business is closed ${txt}.\n\nBook ${shut.length>1?'those days':'it'} anyway?`, yes=>{ if(yes) pickSchedDay(iso, true); }, {yes:'Book Anyway', no:'Go Back'});
+      askYesNo(`Good & Handy is closed ${txt}.\n\nBook ${shut.length>1?'those days':'it'} anyway?`, yes=>{ if(yes) pickSchedDay(iso, true); }, {yes:'Book Anyway', no:'Go Back'});
       return;
     }
   }
@@ -13773,7 +13775,7 @@ END:VEVENT
   });
   daysOffList().forEach(o=>{
     if((o.end||o.start)<cut) return;
-    const title=offWho(o)+(o.note?' ・ '+o.note:'');
+    const title=offWho(o)+(offNote(o)?' ・ '+offNote(o):'');
     const dt=offIsPart(o)
       ? `DTSTART:${icsDateTime(o.start, o.startTime)}\nDTEND:${icsDateTime(o.start, o.endTime)}`
       : `DTSTART;VALUE=DATE:${o.start.replace(/-/g,'')}\nDTEND;VALUE=DATE:${addDaysIso(o.end||o.start,1).replace(/-/g,'')}`;
