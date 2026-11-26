@@ -109,6 +109,7 @@
   --red-lite:#fff0ef; --red-liteb:#e8968d;
   --yellow:#fff1c4; --yellowb:#a5710a; --yellow-bold:#ffe08a;
   --trip:#e2e8f3; --trip-ink:#1d3a6b;
+  --off-biz:#5b6576;
   --green:#d2f2df; --greenb:#1f8a55; --green-bold:#a8ecc4;
   /* In Progress: a paler green than Scheduled, the same step Pre-Site Complete takes off Pre-Site Scheduled. */
   --green-lite:#ecfaf2; --green-liteb:#7cc9a0;
@@ -226,6 +227,7 @@ html.dark{
   --red-lite:#2a1d24; --red-liteb:#d99a92;
   --yellow:#372f19; --yellowb:#f3c65c; --yellow-bold:#4a3f1e;
   --trip:#1c2740; --trip-ink:#a9bde6;
+  --off-biz:#9aa6ba;
   --green:#12301f; --greenb:#4fd48a; --green-bold:#1a4229;
   --green-lite:#16261e; --green-liteb:#92cfae;
   --s-pi:#60232b; --s-pi-b:#e96b6b;
@@ -275,6 +277,7 @@ html.hc{
   --red-lite:#ffe3e3; --red-liteb:#c43c3c;
   --yellow:#ffe89a; --yellowb:#6b5400; --yellow-bold:#ffcf3d;
   --trip:#d5def0; --trip-ink:#10284f;
+  --off-biz:#2e3644;
   --green:#b3ecc8; --greenb:#0b5c34; --green-bold:#79e0a2;
   --green-lite:#dcf6e6; --green-liteb:#2f8a5a;
   --s-pi:#ff8f8f; --s-pi-b:#a30000;
@@ -320,6 +323,7 @@ html.dark.hc{
   --red-lite:#2e0a0a; --red-liteb:#ffbab3;
   --yellow:#3d3000; --yellowb:#ffd54a; --yellow-bold:#584600;
   --trip:#1a2950; --trip-ink:#c0d2f5;
+  --off-biz:#c3ccda;
   --green:#00331d; --greenb:#63f0a6; --green-bold:#004d2c;
   --green-lite:#00200f; --green-liteb:#a6f5c9;
   --s-pi:#6b1212; --s-pi-b:#ff9a90;
@@ -1287,6 +1291,8 @@ html.dark .cvDay.sel{box-shadow:0 0 0 2px var(--navy), 0 8px 18px rgba(0,0,0,.4)
 .cvDots{position:absolute;top:7px;right:6px;display:flex;gap:2px;}
 .cvDots i{width:7px;height:7px;border-radius:50%;box-shadow:0 0 0 1.5px var(--paper);}
 .cvChips{display:none;}
+.cvOffMarks{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);display:flex;gap:2px;}
+.cvOffMarks i{width:5px;height:5px;border-radius:50%;border:1.5px solid;box-sizing:content-box;}
 /* Tape: track with a tick every 2 hours; fill turns deeper as the day fills. */
 .cvTape{position:relative;display:block;height:5px;border-radius:3px;overflow:hidden;
   background:repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(15,38,71,.16) calc(25% - 1px) 25%), var(--cv-tape-track);}
@@ -1355,6 +1361,7 @@ html.dark .cvType{color:#ffb36b;}
   .cvDay{min-height:112px;padding:8px 8px 16px;}
   .cvDay .cvTape{left:8px;right:8px;bottom:7px;}
   .cvChips{display:flex;flex-direction:column;gap:3px;min-width:0;width:100%;margin-top:4px;}
+  .cvOffMarks{display:none;}
   .cvChip{font-size:.74rem;font-weight:600;padding:3px 6px;border-radius:5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--pc);}
   .cvMore{font-size:.72rem;color:var(--muted);font-weight:700;padding-left:4px;}
   .cvTitle b{font-size:2.6rem;}
@@ -1392,6 +1399,29 @@ html.dark .hoChip.on{color:#111827;}
 .hoAdmin h4{margin:0 0 8px;}
 .hoSeg{display:flex;flex-wrap:wrap;border-radius:14px;}
 .hoSeg button{flex:1 1 auto;border-radius:11px;}
+.cvAddRow{display:flex;gap:8px;flex-wrap:wrap;}
+.cvAddRow .cvAddJob{flex:1 1 auto;}
+.cvAddJob.off{color:var(--off-biz);border-color:color-mix(in srgb,var(--off-biz) 55%,transparent);background:color-mix(in srgb,var(--off-biz) 7%,transparent);}
+.cvOffChip{display:block;font-size:.62em;font-weight:800;line-height:1.25;padding:1px 4px;border-radius:4px;color:var(--pc);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 16%,transparent) 0 4px,color-mix(in srgb,var(--pc) 7%,transparent) 4px 8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+.cvDay.closed,.cvWDay.closed{background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--off-biz) 10%,transparent) 0 6px,transparent 6px 12px);}
+.cvOffRow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;margin-bottom:8px;border:1px dashed color-mix(in srgb,var(--pc) 55%,transparent);border-left:4px solid var(--pc);border-radius:12px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pc) 9%,var(--paper)) 0 8px,var(--paper) 8px 16px);font:inherit;color:var(--ink);text-align:left;box-sizing:border-box;}
+button.cvOffRow{cursor:pointer;}
+.cvOffRow .cvOffIc{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--pc) 16%,var(--paper));color:var(--pc);}
+.cvOffRow .cvOffIc .ic{width:16px;height:16px;}
+.cvOffRow .cvType{background:none;color:var(--muted);padding:0;border-radius:0;font-weight:600;}
+.cvOffRow .cvName{white-space:normal;}
+.cvWList .cvOffRow{gap:8px;padding:8px 9px;}
+.cvWList .cvOffRow .cvOffIc{display:none;}
+.cvWList .cvOffRow .cvName{font-size:.86rem;}
+.schedCalDay.closed{background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--off-biz) 16%,transparent) 0 4px,transparent 4px 8px);color:var(--muted);}
+.crewChip.isOff:not(.on){opacity:.5;border-style:dashed;}
+.offTag{margin-left:6px;font-size:.72em;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:999px;background:var(--well);color:var(--muted);}
+.crewChip.isBiz .crewAv .ic{width:13px;height:13px;}
+.doCard{max-width:460px;}
+.doLbl{font-size:.72em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;margin:4px 0 6px;}
+.doWho{justify-content:flex-start;}
+.doLen button{font-size:.85em;}
+.moneyFld.wide2{grid-column:1/-1;}
 .cvAddJob{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin-top:10px;border-radius:14px;border:1.5px dashed var(--orange);background:rgba(232,121,26,.07);color:#b4560a;font-family:inherit;font-size:.95rem;font-weight:800;cursor:pointer;transition:background var(--t-fast);}
 .cvAddJob:hover{background:rgba(232,121,26,.14);}
 .cvAddJob .ic{width:18px;height:18px;}
@@ -4589,6 +4619,7 @@ window._bootSafety = setTimeout(function(){
   <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
   <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 6.5h7"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/></symbol>
   <symbol id="i-trip" viewBox="0 0 24 24"><circle cx="5.5" cy="18.5" r="2.3"/><path d="M8.3 18.5h5.2a3.1 3.1 0 0 0 0-6.2h-3.4a3.1 3.1 0 0 1 0-6.2h3.3" stroke-dasharray="0.1 2.6"/><path d="M18.3 11.4s-3.3-3-3.3-5.3a3.3 3.3 0 0 1 6.6 0c0 2.3-3.3 5.3-3.3 5.3z"/><circle cx="18.3" cy="6.1" r="1.1"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol>
   <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.9-5.3-2.8-5.3 2.8 1-5.9L5.5 9.7l5.9-.9z"/></symbol>
   <!-- Nav tab icons -->
@@ -5659,7 +5690,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112443;
+var APP_BUILD=2026112544;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7859,9 +7890,10 @@ function calViewHTML(){
     sub=String(e.getFullYear());
     body=`<div class="cvWeek">${days.map(d=>{
       const iso=isoOf(d), list=map[iso]||[];
-      return `<div class="cvWDay${iso===today?' today':''}${iso<today?' past':''}">
+      const offs=offRowsHTML(iso, CALV.who);
+      return `<div class="cvWDay${iso===today?' today':''}${iso<today?' past':''}${businessClosedAllDay(iso)?' closed':''}">
         <div class="cvWHead"><span class="cvWDow">${dows[d.getDay()]}</span><b class="cvWNum">${d.getDate()}</b><span class="cvWTape">${hoursTapeHTML(list, true)}</span></div>
-        <div class="cvWList">${calvAgendaRows(list)}<button type="button" class="cvAddJob small" onclick="calvAddJob('${iso}')">${icon('plus')}Add Job</button></div>
+        <div class="cvWList">${offs}${(offs && !list.length)?'':calvAgendaRows(list)}<div class="cvAddRow"><button type="button" class="cvAddJob small" onclick="calvAddJob('${iso}')">${icon('plus')}Add Job</button>${isAdminUser()?`<button type="button" class="cvAddJob small off" onclick="openDayOff('${iso}')">${icon('moon')}Day Off</button>`:''}</div></div>
       </div>`;
     }).join('')}</div>`;
   } else {
@@ -7875,13 +7907,14 @@ function calViewHTML(){
       const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
       const list=(map[iso]||[]).slice().sort((a,b)=>String(a.startTime||'').localeCompare(String(b.startTime||'')));
       const dow=(startDow+day-1)%7;
-      const cls=['cvDay']; if(list.length) cls.push('booked'); if(dow===0||dow===6) cls.push('wknd'); if(iso===today) cls.push('today'); if(iso===CALV.day) cls.push('sel'); if(iso<today) cls.push('past');
+      const cls=['cvDay']; if(list.length) cls.push('booked'); if(dow===0||dow===6) cls.push('wknd'); if(iso===today) cls.push('today'); if(iso===CALV.day) cls.push('sel'); if(iso<today) cls.push('past'); if(businessClosedAllDay(iso)) cls.push('closed');
+      const offChips=offChipsHTML(iso, CALV.who);
       const names=list.slice(0,3).map(b=>{
         const c=(b.crew&&b.crew[0]) ? crewColor(b.crew[0]) : '#8a96a8';
         return `<span class="cvChip" style="--pc:${c};background:${hexA(c,.13)}">${esc(shortTime(b.startTime))} ${esc(b.customer)}</span>`;
       }).join('')+(list.length>3?`<span class="cvMore">${list.length-3} more</span>`:'');
       cells+=`<button type="button" class="${cls.join(' ')}" onclick="calvSet('day','${iso}')" aria-pressed="${iso===CALV.day}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${list.length?', '+list.length+' booked':''}">
-        <span class="cvNum">${day}</span>${crewDotsHTML(list)}<span class="cvChips">${names}</span>${hoursTapeHTML(list)}</button>`;
+        <span class="cvNum">${day}</span>${crewDotsHTML(list)}${offMarksHTML(iso, CALV.who)}<span class="cvChips">${offChips}${names}</span>${hoursTapeHTML(list)}</button>`;
     }
     const dayIso=CALV.day;
     const inMonth=dayIso && dayIso.slice(0,7)===`${y}-${String(m+1).padStart(2,'0')}`;
@@ -7892,7 +7925,7 @@ function calViewHTML(){
         <b class="cvADay">${dd.getDate()}</b>
         <span class="cvADate"><span>${dd.toLocaleDateString('en-US',{weekday:'long'})}</span><small>${dd.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</small></span>
         <span class="cvATape">${hoursTapeHTML(map[dayIso], true)}</span>
-      </div>${calvAgendaRows(map[dayIso])}<button type="button" class="cvAddJob" onclick="calvAddJob('${dayIso}')">${icon('plus')}Add Job</button></div>`;
+      </div>${offRowsHTML(dayIso, CALV.who)}${(offOnDay(dayIso).length && !(map[dayIso]||[]).length)?'':calvAgendaRows(map[dayIso])}<div class="cvAddRow"><button type="button" class="cvAddJob" onclick="calvAddJob('${dayIso}')">${icon('plus')}Add Job</button>${isAdminUser()?`<button type="button" class="cvAddJob off" onclick="openDayOff('${dayIso}')">${icon('moon')}Day Off</button>`:''}</div></div>`;
     }
     body=`<div class="cvBoard"><div class="cvGrid">${dows.map(d=>`<div class="dow"><span class="dl">${d}</span><span class="ds">${d.charAt(0)}</span></div>`).join('')}${cells}</div></div>${agenda}`;
   }
@@ -7927,7 +7960,13 @@ function calViewHTML(){
    already picked. Saving also adds the SCHD / SCHD PRESITE note, which is
    what moves the job along, so it never needs opening. */
 let CALV_ADD=null;   // {iso, q}
-function calvAddJob(iso){
+function calvAddJob(iso, ok){
+  if(!ok && businessClosedAllDay(iso)){
+    const o=offOnDay(iso,'business').find(x=>!offIsPart(x));
+    if(!isAdminUser()){ toast(`The business is closed ${offDatesText(o)}.`); return; }
+    askYesNo(`The business is closed ${offDatesText(o)}${o.note?' ('+o.note+')':''}.\n\nBook a job anyway?`, yes=>{ if(yes) calvAddJob(iso, true); }, {yes:'Book Anyway', no:'Go Back'});
+    return;
+  }
   CALV_ADD={iso, q:'', more:false};
   renderCalvAdd();
   setTimeout(()=>{ const el=document.getElementById('cvAddSearch'); if(el && !isNarrowScreen()) el.focus(); }, 60);
@@ -9555,12 +9594,21 @@ function crewPickerHTML(){
   if(!users.length) return '';
   return `<div class="field"><label>Who's Going</label><div class="crewChips">${users.map(u=>{
     const on=SCHED_CREW.indexOf(u.username)!==-1;
-    return `<button type="button" class="crewChip${on?' on':''}" style="--pc:${crewColor(u.username)}" aria-pressed="${on}" onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}</button>`;
+    const off=crewOffForBooking(u.username).length>0;
+    return `<button type="button" class="crewChip${on?' on':''}${off?' isOff':''}" style="--pc:${crewColor(u.username)}" aria-pressed="${on}"${off&&!on?' aria-disabled="true"':''} onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}${off?'<span class="offTag">Off</span>':''}</button>`;
   }).join('')}</div></div>`;
 }
-function toggleSchedCrew(username){
+function toggleSchedCrew(username, ok){
   captureSchedFields();
   const i=SCHED_CREW.indexOf(username);
+  if(i===-1 && !ok){
+    const off=crewOffForBooking(username);
+    if(off.length){
+      if(!isAdminUser()){ toast(`${crewName(username)} is off ${offDatesText(off[0].o)}.`); return; }
+      askYesNo(off.map(({o})=>`${crewName(username)} is off ${offDatesText(o)}${o.note?' ('+o.note+')':''}`).join('\n')+'\n\nPut them on this anyway?', yes=>{ if(yes) toggleSchedCrew(username, true); }, {yes:'Add Anyway', no:'Go Back'});
+      return;
+    }
+  }
   if(i===-1) SCHED_CREW.push(username); else SCHED_CREW.splice(i,1);
   renderScheduleWidget();
 }
@@ -9571,6 +9619,191 @@ function crewOverlap(a, b){
   if(!a.length || !b.length) return true;
   return a.some(x=>b.indexOf(x)!==-1);
 }
+/* ---- days off ----
+   Admins mark a day (or days, or part of a day) off for one person or for
+   the whole business. They show on the Scheduling calendar and the phone
+   calendar. A person who is off can't be put on a booking, and nothing can
+   be booked while the business is closed; an admin can go ahead anyway after
+   a pop-up says what it overrides. Kept with the shared calculator settings
+   so every device has the same list. */
+function daysOffList(){ return (DB.calc && Array.isArray(DB.calc.daysOff)) ? DB.calc.daysOff : []; }
+function offIsPart(o){ return !!(o.startTime && o.endTime); }
+function offOnDay(iso, who){
+  return daysOffList().filter(o=>o.start<=iso && iso<=(o.end||o.start) && (!who || o.who===who))
+    .sort((a,b)=>(a.who==='business'?-1:0)-(b.who==='business'?-1:0) || String(a.startTime||'').localeCompare(String(b.startTime||'')));
+}
+/* Does this day off take away the hours st..et? A whole day always does. */
+function offHits(o, st, et){
+  if(!offIsPart(o)) return true;
+  if(!st || !et) return true;
+  return toMin(st)<toMin(o.endTime) && toMin(o.startTime)<toMin(et);
+}
+function offWho(o){ return o.who==='business' ? 'Business Closed' : crewName(o.who)+' Off'; }
+function offHours(o){ return offIsPart(o) ? `${fmtClock(o.startTime)} – ${fmtClock(o.endTime)}` : 'All day'; }
+function fmtClock(t){ const p=timeParts(t); return p.t+' '+p.ap; }
+function offDatesText(o){
+  const f=iso=>new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
+  const range=(o.end && o.end!==o.start) ? `${f(o.start)} – ${f(o.end)}` : f(o.start);
+  return range+(offIsPart(o)?', '+offHours(o):'');
+}
+/* What a booking runs into: business closures and crew who are off. */
+function bookingOffIssues(days, st, et, dayTimes, crew){
+  const closed=[], people=[];
+  (days||[]).forEach(iso=>{
+    const t=(dayTimes && dayTimes[iso]) || {startTime:st, endTime:et};
+    offOnDay(iso).forEach(o=>{
+      if(!offHits(o, t.startTime, t.endTime)) return;
+      if(o.who==='business'){ if(!closed.some(c=>c.o===o)) closed.push({iso, o}); }
+      else if((crew||[]).indexOf(o.who)!==-1 && !people.some(c=>c.o===o)) people.push({iso, o});
+    });
+  });
+  return {closed, people};
+}
+function offIssueText(iss){
+  const lines=[];
+  iss.closed.forEach(({o})=>lines.push(`Business closed ${offDatesText(o)}${o.note?' ('+o.note+')':''}`));
+  iss.people.forEach(({o})=>lines.push(`${crewName(o.who)} is off ${offDatesText(o)}${o.note?' ('+o.note+')':''}`));
+  return lines.join('\n');
+}
+/* People off for any part of the booking's picked days and hours. */
+function crewOffForBooking(username){
+  if(!SCHED_DAYS || !SCHED_DAYS.length) return [];
+  return bookingOffIssues(SCHED_DAYS, SCHED_STIME, SCHED_ETIME, SCHED_DAYTIMES, [username]).people;
+}
+function isAdminUser(){ return !!(CURRENT_USER && CURRENT_USER.isAdmin); }
+/* A whole day the business is closed. */
+function businessClosedAllDay(iso){ return offOnDay(iso,'business').some(o=>!offIsPart(o)); }
+
+/* Calendar pieces. */
+function offChipsHTML(iso, who){
+  return offOnDay(iso).filter(o=>who==='all' || !who || o.who==='business' || o.who===who).map(o=>{
+    const c=o.who==='business' ? 'var(--off-biz)' : crewColor(o.who);
+    return `<span class="cvOffChip${o.who==='business'?' biz':''}" style="--pc:${c}">${esc(o.who==='business'?'Closed':crewName(o.who)+' Off')}</span>`;
+  }).join('');
+}
+/* Small-screen month grid: chips are hidden there, so each person off gets
+   a hollow ring in their colour at the bottom of the day. */
+function offMarksHTML(iso, who){
+  const l=offOnDay(iso).filter(o=>o.who!=='business' && (who==='all' || !who || o.who===who));
+  if(!l.length) return '';
+  return `<span class="cvOffMarks" aria-hidden="true">${l.slice(0,4).map(o=>`<i style="border-color:${crewColor(o.who)}"></i>`).join('')}</span>`;
+}
+function offRowsHTML(iso, who){
+  const admin=isAdminUser();
+  return offOnDay(iso).filter(o=>who==='all' || !who || o.who==='business' || o.who===who).map(o=>{
+    const c=o.who==='business' ? 'var(--off-biz)' : crewColor(o.who);
+    const inner=`<span class="cvOffIc">${icon(o.who==='business'?'lock':'moon')}</span>
+      <span class="cvMain"><span class="cvName">${esc(offWho(o))}</span><span class="cvType">${esc(offHours(o))}${o.note?' &middot; '+esc(o.note):''}</span></span>`;
+    return admin
+      ? `<button type="button" class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}" onclick="openDayOff(null,'${o.id}')">${inner}</button>`
+      : `<div class="cvOffRow${o.who==='business'?' biz':''}" style="--pc:${c}">${inner}</div>`;
+  }).join('');
+}
+
+/* The editor. */
+let DOFF=null;
+function openDayOff(iso, id){
+  if(!isAdminUser()) return;
+  const o=id ? daysOffList().find(x=>x.id===id) : null;
+  if(id && !o) return;
+  const d=iso || isoToday();
+  DOFF = o ? {id:o.id, who:[o.who], len:offIsPart(o)?'part':(o.end && o.end!==o.start?'range':'day'), start:o.start, end:o.end||o.start,
+              startTime:o.startTime||'08:00', endTime:o.endTime||'12:00', note:o.note||''}
+           : {id:null, who:[], len:'day', start:d, end:d, startTime:'08:00', endTime:'12:00', note:''};
+  renderDayOff();
+}
+function dayOffCapture(){
+  const g=id=>document.getElementById(id);
+  if(!DOFF) return;
+  if(g('doStart')) DOFF.start=g('doStart').value || DOFF.start;
+  if(g('doEnd')) DOFF.end=g('doEnd').value || DOFF.end;
+  if(g('doNote')) DOFF.note=g('doNote').value;
+}
+function renderDayOff(){
+  const D=DOFF; if(!D) return;
+  const who=[{k:'business', n:'Business', c:'var(--off-biz)'}].concat(crewUsers().map(u=>({k:u.username, n:u.name, c:crewColor(u.username)})));
+  const chip=w=>{ const on=D.who.indexOf(w.k)!==-1; return `<button type="button" class="crewChip${on?' on':''}${w.k==='business'?' isBiz':''}" style="--pc:${w.c}" aria-pressed="${on}" onclick="dayOffWho('${esc(w.k)}')"><span class="crewAv">${w.k==='business'?icon('lock'):esc(w.n.charAt(0))}</span>${esc(w.n)}</button>`; };
+  const seg=(k,l)=>`<button type="button" class="${D.len===k?'on':''}" aria-pressed="${D.len===k}" onclick="dayOffLen('${k}')">${l}</button>`;
+  document.getElementById('confirmRoot').innerHTML=`<div class="confirmBox"><div class="confirmCard moneyCard doCard" role="dialog" aria-modal="true" aria-label="Day off">
+    <h3>${D.id?'Edit Day Off':'Day Off'}</h3>
+    <div class="doLbl">Who</div>
+    <div class="crewChips doWho">${who.map(chip).join('')}</div>
+    <div class="segSwitch moneySeg doLen" role="group" aria-label="Length">${seg('day','Whole Day')}${seg('range','Range of Days')}${seg('part','Part of Day')}</div>
+    <div class="moneyGrid">
+      <label class="moneyFld${D.len==='range'?'':' wide2'}"><span>${D.len==='range'?'First Day':'Day'}</span><input id="doStart" type="date" value="${esc(D.start)}"></label>
+      ${D.len==='range'?`<label class="moneyFld"><span>Last Day</span><input id="doEnd" type="date" value="${esc(D.end)}"></label>`:''}
+    </div>
+    ${D.len==='part'?`<div class="moneyGrid">
+      <div class="moneyFld"><span>From</span>${timeFieldHTML('doST', D.startTime, "DOFF.startTime=this.value", 'Off from')}</div>
+      <div class="moneyFld"><span>To</span>${timeFieldHTML('doET', D.endTime, "DOFF.endTime=this.value", 'Off until')}</div>
+    </div>`:''}
+    <label class="moneyFld wide"><span>Note</span><input id="doNote" type="text" autocomplete="off" value="${esc(D.note)}"></label>
+    <div class="errMsg" id="doErr"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="saveDayOff()">Save</button>
+      <button class="btn secondary" onclick="closeDayOff()">Cancel</button>
+    </div>
+    ${D.id?`<button type="button" class="secRemove" onclick="deleteDayOff()">Delete Day Off</button>`:''}
+  </div></div>`;
+}
+function dayOffWho(k){
+  dayOffCapture();
+  const D=DOFF;
+  if(D.id){ D.who=[k]; }
+  else if(k==='business'){ D.who = D.who.indexOf('business')!==-1 ? [] : ['business']; }
+  else {
+    D.who=D.who.filter(x=>x!=='business');
+    const i=D.who.indexOf(k); if(i===-1) D.who.push(k); else D.who.splice(i,1);
+  }
+  renderDayOff();
+}
+function dayOffLen(k){ dayOffCapture(); DOFF.len=k; if(k!=='range') DOFF.end=DOFF.start; renderDayOff(); }
+function closeDayOff(){ DOFF=null; document.getElementById('confirmRoot').innerHTML=''; }
+function saveDayOff(){
+  dayOffCapture();
+  const D=DOFF; if(!D) return;
+  const err=t=>{ document.getElementById('doErr').textContent=t; };
+  if(!D.who.length) return err('Pick who is off.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(D.start||'')) return err('Pick the day.');
+  let end=D.len==='range' ? D.end : D.start;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(end||'')) return err('Pick the last day.');
+  if(end<D.start) return err('The last day is before the first day.');
+  if(D.len==='part'){
+    const st=(document.getElementById('doST')||{}).value || D.startTime, et=(document.getElementById('doET')||{}).value || D.endTime;
+    if(!st || !et) return err('Enter both times.');
+    if(et<=st) return err('The end time must be after the start time.');
+    D.startTime=st; D.endTime=et;
+  }
+  if(!DB.calc) DB.calc={};
+  let list=daysOffList().slice();
+  const rec=w=>({who:w, start:D.start, end, startTime:D.len==='part'?D.startTime:'', endTime:D.len==='part'?D.endTime:'', note:(D.note||'').trim()});
+  if(D.id){
+    const i=list.findIndex(x=>x.id===D.id);
+    if(i>=0) list[i]=Object.assign({}, list[i], rec(D.who[0]), {editedBy:CURRENT_USER.username, editedAt:Date.now()});
+  } else {
+    D.who.forEach((w,k)=>list.push(Object.assign({id:'off'+Date.now().toString(36)+k+Math.random().toString(36).slice(2,5), by:CURRENT_USER.username, at:Date.now()}, rec(w))));
+  }
+  DB.calc.daysOff=list;
+  closeDayOff();
+  saveDB(DB);
+  feedSoon && feedSoon();
+  renderMain();
+  toast('Day off saved.');
+}
+function deleteDayOff(){
+  const D=DOFF; if(!D || !D.id) return;
+  const o=daysOffList().find(x=>x.id===D.id);
+  if(!o){ closeDayOff(); return; }
+  askYesNo(`Delete ${offWho(o)}, ${offDatesText(o)}?`, yes=>{
+    if(!yes){ renderDayOff(); return; }
+    DB.calc.daysOff=daysOffList().filter(x=>x.id!==D.id);
+    DOFF=null;
+    saveDB(DB);
+    feedSoon && feedSoon();
+    renderMain();
+  });
+}
+
 
 /* Picks a maps link based on the device: Apple Maps for iPhone/iPad/Mac
    (maps.apple.com hands off to the Maps app there), Google Maps for
@@ -9675,6 +9908,7 @@ function openScheduleEdit(woId, dateId, inline){
 
 /* One save for both adding and editing. The picked days become one booking
    per run of back-to-back days. */
+let SCHED_OFF_OK=false;
 function saveSchedule(){
   captureSchedFields();
   const wo=getWO(SCHED_WO_ID);
@@ -9690,6 +9924,16 @@ function saveSchedule(){
   const crew=SCHED_CREW.slice();
   const editing=SCHED_EDIT_ID ? (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID) : null;
   if(SCHED_EDIT_ID && !editing){ toast('That scheduled date no longer exists.'); return; }
+  /* Days off: the last word before anything is booked. */
+  if(!SCHED_OFF_OK){
+    const iss=bookingOffIssues(days, startTime, endTime, allTimes, crew);
+    if(iss.closed.length || iss.people.length){
+      if(!isAdminUser()){ toast(offIssueText(iss).split('\n')[0]+'.'); return; }
+      askYesNo(offIssueText(iss)+'\n\nBook it anyway?', yes=>{ if(yes){ SCHED_OFF_OK=true; saveSchedule(); } }, {yes:'Book Anyway', no:'Go Back'});
+      return;
+    }
+  }
+  SCHED_OFF_OK=false;
 
   if(editing){
     const same = JSON.stringify(scheduleDays(editing))===JSON.stringify(days) &&
@@ -10198,6 +10442,7 @@ function scheduleCalendarHTML(){
       if(SCHED_DAYS.indexOf(addDaysIso(iso,1))!==-1 && (startDow+day)%7!==0) cls.push('joinR');
     }
     if(iso===SCHED_INFO_DAY) cls.push('infoDay');
+    if(businessClosedAllDay(iso)) cls.push('closed');
     const count = booked ? calDotsHTML(booked) : '';
     const clickAttr = `onclick="pickSchedDay('${iso}')"`;
     cells += `<div class="${cls.join(' ')}" ${clickAttr} role="button" aria-pressed="${picked}" aria-label="${new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}${booked?', '+booked.length+' booked':''}">${day}${count}</div>`;
@@ -10275,11 +10520,28 @@ function changeSchedMonth(delta){
 }
 /* Tap a day to pick it. With one day picked, tapping another fills in every
    day between. Tap a picked day to take it out, which is how a day is skipped. */
-function pickSchedDay(iso){
+function pickSchedDay(iso, ok){
   captureSchedFields();
   SCHED_INFO_DAY=iso;
   const had=SCHED_DAYS.length;
   const i=SCHED_DAYS.indexOf(iso);
+  /* Business closed: off limits, unless an admin says to go ahead. */
+  if(i===-1 && !ok){
+    const add = had===1 ? datesInRange(SCHED_DAYS[0]<iso?SCHED_DAYS[0]:iso, SCHED_DAYS[0]<iso?iso:SCHED_DAYS[0]) : [iso];
+    const shut=add.filter(d=>businessClosedAllDay(d) && SCHED_DAYS.indexOf(d)===-1);
+    if(shut.length){
+      const txt=shut.map(d=>{ const o=offOnDay(d,'business').find(x=>!offIsPart(x)); return new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})+(o&&o.note?' ('+o.note+')':''); }).join(', ');
+      if(!isAdminUser()){
+        if(add.every(d=>shut.indexOf(d)!==-1 || SCHED_DAYS.indexOf(d)!==-1)){ toast(`The business is closed ${txt}.`); return; }
+        SCHED_DAYS=Array.from(new Set(SCHED_DAYS.concat(add.filter(d=>shut.indexOf(d)===-1)))).sort();
+        toast(`Skipped ${txt}: the business is closed.`);
+        schedSyncRange(); refreshSchedCalendar(); if(SCHED_TYPE==='full') refreshSchedDayTimes();
+        return;
+      }
+      askYesNo(`The business is closed ${txt}.\n\nBook ${shut.length>1?'those days':'it'} anyway?`, yes=>{ if(yes) pickSchedDay(iso, true); }, {yes:'Book Anyway', no:'Go Back'});
+      return;
+    }
+  }
   if(i!==-1) SCHED_DAYS.splice(i,1);
   else if(had===1){
     const a=SCHED_DAYS[0]<iso ? SCHED_DAYS[0] : iso, b=SCHED_DAYS[0]<iso ? iso : SCHED_DAYS[0];
@@ -13508,6 +13770,21 @@ END:VEVENT
 `;
       });
     });
+  });
+  daysOffList().forEach(o=>{
+    if((o.end||o.start)<cut) return;
+    const title=offWho(o)+(o.note?' ・ '+o.note:'');
+    const dt=offIsPart(o)
+      ? `DTSTART:${icsDateTime(o.start, o.startTime)}\nDTEND:${icsDateTime(o.start, o.endTime)}`
+      : `DTSTART;VALUE=DATE:${o.start.replace(/-/g,'')}\nDTEND;VALUE=DATE:${addDaysIso(o.end||o.start,1).replace(/-/g,'')}`;
+    events+=`BEGIN:VEVENT
+UID:feed-off-${o.id}@goodandhandy
+DTSTAMP:${stamp}
+SUMMARY:${icsEscape(title)}
+${dt}
+TRANSP:TRANSPARENT
+END:VEVENT
+`;
   });
   return (`BEGIN:VCALENDAR
 VERSION:2.0
