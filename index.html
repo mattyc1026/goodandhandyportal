@@ -2936,6 +2936,12 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .gnSwitch.on .gnTrack{background:color-mix(in srgb,var(--orange) 24%,var(--paper));}
 .gnSwitch.on .gnKnob{transform:translateX(16px);background:var(--orange);}
 .fsNote.gnOther{text-align:right;opacity:.6;}
+/* With the group shown, the side line moves from the panel to each note,
+   on the side the note is aligned to. */
+.fieldSec--note .fieldSubPanel:has(.gnOther){border-left:1px solid var(--line);}
+.fieldSec--note .fieldSubPanel:has(.gnOther) .fsNote{border-left:3px solid var(--orange);padding-left:12px;}
+.fieldSec--note .fieldSubPanel:has(.gnOther) .fsNote.gnOther{border-left:0;border-right:3px solid var(--orange);padding-left:0;padding-right:12px;}
+html.hc .fieldSec--note .fieldSubPanel:has(.gnOther) .fsNote{border-color:var(--hc-fg);}
 .gnOther .fsNoteTop{justify-content:flex-end;text-align:right;}
 .gnOther .gnFrom{display:block;width:fit-content;margin:0 auto 6px 0;}
 .gnDot{font-size:.6em;margin:0 5px;vertical-align:.18em;}
@@ -5705,7 +5711,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112603;
+var APP_BUILD=2026112604;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
