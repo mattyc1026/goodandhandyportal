@@ -5861,7 +5861,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112621;
+var APP_BUILD=2026112622;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -15872,7 +15872,7 @@ async function emOpenDraft(draftId){
 }
 
 /* ---- on a work order ---- */
-function emCustomerQuery(email){ email=String(email||'').trim(); return `{from:${email} to:${email} cc:${email}}`; }
+function emCustomerQuery(email){ email=String(email||'').trim(); return `{from:(${email}) to:(${email}) cc:(${email}) bcc:(${email}) "${email}"}`; }
 function emailWoSecHTML(wo){
   if(!gmailReady()) return '';
   const email=String((wo.customer||{}).email||'').trim();
@@ -15883,9 +15883,10 @@ function emailWoSecHTML(wo){
     body=`<div class="emWoConnect"><button type="button" class="btn secondary" onclick="gmailConnect(()=>{delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});})">${icon('mail')}Connect Gmail</button></div>`;
   } else {
     const st=EM_WO[wo.id];
-    if(FIELD_SEC[key] && (!st || (Date.now()-st.at>120000 && !st.loading))) emLoadWo(wo.id);
+    if(FIELD_SEC[key] && (!st || (!st.err && Date.now()-st.at>120000 && !st.loading))) emLoadWo(wo.id);
     const list=st && st.list;
-    body = !list ? `<div class="small">Loading…</div>`
+    body = (st && st.err) ? `<div class="small emWoErr">${esc(st.err)} <button type="button" class="editLink" onclick="delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});">Try Again</button></div>`
+      : !list ? `<div class="small">Loading…</div>`
       : !list.length ? `<div class="small">No emails with ${esc(email)} yet.</div>`
       : `<div class="emWoList">${list.slice(0,6).map(t=>`<button type="button" class="emWoRow${t.unread?' unread':''}" onclick="emOpenFromWo(${wo.id},'${t.id}')">
           <span class="emSubj"><b>${esc(t.subject||'(no subject)')}</b><span class="emSnip">${esc(t.snippet)}</span></span>
@@ -15905,7 +15906,7 @@ async function emLoadWo(id){
   try{
     const r=await gapi('threads?maxResults=10&q='+encodeURIComponent(emCustomerQuery(email)));
     EM_WO[id]={at:Date.now(), list:await emThreadSummaries((r.threads||[]).map(t=>t.id))};
-  }catch(e){ EM_WO[id]={at:Date.now(), list:[]}; if(e && e.signin) delete EM_WO[id]; }
+  }catch(e){ EM_WO[id]={at:Date.now(), list:null, err:(e && e.message)||'Could not load emails.'}; if(e && e.signin) delete EM_WO[id]; }
   if(OPEN_WO_ID===id && document.querySelector('.fieldSec--email')) renderWorkOrderModal(id);
 }
 function emLeaveWo(){ if(OPEN_WO_ID) closeModal(); }
