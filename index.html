@@ -2283,6 +2283,19 @@ html.hc .dlDay.isToday{box-shadow:inset 3px 0 0 var(--hc-fg);}
 
 /* Edit/remove controls on a scheduled date row. */
 .schedRowBtns{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+/* One compact block per day: the day and its times across the top, the crew,
+   any logged time and the Edit and remove buttons under it. */
+.schedRow{display:grid !important;grid-template-columns:minmax(0,1fr) auto;align-items:center;row-gap:2px;column-gap:8px;}
+.schedRow .srTop{grid-column:1 / -1;}
+.schedRow .srSub{grid-column:1;margin-top:0;}
+.schedRow .schedRowBtns{grid-column:2;grid-row:2;}
+.srTop{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:0;}
+.srTop b{white-space:nowrap;}
+.srTop .schedTimes{white-space:nowrap;font-size:.92em;}
+.srSub{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;margin-top:2px;font-size:.85em;}
+.srSub .schedCrewLine{color:var(--muted);font-weight:600;}
+.fieldSec .srTop{font-size:.95em;}
+.srSub .schedLoggedTag,.srSub .schedHoursTag,.srSub .schedDblTag{margin-left:0;}
 .tinyEdit{
   background:none;border:1.5px solid var(--line);color:var(--navy);
   font-size:.68em;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
@@ -2693,7 +2706,7 @@ html.hc .fsMissed{background:var(--hc-bg);color:var(--hc-fg);border:2px solid va
 .fieldSchedNote{font-size:.8em;color:var(--muted);margin-top:10px;line-height:1.45;}
 /* A scheduled date row inside a field card: same shape as the office list but
    without the padding a desktop panel can afford. */
-.fieldSec .schedRow{padding:11px 12px;margin-bottom:8px;}
+.fieldSec .schedRow{padding:8px 10px;margin-bottom:6px;}
 .fieldSec .schedRow:last-child{margin-bottom:0;}
 
 /* Note meta becomes a row that can carry a follow-up tag and admin actions. */
@@ -5848,7 +5861,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112618;
+var APP_BUILD=2026112619;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10087,11 +10100,16 @@ function schedRowHTML(woId, d, inline){
   const thisYear=new Date().getFullYear();
   const dayName=iso=>{ const x=new Date(iso+'T00:00:00'); return x.toLocaleDateString('en-US',{weekday:'short'})+' '+(x.getMonth()+1)+'/'+x.getDate()+(x.getFullYear()!==thisYear?'/'+String(x.getFullYear()).slice(2):''); };
   const range = d.multiDay ? `${dayName(d.startDate)} – ${dayName(d.endDate)}` : dayName(d.startDate);
-  const times = (d.startTime && d.endTime) ? `${formatTime12(d.startTime)} – ${formatTime12(d.endTime)}` : formatArrivalWindow(d.startTime);
+  const clock=t=>{ const [h,m]=t.split(':').map(Number); return (h%12||12)+(m?':'+String(m).padStart(2,'0'):''); };
+  const ap=t=>Number(t.split(':')[0])<12 ? 'AM' : 'PM';
+  // 8 – 11 AM, 7 AM – 2 PM: the AM/PM is said once when both ends share it.
+  const times = (d.startTime && d.endTime)
+    ? (ap(d.startTime)===ap(d.endTime) ? `${clock(d.startTime)} – ${clock(d.endTime)} ${ap(d.endTime)}` : `${clock(d.startTime)} ${ap(d.startTime)} – ${clock(d.endTime)} ${ap(d.endTime)}`)
+    : formatArrivalWindow(d.startTime);
   // Days that already have a check-in are called out, so it's obvious before
   // editing that changing the dates could affect logged time.
   const logged=(d.dayLogs||[]).filter(l=>logSessions(l).length).length;
-  const loggedNote = logged ? `<span class="schedLoggedTag" title="This date has logged time">${logged} day${logged>1?'s':''} logged</span>` : '';
+  const loggedNote = logged ? `<span class="schedLoggedTag" title="This date has logged time">${d.multiDay ? logged+' day'+(logged>1?'s':'')+' logged' : 'Logged'}</span>` : '';
   // Running total of hours actually worked on this date range, built from
   // whichever of its days already have both a check-in and a check-out.
   const {total:hoursTotal, count:hoursCount}=sumDayLogHours(d.dayLogs||[]);
@@ -10099,7 +10117,8 @@ function schedRowHTML(woId, d, inline){
   // An intentional double-booking is flagged so it never looks like an oversight.
   const dblNote = d.overridden ? `<span class="schedDblTag" title="Double-booked over another appointment">double-booked</span>` : '';
   return `<div class="schedRow">
-    <div><b>${range}</b>${loggedNote}${hoursNote}${dblNote}<br><span class="small schedTimes">${times}</span>${(d.crew&&d.crew.length)?`<br><span class="small schedCrewLine">${esc(crewNames(d.crew))}</span>`:''}</div>
+    <div class="srTop"><b>${range}</b><span class="schedTimes">${times}</span></div>
+    <div class="srSub">${(d.crew&&d.crew.length)?`<span class="schedCrewLine">${esc(crewNames(d.crew))}</span>`:''}${loggedNote}${hoursNote}${dblNote}</div>
     <div class="schedRowBtns">
       <button class="tinyEdit" title="Edit this date" aria-label="Edit this scheduled date" onclick="openScheduleEdit(${woId},'${d.id}'${inline?',true':''})">Edit</button>
       <button class="tinyDel" title="Remove" aria-label="Remove this scheduled date" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
