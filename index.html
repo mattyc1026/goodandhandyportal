@@ -4395,6 +4395,19 @@ html.hc .fgChev{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(
 .schedPast > summary::-webkit-details-marker,.emQuote > summary::-webkit-details-marker,.expandLinks > details > summary::-webkit-details-marker,.sideBySide > details > summary::-webkit-details-marker{display:none;}
 .schedPast > summary::before,.emQuote > summary::before,.expandLinks > details > summary::before,.sideBySide > details > summary::before{content:'';width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);flex:0 0 auto;margin:0 3px;transition:transform .2s;}
 .schedPast[open] > summary::before,.emQuote[open] > summary::before,.expandLinks > details[open] > summary::before,.sideBySide > details[open] > summary::before{transform:translateY(2px) rotate(-135deg);}
+.emAttach{background:none;font-family:inherit;}
+.emPickCard{max-width:460px;width:100%;}
+.emPickList{display:flex;flex-direction:column;gap:6px;max-height:min(55vh,420px);overflow:auto;margin:6px 0 12px;text-align:left;}
+.emPickRow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.emPickRow.on{border-color:var(--cyan-ink);background:color-mix(in srgb,var(--cyan) 60%,var(--paper));}
+.emPickRow .wrapBox{flex:0 0 auto;}
+.emPickRow.on .wrapBox{background:var(--cyan-ink);border-color:var(--cyan-ink);color:#fff;}
+.wrapBox .ic{width:16px;height:16px;}
+.emPickPic{flex:0 0 44px;width:44px;height:44px;border-radius:8px;overflow:hidden;display:grid;place-items:center;background:var(--well);color:var(--cyan-ink);}
+.emPickPic img{width:100%;height:100%;object-fit:cover;}
+.emPickTxt{min-width:0;display:flex;flex-direction:column;}
+.emPickTxt b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;}
+.emPickTxt small{color:var(--muted);}
 /* ---- summary, backup, error log ---- */
 .modal.sumModal{max-width:980px;width:100%;}
 .sumModal .modalHead{gap:10px;}
@@ -5892,7 +5905,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112625;
+var APP_BUILD=2026112626;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -15795,7 +15808,7 @@ function emComposeHTML(){
     ${sig}
     ${c.quote ? `<details class="emQuote"><summary>${c.mode==='forward'?'Forwarded message':'Earlier message'}</summary><div>${emHtmlToText(c.quote).split('\n').map(esc).join('<br>')}</div></details>` : ''}
     <div class="emFiles">${(c.files||[]).map((f,i)=>`<span class="emFile">${icon('file')}<span>${esc(f.name)}</span><small>${esc(emSize(f.size))}</small><button type="button" onclick="emDropFile(${i})" aria-label="Remove ${esc(f.name)}">${icon('x')}</button></span>`).join('')}
-      <label class="emAttach">${icon('upload')}Attach<input type="file" multiple hidden onchange="emAddFiles(this)"></label></div>
+      <label class="emAttach">${icon('upload')}Attach<input type="file" multiple hidden onchange="emAddFiles(this)"></label>${emDocsWo() ? `<button type="button" class="emAttach" onclick="emPickDocs()">${icon('folder')}From Docs</button>` : ''}</div>
     <div class="emSendRow">
       <button type="button" class="btn" ${c.sending?'disabled':''} onclick="emSend()">${icon('send')}${c.sending?'Sending…':'Send'}</button>
       <button type="button" class="btn secondary" ${c.sending?'disabled':''} onclick="emSaveDraft()">Save Draft</button>
@@ -15816,6 +15829,52 @@ function emAddFiles(inp){
     r.onerror=()=>res();
     r.readAsDataURL(f);
   }))).then(()=>{ c.dirty=true; renderEmail(); });
+}
+/* Attaching from the work order's Docs. */
+function emDocsWo(){ const c=EM.compose; const id=c && (c.inWo || EM.returnWo); const wo=id && getWO(id); return wo && (wo.docs||[]).some(d=>d.url||d.dataUrl) ? wo : null; }
+var EM_PICK=null;
+function emPickDocs(){
+  const wo=emDocsWo(); if(!wo) return;
+  EM_PICK={woId:wo.id, sel:{}};
+  renderEmPickDocs();
+}
+function renderEmPickDocs(){
+  const P=EM_PICK, root=document.getElementById('confirmRoot');
+  if(!P || !root) return;
+  const wo=getWO(P.woId); if(!wo) return;
+  const docs=(wo.docs||[]).filter(d=>d.url||d.dataUrl).slice().sort((a,b)=>(b.uploadedAt||0)-(a.uploadedAt||0));
+  const n=Object.keys(P.sel).length;
+  root.innerHTML=`<div class="confirmBox" onclick="if(event.target===this)emPickClose()"><div class="confirmCard emPickCard" role="dialog" aria-modal="true" aria-label="Attach from Docs">
+    <h3>Attach from Docs</h3>
+    <div class="emPickList">${docs.map(d=>{ const on=!!P.sel[d.id]; const pic=isImageDoc(d) ? `<img src="${esc(d.url||d.dataUrl)}" alt="">` : icon('file','lg');
+      return `<button type="button" class="emPickRow${on?' on':''}" aria-pressed="${on}" onclick="emPickToggle('${d.id}')">
+        <span class="wrapBox">${icon('check')}</span><span class="emPickPic">${pic}</span>
+        <span class="emPickTxt"><b>${esc(d.name||'Document')}</b>${d.tag||d.size?`<small>${esc([d.tag, d.size?emSize(d.size):''].filter(Boolean).join(' · '))}</small>`:''}</span></button>`; }).join('')}</div>
+    <div class="btnRow"><button class="btn" ${n?'':'disabled'} onclick="emPickAttach()">${n?`Attach ${n}`:'Attach'}</button><button class="btn secondary" onclick="emPickClose()">Cancel</button></div>
+  </div></div>`;
+}
+function emPickToggle(id){ if(!EM_PICK) return; if(EM_PICK.sel[id]) delete EM_PICK.sel[id]; else EM_PICK.sel[id]=1; const l=document.querySelector('.emPickList'), top=l?l.scrollTop:0; renderEmPickDocs(); const l2=document.querySelector('.emPickList'); if(l2) l2.scrollTop=top; }
+function emPickClose(){ EM_PICK=null; const r=document.getElementById('confirmRoot'); if(r) r.innerHTML=''; }
+async function emPickAttach(){
+  const P=EM_PICK, c=EM.compose; if(!P || !c) return;
+  const wo=getWO(P.woId);
+  const docs=(wo.docs||[]).filter(d=>P.sel[d.id]);
+  emPickClose();
+  toast(docs.length>1 ? 'Attaching files…' : 'Attaching file…');
+  let total=c.files.reduce((s,f)=>s+f.size,0);
+  for(const d of docs){
+    try{
+      const r=await fetch(d.url||d.dataUrl);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const bytes=new Uint8Array(await r.arrayBuffer());
+      if(total+bytes.length>24*1048576){ toast(`${d.name||'That file'} is too big to attach.`); continue; }
+      total+=bytes.length;
+      if(EM.compose!==c) return;
+      c.files.push({name:d.name||'document', type:d.type||r.headers.get('content-type')||'application/octet-stream', size:bytes.length, b64:bytesToB64(bytes)});
+    }catch(e){ toast(`Couldn't attach ${d.name||'that file'}.`); }
+  }
+  c.dirty=true;
+  renderEmail();
 }
 function emDropFile(i){ const c=EM.compose; if(!c) return; c.files.splice(i,1); c.dirty=true; renderEmail(); }
 function emHeaderWord(s){ return /^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${utf8B64(s)}?=`; }
