@@ -5426,6 +5426,12 @@ function goToWorkOrderInWorkflow(id){
    device's Work Orders, users, and notes in sync in real time.
 ========================================================================= */
 
+/* The portal's own Firebase settings. They only say which project to talk to;
+   the database and file rules still require a signed-in, approved account.
+   A device with no settings saved borrows these for a sign-in attempt and
+   keeps them only if that sign-in succeeds, so an existing account connects
+   by itself while a brand-new one still enters the settings once by hand. */
+const PORTAL_SYNC_CFG={apiKey:"AIzaSyCMOKwvltpvVHV2Llg6IuHliMZ1Izw28DU",authDomain:"good-and-handy-portal.firebaseapp.com",projectId:"good-and-handy-portal",storageBucket:"good-and-handy-portal.firebasestorage.app",messagingSenderId:"742320147203",appId:"1:742320147203:web:f4a728b1ca3a715f92f736"};
 function getSyncConfig(){
   try{ return JSON.parse(localStorage.getItem(SYNC_CFG_KEY)||'null'); }catch(e){ return null; }
 }
@@ -5957,7 +5963,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112630;
+var APP_BUILD=2026112631;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -7172,11 +7178,19 @@ function doSignIn(){
   const pass=document.getElementById('siPass').value;
   const err=document.getElementById('siErr');
   if(!email || !pass){ err.textContent='Enter your email and password.'; return; }
-  if(!getSyncConfig()){ err.textContent='This device is not connected to the portal yet. Tap "Sync: Off" above.'; return; }
+  let borrowed=false;
+  if(!getSyncConfig()){
+    localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(PORTAL_SYNC_CFG));
+    borrowed=true;
+    initSync();
+  }
   err.textContent='';
   setAuthBusy(true,'in');
   firebase.auth().signInWithEmailAndPassword(email, pass)
-    .catch(e=>{ err.textContent=authErrorMessage(e); })
+    .catch(e=>{
+      if(borrowed){ localStorage.removeItem(SYNC_CFG_KEY); setSyncPill('off'); }
+      err.textContent=authErrorMessage(e);
+    })
     .finally(()=>setAuthBusy(false,'in'));
 }
 function sendPasswordReset(){
@@ -11795,7 +11809,7 @@ function fieldNotesSecHTML(wo){
     group.forEach(w=>(w.notes||[]).forEach((n,idx)=>items.push({n, idx, w, ord:idx})));
     items.sort((a,b)=>(noteTimeKey(b.n)-noteTimeKey(a.n)) || (a.w===b.w ? a.ord-b.ord : 0));
   }
-  const banner=showGroup ? `<div class="gnBanner">Showing notes from all ${group.length+1} work orders in this group</div>` : '';
+  const banner=showGroup ? `<div class="gnBanner">Showing notes from ${group.length===1?'both':'all '+(group.length+1)} work orders in this group</div>` : '';
   if(!items.length) return fieldSecHTML(wo.id, 'note', 'Notes', banner+'<div class="small">No notes yet.</div>', '', '', undefined, '', '', true, sw);
   /* Work orders in a group are numbered 1, 2, 3 in the order they joined it
      (oldest first), separate from the work order number. */
