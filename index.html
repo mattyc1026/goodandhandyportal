@@ -4439,17 +4439,30 @@ header.top .brand{display:flex;align-items:center;gap:12px;}
 .umBack .umChev{width:15px;height:15px;}
 html.dark .umBack{color:var(--ink);}
 .textSizeRow{flex-direction:column;align-items:stretch !important;gap:8px !important;}
-.tsStops{position:relative;display:flex;justify-content:space-between;align-items:flex-end;padding:0 4px;}
-.tsStops::before{content:'';position:absolute;left:16px;right:16px;bottom:9px;height:4px;border-radius:4px;background:var(--line);}
-.tsStop{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;width:32px;padding:0;border:0;background:none;cursor:pointer;color:var(--muted);font-family:inherit;}
-.tsStop b{font-size:var(--a);line-height:1;font-weight:800;}
-.tsStop i{order:2;width:14px;height:14px;border-radius:50%;background:var(--paper);border:3px solid var(--line);position:relative;z-index:1;}
-.tsStop.past i{border-color:var(--navy);background:var(--navy);}
-.tsStop.on{color:var(--navy);}
-.tsStop.on i{width:22px;height:22px;margin-top:-4px;margin-bottom:-4px;border-color:var(--orange);background:var(--orange);box-shadow:0 0 0 4px color-mix(in srgb,var(--orange) 25%,transparent);}
-html.dark .tsStop.on{color:var(--ink);}
-html.dark .tsStop.past i{border-color:var(--ink);background:var(--ink);}
-html.hc .tsStop.on i,html.hc .tsStop.past i{border-color:var(--hc-fg);background:var(--hc-fg);}
+.tsMarks{display:flex;justify-content:space-between;align-items:flex-end;padding:0 3px;color:var(--muted);}
+.tsMark{width:22px;text-align:center;font-size:var(--a);line-height:1;font-weight:800;}
+.tsMark.on{color:var(--orange);}
+.tsRange{-webkit-appearance:none;appearance:none;width:100%;height:28px;margin:0;background:transparent;cursor:pointer;--p:100%;}
+.tsRange:focus{outline:none;}
+.tsRange::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--orange) var(--p),var(--line) var(--p));}
+.tsRange::-moz-range-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--orange) var(--p),var(--line) var(--p));}
+.tsRange::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-9px;border-radius:50%;background:#fff;border:3px solid var(--orange);box-shadow:0 1px 4px rgba(0,0,0,.25);}
+.tsRange::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--orange);box-shadow:0 1px 4px rgba(0,0,0,.25);}
+.tsRange:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px color-mix(in srgb,var(--orange) 30%,transparent);}
+.tsName{text-align:center;font-size:.8em;font-weight:700;color:var(--muted);}
+html.hc .tsMark.on{color:var(--hc-fg);}
+/* search sits in the header, left of the name menu */
+header.top .globalSearchBar{display:flex !important;flex:1 1 auto;min-width:0;max-width:300px;padding:0;background:none;border:0;box-shadow:none;}
+header.top .globalSearchBar .gsField{max-width:none;flex:1;min-width:0;}
+header.top .globalSearchBar .gsField input{padding-top:9px;padding-bottom:9px;min-height:40px;}
+html.hc header.top .globalSearchBar{background:none;border:0;}
+header.top .userBadge{flex:1 1 auto;justify-content:flex-end;min-width:0;}
+header.top .brand .logoBtn img{width:72px !important;height:auto !important;}
+@media (max-width:480px){
+  header.top .brand .logoBtn img{width:58px !important;}
+  header.top .globalSearchBar .gsField input{padding-left:34px;padding-right:10px;min-height:38px;font-size:16px;}
+  header.top .globalSearchBar .gsField .ic{left:12px;}
+}
 @media (max-width:480px){
   .logoBtn img{width:58px;}
   .userBadge .userBtn{padding:0 10px 0 12px;font-size:.85em;min-height:38px;}
@@ -5002,7 +5015,9 @@ window._bootSafety = setTimeout(function(){
     </div>
     <div class="userBadge">
       <span class="practicePill">PRACTICE</span>
-      <button class="hdrIcon searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
+      <div class="globalSearchBar" id="globalSearchBar">
+        <label class="gsField"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" enterkeyhint="search" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}"></label>
+      </div>
       <div class="settingsWrap userWrap">
         <button type="button" class="settingsBtn userBtn" id="userBtn" onclick="toggleSettingsMenu('userMenu')" aria-haspopup="true" aria-expanded="false"><span id="whoami"></span><i class="admDot hidden" id="admDot"></i><svg class="ic umChev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
         <div class="settingsMenu userMenu" id="userMenu">
@@ -5085,9 +5100,6 @@ window._bootSafety = setTimeout(function(){
     <span style="flex:1 1 200px;">You are still using the password you were given. Set one only you know.</span>
     <button class="btn" onclick="openChangePassword()">Change Password</button>
     <button class="btn secondary" onclick="dismissPwNudge()">Later</button>
-  </div>
-  <div class="globalSearchBar" id="globalSearchBar">
-    <label class="gsField"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" enterkeyhint="search" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}"></label>
   </div>
   <div class="tabsBarWrap" id="tabsBarWrap">
     <nav class="tabs" id="tabsNav">
@@ -5963,7 +5975,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112632;
+var APP_BUILD=2026112633;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -21715,12 +21727,16 @@ function setTextSizeIndex(i){
 function renderTextSizeSliders(){
   const cur=textSizeIndex();
   document.querySelectorAll('[data-ts]').forEach(el=>{
-    const stops=el.querySelectorAll('.tsStop');
-    if(stops.length===TEXT_SIZES.length){
-      stops.forEach((st,i)=>{ st.classList.toggle('on', i===cur); st.classList.toggle('past', i<cur); st.setAttribute('aria-checked', i===cur); });
+    const r=el.querySelector('.tsRange');
+    if(r){
+      if(String(r.value)!==String(cur)) r.value=cur;
+      r.style.setProperty('--p', (cur/(TEXT_SIZES.length-1)*100)+'%');
+      r.setAttribute('aria-valuetext', TEXT_SIZE_NAMES[cur]);
+      el.querySelectorAll('.tsMark').forEach((m,i)=>m.classList.toggle('on', i===cur));
+      const n=el.querySelector('.tsName'); if(n) n.textContent=TEXT_SIZE_NAMES[cur];
       return;
     }
-    el.innerHTML=`<div class="tsStops" role="radiogroup" aria-label="Text size">${TEXT_SIZES.map((px,i)=>`<button type="button" role="radio" aria-checked="${i===cur}" aria-label="${TEXT_SIZE_NAMES[i]}" title="${TEXT_SIZE_NAMES[i]}" class="tsStop${i===cur?' on':''}${i<cur?' past':''}" style="--a:${11+i*3}px" onclick="setTextSizeIndex(${i})"><i></i><b>A</b></button>`).join('')}</div>`;
+    el.innerHTML=`<div class="tsMarks" aria-hidden="true">${TEXT_SIZES.map((px,i)=>`<b class="tsMark${i===cur?' on':''}" style="--a:${11+i*3}px">A</b>`).join('')}</div><input type="range" class="tsRange" min="0" max="${TEXT_SIZES.length-1}" step="1" value="${cur}" aria-label="Text size" aria-valuetext="${TEXT_SIZE_NAMES[cur]}" oninput="setTextSizeIndex(this.value)" style="--p:${cur/(TEXT_SIZES.length-1)*100}%"><div class="tsName">${TEXT_SIZE_NAMES[cur]}</div>`;
   });
 }
 function cycleTextSize(){
