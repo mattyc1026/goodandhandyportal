@@ -4298,7 +4298,7 @@ html.dark .dkView{color:var(--cream);}
 .emFoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;font-size:.85em;color:var(--muted);}
 .emFoot span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .emBack{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:var(--navy);font:inherit;font-weight:700;cursor:pointer;padding:4px 0;margin-bottom:6px;}
-.emBack .ic{transform:rotate(90deg);width:16px;height:16px;}
+.emBack .ic{width:16px;height:16px;}
 .emSubject{margin:4px 0 10px;font-size:1.2em;color:var(--ink);}
 .emActs,.emSendRow,.emReplyRow,.emWoBtns{display:flex;flex-wrap:wrap;gap:8px;}
 .emActs{margin-bottom:12px;}
@@ -4364,6 +4364,23 @@ html.hc .emRow.unread,html.hc .fieldSec--email{background:var(--hc-bg);}
   .emStar{padding-left:10px;}
   .emNewBtn{padding:8px 12px;}
 }
+
+.fgEmail.open{grid-column:1 / -1;}
+.fieldGrid > .fgCell{min-width:0;}
+.fgEmailPanel{min-width:0;overflow:hidden;}
+.fgEmail.open:active{transform:none;}
+.fgEmailRow{display:flex;align-items:center;}
+.fgEmailRow .fgHit{flex:1 1 auto;min-width:0;}
+.fgChev{position:relative;flex:0 0 auto;width:34px;height:34px;margin-right:14px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;background:color-mix(in srgb,var(--cyan-ink) 16%,transparent);color:var(--cyan-ink);}
+.fgChev .ic{width:18px;height:18px;transform:rotate(-90deg);transition:transform .2s;}
+.fgEmail.open .fgChev .ic{transform:rotate(90deg);}
+.fgChevN{position:absolute;top:-5px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--orange);color:#fff;font-size:.62rem;font-weight:800;line-height:17px;text-align:center;}
+.fgEmailPanel{padding:4px 16px 16px;border-top:1px solid color-mix(in srgb,var(--cyan-ink) 20%,transparent);}
+.fgEmailPanel .emWoMsg,.fgEmailPanel .emWoErr{padding:10px 0 0;}
+.fgEmailPanel .emCompose{padding-top:8px;}
+.fgEmailPanel .emBodyIn{min-height:150px;}
+.fgEmailPanel .emWoRow{width:100%;}
+html.hc .fgChev{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
 /* ---- summary, backup, error log ---- */
 .modal.sumModal{max-width:980px;width:100%;}
 .sumModal .modalHead{gap:10px;}
@@ -5861,7 +5878,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112622;
+var APP_BUILD=2026112623;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -11389,9 +11406,7 @@ function fieldGridHTML(wo){
     ${cell('fgTap', addrText
       ? `<button type="button" class="fgHit" data-v="${esc(c.address)}" onclick="openAddressAction(this.dataset.v)"><div class="fgLabel">${symTitle('Address','map-pin')}</div><div class="fgValue">${icon('map-pin')}<span class="fgAddrFull">${esc(addrText)}</span><span class="fgAddrShort">${esc(shortAddress(addr, addrText))}</span></div></button>`
       : `<div class="fgHit fgStatic"><div class="fgLabel">${symTitle('Address','map-pin')}</div><div class="fgValue">${icon('map-pin')}None</div></div>`)}
-    ${cell('fgTap', c.email
-      ? `<button type="button" class="fgHit" data-v="${esc(c.email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">${symTitle('Email','mail')}</div><div class="fgValue">${icon('mail')}<span>${esc(c.email)}</span></div></button>`
-      : `<div class="fgHit fgStatic"><div class="fgLabel">${symTitle('Email','mail')}</div><div class="fgValue">${icon('mail')}None</div></div>`)}
+    ${c.email ? fieldEmailCellHTML(wo) : cell('fgTap', `<div class="fgHit fgStatic"><div class="fgLabel">${symTitle('Email','mail')}</div><div class="fgValue">${icon('mail')}None</div></div>`)}
   </div>
   ${fieldPeopleHTML(wo)}`;
 }
@@ -11923,7 +11938,6 @@ function fieldModeHTML(wo){
     </div>
     ${fieldNoteComposerHTML(id)}
     ${fieldNotesSecHTML(wo)}
-    ${emailWoSecHTML(wo)}
   </div>`;
 }
 function openFieldCamera(id){
@@ -15482,12 +15496,13 @@ function emFinishClose(){
 function renderEmailAny(){
   if(document.getElementById('emailModal')) renderEmail();
   const w=OPEN_WO_ID && getWO(OPEN_WO_ID);
-  if(w && document.querySelector('.fieldSec--email')) renderWorkOrderModal(w.id);
+  if(w && document.querySelector('.fgEmail')) renderWorkOrderModal(w.id);
 }
 function emFolderName(){ return EM.folder==='search' ? 'Search' : ((EM_FOLDERS.find(f=>f[0]===EM.folder)||[])[1]||'Inbox'); }
 function renderEmail(){
   const root=document.getElementById('modalRoot');
   if(!root) return;
+  if(EM.compose && EM.compose.inWo && !document.getElementById('emailModal')){ if(OPEN_WO_ID===EM.compose.inWo) renderWorkOrderModal(EM.compose.inWo); return; }
   const prev=document.querySelector('#emailModal .modalBody');
   const keep=prev ? prev.scrollTop : 0;
   const signed=gmailSignedIn();
@@ -15828,6 +15843,7 @@ async function emSend(){
     const wasThread=c.threadId && EM.thread && EM.thread.id===c.threadId;
     EM.compose=null; EM_WO={};
     toast('Sent.');
+    if(c.inWo){ if(OPEN_WO_ID===c.inWo) renderWorkOrderModal(c.inWo); return; }
     if(EM.returnWo){ emFinishClose(); return; }
     if(wasThread) emOpenThread(c.threadId);
     else { EM.thread=null; renderEmail(); emLoad(); }
@@ -15842,13 +15858,13 @@ async function emSaveDraft(andClose){
     else { const d=await gapi('drafts', {method:'POST', body:{message}}); c.draftId=d.id; }
     c.dirty=false;
     toast('Draft saved.');
-    if(andClose){ EM.compose=null; emFinishClose(); return; }
+    if(andClose){ EM.compose=null; if(!c.inWo) emFinishClose(); return; }
     renderEmail();
   }catch(e){ gmailFail(e); }
 }
 function emDiscard(){
   const c=EM.compose; if(!c) return;
-  const done=()=>{ EM.compose=null; if(EM.returnWo){ emFinishClose(); return; } renderEmail(); if(EM.folder==='drafts' || !EM.list) emLoad(); };
+  const done=()=>{ const w=c.inWo; EM.compose=null; if(w){ if(OPEN_WO_ID===w) renderWorkOrderModal(w); return; } if(EM.returnWo){ emFinishClose(); return; } renderEmail(); if(EM.folder==='drafts' || !EM.list) emLoad(); };
   if(!c.draftId && !emComposeDirty()){ done(); return; }
   askYesNo(c.draftId ? 'Delete this draft?' : 'Discard this email?', async (ok)=>{
     if(!ok) return;
@@ -15873,30 +15889,42 @@ async function emOpenDraft(draftId){
 
 /* ---- on a work order ---- */
 function emCustomerQuery(email){ email=String(email||'').trim(); return `{from:(${email}) to:(${email}) cc:(${email}) bcc:(${email}) "${email}"}`; }
-function emailWoSecHTML(wo){
-  if(!gmailReady()) return '';
-  const email=String((wo.customer||{}).email||'').trim();
-  if(!email) return '';
-  const key='email';
-  let body;
-  if(!gmailSignedIn()){
-    body=`<div class="emWoConnect"><button type="button" class="btn secondary" onclick="gmailConnect(()=>{delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});})">${icon('mail')}Connect Gmail</button></div>`;
-  } else {
-    const st=EM_WO[wo.id];
-    if(FIELD_SEC[key] && (!st || (!st.err && Date.now()-st.at>120000 && !st.loading))) emLoadWo(wo.id);
-    const list=st && st.list;
-    body = (st && st.err) ? `<div class="small emWoErr">${esc(st.err)} <button type="button" class="editLink" onclick="delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});">Try Again</button></div>`
-      : !list ? `<div class="small">Loading…</div>`
-      : !list.length ? `<div class="small">No emails with ${esc(email)} yet.</div>`
-      : `<div class="emWoList">${list.slice(0,6).map(t=>`<button type="button" class="emWoRow${t.unread?' unread':''}" onclick="emOpenFromWo(${wo.id},'${t.id}')">
-          <span class="emSubj"><b>${esc(t.subject||'(no subject)')}</b><span class="emSnip">${esc(t.snippet)}</span></span>
-          <span class="emWhen">${esc(t.when)}</span></button>`).join('')}</div>`;
-    body+=`<div class="emWoBtns"><button type="button" class="btn" onclick="emailCustomer(${wo.id})">${icon('pencil')}Email Customer</button>${list && list.length ? `<button type="button" class="btn secondary" onclick="emLeaveWo();openEmail({q:emCustomerQuery((getWO(${wo.id}).customer||{}).email), returnWo:${wo.id}})">See All</button>` : ''}</div>`;
-  }
+/* The customer's Email cell on a work order. Tapping the address offers Copy
+   and Send Email; the chevron opens this customer's emails under it, and
+   Send Email writes a new one right there. */
+function fieldEmailCellHTML(wo){
+  const c=wo.customer||{};
+  const email=String(c.email||'').trim();
+  const ready=gmailReady();
+  const open=ready && !!FIELD_SEC.emails;
   const st=EM_WO[wo.id];
   const unread=st && st.list ? st.list.filter(t=>t.unread).length : 0;
-  const preview = unread ? `<div class="emWoPreview"><b class="admCount">${unread}</b> unread</div>` : '';
-  return fieldSecHTML(wo.id, key, 'Emails', body, '', '', undefined, '', preview);
+  const hit=`<button type="button" class="fgHit" data-v="${esc(email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">${symTitle('Email','mail')}</div><div class="fgValue">${icon('mail')}<span>${esc(email)}</span></div></button>`;
+  const chev=ready ? `<button type="button" class="fgChev" onclick="toggleWoEmails(${wo.id})" aria-expanded="${open}" aria-label="${open?'Hide':'Show'} emails with this customer">${icon('chevron')}${!open&&unread?`<b class="fgChevN">${unread}</b>`:''}</button>` : '';
+  return `<div class="fgCell fgTap fgEmail${open?' open':''}"><div class="fgEmailRow">${hit}${chev}</div>${open?`<div class="fgEmailPanel">${emailWoBodyHTML(wo)}</div>`:''}</div>`;
+}
+function toggleWoEmails(id){
+  FIELD_SEC.emails=!FIELD_SEC.emails;
+  if(!FIELD_SEC.emails && EM.compose && EM.compose.inWo===id && !emComposeDirty()) EM.compose=null;
+  renderWorkOrderModal(id);
+}
+function emailWoBodyHTML(wo){
+  const email=String((wo.customer||{}).email||'').trim();
+  if(!gmailSignedIn()){
+    return `<div class="emWoConnect"><button type="button" class="btn secondary" onclick="gmailConnect(()=>{delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});})">${icon('mail')}Connect Gmail</button></div>`;
+  }
+  if(EM.compose && EM.compose.inWo===wo.id) return emComposeHTML();
+  const st=EM_WO[wo.id];
+  if(!st || (!st.err && Date.now()-st.at>120000 && !st.loading)) emLoadWo(wo.id);
+  const list=st && st.list;
+  let body = (st && st.err) ? `<div class="small emWoErr">${esc(st.err)} <button type="button" class="editLink" onclick="delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});">Try Again</button></div>`
+    : !list ? `<div class="small emWoMsg">Loading…</div>`
+    : !list.length ? `<div class="small emWoMsg">No emails with ${esc(email)} yet.</div>`
+    : `<div class="emWoList">${list.slice(0,6).map(t=>`<button type="button" class="emWoRow${t.unread?' unread':''}" onclick="emOpenFromWo(${wo.id},'${t.id}')">
+        <span class="emSubj"><b>${esc(t.subject||'(no subject)')}</b><span class="emSnip">${esc(t.snippet)}</span></span>
+        <span class="emWhen">${esc(t.when)}</span></button>`).join('')}</div>`;
+  body+=`<div class="emWoBtns"><button type="button" class="btn" onclick="emailCustomer(${wo.id})">${icon('pencil')}New Email</button>${list && list.length ? `<button type="button" class="btn secondary" onclick="emLeaveWo();openEmail({q:emCustomerQuery((getWO(${wo.id}).customer||{}).email), returnWo:${wo.id}})">See All</button>` : ''}</div>`;
+  return body;
 }
 async function emLoadWo(id){
   const wo=getWO(id); if(!wo || !gmailSignedIn()) return;
@@ -15907,7 +15935,7 @@ async function emLoadWo(id){
     const r=await gapi('threads?maxResults=10&q='+encodeURIComponent(emCustomerQuery(email)));
     EM_WO[id]={at:Date.now(), list:await emThreadSummaries((r.threads||[]).map(t=>t.id))};
   }catch(e){ EM_WO[id]={at:Date.now(), list:null, err:(e && e.message)||'Could not load emails.'}; if(e && e.signin) delete EM_WO[id]; }
-  if(OPEN_WO_ID===id && document.querySelector('.fieldSec--email')) renderWorkOrderModal(id);
+  if(OPEN_WO_ID===id && document.querySelector('.fgEmail')) renderWorkOrderModal(id);
 }
 function emLeaveWo(){ if(OPEN_WO_ID) closeModal(); }
 function emOpenFromWo(woId, threadId){
@@ -15920,10 +15948,15 @@ function emailCustomer(id){
   const c=wo.customer||{};
   const to=c.name ? `"${String(c.name).replace(/"/g,'')}" <${String(c.email||'').trim()}>` : String(c.email||'').trim();
   const first=String(c.name||'').trim().split(/\s+/)[0]||'';
-  emLeaveWo();
-  EM.thread=null; EM.returnWo=id;
-  if(!gmailSignedIn()){ gmailConnect(()=>{ EM.returnWo=id; emCompose({mode:'new', to, body:first?`Hi ${first},\n\n`:''}); }); return; }
-  emCompose({mode:'new', to, body:first?`Hi ${first},\n\n`:''});
+  const start=()=>{
+    EM.compose={mode:'new', inWo:id, to, cc:'', bcc:'', showCc:false, subject:'', body:first?`Hi ${first},\n\n`:'', files:[], quote:'', threadId:null, inReplyTo:'', refs:'', draftId:null, dirty:false, sending:false};
+    FIELD_SEC.emails=true;
+    if(EM_SIG===null) gmailProfile();
+    renderWorkOrderModal(id);
+    setTimeout(()=>{ const p=document.querySelector('.fgEmailPanel'); if(p && p.scrollIntoView) p.scrollIntoView({block:'nearest', behavior:'smooth'}); const el=document.getElementById('emSubject'); if(el && !/Mobi/.test(navigator.userAgent)) el.focus(); }, 60);
+  };
+  if(!gmailSignedIn()){ gmailConnect(start); return; }
+  start();
 }
 
 function receiptTotal(wo){
@@ -18478,6 +18511,7 @@ var MODAL_PRESENTED=false;
   }).observe(root, {childList:true});
 })();
 function closeModal(){
+  try{ if(typeof EM!=='undefined' && EM.compose && EM.compose.inWo){ if(emComposeDirty() && gmailSignedIn()) emSaveDraft(true); else EM.compose=null; } }catch(e){}
   const root=document.getElementById('modalRoot');
   MODAL_PRESENTED=false;
   ghostOutModal(root);
