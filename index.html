@@ -5861,7 +5861,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112620;
+var APP_BUILD=2026112621;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10522,8 +10522,8 @@ function openScheduleWidget(id, inline){
 function schedFormFieldsHTML(short){
   return `
     <div class="schedTypeToggle">
-      <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">${short?'Pre-Site':'Pre-Site Inspection'}</button>
-      <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
+      <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">Pre-Site</button>
+      <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Job</button>
     </div>
     ${schedDayTimesHTML()}
     ${crewPickerHTML()}
