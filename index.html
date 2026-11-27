@@ -5861,7 +5861,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112619;
+var APP_BUILD=2026112620;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -10075,8 +10075,8 @@ function scheduleDatesSectionHTML(wo, id){
         <button class="editLink" onclick="openScheduleWidget(${id})">+ Add</button>
       </div>
       ${(!presite.length && !full.length) ? '<div class="small">No dates scheduled yet.</div>' : ''}
-      ${schedGroupHTML(id, 'Pre-Site Inspection', presite)}
-      ${schedGroupHTML(id, 'Whole Job', full)}
+      ${schedGroupHTML(id, 'Pre-Site', presite)}
+      ${schedGroupHTML(id, 'Job', full)}
       ${totalHTML}
     </div>`;
 }
@@ -11800,8 +11800,8 @@ function fieldScheduleSecHTML(wo){
   const {total:grandHours, count:grandDays}=sumDayLogHours(all.flatMap(d=>d.dayLogs||[]));
   const body=`
     ${all.length ? '' : '<div class="small">No dates scheduled yet.</div>'}
-    ${fieldSchedGroupHTML(id, 'Pre-Site Inspection', presite)}
-    ${fieldSchedGroupHTML(id, 'Whole Job', full)}
+    ${fieldSchedGroupHTML(id, 'Pre-Site', presite)}
+    ${fieldSchedGroupHTML(id, 'Job', full)}
     ${grandDays ? `<div class="schedHoursTotal">Hours logged: ${formatHoursMinutes(grandHours)} <span class="small">(from ${grandDays} checked-in/out day${grandDays>1?'s':''})</span></div>` : ''}
     <button class="fieldMoreBtn alignEnd fieldActSm" onclick="openScheduleWidget(${id}, true)">+ Add Date</button>`;
   return fieldSchedCardHTML(wo, body);
