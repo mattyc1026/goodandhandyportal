@@ -4452,7 +4452,17 @@ html.dark .umBack{color:var(--ink);}
 .tsName{text-align:center;font-size:.8em;font-weight:700;color:var(--muted);}
 html.hc .tsMark.on{color:var(--hc-fg);}
 /* search sits in the header, left of the name menu */
-header.top .globalSearchBar{display:flex !important;flex:1 1 auto;min-width:0;max-width:300px;padding:0;background:none;border:0;box-shadow:none;}
+header.top .globalSearchBar{display:flex !important;flex:0 1 auto;width:40px;min-width:40px;max-width:300px;padding:0;background:none;border:0;box-shadow:none;transition:width .25s var(--e-out,ease);}
+/* Closed it is a round magnifier button; tapping it opens the full field, and
+   it stays open while it has text in it. */
+header.top .globalSearchBar:focus-within,header.top .globalSearchBar:has(input:not(:placeholder-shown)){width:300px;}
+header.top .globalSearchBar:not(:focus-within):not(:has(input:not(:placeholder-shown))) .gsField input{padding:0 !important;cursor:pointer;color:transparent;caret-color:transparent;min-height:40px;}
+header.top .globalSearchBar:not(:focus-within):not(:has(input:not(:placeholder-shown))) .gsField .ic{left:12px;opacity:.9;}
+header.top .globalSearchBar .gsField input::placeholder{color:transparent;}
+@media (prefers-reduced-motion:reduce){ header.top .globalSearchBar{transition:none;} }
+@media (max-width:480px){
+  .userBadge:has(.globalSearchBar:focus-within) .userBtn #whoami{display:none !important;}
+}
 header.top .globalSearchBar .gsField{max-width:none;flex:1;min-width:0;}
 header.top .globalSearchBar .gsField input{padding-top:9px;padding-bottom:9px;min-height:40px;}
 html.hc header.top .globalSearchBar{background:none;border:0;}
@@ -5016,7 +5026,7 @@ window._bootSafety = setTimeout(function(){
     <div class="userBadge">
       <span class="practicePill">PRACTICE</span>
       <div class="globalSearchBar" id="globalSearchBar">
-        <label class="gsField"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" enterkeyhint="search" id="globalSearchInput" autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}"></label>
+        <label class="gsField"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" enterkeyhint="search" id="globalSearchInput" placeholder=" " autocomplete="off" aria-label="Search work orders" onkeydown="if(event.key==='Enter'){event.preventDefault();runGlobalSearch();}else if(event.key==='Escape'){this.value='';this.blur();}"></label>
       </div>
       <div class="settingsWrap userWrap">
         <button type="button" class="settingsBtn userBtn" id="userBtn" onclick="toggleSettingsMenu('userMenu')" aria-haspopup="true" aria-expanded="false"><span id="whoami"></span><i class="admDot hidden" id="admDot"></i><svg class="ic umChev" aria-hidden="true"><use href="#i-chevron"/></svg></button>
@@ -5975,7 +5985,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112633;
+var APP_BUILD=2026112634;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
