@@ -2969,6 +2969,9 @@ button.fgHit{font:inherit;color:inherit;text-align:left;cursor:pointer;}
 .gnSwitch.on .gnTrack{background:color-mix(in srgb,var(--orange) 24%,var(--paper));}
 .gnSwitch.on .gnKnob{transform:translateX(16px);background:var(--orange);}
 .fsNote.gnOther{text-align:right;opacity:.6;}
+.gnBanner{text-align:center;font-size:.72em;font-weight:700;color:#b5581c;background:color-mix(in srgb,var(--orange) 10%,transparent);border-radius:12px;padding:5px 12px;margin:0 0 10px;line-height:1.35;}
+html.dark .gnBanner{color:var(--orange2);}
+html.hc .gnBanner{color:var(--hc-fg);background:none;border:1px solid var(--hc-fg);}
 /* All notes line up with the first one: the older ones are not boxed or indented. */
 .fieldSec--note .fieldSubPanel{margin-top:8px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
 .fieldSec--note .fieldSubPanel > .fsNote:first-child{border-top:1px solid var(--line-soft);}
@@ -5908,7 +5911,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112628;
+var APP_BUILD=2026112629;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -11746,7 +11749,8 @@ function fieldNotesSecHTML(wo){
     group.forEach(w=>(w.notes||[]).forEach((n,idx)=>items.push({n, idx, w, ord:idx})));
     items.sort((a,b)=>(noteTimeKey(b.n)-noteTimeKey(a.n)) || (a.w===b.w ? a.ord-b.ord : 0));
   }
-  if(!items.length) return fieldSecHTML(wo.id, 'note', 'Notes', '<div class="small">No notes yet.</div>', '', '', undefined, '', '', true, sw);
+  const banner=showGroup ? `<div class="gnBanner">Showing notes from all ${group.length+1} work orders in this group</div>` : '';
+  if(!items.length) return fieldSecHTML(wo.id, 'note', 'Notes', banner+'<div class="small">No notes yet.</div>', '', '', undefined, '', '', true, sw);
   /* Work orders in a group are numbered 1, 2, 3 in the order they joined it
      (oldest first), separate from the work order number. */
   const members=groupMembersOrdered(wo);
@@ -11770,7 +11774,7 @@ function fieldNotesSecHTML(wo){
   /* The section opens on the most recent note. It is not labelled as such:
      the note carries its own date, and "Last Note" as a heading read like the
      name of the section rather than what was in it. */
-  return fieldSecHTML(wo.id, 'note', 'Notes', one(items[0]),
+  return fieldSecHTML(wo.id, 'note', 'Notes', banner+one(items[0]),
     'notesMore', `All notes (${items.length})`,
     rest.length ? rest.map(one).join('') : '', 'end',
     '', true, sw);
