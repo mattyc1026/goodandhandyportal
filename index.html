@@ -1785,11 +1785,15 @@ html.hc .stageBtn{border:1.5px solid var(--hc-fg);}
 .schedDayTimesLink{margin:2px 0 8px;text-align:left;}
 .schedDayTimesLink .schedCalLink{text-align:left;}
 .schedDayTimes{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
-.schedDayTimeRow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) 30px;align-items:center;column-gap:6px;row-gap:2px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);}
+.schedDayTimeRow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:8px;row-gap:4px;}
+.schedDayTimesHead{display:none;}
 .schedDayTimeRow.changed{background:var(--purple);border-color:var(--purple-line);}
-.schedDayTimeRow .sdtDate{grid-column:1 / -1;font-size:.85em;font-weight:700;color:var(--navy);}
-.schedDayTimeRow .tField input.tfText{padding:7px 2px 7px 8px;}
-.schedDayTimeRow .tfWheel{flex-basis:32px;}
+.schedDayTimeRow .sdtDate{grid-column:1 / -1;font-size:.88em;font-weight:700;color:var(--navy);}
+.schedDayTimes{gap:10px !important;}
+.schedTimes{color:var(--ink) !important;font-weight:600;}
+.schedDayTimeRow .tField input.tfText{padding:8px 2px 8px 8px;min-width:0;}
+.schedDayTimeRow .sdtDash{padding:0 2px;}
+.schedDayTimeRow .tfWheel{flex-basis:28px;}
 .schedDayTimeRow .sdtDash{font-size:.85em;color:var(--muted);}
 .schedDayTimeRow .sdtSpacer{width:30px;}
 .schedDayTimeRow .tinyDel{width:30px;height:30px;padding:0;}
@@ -5844,7 +5848,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112617;
+var APP_BUILD=2026112618;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -6503,7 +6507,33 @@ function normalizeWO(wo){
        visit, so no previously logged time is lost. */
     sd.dayLogs.forEach(dl=>migrateDayLogSessions(dl));
   });
+  splitScheduleIntoDays(wo);
   return wo;
+}
+/* Each scheduled day is its own entry, with its own times, so the job card can
+   list every day plainly and each day can be edited or removed on its own.
+   Older bookings covering several days are split here. The first day keeps
+   the booking's id; the others get ids built from it and the date, so two
+   devices splitting the same booking end up with the same entries. */
+function splitScheduleIntoDays(wo){
+  const list=wo.scheduleDates||[];
+  if(!list.some(sd=>sd.multiDay || (sd.endDate && sd.endDate!==sd.startDate))) return;
+  const ids=new Set(list.map(sd=>sd.id));
+  const out=[];
+  list.forEach(sd=>{
+    const days=expandRepeatDates(sd.startDate, sd.endDate||sd.startDate, sd.repeat);
+    if(days.length<=1 && !sd.multiDay){ out.push(sd); return; }
+    const logs={}; (sd.dayLogs||[]).forEach(l=>{ logs[l.date]=l; });
+    days.forEach((iso,i)=>{
+      const id = i===0 ? sd.id : sd.id+'~'+iso;
+      if(i>0 && ids.has(id)) return;
+      const t=dayTimesFor(sd, iso);
+      const e=Object.assign({}, sd, {id, startDate:iso, endDate:iso, multiDay:false, repeat:'none', startTime:t.startTime, endTime:t.endTime, dayTimes:{}, dayLogs:[logs[iso] || newDayLog(iso)]});
+      if(Array.isArray(sd.crew)) e.crew=sd.crew.slice();
+      out.push(e);
+    });
+  });
+  wo.scheduleDates=out;
 }
 function datesInRange(startIso, endIso){
   const out=[];
@@ -9583,27 +9613,39 @@ function refreshSchedDayTimes(){
 }
 function onSchedTimeChange(field, val){
   if(field==='start') SCHED_STIME=val; else SCHED_ETIME=val;
-  if(SCHED_DAYTIMES_OPEN && schedDayTimesApply()) refreshSchedDayTimes();
+  if(SCHED_DAYS.length>1){
+    Object.keys(SCHED_DAYTIMES).forEach(iso=>{ const o=SCHED_DAYTIMES[iso]; if(o.startTime===SCHED_STIME && o.endTime===SCHED_ETIME) delete SCHED_DAYTIMES[iso]; });
+    refreshSchedDayTimes();
+  }
 }
+/* Times for the picked days. One day: a start and an end. Several days: a
+   row per day. The first day's times are every other day's times until that
+   day is changed on its own row. */
 function schedDayTimesHTML(){
-  if(!schedDayTimesApply()) return '<div id="schedDayTimesBox"></div>';
   const days=SCHED_DAYS;
-  const custom=days.filter(iso=>SCHED_DAYTIMES[iso]).length;
-  const link=`<button type="button" class="schedCalLink" onclick="toggleSchedDayTimes()">${SCHED_DAYTIMES_OPEN?'Hide start/end times by day':'Edit start/end times by day'}${custom?' ('+custom+' changed)':''}</button>`;
-  if(!SCHED_DAYTIMES_OPEN) return `<div id="schedDayTimesBox"><div class="schedDayTimesLink">${link}</div></div>`;
-  const rows=days.map(iso=>{
+  if(days.length<=1){
+    return `<div id="schedDayTimesBox"><div class="schedTimeRow">
+      <div class="field"><label>Start Time</label>${timeFieldHTML('schedStartTime', SCHED_STIME, "onSchedTimeChange('start',this.value)", 'Start time')}</div>
+      <div class="field"><label>End Time</label>${timeFieldHTML('schedEndTime', SCHED_ETIME, "onSchedTimeChange('end',this.value)", 'End time')}</div>
+    </div></div>`;
+  }
+  const rows=days.map((iso,i)=>{
+    const label=new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'}).replace(',','');
+    if(i===0) return `<div class="schedDayTimeRow">
+      <span class="sdtDate">${label}</span>
+      ${timeFieldHTML('schedStartTime', SCHED_STIME, "onSchedTimeChange('start',this.value)", 'Start time '+label)}
+      <span class="sdtDash">to</span>
+      ${timeFieldHTML('schedEndTime', SCHED_ETIME, "onSchedTimeChange('end',this.value)", 'End time '+label)}
+    </div>`;
     const t=SCHED_DAYTIMES[iso] || {startTime:SCHED_STIME, endTime:SCHED_ETIME};
-    const changed=!!SCHED_DAYTIMES[iso];
-    const label=new Date(iso+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-    return `<div class="schedDayTimeRow${changed?' changed':''}">
+    return `<div class="schedDayTimeRow">
       <span class="sdtDate">${label}</span>
       ${timeFieldHTML('', t.startTime||'', `setSchedDayTime('${iso}','startTime',this.value)`, 'Start time '+label)}
       <span class="sdtDash">to</span>
       ${timeFieldHTML('', t.endTime||'', `setSchedDayTime('${iso}','endTime',this.value)`, 'End time '+label)}
-      ${changed?`<button type="button" class="tinyDel" title="Use the default time" aria-label="Use the default time for ${label}" onclick="resetSchedDayTime('${iso}')">&#8634;</button>`:'<span class="sdtSpacer"></span>'}
     </div>`;
   }).join('');
-  return `<div id="schedDayTimesBox"><div class="schedDayTimesLink">${link}</div><div class="schedDayTimes">${rows}</div></div>`;
+  return `<div id="schedDayTimesBox"><div class="schedDayTimesHead"><span></span><span>Start</span><span></span><span>End</span></div><div class="schedDayTimes">${rows}</div></div>`;
 }
 /* When set, the schedule widget is editing that existing saved date instead of
    adding new ones. */
@@ -10042,7 +10084,10 @@ function schedGroupHTML(id, title, list){
   return head + pastHTML + rest.map(d=>schedRowHTML(id,d)).join('');
 }
 function schedRowHTML(woId, d, inline){
-  const range = d.multiDay ? `${formatDateDisplay(d.startDate)} – ${formatDateDisplay(d.endDate)}` : formatDateDisplay(d.startDate);
+  const thisYear=new Date().getFullYear();
+  const dayName=iso=>{ const x=new Date(iso+'T00:00:00'); return x.toLocaleDateString('en-US',{weekday:'short'})+' '+(x.getMonth()+1)+'/'+x.getDate()+(x.getFullYear()!==thisYear?'/'+String(x.getFullYear()).slice(2):''); };
+  const range = d.multiDay ? `${dayName(d.startDate)} – ${dayName(d.endDate)}` : dayName(d.startDate);
+  const times = (d.startTime && d.endTime) ? `${formatTime12(d.startTime)} – ${formatTime12(d.endTime)}` : formatArrivalWindow(d.startTime);
   // Days that already have a check-in are called out, so it's obvious before
   // editing that changing the dates could affect logged time.
   const logged=(d.dayLogs||[]).filter(l=>logSessions(l).length).length;
@@ -10054,7 +10099,7 @@ function schedRowHTML(woId, d, inline){
   // An intentional double-booking is flagged so it never looks like an oversight.
   const dblNote = d.overridden ? `<span class="schedDblTag" title="Double-booked over another appointment">double-booked</span>` : '';
   return `<div class="schedRow">
-    <div><b>${range}</b>${loggedNote}${hoursNote}${dblNote}<br><span class="small">${formatArrivalWindow(d.startTime)}${repeatLabel(d)}${hasCustomDayTimes(d)?', times vary by day':''}</span>${(d.crew&&d.crew.length)?`<br><span class="small schedCrewLine">${esc(crewNames(d.crew))}</span>`:''}</div>
+    <div><b>${range}</b>${loggedNote}${hoursNote}${dblNote}<br><span class="small schedTimes">${times}</span>${(d.crew&&d.crew.length)?`<br><span class="small schedCrewLine">${esc(crewNames(d.crew))}</span>`:''}</div>
     <div class="schedRowBtns">
       <button class="tinyEdit" title="Edit this date" aria-label="Edit this scheduled date" onclick="openScheduleEdit(${woId},'${d.id}'${inline?',true':''})">Edit</button>
       <button class="tinyDel" title="Remove" aria-label="Remove this scheduled date" onclick="deleteScheduleDate(${woId},'${d.id}')">&times;</button>
@@ -10105,7 +10150,7 @@ function saveSchedule(){
   if(!days.length){ toast('Pick a day on the calendar.'); return; }
   if(!startTime || !endTime){ toast('Start time and end time are both required.'); return; }
   if(endTime<=startTime){ toast('End time must be after the start time.'); return; }
-  const allTimes = SCHED_TYPE==='full' ? cleanDayTimes(Object.fromEntries(days.map(iso=>[iso, SCHED_DAYTIMES[iso]]).filter(x=>x[1])), days[0], days[days.length-1], 'daily', startTime, endTime) : {};
+  const allTimes = cleanDayTimes(Object.fromEntries(days.map(iso=>[iso, SCHED_DAYTIMES[iso]]).filter(x=>x[1])), days[0], days[days.length-1], 'daily', startTime, endTime);
   if(!dayTimesValid(allTimes)){ toast('Each day\'s end time must be after its start time.'); return; }
   const crew=SCHED_CREW.slice();
   const editing=SCHED_EDIT_ID ? (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID) : null;
@@ -10143,32 +10188,32 @@ function saveSchedule(){
   });
 }
 function commitSchedule(wo, editing, days, startTime, endTime, allTimes, crew, overridden){
-  const runs=daysToRuns(days);
   const logs={};
   if(editing) (editing.dayLogs||[]).forEach(l=>{ logs[l.date]=l; });
   const before=editing ? schedEntryLabel(editing) : '';
-  const entries=runs.map((run, i)=>{
-    const e=(editing && i===0) ? editing : {id:'sd'+Date.now()+i+Math.random().toString(36).slice(2,7)};
+  /* One entry per day. When editing, the day being edited keeps its entry if
+     it is still picked, otherwise the first picked day takes it over. */
+  const keepAt=editing ? Math.max(0, days.indexOf(editing.startDate)) : -1;
+  const entries=days.map((iso, i)=>{
+    const e=(editing && i===keepAt) ? editing : {id:'sd'+Date.now()+i+Math.random().toString(36).slice(2,7)};
+    const t=allTimes[iso] || {startTime, endTime};
     e.type=SCHED_TYPE;
-    e.startDate=run[0];
-    e.endDate=run[run.length-1];
-    e.multiDay=run.length>1;
-    e.repeat=run.length>1 ? 'daily' : 'none';
-    e.startTime=startTime;
-    e.endTime=endTime;
-    e.dayTimes=cleanDayTimes(allTimes, e.startDate, e.endDate, e.repeat, startTime, endTime);
-    // A day on its own takes its own times as the booking's times.
-    const own=run.length===1 && e.dayTimes[run[0]];
-    if(own){ e.startTime=own.startTime; e.endTime=own.endTime; e.dayTimes={}; }
+    e.startDate=iso;
+    e.endDate=iso;
+    e.multiDay=false;
+    e.repeat='none';
+    e.startTime=t.startTime;
+    e.endTime=t.endTime;
+    e.dayTimes={};
     e.crew=crew.slice();
     e.overridden=!!overridden;
-    e.dayLogs=run.map(iso=>logs[iso] ? migrateDayLogSessions(JSON.parse(JSON.stringify(logs[iso]))) : newDayLog(iso));
+    e.dayLogs=[logs[iso] ? migrateDayLogSessions(JSON.parse(JSON.stringify(logs[iso]))) : newDayLog(iso)];
     return e;
   });
   if(!Array.isArray(wo.scheduleDates)) wo.scheduleDates=[];
   if(editing){
     const at=wo.scheduleDates.indexOf(editing);
-    wo.scheduleDates.splice(at+1, 0, ...entries.slice(1));
+    wo.scheduleDates.splice(at+1, 0, ...entries.filter(e=>e!==editing));
     addAdminLog(wo, `Changed a ${before} to ${entries.map(schedEntryLabel).join(' and ')}.${overridden?' Double-booked over an existing appointment (override).':''}`);
   } else {
     wo.scheduleDates=wo.scheduleDates.concat(entries);
@@ -10461,10 +10506,6 @@ function schedFormFieldsHTML(short){
       <button class="${SCHED_TYPE==='presite'?'active':''}" onclick="setSchedType('presite')">${short?'Pre-Site':'Pre-Site Inspection'}</button>
       <button class="${SCHED_TYPE==='full'?'active':''}" onclick="setSchedType('full')">Whole Job</button>
     </div>
-    <div class="schedTimeRow">
-      <div class="field"><label>Start Time</label>${timeFieldHTML('schedStartTime', SCHED_STIME, "onSchedTimeChange('start',this.value)", 'Start time')}</div>
-      <div class="field"><label>End Time</label>${timeFieldHTML('schedEndTime', SCHED_ETIME, "onSchedTimeChange('end',this.value)", 'End time')}</div>
-    </div>
     ${schedDayTimesHTML()}
     ${crewPickerHTML()}
     ${SCHED_FROM_CAL && !SCHED_ADD_MORE && !SCHED_EDIT_ID ? `<div class="field"><label for="schedNote">${SCHED_TYPE==='presite'?'SCHD PRESITE':'SCHD'} Note</label><textarea id="schedNote" rows="2" data-nodraft="1" oninput="SCHED_NOTE=this.value">${esc(SCHED_NOTE)}</textarea></div>` : ''}`;
@@ -10737,8 +10778,8 @@ function pickSchedDay(iso, ok){
   schedSyncRange();
   // The by-day times appear or go away as the day count crosses one.
   const multi=SCHED_DAYS.length>1, wasMulti=had>1;
-  if(SCHED_TYPE==='full' && (multi!==wasMulti || SCHED_DAYTIMES_OPEN)){ refreshSchedCalendar(); refreshSchedDayTimes(); return; }
-  refreshSchedCalendar();
+  captureSchedFields();
+  refreshSchedCalendar(); refreshSchedDayTimes();
 }
 
 /* ---- after scheduling: calendar file and customer email in one sheet ---- */
