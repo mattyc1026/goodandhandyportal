@@ -4238,6 +4238,115 @@ html.dark .dkView{color:var(--cream);}
 .calcTop .calcVal{font-size:1.15em;}
 .calcOut .calcVal{color:var(--redb);}
 .calcLeft{background:var(--s2,var(--cream));}
+/* ---- Email ---- */
+.hdrIcon{position:relative;}
+.hdrBadge{position:absolute;top:-4px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--orange);color:#fff;font-size:.68rem;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--navy2);}
+.modal.emModal{max-width:980px;width:100%;}
+.emModal .modalHead{gap:10px;}
+.emModal .modalHead h2{flex:1;}
+.emNewBtn{padding:8px 16px;min-height:38px;font-size:.85em;gap:6px;}
+.emErr{background:var(--red);color:var(--redb);border:1px solid var(--redb);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-weight:600;}
+.emConnect{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 10px;text-align:center;}
+.emConnectIc{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--cyan);color:var(--cyan-ink);}
+.emConnectIc .ic{width:30px;height:30px;}
+.emBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;}
+.emBar .emTabs{flex:1 1 auto;margin:0 -4px;min-width:0;}
+.emTabN{display:inline-block;min-width:1.5em;padding:0 5px;border-radius:999px;background:var(--orange);color:#fff;font-size:.85em;}
+.emSearch{position:relative;flex:0 1 280px;max-width:280px;display:flex;align-items:center;}
+.emSearch .ic{position:absolute;left:13px;width:16px;height:16px;color:var(--muted);pointer-events:none;}
+.emSearch input{width:100%;border-radius:999px;padding:9px 34px 9px 36px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;-webkit-appearance:none;appearance:none;}
+.emSearch input::-webkit-search-cancel-button{display:none;}
+.emSearchX{position:absolute;right:6px;border:0;background:none;color:var(--muted);cursor:pointer;padding:4px;display:flex;}
+.emSearchX .ic{position:static;}
+.emList{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--paper);}
+.emRow{display:flex;align-items:stretch;border-top:1px solid var(--line-soft);}
+.emRow:first-child{border-top:0;}
+.emRow.unread{background:linear-gradient(90deg,var(--cyan) 0%,var(--paper) 55%);box-shadow:inset 4px 0 0 var(--cyan-ink);}
+.emStar{border:0;background:none;padding:0 6px 0 12px;color:var(--line);cursor:pointer;display:flex;align-items:center;}
+.emStar .ic{width:18px;height:18px;}
+.emStar.on{color:#f2b01e;}
+.emRowMain{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px 12px 4px;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.emWho{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
+.emWho small{color:var(--muted);font-weight:600;}
+.emSubj{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.emSubj b{font-weight:600;}
+.emSnip{color:var(--muted);font-weight:400;}
+.emRow.unread .emWho,.emRow.unread .emSubj b{font-weight:800;}
+.emRowRight{display:flex;align-items:center;gap:6px;color:var(--muted);}
+.emRowRight .ic{width:15px;height:15px;}
+.emWhen{font-size:.85em;color:var(--muted);white-space:nowrap;}
+.emRow.unread .emWhen{color:var(--cyan-ink);font-weight:800;}
+.emEmpty{padding:30px;text-align:center;color:var(--muted);}
+.emMore{width:100%;margin-top:10px;}
+.emFoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;font-size:.85em;color:var(--muted);}
+.emFoot span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.emBack{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:var(--navy);font:inherit;font-weight:700;cursor:pointer;padding:4px 0;margin-bottom:6px;}
+.emBack .ic{transform:rotate(90deg);width:16px;height:16px;}
+.emSubject{margin:4px 0 10px;font-size:1.2em;color:var(--ink);}
+.emActs,.emSendRow,.emReplyRow,.emWoBtns{display:flex;flex-wrap:wrap;gap:8px;}
+.emActs{margin-bottom:12px;}
+.emActs .btn,.emReplyRow .btn,.emSendRow .btn,.emWoBtns .btn{gap:6px;padding:8px 14px;min-height:38px;font-size:.85em;}
+.emStarBtn.on .ic{color:#f2b01e;}
+.emDanger{color:var(--redb) !important;}
+.emWoChips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+.emWoChip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;border:1.5px solid var(--blueb);background:var(--blue);color:var(--ink);font:inherit;font-size:.85em;font-weight:700;cursor:pointer;}
+.emWoChip small{opacity:.55;font-weight:600;}
+.emMsgs{display:flex;flex-direction:column;gap:8px;}
+.emMsg{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);overflow:hidden;}
+.emMsg.open{box-shadow:var(--sh-1);border-top:3px solid var(--cyan-ink);padding-bottom:6px;}
+.emMsgHead{width:100%;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:10px 14px;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.emFrom{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.emFrom small{color:var(--muted);}
+.emMsgHead .emSnip{flex-basis:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.9em;}
+.emMeta{padding:0 14px 8px;font-size:.82em;color:var(--muted);}
+.emFrame{display:block;width:calc(100% - 20px);margin:0 10px;border:0;min-height:60px;background:#fff;border-radius:8px;}
+.emText{padding:4px 14px 10px;word-wrap:break-word;line-height:1.5;}
+.emFiles{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px 6px;}
+.emCompose .emFiles{padding:8px 0;align-items:center;}
+.emFile{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:inherit;font-size:.85em;cursor:pointer;}
+.emFile > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;}
+.emFile small{color:var(--muted);}
+.emFile button{border:0;background:none;color:var(--muted);cursor:pointer;display:flex;padding:0 0 0 2px;}
+.emReplyRow{margin-top:12px;}
+.emCompose{display:flex;flex-direction:column;gap:8px;}
+.emToRow{display:flex;align-items:center;gap:10px;}
+.emToRow .emField{flex:1;}
+.emField{display:flex;align-items:center;gap:10px;border-bottom:1.5px solid var(--line);padding:2px 0;min-width:0;}
+.emField span{flex:0 0 58px;font-size:.85em;font-weight:700;color:var(--cyan-ink);}
+.emField input{flex:1 1 0;width:auto;min-width:0;max-width:none;border:0;border-radius:0;background:none;padding:10px 0;font:inherit;color:var(--ink);outline:none;box-shadow:none;}
+.emToRow .editLink{flex:0 0 auto;font-size:.72em;}
+.emField:focus-within{border-color:var(--cyan-ink);}
+.emBodyIn{width:100%;min-height:220px;resize:vertical;border:1.5px solid var(--line);border-radius:var(--radius);padding:12px 14px;font:inherit;line-height:1.5;color:var(--ink);background:var(--paper);margin-top:6px;box-sizing:border-box;}
+.emBodyIn:focus{outline:none;border-color:var(--cyan-ink);}
+.emSig{font-size:.88em;color:var(--muted);padding:0 4px;}
+.emSig img{max-height:60px;}
+.emQuote{font-size:.85em;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 10px;}
+.emQuote summary{cursor:pointer;font-weight:700;}
+.emQuote div{max-height:240px;overflow:auto;margin-top:6px;}
+.emAttach{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1.5px dashed var(--cyan-ink);color:var(--cyan-ink);font-weight:700;font-size:.85em;cursor:pointer;}
+.emSendRow{margin-top:6px;}
+.fieldSec--email{border-top:4px solid var(--cyan-ink);background:linear-gradient(90deg,var(--cyan) 0%,var(--paper) 62%);}
+.fieldSec--email .fieldSecHead .ttlSym{color:var(--cyan-ink);}
+.emWoList{display:flex;flex-direction:column;}
+.emWoRow{display:flex;align-items:center;gap:10px;padding:10px 0;border:0;border-top:1px solid var(--line-soft);background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;}
+.emWoRow:first-child{border-top:0;}
+.emWoRow .emSubj{flex:1;min-width:0;display:flex;flex-direction:column;white-space:normal;}
+.emWoRow .emSubj b,.emWoRow .emSnip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.emWoRow.unread .emSubj b{font-weight:800;}
+.emWoRow.unread .emWhen{color:var(--cyan-ink);font-weight:800;}
+.emWoBtns{margin-top:10px;}
+.emWoPreview{padding:0 16px 12px;font-size:.85em;color:var(--muted);}
+.emWoPreview .admCount{margin:0 4px 0 0;}
+html.hc .emRow.unread,html.hc .fieldSec--email{background:var(--hc-bg);}
+@media (max-width:700px){
+  .emBar{flex-direction:column;align-items:stretch;flex-wrap:nowrap;}
+  .emBar .emTabs{margin:0 -4px;}
+  .emSearch{max-width:none;flex:1 1 auto;}
+  .emRowMain{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"who when" "subj subj";gap:2px 8px;padding:10px 12px 10px 2px;}
+  .emWho{grid-area:who;} .emSubj{grid-area:subj;} .emRowRight{grid-area:when;}
+  .emStar{padding-left:10px;}
+  .emNewBtn{padding:8px 12px;}
+}
 /* ---- summary, backup, error log ---- */
 .modal.sumModal{max-width:980px;width:100%;}
 .sumModal .modalHead{gap:10px;}
@@ -4813,6 +4922,7 @@ window._bootSafety = setTimeout(function(){
         </div>
       </div>
       <span class="practicePill">PRACTICE</span>
+      <button class="hdrIcon emailHdrBtn hidden" id="emailHdrBtn" onclick="openEmail()" aria-label="Email"><svg class="ic" aria-hidden="true"><use href="#i-mail"/></svg><b class="hdrBadge hidden" id="emailCount"></b></button>
       <button class="hdrIcon searchToggleBtn" id="searchToggleBtn" onclick="toggleSearchBar()" aria-label="Search work orders" aria-expanded="false"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></button>
       <div class="settingsWrap">
         <button class="settingsBtn" id="settingsBtn" onclick="toggleSettingsMenu('settingsMenu')" title="Accessibility settings" aria-label="Accessibility settings" aria-haspopup="true" aria-expanded="false"><svg class="gearIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.50 4.96 L10.05 2.81 A9.40 9.40 0 0 1 13.95 2.81 L13.50 4.96 A7.20 7.20 0 0 1 15.92 5.96 L17.12 4.12 A9.40 9.40 0 0 1 19.88 6.88 L18.04 8.08 A7.20 7.20 0 0 1 19.04 10.50 L21.19 10.05 A9.40 9.40 0 0 1 21.19 13.95 L19.04 13.50 A7.20 7.20 0 0 1 18.04 15.92 L19.88 17.12 A9.40 9.40 0 0 1 17.12 19.88 L15.92 18.04 A7.20 7.20 0 0 1 13.50 19.04 L13.95 21.19 A9.40 9.40 0 0 1 10.05 21.19 L10.50 19.04 A7.20 7.20 0 0 1 8.08 18.04 L6.88 19.88 A9.40 9.40 0 0 1 4.12 17.12 L5.96 15.92 A7.20 7.20 0 0 1 4.96 13.50 L2.81 13.95 A9.40 9.40 0 0 1 2.81 10.05 L4.96 10.50 A7.20 7.20 0 0 1 5.96 8.08 L4.12 6.88 A9.40 9.40 0 0 1 6.88 4.12 L8.08 5.96 A7.20 7.20 0 0 1 10.50 4.96 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
@@ -5734,7 +5844,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112615;
+var APP_BUILD=2026112616;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -6950,6 +7060,7 @@ function enterApp(u){
   document.getElementById('adminPill').classList.toggle('hidden', !u.isAdmin);
   ['calcRow','summaryRow','backupRow','errorLogRow','approvalsRow'].forEach(id=>{ const r=document.getElementById(id); if(r) r.classList.toggle('hidden', !u.isAdmin); });
   try{ refreshAdminBadges(); }catch(e){}
+  try{ gmailBoot(); }catch(e){}
   PW_NUDGE_DISMISSED=false;
   refreshPwNudge();
   document.getElementById('siErr').textContent='';
@@ -11482,7 +11593,7 @@ function markPreviewOverflow(){
 }
 /* fixed: the section is always open and its title is just a title, with no
    + / - to fold it away (used by Notes). */
-const FIELD_SEC_SYM={note:'message', job:'clipboard-lines'};
+const FIELD_SEC_SYM={note:'message', job:'clipboard-lines', email:'mail'};
 function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreAlign, preview, fixed, headExtra){
   const open=fixed || !!FIELD_SEC[key];
   const moreCls = moreAlign==='end' ? ' alignEnd' : '';
@@ -11752,6 +11863,7 @@ function fieldModeHTML(wo){
     </div>
     ${fieldNoteComposerHTML(id)}
     ${fieldNotesSecHTML(wo)}
+    ${emailWoSecHTML(wo)}
   </div>`;
 }
 function openFieldCamera(id){
@@ -12507,7 +12619,10 @@ function openEmailAction(email){
   email=String(email||'').trim();
   if(!email) return;
   const href='mailto:'+encodeURIComponent(email).replace(/%40/g,'@');
-  openActionSheet(email, email,
+  const wo=(typeof gmailReady==='function' && gmailReady() && OPEN_WO_ID) ? getWO(OPEN_WO_ID) : null;
+  const here=(wo && String((wo.customer||{}).email||'').trim().toLowerCase()===email.toLowerCase())
+    ? `<button class="btn" onclick="closePhoneAction();emailCustomer(${wo.id})">${icon('mail')}Send Email</button>` : '';
+  openActionSheet(email, email, here ||
     `<a class="btn" href="${href}" onclick="setTimeout(closePhoneAction,0)">${icon('mail')}Send Email</a>`);
 }
 function openNameAction(id){
@@ -13947,6 +14062,7 @@ function refreshAdminBadges(){
   const lr=(admin && !window.GH_TRAINING && typeof ACCESS_REQS!=='undefined') ? ACCESS_REQS.length : 0;
   const set=(id,n)=>{ const el=document.getElementById(id); if(!el) return; el.textContent=n||''; el.classList.toggle('hidden', !n); };
   try{ startErrWatch(); }catch(e){}
+  try{ refreshEmailBadge(); }catch(e){}
   const en=(admin && !window.GH_TRAINING) ? ERR_NEW : 0;
   set('reimbCount', rp); set('loginCount', lr); set('errCount', en);
   const dot=document.getElementById('admDot'); if(dot) dot.classList.toggle('hidden', !(rp||lr||en));
@@ -15067,6 +15183,686 @@ function renderErrorLog(){
       </div>
     </div>
   </div>`;
+}
+
+/* ---- Email (admins): the business Gmail inside the portal ----
+   Talks to Gmail directly from the browser. Each device signs in to the
+   business account once; the sign-in lasts about an hour and is renewed
+   quietly when an admin opens Email or taps something in it. Nothing from
+   Gmail is stored in the portal's database. */
+var GMAIL_CLIENT_ID='';
+var GMAIL_ACCOUNT='good.and.handy.co@gmail.com';
+const GMAIL_API='https://gmail.googleapis.com/gmail/v1/users/me/';
+const EM_FOLDERS=[['inbox','Inbox','in:inbox'],['starred','Starred','is:starred'],['sent','Sent','in:sent'],['drafts','Drafts',''],['trash','Trash','in:trash']];
+var EM={folder:'inbox', q:'', list:null, next:null, busy:false, err:'', thread:null, compose:null, open:{}, unread:0, returnWo:null};
+var EM_TOK=null, EM_TC=null, EM_SIG=null, EM_ME='', EM_POLL=null, EM_WO={};
+try{ const t=JSON.parse(localStorage.getItem('gh_gmail_tok')||'null'); if(t && t.exp>Date.now()+60000) EM_TOK=t; }catch(e){}
+
+function gmailReady(){ return !!(GMAIL_CLIENT_ID && CURRENT_USER && CURRENT_USER.isAdmin && !window.GH_TRAINING); }
+function gmailSignedIn(){ return !!(EM_TOK && EM_TOK.exp>Date.now()+30000); }
+function gmailEverConnected(){ try{ return localStorage.getItem('gh_gmail_ok')==='1'; }catch(e){ return false; } }
+
+function gmailLoadGis(){
+  if(window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
+  if(gmailLoadGis.p) return gmailLoadGis.p;
+  gmailLoadGis.p=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://accounts.google.com/gsi/client'; s.async=true;
+    s.onload=()=>res(); s.onerror=()=>{ gmailLoadGis.p=null; rej(new Error('Could not reach Google.')); };
+    document.head.appendChild(s);
+  });
+  return gmailLoadGis.p;
+}
+function gmailTokenClient(){
+  if(EM_TC) return EM_TC;
+  if(!(window.google && google.accounts && google.accounts.oauth2)) return null;
+  EM_TC=google.accounts.oauth2.initTokenClient({
+    client_id:GMAIL_CLIENT_ID,
+    scope:'https://www.googleapis.com/auth/gmail.modify',
+    hint:GMAIL_ACCOUNT,
+    callback:(r)=>{
+      if(!r || r.error){ gmailConnectDone(false, r && (r.error_description||r.error)); return; }
+      EM_TOK={t:r.access_token, exp:Date.now()+(Number(r.expires_in)||3600)*1000};
+      try{ localStorage.setItem('gh_gmail_tok', JSON.stringify(EM_TOK)); localStorage.setItem('gh_gmail_ok','1'); }catch(e){}
+      gmailConnectDone(true);
+    },
+    error_callback:(e)=>gmailConnectDone(false, e && (e.message||e.type))
+  });
+  return EM_TC;
+}
+var EM_AFTER=null;
+/* Must run straight from a tap: Google only opens its sign-in window then. */
+function gmailConnect(after){
+  EM_AFTER=after||null;
+  const tc=gmailTokenClient();
+  if(!tc){ gmailLoadGis().then(()=>{ EM.err=''; renderEmailAny(); }).catch(e=>{ EM.err=e.message; renderEmailAny(); }); toast('Connecting to Google…'); return; }
+  tc.requestAccessToken({prompt: gmailEverConnected() ? '' : 'consent', login_hint:GMAIL_ACCOUNT});
+}
+function gmailConnectDone(ok, why){
+  if(!ok){ if(why && !/popup_closed|access_denied/i.test(why)) toast('Gmail did not connect: '+why); renderEmailAny(); return; }
+  EM.err='';
+  gmailProfile();
+  gmailStartPoll();
+  const f=EM_AFTER; EM_AFTER=null;
+  if(typeof f==='function') f(); else renderEmailAny();
+}
+function gmailDisconnect(){
+  askYesNo('Disconnect Gmail on this device?', (ok)=>{
+    if(!ok) return;
+    try{ if(EM_TOK && window.google && google.accounts) google.accounts.oauth2.revoke(EM_TOK.t, ()=>{}); }catch(e){}
+    EM_TOK=null; EM.list=null; EM.thread=null; EM.unread=0; EM_WO={};
+    try{ localStorage.removeItem('gh_gmail_tok'); localStorage.removeItem('gh_gmail_ok'); }catch(e){}
+    refreshEmailBadge(); renderEmail();
+  });
+}
+async function gapi(path, opts){
+  if(!gmailSignedIn()) throw Object.assign(new Error('signin'), {signin:true});
+  opts=opts||{};
+  const r=await fetch(path.indexOf('http')===0 ? path : GMAIL_API+path, {
+    method:opts.method||'GET',
+    headers:Object.assign({Authorization:'Bearer '+EM_TOK.t}, opts.body!==undefined ? {'Content-Type':'application/json'} : {}),
+    body:opts.body!==undefined ? JSON.stringify(opts.body) : undefined
+  });
+  if(r.status===401){
+    EM_TOK=null; try{ localStorage.removeItem('gh_gmail_tok'); }catch(e){}
+    refreshEmailBadge();
+    throw Object.assign(new Error('signin'), {signin:true});
+  }
+  if(!r.ok){
+    let m='Gmail error '+r.status;
+    try{ const j=await r.json(); if(j && j.error && j.error.message) m=j.error.message; }catch(e){}
+    throw new Error(m);
+  }
+  if(r.status===204) return {};
+  const tx=await r.text();
+  return tx ? JSON.parse(tx) : {};
+}
+function gmailFail(e){
+  if(e && e.signin){ EM.busy=false; renderEmailAny(); return; }
+  EM.busy=false; EM.err=(e && e.message) || 'Something went wrong.';
+  renderEmailAny();
+}
+async function gmailProfile(){
+  try{ const p=await gapi('profile'); EM_ME=p.emailAddress||''; }catch(e){}
+  try{
+    const s=await gapi('settings/sendAs');
+    const d=(s.sendAs||[]).find(x=>x.isDefault) || (s.sendAs||[])[0];
+    EM_SIG=(d && d.signature) || '';
+  }catch(e){ EM_SIG=''; }
+  if(EM.compose) renderEmail();
+}
+
+/* ---- unread badge ---- */
+async function refreshEmailUnread(){
+  if(!gmailReady() || !gmailSignedIn()){ EM.unread=0; refreshEmailBadge(); return; }
+  const was=EM.unread;
+  try{ const l=await gapi('labels/INBOX'); EM.unread=l.threadsUnread||0; }catch(e){ EM.unread=0; }
+  refreshEmailBadge();
+  if(was!==EM.unread && document.getElementById('emailModal') && !EM.compose && !EM.thread) renderEmail();
+}
+function refreshEmailBadge(){
+  const btn=document.getElementById('emailHdrBtn');
+  if(btn) btn.classList.toggle('hidden', !gmailReady());
+  const b=document.getElementById('emailCount');
+  if(!b) return;
+  const n=(gmailReady() && gmailSignedIn()) ? EM.unread : 0;
+  b.textContent=n>99 ? '99+' : String(n||'');
+  b.classList.toggle('hidden', !n);
+}
+function gmailStartPoll(){
+  if(EM_POLL) return;
+  EM_POLL=setInterval(()=>{ if(document.visibilityState!=='hidden') refreshEmailUnread(); }, 120000);
+  refreshEmailUnread();
+}
+function gmailBoot(){
+  refreshEmailBadge();
+  if(!gmailReady()) return;
+  gmailLoadGis().then(()=>gmailTokenClient()).catch(()=>{});
+  if(gmailSignedIn()){ gmailStartPoll(); gmailProfile(); }
+}
+
+/* ---- helpers ---- */
+function b64uToBytes(s){
+  s=String(s||'').replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4) s+='=';
+  const bin=atob(s), out=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i);
+  return out;
+}
+function bytesToB64(bytes){
+  let bin=''; const CH=0x8000;
+  for(let i=0;i<bytes.length;i+=CH) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(bin);
+}
+function b64uDecodeText(s){ try{ return new TextDecoder('utf-8').decode(b64uToBytes(s)); }catch(e){ return ''; } }
+function utf8B64(str){ return bytesToB64(new TextEncoder().encode(String(str))); }
+function hdr(msg, name){
+  const h=((msg && msg.payload && msg.payload.headers)||[]).find(x=>x.name.toLowerCase()===name.toLowerCase());
+  return h ? h.value : '';
+}
+function emParseAddr(v){
+  v=String(v||'').trim();
+  const m=v.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  return m ? {name:m[1].trim(), email:m[2].trim()} : {name:'', email:v};
+}
+function emAddrList(v){
+  const out=[]; let cur='', q=false, a=false;
+  for(const ch of String(v||'')){
+    if(ch==='"') q=!q;
+    if(ch==='<') a=true; if(ch==='>') a=false;
+    if(ch===',' && !q && !a){ if(cur.trim()) out.push(cur.trim()); cur=''; } else cur+=ch;
+  }
+  if(cur.trim()) out.push(cur.trim());
+  return out;
+}
+function emWho(v){ return emAddrList(v).map(x=>{ const p=emParseAddr(x); return p.name||p.email; }).join(', '); }
+function emDate(ms){
+  const d=new Date(Number(ms)), now=new Date();
+  if(d.toDateString()===now.toDateString()) return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  if(d.getFullYear()===now.getFullYear()) return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return d.toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'2-digit'});
+}
+function emFullDate(ms){ return new Date(Number(ms)).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}); }
+function emSize(n){ n=Number(n)||0; return n>1048576 ? (n/1048576).toFixed(1)+' MB' : n>1024 ? Math.round(n/1024)+' KB' : n+' B'; }
+function emTextToHtml(t){ return esc(String(t||'')).replace(/\r?\n/g,'<br>'); }
+function emHtmlToText(h){
+  const d=document.createElement('div');
+  d.innerHTML=String(h||'').replace(/<(br|\/p|\/div|\/li|\/tr)[^>]*>/gi, m=>m+'\n');
+  return (d.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+}
+/* Walks a message's parts for its text, its HTML and its files. */
+function emParts(payload){
+  const r={text:'', html:'', files:[], inline:[]};
+  (function walk(p){
+    if(!p) return;
+    const mt=(p.mimeType||'').toLowerCase();
+    const cid=((p.headers||[]).find(h=>/^content-id$/i.test(h.name))||{}).value;
+    const disp=((p.headers||[]).find(h=>/^content-disposition$/i.test(h.name))||{}).value||'';
+    if(p.parts && p.parts.length){ p.parts.forEach(walk); return; }
+    if(p.filename || (p.body && p.body.attachmentId && !/^text\//.test(mt))){
+      const f={name:p.filename||'attachment', type:mt, size:(p.body&&p.body.size)||0, id:p.body&&p.body.attachmentId, data:p.body&&p.body.data, cid:cid?cid.replace(/[<>]/g,''):''};
+      if(f.cid && !/attachment/i.test(disp)) r.inline.push(f); else r.files.push(f);
+      return;
+    }
+    if(mt==='text/html' && !r.html) r.html=b64uDecodeText(p.body&&p.body.data);
+    else if(mt==='text/plain' && !r.text) r.text=b64uDecodeText(p.body&&p.body.data);
+  })(payload);
+  return r;
+}
+function emWoForEmail(email){
+  email=String(email||'').trim().toLowerCase();
+  if(!email || email===String(EM_ME||GMAIL_ACCOUNT).toLowerCase()) return null;
+  const hits=(DB.workOrders||[]).filter(w=>String((w.customer||{}).email||'').trim().toLowerCase()===email);
+  return hits.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0] || null;
+}
+
+/* ---- screens ---- */
+function openEmail(opts){
+  if(!gmailReady()) return;
+  opts=opts||{};
+  closeSettingsMenus && closeSettingsMenus();
+  EM.err=''; EM.thread=null;
+  if(opts.q!==undefined){ EM.q=opts.q; EM.folder='search'; }
+  else if(!EM.compose){ EM.q=''; if(EM.folder==='search') EM.folder='inbox'; }
+  EM.returnWo=opts.returnWo||null;
+  if(!gmailSignedIn() && gmailEverConnected() && gmailTokenClient()){ renderEmail(); gmailConnect(()=>emLoad()); return; }
+  renderEmail();
+  if(gmailSignedIn() && !EM.compose) emLoad();
+}
+function closeEmail(){
+  /* Closing a half-written email keeps it, the way Gmail does. */
+  if(EM.compose && emComposeDirty() && gmailSignedIn()){ emSaveDraft(true); return; }
+  EM.compose=null; emFinishClose();
+}
+function emFinishClose(){
+  const back=EM.returnWo; EM.returnWo=null; EM.thread=null;
+  closeModal();
+  if(back && getWO(back)) openWorkOrder(back);
+}
+function renderEmailAny(){
+  if(document.getElementById('emailModal')) renderEmail();
+  const w=OPEN_WO_ID && getWO(OPEN_WO_ID);
+  if(w && document.querySelector('.fieldSec--email')) renderWorkOrderModal(w.id);
+}
+function emFolderName(){ return EM.folder==='search' ? 'Search' : ((EM_FOLDERS.find(f=>f[0]===EM.folder)||[])[1]||'Inbox'); }
+function renderEmail(){
+  const root=document.getElementById('modalRoot');
+  if(!root) return;
+  const prev=document.querySelector('#emailModal .modalBody');
+  const keep=prev ? prev.scrollTop : 0;
+  const signed=gmailSignedIn();
+  let body;
+  if(!signed) body=emConnectHTML();
+  else if(EM.compose) body=emComposeHTML();
+  else if(EM.thread) body=emThreadHTML();
+  else body=emListHTML();
+  const title=EM.compose ? (EM.compose.mode==='reply'||EM.compose.mode==='replyall' ? 'Reply' : EM.compose.mode==='forward' ? 'Forward' : EM.compose.draftId ? 'Draft' : 'New Email') : 'Email';
+  root.innerHTML=`
+  <div class="overlay" id="emailModal" onclick="if(event.target===this)closeEmail()">
+    <div class="modal emModal${EM.compose?' composing':''}">
+      <div class="modalHead"><h2>${esc(title)}</h2>
+        ${signed && !EM.compose ? `<button type="button" class="btn emNewBtn" onclick="emCompose({mode:'new'})">${icon('pencil')}Compose</button>` : ''}
+        <button class="closeX" onclick="closeEmail()" aria-label="Close">&times;</button></div>
+      <div class="modalBody">${EM.err ? `<div class="emErr">${esc(EM.err)}</div>` : ''}${body}</div>
+    </div>
+  </div>`;
+  const nb=document.querySelector('#emailModal .modalBody');
+  if(nb && prev && !EM.scrollTop) nb.scrollTop=keep;
+  if(EM.scrollTop){ if(nb) nb.scrollTop=0; EM.scrollTop=false; }
+  emSizeFrames();
+}
+function emConnectHTML(){
+  return `<div class="emConnect">
+    <span class="emConnectIc">${icon('mail','lg')}</span>
+    <b>${esc(GMAIL_ACCOUNT)}</b>
+    <button type="button" class="btn" onclick="gmailConnect(()=>{renderEmail(); emLoad();})">Connect Gmail</button>
+  </div>`;
+}
+function emToolbarHTML(){
+  const tabs=EM_FOLDERS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${EM.folder===k}" class="${EM.folder===k?'on':''}" onclick="emFolder('${k}')">${l}${k==='inbox'&&EM.unread?` <b class="emTabN">${EM.unread}</b>`:''}</button>`).join('');
+  return `<div class="emBar">
+    <div class="sumTabs emTabs" role="tablist">${tabs}${EM.folder==='search'?`<button type="button" class="on" aria-selected="true">Search</button>`:''}</div>
+    <label class="gsField emSearch"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input type="search" enterkeyhint="search" id="emSearchInput" value="${esc(EM.folder==='search'?EM.q:'')}" aria-label="Search email" onkeydown="if(event.key==='Enter'){event.preventDefault();emSearch(this.value);}else if(event.key==='Escape'){this.value='';emSearch('');}">${EM.folder==='search'?`<button type="button" class="emSearchX" onclick="emSearch('')" aria-label="Clear search">${icon('x')}</button>`:''}</label>
+  </div>`;
+}
+function emListHTML(){
+  let rows;
+  if(EM.list===null) rows=`<div class="emEmpty">Loading…</div>`;
+  else if(!EM.list.length) rows=`<div class="emEmpty">${EM.folder==='search'?'No matches.':'Nothing here.'}</div>`;
+  else rows=EM.list.map(emRowHTML).join('');
+  return `${emToolbarHTML()}
+    <div class="emList">${rows}</div>
+    ${EM.next ? `<button type="button" class="btn secondary emMore" ${EM.busy?'disabled':''} onclick="emLoad(true)">${EM.busy?'Loading…':'Load More'}</button>` : ''}
+    <div class="emFoot"><span>${esc(EM_ME||GMAIL_ACCOUNT)}</span><button type="button" class="editLink" onclick="gmailDisconnect()">Disconnect</button></div>`;
+}
+function emRowHTML(t){
+  const who=EM.folder==='sent'||t.draft ? (t.to ? 'To: '+t.to : '(no recipient)') : (t.from||'(unknown)');
+  const click=t.draft ? `emOpenDraft('${t.draftId}')` : `emOpenThread('${t.id}')`;
+  return `<div class="emRow${t.unread?' unread':''}">
+    <button type="button" class="emStar${t.starred?' on':''}" ${t.draft?'disabled':''} onclick="emStarThread('${t.id}',${!t.starred})" aria-label="${t.starred?'Unstar':'Star'}">${icon('star')}</button>
+    <button type="button" class="emRowMain" onclick="${click}">
+      <span class="emWho">${t.draft?'<i>Draft</i> ':''}${esc(who)}${t.count>1?` <small>${t.count}</small>`:''}</span>
+      <span class="emSubj"><b>${esc(t.subject||'(no subject)')}</b>${t.snippet?` <span class="emSnip">${esc(t.snippet)}</span>`:''}</span>
+      <span class="emRowRight">${t.files?icon('file'):''}<span class="emWhen">${esc(t.when)}</span></span>
+    </button>
+  </div>`;
+}
+function emFolder(k){ EM.folder=k; EM.q=''; EM.thread=null; EM.list=null; EM.next=null; EM.err=''; EM.scrollTop=true; renderEmail(); emLoad(); }
+function emSearch(q){
+  q=String(q||'').trim();
+  if(!q){ emFolder(EM.folder==='search'?'inbox':EM.folder); return; }
+  EM.folder='search'; EM.q=q; EM.thread=null; EM.list=null; EM.next=null; EM.err=''; EM.scrollTop=true;
+  renderEmail(); emLoad();
+}
+function emQuery(){
+  if(EM.folder==='search') return EM.q;
+  return (EM_FOLDERS.find(f=>f[0]===EM.folder)||EM_FOLDERS[0])[2];
+}
+async function emThreadSummaries(ids){
+  const out=await Promise.all(ids.map(id=>gapi(`threads/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`).catch(()=>null)));
+  return out.filter(Boolean).map(th=>{
+    const ms=th.messages||[], last=ms[ms.length-1]||{}, first=ms[0]||{};
+    const labels=new Set(); ms.forEach(m=>(m.labelIds||[]).forEach(l=>labels.add(l)));
+    const froms=[...new Set(ms.filter(m=>!(m.labelIds||[]).includes('SENT')).map(m=>emWho(hdr(m,'From'))))];
+    return {id:th.id, subject:hdr(first,'Subject'), snippet:emDecodeEntities(last.snippet||''), from:froms.join(', ') || emWho(hdr(last,'From')),
+      to:emWho(hdr(last,'To')), when:emDate(last.internalDate), ms:Number(last.internalDate)||0, count:ms.length,
+      unread:labels.has('UNREAD'), starred:labels.has('STARRED'), files:ms.some(m=>/multipart\/mixed/i.test((m.payload||{}).mimeType||''))};
+  });
+}
+function emDecodeEntities(s){ const t=document.createElement('textarea'); t.innerHTML=s; return t.value; }
+async function emLoad(more){
+  if(!gmailSignedIn()) return;
+  EM.busy=true; if(!more){ EM.list=null; EM.next=null; } renderEmail();
+  try{
+    if(EM.folder==='drafts'){
+      const r=await gapi('drafts?maxResults=25'+(more&&EM.next?'&pageToken='+encodeURIComponent(EM.next):''));
+      const ds=await Promise.all((r.drafts||[]).map(d=>gapi(`drafts/${d.id}?format=metadata`).catch(()=>null)));
+      const rows=ds.filter(Boolean).map(d=>{ const m=d.message||{}; return {draft:true, draftId:d.id, id:m.threadId||m.id, subject:hdr(m,'Subject'), snippet:emDecodeEntities(m.snippet||''), to:emWho(hdr(m,'To')), when:emDate(m.internalDate), ms:Number(m.internalDate)||0, count:1}; });
+      EM.list=(more&&EM.list?EM.list:[]).concat(rows); EM.next=r.nextPageToken||null;
+    } else {
+      const q=emQuery();
+      const r=await gapi('threads?maxResults=25&q='+encodeURIComponent(q)+(EM.folder==='trash'?'&includeSpamTrash=true':'')+(more&&EM.next?'&pageToken='+encodeURIComponent(EM.next):''));
+      const rows=await emThreadSummaries((r.threads||[]).map(t=>t.id));
+      EM.list=(more&&EM.list?EM.list:[]).concat(rows); EM.next=r.nextPageToken||null;
+    }
+    EM.busy=false; EM.err='';
+    renderEmail();
+  }catch(e){ gmailFail(e); }
+  if(EM.folder==='inbox') refreshEmailUnread();
+}
+
+/* ---- a conversation ---- */
+async function emOpenThread(id){
+  if(!gmailSignedIn()){ gmailConnect(()=>emOpenThread(id)); return; }
+  EM.thread={id, loading:true, messages:[]}; EM.open={}; EM.scrollTop=true; renderEmail();
+  try{
+    const th=await gapi(`threads/${id}?format=full`);
+    const msgs=(th.messages||[]).map(m=>{ const p=emParts(m.payload); return {id:m.id, threadId:m.threadId, labels:m.labelIds||[], from:hdr(m,'From'), to:hdr(m,'To'), cc:hdr(m,'Cc'), subject:hdr(m,'Subject'), date:hdr(m,'Date'), ms:Number(m.internalDate)||0, msgId:hdr(m,'Message-ID')||hdr(m,'Message-Id'), refs:hdr(m,'References'), snippet:emDecodeEntities(m.snippet||''), text:p.text, html:p.html, files:p.files, inline:p.inline}; });
+    EM.thread={id, messages:msgs, subject:(msgs[0]&&msgs[0].subject)||'(no subject)', labels:[...new Set(msgs.flatMap(m=>m.labels))]};
+    msgs.forEach((m,i)=>{ if(i===msgs.length-1 || m.labels.includes('UNREAD')) EM.open[m.id]=true; });
+    renderEmail();
+    emInlineImages();
+    if(EM.thread.labels.includes('UNREAD')){
+      gapi(`threads/${id}/modify`, {method:'POST', body:{removeLabelIds:['UNREAD']}}).then(()=>{
+        const row=(EM.list||[]).find(t=>t.id===id); if(row) row.unread=false;
+        refreshEmailUnread(); delete EM_WO.__stamp;
+      }).catch(()=>{});
+    }
+  }catch(e){ EM.thread=null; gmailFail(e); }
+}
+async function emInlineImages(){
+  const th=EM.thread; if(!th || !th.messages) return;
+  let changed=false;
+  for(const m of th.messages){
+    for(const f of (m.inline||[])){
+      if(f.url || !f.cid) continue;
+      try{
+        const data=f.data || (await gapi(`messages/${m.id}/attachments/${f.id}`)).data;
+        f.url=`data:${f.type||'image/png'};base64,`+bytesToB64(b64uToBytes(data));
+        if(m.html) m.html=m.html.split('cid:'+f.cid).join(f.url);
+        changed=true;
+      }catch(e){}
+    }
+  }
+  if(changed && EM.thread===th) renderEmail();
+}
+function emThreadHTML(){
+  const th=EM.thread;
+  const back=`<button type="button" class="emBack" onclick="emBackToList()">${icon('chevron')}${esc(emFolderName())}</button>`;
+  if(th.loading) return `${back}<div class="emEmpty">Loading…</div>`;
+  const inInbox=th.labels.includes('INBOX'), inTrash=th.labels.includes('TRASH'), starred=th.labels.includes('STARRED');
+  const acts=`<div class="emActs">
+      <button type="button" class="btn secondary" onclick="emCompose({mode:'reply'})">${icon('undo')}Reply</button>
+      <button type="button" class="btn secondary" onclick="emCompose({mode:'replyall'})">${icon('undo')}Reply All</button>
+      <button type="button" class="btn secondary" onclick="emCompose({mode:'forward'})">${icon('send')}Forward</button>
+      ${inInbox ? `<button type="button" class="btn secondary" onclick="emThreadMove('archive')">${icon('archive')}Archive</button>` : (!inTrash ? `<button type="button" class="btn secondary" onclick="emThreadMove('inbox')">${icon('inbox')}Move to Inbox</button>` : '')}
+      ${inTrash ? `<button type="button" class="btn secondary" onclick="emThreadMove('untrash')">${icon('undo')}Restore</button>` : `<button type="button" class="btn secondary emDanger" onclick="emThreadMove('trash')">${icon('trash')}Trash</button>`}
+      <button type="button" class="btn secondary" onclick="emThreadMove('unread')">${icon('mail')}Mark Unread</button>
+      <button type="button" class="btn secondary emStarBtn${starred?' on':''}" onclick="emStarThread('${th.id}',${!starred})">${icon('star')}${starred?'Starred':'Star'}</button>
+    </div>`;
+  const ws=new Map();
+  th.messages.forEach(m=>[m.from, m.to, m.cc].forEach(v=>emAddrList(v).forEach(a=>{ const w=emWoForEmail(emParseAddr(a).email); if(w) ws.set(w.id,w); })));
+  const woChips=[...ws.values()].map(w=>`<button type="button" class="emWoChip" onclick="emGoWo(${w.id})">${icon('clipboard')}<span>${esc((w.customer||{}).name||'Work Order')}</span><small>#${esc(String(w.code||w.id))}</small></button>`).join('');
+  const msgs=th.messages.map(m=>{
+    const open=!!EM.open[m.id];
+    const f=emParseAddr(m.from);
+    const head=`<button type="button" class="emMsgHead" onclick="emToggleMsg('${m.id}')" aria-expanded="${open}">
+        <span class="emFrom"><b>${esc(f.name||f.email)}</b>${f.name?` <small>${esc(f.email)}</small>`:''}</span>
+        <span class="emWhen">${esc(emDate(m.ms))}</span>
+        ${open ? '' : `<span class="emSnip">${esc(m.snippet)}</span>`}
+      </button>`;
+    if(!open) return `<div class="emMsg">${head}</div>`;
+    const meta=`<div class="emMeta">To: ${esc(emWho(m.to))}${m.cc?`<br>Cc: ${esc(emWho(m.cc))}`:''}<br>${esc(emFullDate(m.ms))}</div>`;
+    const content = m.html
+      ? `<iframe class="emFrame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" data-mid="${m.id}" title="Message"></iframe>`
+      : `<div class="emText">${emTextToHtml(m.text||m.snippet)}</div>`;
+    const files=(m.files||[]).length ? `<div class="emFiles">${m.files.map((x,i)=>`<button type="button" class="emFile" onclick="emOpenFile('${m.id}',${i})">${icon('file')}<span>${esc(x.name)}</span><small>${esc(emSize(x.size))}</small></button>`).join('')}</div>` : '';
+    return `<div class="emMsg open">${head}${meta}${content}${files}</div>`;
+  }).join('');
+  return `${back}<h3 class="emSubject">${esc(th.subject)}</h3>${woChips?`<div class="emWoChips">${woChips}</div>`:''}${acts}<div class="emMsgs">${msgs}</div>
+    <div class="emReplyRow"><button type="button" class="btn" onclick="emCompose({mode:'reply'})">${icon('undo')}Reply</button><button type="button" class="btn secondary" onclick="emCompose({mode:'forward'})">${icon('send')}Forward</button></div>`;
+}
+function emSizeFrames(){
+  document.querySelectorAll('#emailModal .emFrame').forEach(fr=>{
+    const m=EM.thread && EM.thread.messages && EM.thread.messages.find(x=>x.id===fr.dataset.mid);
+    if(!m || fr.dataset.done) return;
+    fr.dataset.done='1';
+    const css=`<style>html,body{margin:0;padding:0;}body{font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1b2433;word-wrap:break-word;overflow-wrap:anywhere;}img{max-width:100%;height:auto;}table{max-width:100%;}pre{white-space:pre-wrap;}blockquote{margin:0 0 0 .6em;padding-left:.8em;border-left:2px solid #ccd3de;color:#556;}</style>`;
+    fr.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><base target="_blank">${css}</head><body>${m.html}</body></html>`;
+    const fit=()=>{ try{ const d=fr.contentDocument; if(d && d.body){ fr.style.height=Math.min(Math.max(d.documentElement.scrollHeight, d.body.scrollHeight)+8, 20000)+'px'; } }catch(e){} };
+    fr.addEventListener('load', ()=>{ fit(); setTimeout(fit, 400); setTimeout(fit, 1500); try{ fr.contentDocument.querySelectorAll('img').forEach(i=>i.addEventListener('load', fit)); }catch(e){} });
+  });
+}
+function emToggleMsg(id){ EM.open[id]=!EM.open[id]; renderEmail(); }
+function emBackToList(){ EM.thread=null; renderEmail(); if(EM.list===null) emLoad(); }
+function emGoWo(id){
+  if(EM.compose && emComposeDirty()){ toast('Send or save the email first.'); return; }
+  EM.compose=null; EM.thread=null; EM.returnWo=null;
+  closeModal(); openWorkOrder(id);
+}
+async function emThreadMove(kind){
+  const th=EM.thread; if(!th) return;
+  const map={archive:{removeLabelIds:['INBOX']}, inbox:{addLabelIds:['INBOX']}, unread:{addLabelIds:['UNREAD']}};
+  try{
+    if(kind==='trash') await gapi(`threads/${th.id}/trash`, {method:'POST', body:{}});
+    else if(kind==='untrash') await gapi(`threads/${th.id}/untrash`, {method:'POST', body:{}});
+    else await gapi(`threads/${th.id}/modify`, {method:'POST', body:map[kind]});
+    toast({archive:'Archived.', inbox:'Moved to Inbox.', unread:'Marked unread.', trash:'Moved to Trash.', untrash:'Restored.'}[kind]);
+    EM.thread=null; EM_WO={}; renderEmail(); emLoad(); refreshEmailUnread();
+  }catch(e){ gmailFail(e); }
+}
+async function emStarThread(id, on){
+  try{
+    await gapi(`threads/${id}/modify`, {method:'POST', body:on?{addLabelIds:['STARRED']}:{removeLabelIds:['STARRED']}});
+    const row=(EM.list||[]).find(t=>t.id===id); if(row) row.starred=on;
+    if(EM.thread && EM.thread.id===id){ const s=new Set(EM.thread.labels); on?s.add('STARRED'):s.delete('STARRED'); EM.thread.labels=[...s]; }
+    if(EM.folder==='starred' && !on && EM.list) EM.list=EM.list.filter(t=>t.id!==id);
+    renderEmail();
+  }catch(e){ gmailFail(e); }
+}
+async function emOpenFile(mid, i){
+  const m=EM.thread && EM.thread.messages.find(x=>x.id===mid), f=m && m.files[i];
+  if(!f) return;
+  const w=window.open('', '_blank');
+  try{
+    const data=f.data || (await gapi(`messages/${mid}/attachments/${f.id}`)).data;
+    const url=URL.createObjectURL(new Blob([b64uToBytes(data)], {type:f.type||'application/octet-stream'}));
+    if(w){ w.location.href=url; }
+    else { const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); }
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  }catch(e){ if(w) w.close(); gmailFail(e); }
+}
+
+/* ---- writing ---- */
+function emComposeDirty(){
+  const c=EM.compose; if(!c) return false;
+  return !!(c.dirty && (c.to||c.cc||c.bcc||c.subject||c.body||(c.files||[]).length));
+}
+async function emCompose(o){
+  if(!gmailSignedIn()){ gmailConnect(()=>emCompose(o)); return; }
+  o=o||{};
+  const c={mode:o.mode||'new', to:o.to||'', cc:'', bcc:'', showCc:false, subject:o.subject||'', body:o.body||'', files:[], quote:'', threadId:null, inReplyTo:'', refs:'', draftId:o.draftId||null, dirty:false, sending:false};
+  const th=EM.thread;
+  if(th && th.messages && /reply|forward/.test(c.mode)){
+    const last=th.messages[th.messages.length-1];
+    const subj=th.subject||'';
+    const me=String(EM_ME||GMAIL_ACCOUNT).toLowerCase();
+    if(c.mode==='forward'){
+      c.subject=/^fwd?:/i.test(subj) ? subj : 'Fwd: '+subj;
+      c.quote=`<div>---------- Forwarded message ---------<br>From: ${esc(last.from)}<br>Date: ${esc(emFullDate(last.ms))}<br>Subject: ${esc(last.subject)}<br>To: ${esc(last.to)}${last.cc?'<br>Cc: '+esc(last.cc):''}</div><br>${last.html||emTextToHtml(last.text)}`;
+      c.fwdFrom={mid:last.id, files:(last.files||[]).slice()};
+    } else {
+      c.subject=/^re:/i.test(subj) ? subj : 'Re: '+subj;
+      const lastIn=[...th.messages].reverse().find(m=>emParseAddr(m.from).email.toLowerCase()!==me) || last;
+      const replyTo=emParseAddr(lastIn.from).email.toLowerCase()===me ? lastIn.to : lastIn.from;
+      c.to=replyTo;
+      if(c.mode==='replyall'){
+        const all=[...emAddrList(lastIn.to), ...emAddrList(lastIn.cc)].filter(a=>{ const e=emParseAddr(a).email.toLowerCase(); return e && e!==me && !emAddrList(c.to).some(x=>emParseAddr(x).email.toLowerCase()===e); });
+        if(all.length){ c.cc=all.join(', '); c.showCc=true; }
+      }
+      c.threadId=th.id; c.inReplyTo=last.msgId; c.refs=[last.refs, last.msgId].filter(Boolean).join(' ');
+      c.quote=`<div>On ${esc(emFullDate(last.ms))}, ${esc(last.from)} wrote:</div><blockquote style="margin:0 0 0 .8ex;border-left:1px solid #ccc;padding-left:1ex">${last.html||emTextToHtml(last.text)}</blockquote>`;
+    }
+  }
+  EM.compose=c; EM.err=''; EM.scrollTop=true;
+  if(EM_SIG===null) gmailProfile();
+  renderEmail();
+  if(c.fwdFrom){
+    for(const f of c.fwdFrom.files){
+      try{ const data=f.data || (await gapi(`messages/${c.fwdFrom.mid}/attachments/${f.id}`)).data; if(EM.compose===c){ c.files.push({name:f.name, type:f.type, size:f.size, b64:bytesToB64(b64uToBytes(data))}); renderEmail(); } }catch(e){}
+    }
+  }
+  setTimeout(()=>{ const el=document.getElementById(c.to?'emBody':'emTo'); if(el && !/Mobi/.test(navigator.userAgent)) el.focus(); }, 50);
+}
+function emComposeHTML(){
+  const c=EM.compose;
+  const field=(k,label,type)=>`<label class="emField"><span>${label}</span><input type="${type||'text'}" id="em${k[0].toUpperCase()+k.slice(1)}" value="${esc(c[k])}" ${type==='email'?'multiple autocomplete="email"':''} oninput="emSet('${k}',this.value)"></label>`;
+  const sig=EM_SIG ? `<div class="emSig">${EM_SIG}</div>` : '';
+  return `<div class="emCompose">
+    <div class="emToRow">${field('to','To','email')}${c.showCc?'':`<button type="button" class="editLink" onclick="EM.compose.showCc=true;renderEmail()">Cc / Bcc</button>`}</div>
+    ${c.showCc ? field('cc','Cc','email')+field('bcc','Bcc','email') : ''}
+    ${field('subject','Subject')}
+    <textarea id="emBody" class="emBodyIn" rows="10" oninput="emSet('body',this.value)" aria-label="Message">${esc(c.body)}</textarea>
+    ${sig}
+    ${c.quote ? `<details class="emQuote"><summary>${c.mode==='forward'?'Forwarded message':'Earlier message'}</summary><div>${emHtmlToText(c.quote).split('\n').map(esc).join('<br>')}</div></details>` : ''}
+    <div class="emFiles">${(c.files||[]).map((f,i)=>`<span class="emFile">${icon('file')}<span>${esc(f.name)}</span><small>${esc(emSize(f.size))}</small><button type="button" onclick="emDropFile(${i})" aria-label="Remove ${esc(f.name)}">${icon('x')}</button></span>`).join('')}
+      <label class="emAttach">${icon('upload')}Attach<input type="file" multiple hidden onchange="emAddFiles(this)"></label></div>
+    <div class="emSendRow">
+      <button type="button" class="btn" ${c.sending?'disabled':''} onclick="emSend()">${icon('send')}${c.sending?'Sending…':'Send'}</button>
+      <button type="button" class="btn secondary" ${c.sending?'disabled':''} onclick="emSaveDraft()">Save Draft</button>
+      <button type="button" class="btn secondary emDanger" ${c.sending?'disabled':''} onclick="emDiscard()">${icon('trash')}Discard</button>
+    </div>
+  </div>`;
+}
+function emSet(k,v){ if(EM.compose){ EM.compose[k]=v; EM.compose.dirty=true; } }
+function emAddFiles(inp){
+  const c=EM.compose; if(!c) return;
+  const fs=[...(inp.files||[])];
+  let total=c.files.reduce((s,f)=>s+f.size,0);
+  Promise.all(fs.map(f=>new Promise(res=>{
+    if(total+f.size>24*1048576){ toast(`${f.name} is too big to attach.`); res(); return; }
+    total+=f.size;
+    const r=new FileReader();
+    r.onload=()=>{ c.files.push({name:f.name, type:f.type||'application/octet-stream', size:f.size, b64:String(r.result).split(',')[1]||''}); res(); };
+    r.onerror=()=>res();
+    r.readAsDataURL(f);
+  }))).then(()=>{ c.dirty=true; renderEmail(); });
+}
+function emDropFile(i){ const c=EM.compose; if(!c) return; c.files.splice(i,1); c.dirty=true; renderEmail(); }
+function emHeaderWord(s){ return /^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${utf8B64(s)}?=`; }
+function emWrap76(b){ return String(b).replace(/(.{76})/g,'$1\r\n'); }
+function emBuildRaw(c){
+  const B=()=> 'gh'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+  const html=`<div>${emTextToHtml(c.body)}</div>${EM_SIG?`<br><div>${EM_SIG}</div>`:''}${c.quote?`<br>${c.quote}`:''}`;
+  const text=[c.body, EM_SIG?'\n-- \n'+emHtmlToText(EM_SIG):'', c.quote?'\n'+emHtmlToText(c.quote):''].join('\n');
+  const head=[];
+  if(c.to) head.push('To: '+c.to);
+  if(c.cc) head.push('Cc: '+c.cc);
+  if(c.bcc) head.push('Bcc: '+c.bcc);
+  head.push('Subject: '+emHeaderWord(c.subject||''));
+  if(c.inReplyTo){ head.push('In-Reply-To: '+c.inReplyTo); head.push('References: '+(c.refs||c.inReplyTo)); }
+  head.push('MIME-Version: 1.0');
+  const alt=B();
+  const altPart=`Content-Type: multipart/alternative; boundary="${alt}"\r\n\r\n--${alt}\r\nContent-Type: text/plain; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${emWrap76(utf8B64(text))}\r\n--${alt}\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${emWrap76(utf8B64(html))}\r\n--${alt}--`;
+  let mime;
+  if(c.files && c.files.length){
+    const mix=B();
+    mime=head.join('\r\n')+`\r\nContent-Type: multipart/mixed; boundary="${mix}"\r\n\r\n--${mix}\r\n${altPart}\r\n`+
+      c.files.map(f=>`--${mix}\r\nContent-Type: ${f.type||'application/octet-stream'}; name="${emHeaderWord(f.name).replace(/"/g,'')}"\r\nContent-Disposition: attachment; filename="${emHeaderWord(f.name).replace(/"/g,'')}"\r\nContent-Transfer-Encoding: base64\r\n\r\n${emWrap76(f.b64)}\r\n`).join('')+`--${mix}--`;
+  } else mime=head.join('\r\n')+'\r\n'+altPart;
+  return bytesToB64(new TextEncoder().encode(mime)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function emSend(){
+  const c=EM.compose; if(!c || c.sending) return;
+  if(!String(c.to||c.cc||c.bcc).trim()){ toast('Add who it goes to.'); document.getElementById('emTo') && document.getElementById('emTo').focus(); return; }
+  if(!gmailSignedIn()){ gmailConnect(()=>emSend()); return; }
+  c.sending=true; renderEmail();
+  try{
+    const raw=emBuildRaw(c);
+    if(c.draftId){
+      await gapi(`drafts/${c.draftId}`, {method:'PUT', body:{id:c.draftId, message:Object.assign({raw}, c.threadId?{threadId:c.threadId}:{})}});
+      await gapi('drafts/send', {method:'POST', body:{id:c.draftId}});
+    } else {
+      await gapi('messages/send', {method:'POST', body:Object.assign({raw}, c.threadId?{threadId:c.threadId}:{})});
+    }
+    const wasThread=c.threadId && EM.thread && EM.thread.id===c.threadId;
+    EM.compose=null; EM_WO={};
+    toast('Sent.');
+    if(EM.returnWo){ emFinishClose(); return; }
+    if(wasThread) emOpenThread(c.threadId);
+    else { EM.thread=null; renderEmail(); emLoad(); }
+  }catch(e){ c.sending=false; gmailFail(e); }
+}
+async function emSaveDraft(andClose){
+  const c=EM.compose; if(!c) return;
+  if(!gmailSignedIn()){ gmailConnect(()=>emSaveDraft(andClose)); return; }
+  try{
+    const message=Object.assign({raw:emBuildRaw(c)}, c.threadId?{threadId:c.threadId}:{});
+    if(c.draftId) await gapi(`drafts/${c.draftId}`, {method:'PUT', body:{id:c.draftId, message}});
+    else { const d=await gapi('drafts', {method:'POST', body:{message}}); c.draftId=d.id; }
+    c.dirty=false;
+    toast('Draft saved.');
+    if(andClose){ EM.compose=null; emFinishClose(); return; }
+    renderEmail();
+  }catch(e){ gmailFail(e); }
+}
+function emDiscard(){
+  const c=EM.compose; if(!c) return;
+  const done=()=>{ EM.compose=null; if(EM.returnWo){ emFinishClose(); return; } renderEmail(); if(EM.folder==='drafts' || !EM.list) emLoad(); };
+  if(!c.draftId && !emComposeDirty()){ done(); return; }
+  askYesNo(c.draftId ? 'Delete this draft?' : 'Discard this email?', async (ok)=>{
+    if(!ok) return;
+    if(c.draftId){ try{ await gapi(`drafts/${c.draftId}`, {method:'DELETE'}); }catch(e){ gmailFail(e); return; } }
+    done();
+  });
+}
+async function emOpenDraft(draftId){
+  if(!gmailSignedIn()){ gmailConnect(()=>emOpenDraft(draftId)); return; }
+  try{
+    const d=await gapi(`drafts/${draftId}?format=full`);
+    const m=d.message||{}, p=emParts(m.payload);
+    const c={mode:'draft', to:hdr(m,'To'), cc:hdr(m,'Cc'), bcc:hdr(m,'Bcc'), subject:hdr(m,'Subject'), body:'', files:[], quote:'', threadId:(m.threadId && m.threadId!==m.id)?m.threadId:null, inReplyTo:hdr(m,'In-Reply-To'), refs:hdr(m,'References'), draftId, dirty:false, sending:false};
+    c.showCc=!!(c.cc||c.bcc);
+    let t=p.text || emHtmlToText(p.html);
+    if(EM_SIG){ const s=emHtmlToText(EM_SIG); const k=t.lastIndexOf('-- \n'+s); if(k>=0) t=t.slice(0,k); else { const j=t.lastIndexOf(s); if(j>=0) t=t.slice(0,j); } }
+    c.body=t.replace(/\s+$/,'');
+    for(const f of p.files){ try{ const data=f.data || (await gapi(`messages/${m.id}/attachments/${f.id}`)).data; c.files.push({name:f.name, type:f.type, size:f.size, b64:bytesToB64(b64uToBytes(data))}); }catch(e){} }
+    EM.compose=c; EM.scrollTop=true; renderEmail();
+  }catch(e){ gmailFail(e); }
+}
+
+/* ---- on a work order ---- */
+function emCustomerQuery(email){ email=String(email||'').trim(); return `{from:${email} to:${email} cc:${email}}`; }
+function emailWoSecHTML(wo){
+  if(!gmailReady()) return '';
+  const email=String((wo.customer||{}).email||'').trim();
+  if(!email) return '';
+  const key='email';
+  let body;
+  if(!gmailSignedIn()){
+    body=`<div class="emWoConnect"><button type="button" class="btn secondary" onclick="gmailConnect(()=>{delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});})">${icon('mail')}Connect Gmail</button></div>`;
+  } else {
+    const st=EM_WO[wo.id];
+    if(FIELD_SEC[key] && (!st || (Date.now()-st.at>120000 && !st.loading))) emLoadWo(wo.id);
+    const list=st && st.list;
+    body = !list ? `<div class="small">Loading…</div>`
+      : !list.length ? `<div class="small">No emails with ${esc(email)} yet.</div>`
+      : `<div class="emWoList">${list.slice(0,6).map(t=>`<button type="button" class="emWoRow${t.unread?' unread':''}" onclick="emOpenFromWo(${wo.id},'${t.id}')">
+          <span class="emSubj"><b>${esc(t.subject||'(no subject)')}</b><span class="emSnip">${esc(t.snippet)}</span></span>
+          <span class="emWhen">${esc(t.when)}</span></button>`).join('')}</div>`;
+    body+=`<div class="emWoBtns"><button type="button" class="btn" onclick="emailCustomer(${wo.id})">${icon('pencil')}Email Customer</button>${list && list.length ? `<button type="button" class="btn secondary" onclick="emLeaveWo();openEmail({q:emCustomerQuery((getWO(${wo.id}).customer||{}).email), returnWo:${wo.id}})">See All</button>` : ''}</div>`;
+  }
+  const st=EM_WO[wo.id];
+  const unread=st && st.list ? st.list.filter(t=>t.unread).length : 0;
+  const preview = unread ? `<div class="emWoPreview"><b class="admCount">${unread}</b> unread</div>` : '';
+  return fieldSecHTML(wo.id, key, 'Emails', body, '', '', undefined, '', preview);
+}
+async function emLoadWo(id){
+  const wo=getWO(id); if(!wo || !gmailSignedIn()) return;
+  const email=String((wo.customer||{}).email||'').trim(); if(!email) return;
+  const prev=EM_WO[id];
+  EM_WO[id]={at:Date.now(), loading:true, list:prev&&prev.list||null};
+  try{
+    const r=await gapi('threads?maxResults=10&q='+encodeURIComponent(emCustomerQuery(email)));
+    EM_WO[id]={at:Date.now(), list:await emThreadSummaries((r.threads||[]).map(t=>t.id))};
+  }catch(e){ EM_WO[id]={at:Date.now(), list:[]}; if(e && e.signin) delete EM_WO[id]; }
+  if(OPEN_WO_ID===id && document.querySelector('.fieldSec--email')) renderWorkOrderModal(id);
+}
+function emLeaveWo(){ if(OPEN_WO_ID) closeModal(); }
+function emOpenFromWo(woId, threadId){
+  emLeaveWo();
+  EM.compose=null; EM.folder='search'; EM.q=emCustomerQuery((getWO(woId).customer||{}).email); EM.list=null;
+  EM.returnWo=woId; renderEmail(); emOpenThread(threadId);
+}
+function emailCustomer(id){
+  const wo=getWO(id); if(!wo) return;
+  const c=wo.customer||{};
+  const to=c.name ? `"${String(c.name).replace(/"/g,'')}" <${String(c.email||'').trim()}>` : String(c.email||'').trim();
+  const first=String(c.name||'').trim().split(/\s+/)[0]||'';
+  emLeaveWo();
+  EM.thread=null; EM.returnWo=id;
+  if(!gmailSignedIn()){ gmailConnect(()=>{ EM.returnWo=id; emCompose({mode:'new', to, body:first?`Hi ${first},\n\n`:''}); }); return; }
+  emCompose({mode:'new', to, body:first?`Hi ${first},\n\n`:''});
 }
 
 function receiptTotal(wo){
