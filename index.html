@@ -4371,16 +4371,29 @@ html.hc .emRow.unread,html.hc .fieldSec--email{background:var(--hc-bg);}
 .fgEmail.open:active{transform:none;}
 .fgEmailRow{display:flex;align-items:center;}
 .fgEmailRow .fgHit{flex:1 1 auto;min-width:0;}
-.fgChev{position:relative;flex:0 0 auto;width:34px;height:34px;margin-right:14px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;background:color-mix(in srgb,var(--cyan-ink) 16%,transparent);color:var(--cyan-ink);}
-.fgChev .ic{width:18px;height:18px;transform:rotate(-90deg);transition:transform .2s;}
+.fgChev{position:relative;flex:0 0 auto;width:30px;height:30px;margin-right:14px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;background:var(--cyan-ink);color:#fff;}
+html.dark .fgChev{color:var(--paper);}
+.fgChev .ic{width:17px;height:17px;stroke-width:2.6;transform:rotate(-90deg);transition:transform .2s;}
 .fgEmail.open .fgChev .ic{transform:rotate(90deg);}
 .fgChevN{position:absolute;top:-5px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--orange);color:#fff;font-size:.62rem;font-weight:800;line-height:17px;text-align:center;}
 .fgEmailPanel{padding:4px 16px 16px;border-top:1px solid color-mix(in srgb,var(--cyan-ink) 20%,transparent);}
 .fgEmailPanel .emWoMsg,.fgEmailPanel .emWoErr{padding:10px 0 0;}
 .fgEmailPanel .emCompose{padding-top:8px;}
 .fgEmailPanel .emBodyIn{min-height:150px;}
+.emWoTabs{margin:10px -4px 4px;}
+.emWoTabs button{padding:6px 12px;font-size:.74em;}
+
 .fgEmailPanel .emWoRow{width:100%;}
 html.hc .fgChev{background:var(--hc-bg);color:var(--hc-fg);border:1px solid var(--hc-fg);}
+
+/* Fold toggles: a chevron pointing down to open and up to close. */
+.chevGl{width:17px;height:17px;stroke-width:2.6;transform:rotate(-90deg);transition:transform .2s;}
+.chevGl.up{transform:rotate(90deg);}
+.cvFoldChev .chevGl{width:16px;height:16px;}
+.schedPast > summary,.emQuote > summary,.expandLinks > details > summary,.sideBySide > details > summary{list-style:none;display:flex;align-items:center;gap:6px;}
+.schedPast > summary::-webkit-details-marker,.emQuote > summary::-webkit-details-marker,.expandLinks > details > summary::-webkit-details-marker,.sideBySide > details > summary::-webkit-details-marker{display:none;}
+.schedPast > summary::before,.emQuote > summary::before,.expandLinks > details > summary::before,.sideBySide > details > summary::before{content:'';width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);flex:0 0 auto;margin:0 3px;transition:transform .2s;}
+.schedPast[open] > summary::before,.emQuote[open] > summary::before,.expandLinks > details[open] > summary::before,.sideBySide > details[open] > summary::before{transform:translateY(2px) rotate(-135deg);}
 /* ---- summary, backup, error log ---- */
 .modal.sumModal{max-width:980px;width:100%;}
 .sumModal .modalHead{gap:10px;}
@@ -5878,7 +5891,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112623;
+var APP_BUILD=2026112624;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -8220,7 +8233,7 @@ function calvAddListHTML(){
   return groups.filter(g=>g.list.length).map(g=>{
     const shut=g.fold && !CALV_ADD.more && !CALV_ADD.q.trim();
     const head = g.fold
-      ? `<button type="button" class="cvAddGroupHead cvAddFold" aria-expanded="${!shut}" onclick="calvToggleMore()"><span>${esc(g.title)}</span><span class="dkCount">${g.list.length}</span><span class="cvFoldChev">${shut?'+':'&minus;'}</span></button>`
+      ? `<button type="button" class="cvAddGroupHead cvAddFold" aria-expanded="${!shut}" onclick="calvToggleMore()"><span>${esc(g.title)}</span><span class="dkCount">${g.list.length}</span><span class="cvFoldChev"><svg class="ic chevGl${shut?'':' up'}" aria-hidden="true"><use href="#i-chevron"/></svg></span></button>`
       : `<div class="cvAddGroupHead"><span>${esc(g.title)}</span><span class="dkCount">${g.list.length}</span></div>`;
     return `<div class="cvAddGroup">
       ${head}
@@ -10826,7 +10839,8 @@ function offerScheduleWrapUp(woId, ids, title, updated){
   const to=((wo.customer||{}).email||'').trim();
   const entries=(wo.scheduleDates||[]).filter(x=>ids.indexOf(x.id)!==-1);
   const canEmail=!!APPT_EMAIL_URL && !!to && apptBuildEmails(wo, entries, updated).length>0;
-  SCHED_WRAP={woId, ids:ids.slice(), updated:!!updated, ics:true, email:canEmail, canEmail, to, title};
+  if(!canEmail) return;
+  SCHED_WRAP={woId, ids:ids.slice(), updated:!!updated, ics:false, email:true, canEmail, to, title};
   renderScheduleWrapUp(true);
 }
 function renderScheduleWrapUp(first){
@@ -10840,8 +10854,7 @@ function renderScheduleWrapUp(first){
   root.innerHTML=`<div class="confirmBox${first?'':' noAnim'}"><div class="confirmCard wrapCard" role="dialog" aria-modal="true" aria-label="${esc(W.title)}">
     <h3>${esc(W.title)}</h3>
     <div class="wrapOpts">
-      ${row('ics', W.ics, W.updated?'Updated Calendar File':'Calendar File', '.ics')}
-      ${W.canEmail ? row('email', W.email, W.updated?'Updated Email to Customer':'Email Customer', W.to) : `<div class="wrapNone">${W.to?'':'No email on file'}</div>`}
+      ${row('email', W.email, W.updated?'Updated Email to Customer':'Email Customer', W.to)}
     </div>
     <div class="btnRow">
       <button class="btn" id="wrapDone" onclick="finishScheduleWrap(true)">Done</button>
@@ -10867,7 +10880,7 @@ function finishScheduleWrap(go){
   if(W.email && W.canEmail){
     const emails=apptBuildEmails(wo, entries, W.updated);
     if(emails.length) sendApptEmails(W.woId, emails);
-  } else if(W.ics) toast('Calendar file downloaded.');
+  }
 }
 
 /* ---- Appointment confirmation emails ----
@@ -11470,7 +11483,7 @@ function fieldCheckHTML(wo){
   /* Today is no longer skipped in the panel: the pinned button shows only the
      next action, so the day's own visit log has to be readable below it. */
   const expandable=rows.length>0 || !!(wo.checkIn || wo.checkOut);
-  const chev=expandable ? `<span class="fieldSecChev fsChev" aria-hidden="true">${open?'&minus;':'+'}</span>` : '';
+  const chev=expandable ? `<span class="fieldSecChev fsChev" aria-hidden="true"><svg class="ic chevGl${open?' up':''}" aria-hidden="true"><use href="#i-chevron"/></svg></span>` : '';
 
   /* Today's button rides on the title row, centred, the same way the schedule
      card carries its next-visit line. Nothing but the date and the one
@@ -11674,7 +11687,7 @@ function fieldSecHTML(id, key, title, body, moreKey, moreLabel, morePanel, moreA
   const moreCls = moreAlign==='end' ? ' alignEnd' : '';
   return `<div class="fieldSec fieldSec--${key}${open?' open':''}${fixed?' fixed':''}">
     ${fixed ? `<div class="fieldSecHead"><span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span>${headExtra||''}</div>` : `<button class="fieldSecHead" onclick="toggleFieldSec(${id},'${key}')" aria-expanded="${open}">
-      <span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+      <span>${FIELD_SEC_SYM[key]?symTitle(esc(title),FIELD_SEC_SYM[key]):esc(title)}</span><span class="fieldSecChev"><svg class="ic chevGl${open?' up':''}" aria-hidden="true"><use href="#i-chevron"/></svg></span>
     </button>`}
     ${(!open && preview) ? preview : ''}
     ${open?`<div class="fieldSecBody">
@@ -11828,7 +11841,7 @@ function fieldSchedCardHTML(wo, body){
     <button class="fieldSecHead${open?'':' fieldSecHead--withFace'}" onclick="toggleFieldSec(${id},'sched')" aria-expanded="${open}">
       <span>${symTitle('Schedule Date(s)','nav-calendar')}</span>
       ${open ? '' : `<span class="fieldSecFace">${esc(nextVisitLine(wo))}</span>`}
-      <span class="fieldSecChev">${open?'&minus;':'+'}</span>
+      <span class="fieldSecChev"><svg class="ic chevGl${open?' up':''}" aria-hidden="true"><use href="#i-chevron"/></svg></span>
     </button>
     ${open ? `<div class="fieldSecBody">${body}</div>` : ''}
   </div>`;
@@ -11865,7 +11878,7 @@ function fieldJobSecHTML(wo){
   if(WO_JOB_EDIT){
     return `<div class="fieldSec fieldSec--job open">
       <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="true">
-        <span>${symTitle('Job Details','clipboard-lines')}</span><span class="fieldSecChev">&minus;</span>
+        <span>${symTitle('Job Details','clipboard-lines')}</span><span class="fieldSecChev"><svg class="ic chevGl up" aria-hidden="true"><use href="#i-chevron"/></svg></span>
       </button>
       <div class="fieldSecBody">${jobDetailsEditHTML(id)}</div>
     </div>`;
@@ -11909,7 +11922,7 @@ function fieldJobSecHTML(wo){
   }
   return `<div class="fieldSec fieldSec--job${open?' open':''}">
     <button class="fieldSecHead" onclick="toggleFieldSec(${id},'job')" aria-expanded="${open}">
-      <span>${symTitle('Job Details','clipboard-lines')}</span><span class="fieldSecChev">${open?'&minus;':'+'}</span>
+      <span>${symTitle('Job Details','clipboard-lines')}</span><span class="fieldSecChev"><svg class="ic chevGl${open?' up':''}" aria-hidden="true"><use href="#i-chevron"/></svg></span>
     </button>
     ${open ? '' : fieldJobPreviewHTML(wo)}
     ${(open && (body+presitePrompt).trim()) ? `<div class="fsLead">${body}${presitePrompt}</div>` : ''}
@@ -15872,13 +15885,14 @@ function emDiscard(){
     done();
   });
 }
-async function emOpenDraft(draftId){
-  if(!gmailSignedIn()){ gmailConnect(()=>emOpenDraft(draftId)); return; }
+async function emOpenDraft(draftId, inWo){
+  if(!gmailSignedIn()){ gmailConnect(()=>emOpenDraft(draftId, inWo)); return; }
   try{
     const d=await gapi(`drafts/${draftId}?format=full`);
     const m=d.message||{}, p=emParts(m.payload);
     const c={mode:'draft', to:hdr(m,'To'), cc:hdr(m,'Cc'), bcc:hdr(m,'Bcc'), subject:hdr(m,'Subject'), body:'', files:[], quote:'', threadId:(m.threadId && m.threadId!==m.id)?m.threadId:null, inReplyTo:hdr(m,'In-Reply-To'), refs:hdr(m,'References'), draftId, dirty:false, sending:false};
     c.showCc=!!(c.cc||c.bcc);
+    if(inWo){ c.inWo=inWo; FIELD_SEC.emails=true; }
     let t=p.text || emHtmlToText(p.html);
     if(EM_SIG){ const s=emHtmlToText(EM_SIG); const k=t.lastIndexOf('-- \n'+s); if(k>=0) t=t.slice(0,k); else { const j=t.lastIndexOf(s); if(j>=0) t=t.slice(0,j); } }
     c.body=t.replace(/\s+$/,'');
@@ -15898,7 +15912,7 @@ function fieldEmailCellHTML(wo){
   const ready=gmailReady();
   const open=ready && !!FIELD_SEC.emails;
   const st=EM_WO[wo.id];
-  const unread=st && st.list ? st.list.filter(t=>t.unread).length : 0;
+  const unread=st && st.list && st.folder==='all' ? st.list.filter(t=>t.unread).length : 0;
   const hit=`<button type="button" class="fgHit" data-v="${esc(email)}" onclick="openEmailAction(this.dataset.v)"><div class="fgLabel">${symTitle('Email','mail')}</div><div class="fgValue">${icon('mail')}<span>${esc(email)}</span></div></button>`;
   const chev=ready ? `<button type="button" class="fgChev" onclick="toggleWoEmails(${wo.id})" aria-expanded="${open}" aria-label="${open?'Hide':'Show'} emails with this customer">${icon('chevron')}${!open&&unread?`<b class="fgChevN">${unread}</b>`:''}</button>` : '';
   return `<div class="fgCell fgTap fgEmail${open?' open':''}"><div class="fgEmailRow">${hit}${chev}</div>${open?`<div class="fgEmailPanel">${emailWoBodyHTML(wo)}</div>`:''}</div>`;
@@ -15914,26 +15928,45 @@ function emailWoBodyHTML(wo){
     return `<div class="emWoConnect"><button type="button" class="btn secondary" onclick="gmailConnect(()=>{delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});})">${icon('mail')}Connect Gmail</button></div>`;
   }
   if(EM.compose && EM.compose.inWo===wo.id) return emComposeHTML();
-  const st=EM_WO[wo.id];
+  const f=EM_WOF[wo.id]||'all';
+  const st=EM_WO[wo.id] && EM_WO[wo.id].folder===f ? EM_WO[wo.id] : null;
   if(!st || (!st.err && Date.now()-st.at>120000 && !st.loading)) emLoadWo(wo.id);
   const list=st && st.list;
+  const pills=`<div class="sumTabs emWoTabs" role="tablist">${EM_WO_FOLDERS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${f===k}" class="${f===k?'on':''}" onclick="emWoFolder(${wo.id},'${k}')">${l}</button>`).join('')}</div>`;
   let body = (st && st.err) ? `<div class="small emWoErr">${esc(st.err)} <button type="button" class="editLink" onclick="delete EM_WO[${wo.id}]; renderWorkOrderModal(${wo.id});">Try Again</button></div>`
     : !list ? `<div class="small emWoMsg">Loading…</div>`
-    : !list.length ? `<div class="small emWoMsg">No emails with ${esc(email)} yet.</div>`
-    : `<div class="emWoList">${list.slice(0,6).map(t=>`<button type="button" class="emWoRow${t.unread?' unread':''}" onclick="emOpenFromWo(${wo.id},'${t.id}')">
+    : !list.length ? `<div class="small emWoMsg">${f==='all'?'No emails with '+esc(email)+' yet.':'Nothing here.'}</div>`
+    : `<div class="emWoList">${list.slice(0,6).map(t=>`<button type="button" class="emWoRow${t.unread?' unread':''}" onclick="${t.draft?`emOpenDraft('${t.draftId}',${wo.id})`:`emOpenFromWo(${wo.id},'${t.id}')`}">
         <span class="emSubj"><b>${esc(t.subject||'(no subject)')}</b><span class="emSnip">${esc(t.snippet)}</span></span>
         <span class="emWhen">${esc(t.when)}</span></button>`).join('')}</div>`;
+  body=pills+body;
   body+=`<div class="emWoBtns"><button type="button" class="btn" onclick="emailCustomer(${wo.id})">${icon('pencil')}New Email</button>${list && list.length ? `<button type="button" class="btn secondary" onclick="emLeaveWo();openEmail({q:emCustomerQuery((getWO(${wo.id}).customer||{}).email), returnWo:${wo.id}})">See All</button>` : ''}</div>`;
   return body;
 }
+/* Which of this customer's emails the work order shows: all, or one folder. */
+var EM_WOF={};
+const EM_WO_FOLDERS=[['all','All',''],['inbox','Inbox','in:inbox'],['sent','Sent','in:sent'],['drafts','Drafts',''],['trash','Trash','in:trash']];
+function emWoFolder(id, f){ EM_WOF[id]=f; delete EM_WO[id]; renderWorkOrderModal(id); }
 async function emLoadWo(id){
   const wo=getWO(id); if(!wo || !gmailSignedIn()) return;
   const email=String((wo.customer||{}).email||'').trim(); if(!email) return;
+  const f=EM_WOF[id]||'all';
   const prev=EM_WO[id];
-  EM_WO[id]={at:Date.now(), loading:true, list:prev&&prev.list||null};
+  EM_WO[id]={at:Date.now(), loading:true, folder:f, list:prev&&prev.folder===f&&prev.list||null};
   try{
-    const r=await gapi('threads?maxResults=10&q='+encodeURIComponent(emCustomerQuery(email)));
-    EM_WO[id]={at:Date.now(), list:await emThreadSummaries((r.threads||[]).map(t=>t.id))};
+    const cq=emCustomerQuery(email);
+    let list;
+    if(f==='drafts'){
+      const r=await gapi('drafts?maxResults=10&q='+encodeURIComponent(cq));
+      const ds=await Promise.all((r.drafts||[]).map(d=>gapi(`drafts/${d.id}?format=metadata`).catch(()=>null)));
+      list=ds.filter(Boolean).map(d=>{ const m=d.message||{}; return {draft:true, draftId:d.id, id:m.threadId||m.id, subject:hdr(m,'Subject'), snippet:emDecodeEntities(m.snippet||''), when:emDate(m.internalDate), unread:false}; });
+    } else {
+      const fq=(EM_WO_FOLDERS.find(x=>x[0]===f)||[])[2]||'';
+      const r=await gapi('threads?maxResults=10&q='+encodeURIComponent((fq?fq+' ':'')+cq)+(f==='trash'?'&includeSpamTrash=true':''));
+      list=await emThreadSummaries((r.threads||[]).map(t=>t.id));
+    }
+    if((EM_WOF[id]||'all')!==f) return;
+    EM_WO[id]={at:Date.now(), folder:f, list};
   }catch(e){ EM_WO[id]={at:Date.now(), list:null, err:(e && e.message)||'Could not load emails.'}; if(e && e.signin) delete EM_WO[id]; }
   if(OPEN_WO_ID===id && document.querySelector('.fgEmail')) renderWorkOrderModal(id);
 }
