@@ -3004,7 +3004,7 @@ html.hc .gnSwitch.on .gnTrack{background:var(--hc-fg);}
   html.dark .symBadge > b{color:var(--paper);}
   .symBadge.plus > b{font-size:10px;font-weight:700;margin-top:-1px;}
   .fgAlt .symBadge{left:-3px;bottom:-1px;}
-  .fieldSecChev,.fieldStatus .fsChev{width:26px;height:26px;}
+  .fieldSecChev,.fieldStatus .fsChev,.fgChev{width:26px;height:26px;}
   .fieldSecHead .ttlSym,.fsTitle .ttlSym{margin-left:-4px;}
   .fieldGrid .fgCell.fgName .ttlSym{margin-left:4px;}
   .symBadge.in,.symBadge.out{left:auto;width:auto;min-width:17px;padding:0 4px;bottom:-9px;right:-22px;height:15px;border-radius:5px;}
@@ -4371,8 +4371,9 @@ html.hc .emRow.unread,html.hc .fieldSec--email{background:var(--hc-bg);}
 .fgEmail.open:active{transform:none;}
 .fgEmailRow{display:flex;align-items:center;}
 .fgEmailRow .fgHit{flex:1 1 auto;min-width:0;}
-.fgChev{position:relative;flex:0 0 auto;width:30px;height:30px;margin-right:14px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;background:var(--cyan-ink);color:#fff;}
+.fgChev{position:relative;flex:0 0 auto;width:30px;height:30px;margin-right:24px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;background:var(--cyan-ink);color:#fff;}
 html.dark .fgChev{color:var(--paper);}
+@media (max-width:600px){ .fgChev{width:26px;height:26px;} }
 .fgChev .ic{width:17px;height:17px;stroke-width:2.6;transform:rotate(-90deg);transition:transform .2s;}
 .fgEmail.open .fgChev .ic{transform:rotate(90deg);}
 .fgChevN{position:absolute;top:-5px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--orange);color:#fff;font-size:.62rem;font-weight:800;line-height:17px;text-align:center;}
@@ -5891,7 +5892,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112624;
+var APP_BUILD=2026112625;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
