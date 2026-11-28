@@ -1429,7 +1429,8 @@ button.cvOffRow{cursor:pointer;}
 .cvWList .cvOffRow .cvOffIc{display:none;}
 .cvWList .cvOffRow .cvName{font-size:.86rem;}
 .schedCalDay.closed{background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--off-biz) 16%,transparent) 0 4px,transparent 4px 8px);color:var(--muted);}
-.crewChip.isOff:not(.on){opacity:.5;border-style:dashed;}
+.crewChip.isOff:not(.on){opacity:.5;border-style:dashed;cursor:not-allowed;}
+.crewChip.isOff.on{border-color:var(--redb);}
 .offTag{margin-left:6px;font-size:.72em;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;border-radius:999px;background:var(--well);color:var(--muted);}
 .crewChip.isBiz .crewAv .ic{width:13px;height:13px;}
 .doCard{max-width:460px;}
@@ -5985,7 +5986,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112635;
+var APP_BUILD=2026112636;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9755,9 +9756,16 @@ function refreshSchedDayTimes(){
   const box=document.getElementById('schedDayTimesBox');
   if(box) box.outerHTML=schedDayTimesHTML();
   else renderScheduleWidget();
+  refreshSchedCrew();
+}
+/* Who can go depends on the days and hours, so the names follow the times. */
+function refreshSchedCrew(){
+  const box=document.getElementById('schedCrewBox');
+  if(box) box.outerHTML=crewPickerHTML();
 }
 function onSchedTimeChange(field, val){
   if(field==='start') SCHED_STIME=val; else SCHED_ETIME=val;
+  refreshSchedCrew();
   if(SCHED_DAYS.length>1){
     Object.keys(SCHED_DAYTIMES).forEach(iso=>{ const o=SCHED_DAYTIMES[iso]; if(o.startTime===SCHED_STIME && o.endTime===SCHED_ETIME) delete SCHED_DAYTIMES[iso]; });
     refreshSchedDayTimes();
@@ -9954,22 +9962,20 @@ function crewNames(list){ return (list||[]).map(crewName).join(', '); }
 function crewPickerHTML(){
   const users=crewUsers();
   if(!users.length) return '';
-  return `<div class="field"><label>Who's Going</label><div class="crewChips">${users.map(u=>{
+  return `<div class="field" id="schedCrewBox"><label>Who's Going</label><div class="crewChips">${users.map(u=>{
     const on=SCHED_CREW.indexOf(u.username)!==-1;
     const off=crewOffForBooking(u.username).length>0;
-    return `<button type="button" class="crewChip${on?' on':''}${off?' isOff':''}" style="${pcStyle(crewColor(u.username))}" aria-pressed="${on}"${off&&!on?' aria-disabled="true"':''} onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}${off?'<span class="offTag">Off</span>':''}</button>`;
+    return `<button type="button" class="crewChip${on?' on':''}${off?' isOff':''}" style="${pcStyle(crewColor(u.username))}" aria-pressed="${on}"${off&&!on?' disabled':''} onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}${off?'<span class="offTag">Off</span>':''}</button>`;
   }).join('')}</div></div>`;
 }
-function toggleSchedCrew(username, ok){
+/* Someone who is off for any of the booking's days or hours can't be put on
+   it, by anyone. They can still be taken off if they were already on it. */
+function toggleSchedCrew(username){
   captureSchedFields();
   const i=SCHED_CREW.indexOf(username);
-  if(i===-1 && !ok){
+  if(i===-1){
     const off=crewOffForBooking(username);
-    if(off.length){
-      if(!isAdminUser()){ toast(`${offWho(off[0].o)}: ${offDatesText(off[0].o)}.`); return; }
-      askYesNo(off.map(({o})=>`${offWho(o)}: ${offDatesText(o)}${offNote(o)?' ('+offNote(o)+')':''}`).join('\n')+'\n\nPut them on this anyway?', yes=>{ if(yes) toggleSchedCrew(username, true); }, {yes:'Add Anyway', no:'Go Back'});
-      return;
-    }
+    if(off.length){ toast(`${offWho(off[0].o)}: ${offDatesText(off[0].o)}.`); return; }
   }
   if(i===-1) SCHED_CREW.push(username); else SCHED_CREW.splice(i,1);
   renderScheduleWidget();
@@ -10306,10 +10312,18 @@ function saveSchedule(){
   const crew=SCHED_CREW.slice();
   const editing=SCHED_EDIT_ID ? (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID) : null;
   if(SCHED_EDIT_ID && !editing){ toast('That scheduled date no longer exists.'); return; }
-  /* Days off: the last word before anything is booked. */
+  /* Days off: the last word before anything is booked. Crew who are off
+     always have to come off the booking; a closure an admin can book over. */
+  const offPeople=bookingOffIssues(days, startTime, endTime, allTimes, crew).people;
+  if(offPeople.length){
+    const names=[...new Set(offPeople.map(({o})=>crewName(o.who)))];
+    toast(`${names.join(' and ')} ${names.length>1?'are':'is'} off then. Take them off this booking or change the day or time.`);
+    renderScheduleWidget();
+    return;
+  }
   if(!SCHED_OFF_OK){
-    const iss=bookingOffIssues(days, startTime, endTime, allTimes, crew);
-    if(iss.closed.length || iss.people.length){
+    const iss=bookingOffIssues(days, startTime, endTime, allTimes, []);
+    if(iss.closed.length){
       if(!isAdminUser()){ toast(offIssueText(iss).split('\n')[0]+'.'); return; }
       askYesNo(offIssueText(iss)+'\n\nBook it anyway?', yes=>{ if(yes){ SCHED_OFF_OK=true; saveSchedule(); } }, {yes:'Book Anyway', no:'Go Back'});
       return;
@@ -10913,7 +10927,7 @@ function pickSchedDay(iso, ok){
         if(add.every(d=>shut.indexOf(d)!==-1 || SCHED_DAYS.indexOf(d)!==-1)){ toast(`Good & Handy is closed ${txt}.`); return; }
         SCHED_DAYS=Array.from(new Set(SCHED_DAYS.concat(add.filter(d=>shut.indexOf(d)===-1)))).sort();
         toast(`Skipped ${txt}: Good & Handy is closed.`);
-        schedSyncRange(); refreshSchedCalendar(); if(SCHED_TYPE==='full') refreshSchedDayTimes();
+        schedSyncRange(); refreshSchedCalendar(); if(SCHED_TYPE==='full') refreshSchedDayTimes(); else refreshSchedCrew();
         return;
       }
       askYesNo(`Good & Handy is closed ${txt}.\n\nBook ${shut.length>1?'those days':'it'} anyway?`, yes=>{ if(yes) pickSchedDay(iso, true); }, {yes:'Book Anyway', no:'Go Back'});
