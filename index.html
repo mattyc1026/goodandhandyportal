@@ -5986,7 +5986,7 @@ let SYNC_FLUSHING=false, SYNC_AGAIN=false, SYNC_RETRY_T=0, SYNC_FAILS=0;
    newer number is running an old copy of the app, so it reloads itself as
    soon as nobody is mid-edit, instead of carrying on with older save rules.
    Raise it whenever a change needs every device on the newest version. */
-var APP_BUILD=2026112636;
+var APP_BUILD=2026112637;
 var NEWER_APP=false;
 /* Checking for a new version of the app. The published page is fetched now
    and then (usually answered with "unchanged" and no download) and its code
@@ -9965,17 +9965,21 @@ function crewPickerHTML(){
   return `<div class="field" id="schedCrewBox"><label>Who's Going</label><div class="crewChips">${users.map(u=>{
     const on=SCHED_CREW.indexOf(u.username)!==-1;
     const off=crewOffForBooking(u.username).length>0;
-    return `<button type="button" class="crewChip${on?' on':''}${off?' isOff':''}" style="${pcStyle(crewColor(u.username))}" aria-pressed="${on}"${off&&!on?' disabled':''} onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}${off?'<span class="offTag">Off</span>':''}</button>`;
+    return `<button type="button" class="crewChip${on?' on':''}${off?' isOff':''}" style="${pcStyle(crewColor(u.username))}" aria-pressed="${on}"${off&&!on?(isAdminUser()?' aria-disabled="true"':' disabled'):''} onclick="toggleSchedCrew('${esc(u.username)}')"><span class="crewAv">${esc(u.first.charAt(0))}</span>${esc(u.name)}${off?'<span class="offTag">Off</span>':''}</button>`;
   }).join('')}</div></div>`;
 }
 /* Someone who is off for any of the booking's days or hours can't be put on
-   it, by anyone. They can still be taken off if they were already on it. */
-function toggleSchedCrew(username){
+   it, except by an admin who says to go ahead. They can always be taken off. */
+function toggleSchedCrew(username, ok){
   captureSchedFields();
   const i=SCHED_CREW.indexOf(username);
-  if(i===-1){
+  if(i===-1 && !ok){
     const off=crewOffForBooking(username);
-    if(off.length){ toast(`${offWho(off[0].o)}: ${offDatesText(off[0].o)}.`); return; }
+    if(off.length){
+      if(!isAdminUser()){ toast(`${offWho(off[0].o)}: ${offDatesText(off[0].o)}.`); return; }
+      askYesNo(off.map(({o})=>`${offWho(o)}: ${offDatesText(o)}${offNote(o)?' ('+offNote(o)+')':''}`).join('\n')+'\n\nPut them on this anyway?', yes=>{ if(yes) toggleSchedCrew(username, true); }, {yes:'Add Anyway', no:'Go Back'});
+      return;
+    }
   }
   if(i===-1) SCHED_CREW.push(username); else SCHED_CREW.splice(i,1);
   renderScheduleWidget();
@@ -10312,18 +10316,11 @@ function saveSchedule(){
   const crew=SCHED_CREW.slice();
   const editing=SCHED_EDIT_ID ? (wo.scheduleDates||[]).find(x=>x.id===SCHED_EDIT_ID) : null;
   if(SCHED_EDIT_ID && !editing){ toast('That scheduled date no longer exists.'); return; }
-  /* Days off: the last word before anything is booked. Crew who are off
-     always have to come off the booking; a closure an admin can book over. */
-  const offPeople=bookingOffIssues(days, startTime, endTime, allTimes, crew).people;
-  if(offPeople.length){
-    const names=[...new Set(offPeople.map(({o})=>crewName(o.who)))];
-    toast(`${names.join(' and ')} ${names.length>1?'are':'is'} off then. Take them off this booking or change the day or time.`);
-    renderScheduleWidget();
-    return;
-  }
+  /* Days off: the last word before anything is booked. Crew can't book over
+     them; an admin can after a pop-up says what it overrides. */
   if(!SCHED_OFF_OK){
-    const iss=bookingOffIssues(days, startTime, endTime, allTimes, []);
-    if(iss.closed.length){
+    const iss=bookingOffIssues(days, startTime, endTime, allTimes, crew);
+    if(iss.closed.length || iss.people.length){
       if(!isAdminUser()){ toast(offIssueText(iss).split('\n')[0]+'.'); return; }
       askYesNo(offIssueText(iss)+'\n\nBook it anyway?', yes=>{ if(yes){ SCHED_OFF_OK=true; saveSchedule(); } }, {yes:'Book Anyway', no:'Go Back'});
       return;
